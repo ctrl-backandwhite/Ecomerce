@@ -1,0 +1,145 @@
+import { Star, ShoppingCart, Heart } from "lucide-react";
+import { Link } from "react-router";
+import { Product } from "../data/products";
+import { useCart } from "../context/CartContext";
+import { toast } from "sonner";
+import { useRef, useState } from "react";
+
+interface ProductCardProps {
+  product: Product;
+}
+
+export function ProductCard({ product }: ProductCardProps) {
+  const { addToCart } = useCart();
+  const imgRef = useRef<HTMLDivElement>(null);
+  const [transform, setTransform] = useState("perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)");
+  const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const el = imgRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const rotateX = ((y - cy) / cy) * -15;
+    const rotateY = ((x - cx) / cx) * 15;
+    setTransform(
+      `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.06,1.06,1.06)`
+    );
+    setGlare({ x: (x / rect.width) * 100, y: (y / rect.height) * 100, opacity: 0.22 });
+  };
+
+  const handleMouseLeave = () => {
+    setTransform("perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)");
+    setGlare((g) => ({ ...g, opacity: 0 }));
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addToCart(product);
+    toast.success("Producto agregado al carrito");
+  };
+
+  const discount = product.originalPrice
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+    : 0;
+
+  return (
+    <Link to={`/producto/${product.id}`} className="group" style={{ display: "block" }}>
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
+
+        {/* Image with 3D effect */}
+        <div
+          ref={imgRef}
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          style={{ transformStyle: "preserve-3d" }}
+          className="relative h-48 bg-white overflow-hidden cursor-pointer"
+        >
+          <div
+            style={{
+              transform,
+              transition: glare.opacity === 0 ? "transform 0.55s ease" : "transform 0.08s ease",
+              willChange: "transform",
+              width: "100%",
+              height: "100%",
+              position: "relative",
+            }}
+          >
+            <img
+              src={product.image}
+              alt={product.name}
+              className="w-full h-full object-cover"
+            />
+            {/* Glare */}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                pointerEvents: "none",
+                background: `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,${glare.opacity}) 0%, transparent 65%)`,
+                transition: "opacity 0.2s ease",
+              }}
+            />
+          </div>
+
+          {discount > 0 && (
+            <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">
+              -{discount}%
+            </div>
+          )}
+          <button
+            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors z-10"
+            onClick={(e) => e.preventDefault()}
+          >
+            <Heart className="w-4 h-4" />
+          </button>
+          {product.stock < 10 && (
+            <div className="absolute bottom-3 left-3 bg-amber-500 text-white text-xs px-2 py-1 rounded z-10">
+              ¡Últimas unidades!
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="p-4 flex-1 flex flex-col">
+          <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+            {product.category}
+          </div>
+          <h3 className="text-base mb-2 line-clamp-2 group-hover:text-gray-600 transition-colors">
+            {product.name}
+          </h3>
+
+          {/* Rating */}
+          <div className="flex items-center gap-1 text-sm mb-3">
+            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+            <span className="text-gray-900">{product.rating}</span>
+            <span className="text-gray-500">({product.reviews})</span>
+          </div>
+
+          {/* Price */}
+          <div className="mt-auto">
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-2xl text-gray-900">${product.price}</span>
+              {product.originalPrice && (
+                <span className="text-sm text-gray-500 line-through">
+                  ${product.originalPrice}
+                </span>
+              )}
+            </div>
+
+            <button
+              onClick={handleAddToCart}
+              className="w-full px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              Agregar al carrito
+            </button>
+          </div>
+        </div>
+      </div>
+    </Link>
+  );
+}

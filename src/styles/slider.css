@@ -1,0 +1,61 @@
+/* Custom Slick Slider Styles - Minimal */
+
+.promo-slider .slick-slide {
+  outline: none;
+}
+
+.promo-slider .slick-list {
+  overflow: hidden;
+}
+
+.promo-slider .slick-track {
+  display: flex;
+  align-items: stretch;
+}
+
+/* Dots customization */
+.promo-slider .slick-dots {
+  position: absolute;
+  bottom: 24px;
+  list-style: none;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+}
+
+.promo-slider .slick-dots li {
+  margin: 0;
+  padding: 0;
+  width: auto;
+  height: auto;
+}
+
+.promo-slider .slick-dots li button {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.promo-slider .slick-dots li button:before {
+  display: none;
+}
+
+/* Hide arrows */
+.promo-slider .slick-arrow,
+.promo-slider .slick-prev,
+.promo-slider .slick-next {
+  display: none !important;
+}
+
+/* Smooth transitions */
+.promo-slider .slick-slide > div {
+  height: 100%;
+}
+
+.promo-slider .slick-slide > div > div {
+  height: 100%;
+}
