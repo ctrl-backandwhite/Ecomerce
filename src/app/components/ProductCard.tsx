@@ -47,7 +47,12 @@ export function ProductCard({ product }: ProductCardProps) {
     : 0;
 
   return (
-    <Link to={`/producto/${product.id}`} className="group" style={{ display: "block" }}>
+    <Link
+      to={`/producto/${product.id}`}
+      state={{ from: window.location.pathname + window.location.search }}
+      className="group"
+      style={{ display: "block" }}
+    >
       <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
 
         {/* Image with 3D effect */}

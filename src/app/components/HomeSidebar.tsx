@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router";
 import {
   ChevronDown,
@@ -9,15 +9,25 @@ import {
   SlidersHorizontal,
   X,
   ShoppingBag,
+  Check,
+  Layers,
+  Cpu,
 } from "lucide-react";
 import { categoryTree, products, priceRanges } from "../data/products";
+import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../data/filters";
 
 interface HomeSidebarProps {
   selectedCategory: string;
+  selectedSubcat: string;
+  selectedBrand: string;
+  selectedAttr: string;
   selectedPriceIdx: number;
   selectedRating: number;
   total: number;
   onCategory: (cat: string) => void;
+  onSubcategory: (cat: string, sub: string) => void;
+  onBrand: (brand: string) => void;
+  onAttr: (attr: string) => void;
   onPrice: (idx: number) => void;
   onRating: (r: number) => void;
   onReset: () => void;
@@ -38,6 +48,7 @@ function TopRated() {
         <Link
           key={p.id}
           to={`/producto/${p.id}`}
+          state={{ from: window.location.pathname + window.location.search }}
           className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors group"
         >
           <img
@@ -64,10 +75,16 @@ function TopRated() {
 /* ── Main export ─────────────────────────────────────────────── */
 export function HomeSidebar({
   selectedCategory,
+  selectedSubcat,
+  selectedBrand,
+  selectedAttr,
   selectedPriceIdx,
   selectedRating,
   total,
   onCategory,
+  onSubcategory,
+  onBrand,
+  onAttr,
   onPrice,
   onRating,
   onReset,
@@ -76,15 +93,58 @@ export function HomeSidebar({
     selectedCategory !== "Todos" ? [selectedCategory] : []
   );
 
+  /* Auto-expand the selected category when it changes externally */
+  useEffect(() => {
+    if (selectedCategory !== "Todos") {
+      setOpenCats((prev) =>
+        prev.includes(selectedCategory) ? prev : [...prev, selectedCategory]
+      );
+    }
+  }, [selectedCategory]);
+
   const toggle = (name: string) =>
     setOpenCats((prev) =>
       prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
     );
 
+  /* ── Brands in scope ───────────────────────────────────────── */
+  const brandsInScope = useMemo(() => {
+    const base =
+      selectedCategory === "Todos"
+        ? products
+        : products.filter((p) => p.category === selectedCategory);
+    const map: Record<string, number> = {};
+    base.forEach((p) => {
+      if (p.brand) map[p.brand] = (map[p.brand] || 0) + 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [selectedCategory]);
+
+  /* ── Category-specific attribute filters ─────────────────── */
+  const categoryFilters = CATEGORY_ATTR_FILTERS[selectedCategory] ?? [];
+
+  /* Count per attr option (based on full category scope, no other attr filter) */
+  const attrCounts = useMemo(() => {
+    const base =
+      selectedCategory === "Todos"
+        ? products
+        : products.filter((p) => p.category === selectedCategory);
+    const counts: Record<string, number> = {};
+    categoryFilters.forEach((group) => {
+      group.options.forEach((opt) => {
+        const matchFn = ATTR_MATCH[selectedCategory]?.[opt];
+        counts[opt] = matchFn ? base.filter(matchFn).length : 0;
+      });
+    });
+    return counts;
+  }, [selectedCategory, categoryFilters]);
+
   const hasFilters =
     selectedCategory !== "Todos" ||
     selectedPriceIdx !== 0 ||
-    selectedRating !== 0;
+    selectedRating !== 0 ||
+    !!selectedBrand ||
+    !!selectedAttr;
 
   return (
     <aside className="w-56 flex-shrink-0 hidden lg:block">
@@ -158,11 +218,7 @@ export function HomeSidebar({
                 />
                 Todos
               </span>
-              <span
-                className={`text-[10px] ${
-                  selectedCategory === "Todos" ? "text-white/50" : "text-gray-400"
-                }`}
-              >
+              <span className={`text-[10px] ${selectedCategory === "Todos" ? "text-white/50" : "text-gray-400"}`}>
                 {products.length}
               </span>
             </button>
@@ -183,7 +239,10 @@ export function HomeSidebar({
                     }`}
                   >
                     <button
-                      onClick={() => { onCategory(cat.name); if (!isOpen) toggle(cat.name); }}
+                      onClick={() => {
+                        onCategory(cat.name);
+                        if (!isOpen) toggle(cat.name);
+                      }}
                       className="flex-1 flex items-center gap-2.5 px-4 py-2.5 text-sm text-left"
                     >
                       <CatIcon
@@ -195,30 +254,40 @@ export function HomeSidebar({
                         {count}
                       </span>
                     </button>
-                    <button
-                      onClick={() => toggle(cat.name)}
-                      className="px-3 py-2.5"
-                    >
-                      {isOpen
-                        ? <ChevronDown className="w-3.5 h-3.5 opacity-40" />
-                        : <ChevronRight className="w-3.5 h-3.5 opacity-40" />}
-                    </button>
+                    {cat.subcategories.length > 0 && (
+                      <button
+                        onClick={() => toggle(cat.name)}
+                        className="px-3 py-2.5"
+                      >
+                        {isOpen
+                          ? <ChevronDown className="w-3.5 h-3.5 opacity-40" />
+                          : <ChevronRight className="w-3.5 h-3.5 opacity-40" />}
+                      </button>
+                    )}
                   </div>
 
-                  {isOpen && (
+                  {isOpen && cat.subcategories.length > 0 && (
                     <div className="bg-gray-50 border-t border-gray-100">
                       {cat.subcategories.map((sub) => {
                         const subCount = products.filter(
                           (p) => p.category === cat.name && p.subcategory === sub
                         ).length;
+                        if (subCount === 0) return null;
+                        const isSubActive = selectedSubcat === sub;
                         return (
                           <button
                             key={sub}
-                            onClick={() => onCategory(cat.name)}
-                            className="w-full flex items-center justify-between pl-10 pr-4 py-2 text-[13px] text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                            onClick={() => onSubcategory(cat.name, sub)}
+                            className={`w-full flex items-center justify-between pl-10 pr-4 py-2 text-[13px] transition-colors ${
+                              isSubActive
+                                ? "text-gray-900 bg-gray-100"
+                                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                            }`}
                           >
                             <span className="flex items-center gap-2">
-                              <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />
+                              {isSubActive
+                                ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
+                                : <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />}
                               {sub}
                             </span>
                             {subCount > 0 && (
@@ -235,6 +304,80 @@ export function HomeSidebar({
               );
             })}
           </div>
+
+          {/* ── Marcas ── */}
+          {brandsInScope.length > 1 && (
+            <div className="border-b border-gray-100">
+              <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
+                <Layers className="w-3 h-3" /> Marcas
+              </p>
+              {brandsInScope.map(([brand, count]) => {
+                const isActive = selectedBrand === brand;
+                return (
+                  <button
+                    key={brand}
+                    onClick={() => onBrand(isActive ? "" : brand)}
+                    className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
+                      isActive
+                        ? "text-gray-900 bg-gray-50"
+                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                        isActive ? "border-gray-900 bg-gray-900" : "border-gray-300"
+                      }`}>
+                        {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
+                      </span>
+                      {brand}
+                    </span>
+                    <span className="text-[10px] text-gray-400">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ── Filtros de categoría ── */}
+          {categoryFilters.map((group) => {
+            const visibleOptions = group.options.filter(
+              (opt) => (attrCounts[opt] ?? 0) > 0
+            );
+            if (visibleOptions.length < 2) return null;
+            return (
+              <div key={group.groupLabel} className="border-b border-gray-100">
+                <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
+                  <Cpu className="w-3 h-3" />
+                  {group.groupLabel}
+                </p>
+                {visibleOptions.map((opt) => {
+                  const isActive = selectedAttr === opt;
+                  const cnt = attrCounts[opt] ?? 0;
+                  return (
+                    <button
+                      key={opt}
+                      onClick={() => onAttr(isActive ? "" : opt)}
+                      className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
+                        isActive
+                          ? "text-gray-900 bg-gray-50"
+                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
+                          isActive ? "border-gray-900 bg-gray-900" : "border-gray-300"
+                        }`}>
+                          {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
+                        </span>
+                        {opt}
+                      </span>
+                      <span className="text-[10px] text-gray-400">{cnt}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
 
           {/* ── Precio ── */}
           <div className="border-b border-gray-100">

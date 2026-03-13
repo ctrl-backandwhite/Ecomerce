@@ -1,9 +1,9 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import {
   Upload, X, Search, Trash2, Image as ImageIcon,
   Download, Copy, Check, Grid3x3, List, Calendar,
   FileImage, AlertCircle, Eye, Plus, Filter, SortAsc,
-  ExternalLink, Maximize2, Info
+  ExternalLink, Maximize2, Info, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -667,31 +667,36 @@ export function AdminMedia() {
   const [sortBy, setSortBy] = useState<"date" | "name" | "size">("date");
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<MediaItem | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const ITEMS_PER_PAGE = 12;
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1); }, [search, selectedCategory, sortBy, viewMode]);
 
   // Filter and sort
   const filtered = mediaList.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()));
-
     const matchesCategory =
       selectedCategory === "all" || item.category === selectedCategory;
-
     return matchesSearch && matchesCategory;
   });
 
   const sorted = [...filtered].sort((a, b) => {
-    if (sortBy === "date") {
-      return b.uploadedAt.getTime() - a.uploadedAt.getTime();
-    }
-    if (sortBy === "name") {
-      return a.name.localeCompare(b.name);
-    }
-    if (sortBy === "size") {
-      return b.size - a.size;
-    }
+    if (sortBy === "date") return b.uploadedAt.getTime() - a.uploadedAt.getTime();
+    if (sortBy === "name") return a.name.localeCompare(b.name);
+    if (sortBy === "size") return b.size - a.size;
     return 0;
   });
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(sorted.length / ITEMS_PER_PAGE));
+  const paginated = useMemo(
+    () => sorted.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
+    [sorted, currentPage]
+  );
 
   // Stats
   const totalSize = mediaList.reduce((sum, item) => sum + item.size, 0);
@@ -700,6 +705,7 @@ export function AdminMedia() {
   function handleUpload(newItems: MediaItem[]) {
     setMediaList((prev) => [...newItems, ...prev]);
     setShowUploadModal(false);
+    setCurrentPage(1);
   }
 
   function handleDelete(id: string) {
@@ -718,7 +724,7 @@ export function AdminMedia() {
   return (
     <div className="h-full flex flex-col space-y-5">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl text-gray-900 tracking-tight">Galería de Medios</h1>
           <p className="text-xs text-gray-400 mt-1">
@@ -727,41 +733,11 @@ export function AdminMedia() {
         </div>
         <button
           onClick={() => setShowUploadModal(true)}
-          className="inline-flex items-center gap-2 text-xs text-white bg-gray-900 rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors"
+          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          title="Cargar imágenes"
         >
-          <Upload className="w-3.5 h-3.5" strokeWidth={1.5} />
-          Cargar imágenes
+          <Plus className="w-4 h-4" strokeWidth={1.5} />
         </button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Total imágenes", value: mediaList.length, icon: ImageIcon },
-          {
-            label: "Espacio usado",
-            value: formatFileSize(totalSize),
-            icon: Download,
-          },
-          { label: "Categorías", value: categories.length, icon: Filter },
-          {
-            label: "Esta semana",
-            value: mediaList.filter(
-              (item) =>
-                new Date().getTime() - item.uploadedAt.getTime() <
-                7 * 24 * 60 * 60 * 1000
-            ).length,
-            icon: Calendar,
-          },
-        ].map(({ label, value, icon: Icon }) => (
-          <div key={label} className="bg-white border border-gray-100 rounded-xl px-4 py-3">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-gray-400">{label}</p>
-              <Icon className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-            </div>
-            <p className="text-lg text-gray-900">{value}</p>
-          </div>
-        ))}
       </div>
 
       {/* Filters */}
@@ -846,7 +822,7 @@ export function AdminMedia() {
 
         {viewMode === "grid" ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {sorted.map((item) => (
+            {paginated.map((item) => (
               <div
                 key={item.id}
                 onClick={() => setSelectedImage(item)}
@@ -867,9 +843,7 @@ export function AdminMedia() {
                   <div className="flex items-center justify-between text-xs text-gray-400">
                     <span>{formatFileSize(item.size)}</span>
                     <span className="truncate ml-2">
-                      {item.width && item.height
-                        ? `${item.width}×${item.height}`
-                        : ""}
+                      {item.width && item.height ? `${item.width}×${item.height}` : ""}
                     </span>
                   </div>
                   {item.tags.length > 0 && (
@@ -883,9 +857,7 @@ export function AdminMedia() {
                         </span>
                       ))}
                       {item.tags.length > 2 && (
-                        <span className="text-[10px] text-gray-400">
-                          +{item.tags.length - 2}
-                        </span>
+                        <span className="text-[10px] text-gray-400">+{item.tags.length - 2}</span>
                       )}
                     </div>
                   )}
@@ -895,7 +867,7 @@ export function AdminMedia() {
           </div>
         ) : (
           <div className="space-y-2">
-            {sorted.map((item) => (
+            {paginated.map((item) => (
               <div
                 key={item.id}
                 onClick={() => setSelectedImage(item)}
@@ -963,12 +935,60 @@ export function AdminMedia() {
         )}
       </div>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center justify-between flex-shrink-0">
+          <p className="text-xs text-gray-400">
+            {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, sorted.length)} de {sorted.length} imágenes
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1)
+              .filter((p) => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
+              .reduce<(number | "…")[]>((acc, p, idx, arr) => {
+                if (idx > 0 && (p as number) - (arr[idx - 1] as number) > 1) acc.push("…");
+                acc.push(p);
+                return acc;
+              }, [])
+              .map((p, i) =>
+                p === "…" ? (
+                  <span key={`ellipsis-${i}`} className="w-8 h-8 flex items-center justify-center text-xs text-gray-300">…</span>
+                ) : (
+                  <button
+                    key={p}
+                    onClick={() => setCurrentPage(p as number)}
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors ${
+                      currentPage === p
+                        ? "bg-gray-900 text-white"
+                        : "border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                )
+              )}
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-400 hover:text-gray-700 hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Upload Modal */}
       {showUploadModal && (
-        <UploadModal
-          onUpload={handleUpload}
-          onClose={() => setShowUploadModal(false)}
-        />
+        <UploadModal onUpload={handleUpload} onClose={() => setShowUploadModal(false)} />
       )}
 
       {/* Image Detail Modal */}

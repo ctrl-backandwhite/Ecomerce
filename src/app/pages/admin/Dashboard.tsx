@@ -156,13 +156,6 @@ export function Dashboard() {
           delta={5.1}
           deltaLabel="vs mes anterior"
         />
-        <StatCard
-          icon={Package}
-          label="Productos activos"
-          value={totalProducts.toString()}
-          delta={-2.3}
-          deltaLabel="vs mes anterior"
-        />
       </div>
 
       {/* ── Charts row ── */}

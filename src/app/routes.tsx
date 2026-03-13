@@ -13,6 +13,9 @@ import { AdminCustomers } from "./pages/admin/AdminCustomers";
 import { AdminSettings } from "./pages/admin/AdminSettings";
 import { AdminCategories } from "./pages/admin/AdminCategories";
 import { AdminMedia } from "./pages/admin/AdminMedia";
+import { AdminSlides } from "./pages/admin/AdminSlides";
+import { AdminBrands } from "./pages/admin/AdminBrands";
+import { AdminAttributes } from "./pages/admin/AdminAttributes";
 import { UserProfile } from "./pages/UserProfile";
 
 export const router = createBrowserRouter([
@@ -35,7 +38,10 @@ export const router = createBrowserRouter([
       { index: true,              Component: Dashboard },
       { path: "productos",        Component: AdminProducts },
       { path: "categorias",       Component: AdminCategories },
+      { path: "marcas",           Component: AdminBrands },
+      { path: "atributos",        Component: AdminAttributes },
       { path: "medios",           Component: AdminMedia },
+      { path: "slides",           Component: AdminSlides },
       { path: "ordenes",          Component: AdminOrders },
       { path: "clientes",         Component: AdminCustomers },
       { path: "configuracion",    Component: AdminSettings },

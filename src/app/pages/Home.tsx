@@ -5,8 +5,9 @@ import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
 import { HomeSidebar } from "../components/HomeSidebar";
-import { products, priceRanges } from "../data/products";
-import { Loader2, Search, SlidersHorizontal, X } from "lucide-react";
+import { products, priceRanges, categoryTree } from "../data/products";
+import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../data/filters";
+import { Loader2, Search, SlidersHorizontal, X, ChevronRight } from "lucide-react";
 
 const PAGE_SIZE = 8;
 
@@ -17,10 +18,12 @@ function scrollToProducts() {
 
 export function Home() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const selectedCategory = searchParams.get("category") || "Todos";
-  const searchQuery      = searchParams.get("search") || "";
-  const soloOfertas      = searchParams.get("ofertas") === "true";
+  const selectedCategory = searchParams.get("category")    || "Todos";
+  const searchQuery      = searchParams.get("search")      || "";
+  const soloOfertas      = searchParams.get("ofertas")     === "true";
   const selectedSubcat   = searchParams.get("subcategory") || "";
+  const selectedBrand    = searchParams.get("brand")       || "";
+  const selectedAttr     = searchParams.get("attr")        || "";
 
   const [selectedPriceIdx, setSelectedPriceIdx] = useState(0);
   const [selectedRating,   setSelectedRating]   = useState(0);
@@ -29,7 +32,6 @@ export function Home() {
   const [isLoading,        setIsLoading]        = useState(false);
   const [mobileOpen,       setMobileOpen]       = useState(false);
 
-  /* Track when promo CTA was last clicked to trigger scroll */
   const [promoClickKey, setPromoClickKey] = useState(0);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -38,16 +40,22 @@ export function Home() {
   const filtered = useMemo(() => {
     let list = [...products];
 
-    /* Offers filter — can combine with category */
     if (soloOfertas)
       list = list.filter((p) => p.originalPrice !== undefined);
 
-    /* Category filter — works independently AND together with soloOfertas */
     if (selectedCategory !== "Todos")
       list = list.filter((p) => p.category === selectedCategory);
 
     if (selectedSubcat)
       list = list.filter((p) => p.subcategory === selectedSubcat);
+
+    if (selectedBrand)
+      list = list.filter((p) => p.brand === selectedBrand);
+
+    if (selectedAttr) {
+      const matchFn = ATTR_MATCH[selectedCategory]?.[selectedAttr];
+      if (matchFn) list = list.filter(matchFn);
+    }
 
     const pr = priceRanges[selectedPriceIdx];
     if (selectedPriceIdx !== 0)
@@ -72,15 +80,17 @@ export function Home() {
       default:           list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
     }
     return list;
-  }, [selectedCategory, selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, selectedSubcat]);
+  }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
+      selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
 
-  /* ── Reset visibleCount when filters change ────────────────── */
+  /* ── Reset visibleCount when filters change ─────────────────── */
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
-  }, [selectedCategory, selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, selectedSubcat]);
+  }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
+      selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas]);
 
   /* ── Scroll to products when promo CTA is clicked ───────────── */
   useEffect(() => {
@@ -110,25 +120,44 @@ export function Home() {
 
   /* ── Promo CTA handler ──────────────────────────────────────── */
   const handlePromoCta = useCallback((params: PromoFilter) => {
-    /* Build the new search params from the promo filter */
     const next: Record<string, string> = {};
     if (params.category) next.category = params.category;
     if (params.ofertas)  next.ofertas  = params.ofertas;
     setSearchParams(next);
-    /* Reset local filters */
     setSelectedPriceIdx(0);
     setSelectedRating(0);
     setSortBy("featured");
-    /* Trigger scroll effect */
     setPromoClickKey((k) => k + 1);
   }, [setSearchParams]);
 
   /* ── Other handlers ─────────────────────────────────────────── */
   const handleCategory = (cat: string) => {
+    const next = new URLSearchParams();
+    if (cat !== "Todos") next.set("category", cat);
+    // clear subcategory, brand, attr when category changes
+    setSearchParams(next);
+  };
+
+  const handleSubcategory = (cat: string, sub: string) => {
     const next = new URLSearchParams(searchParams.toString());
-    if (cat === "Todos") next.delete("category");
-    else next.set("category", cat);
-    next.delete("subcategory");
+    next.set("category", cat);
+    if (sub === selectedSubcat) next.delete("subcategory");
+    else next.set("subcategory", sub);
+    next.delete("attr"); // reset attr filter on subcategory change
+    setSearchParams(next);
+  };
+
+  const handleBrand = (brand: string) => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (!brand) next.delete("brand");
+    else next.set("brand", brand);
+    setSearchParams(next);
+  };
+
+  const handleAttr = (attr: string) => {
+    const next = new URLSearchParams(searchParams.toString());
+    if (!attr) next.delete("attr");
+    else next.set("attr", attr);
     setSearchParams(next);
   };
 
@@ -138,6 +167,18 @@ export function Home() {
     setSortBy("featured");
     setSearchParams({});
   };
+
+  /* ── Subcategory quick-chips (for the content area) ─────────── */
+  const currentCatNode = categoryTree.find((c) => c.name === selectedCategory);
+  const subcategoryChips = useMemo(() => {
+    if (!currentCatNode) return [];
+    return currentCatNode.subcategories.filter((sub) =>
+      products.some((p) => p.category === selectedCategory && p.subcategory === sub)
+    );
+  }, [currentCatNode, selectedCategory]);
+
+  /* ── Category-specific quick-attr chips ─────────────────────── */
+  const categoryAttrGroups = CATEGORY_ATTR_FILTERS[selectedCategory] ?? [];
 
   /* ── Active filter pills ───────────────────────────────────── */
   const pills = [
@@ -151,11 +192,19 @@ export function Home() {
     },
     !soloOfertas && selectedCategory !== "Todos" && {
       label: selectedCategory,
-      clear: () => { const p = new URLSearchParams(searchParams.toString()); p.delete("category"); setSearchParams(p); },
+      clear: () => handleCategory("Todos"),
     },
     selectedSubcat && {
       label: selectedSubcat,
       clear: () => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); setSearchParams(p); },
+    },
+    selectedBrand && {
+      label: selectedBrand,
+      clear: () => handleBrand(""),
+    },
+    selectedAttr && {
+      label: selectedAttr,
+      clear: () => handleAttr(""),
     },
     selectedPriceIdx !== 0 && {
       label: priceRanges[selectedPriceIdx].label,
@@ -179,6 +228,9 @@ export function Home() {
     if (soloOfertas && selectedCategory !== "Todos") return `Ofertas · ${selectedCategory}`;
     if (soloOfertas) return "Ofertas y Descuentos";
     if (selectedSubcat) return selectedSubcat;
+    if (selectedBrand && selectedCategory !== "Todos") return `${selectedBrand} · ${selectedCategory}`;
+    if (selectedBrand) return selectedBrand;
+    if (selectedAttr) return selectedAttr;
     if (selectedCategory !== "Todos") return selectedCategory;
     return "Todos los Productos";
   })();
@@ -204,10 +256,16 @@ export function Home() {
             <div className="pl-4 sm:pl-6 lg:pl-8">
               <HomeSidebar
                 selectedCategory={selectedCategory}
+                selectedSubcat={selectedSubcat}
+                selectedBrand={selectedBrand}
+                selectedAttr={selectedAttr}
                 selectedPriceIdx={selectedPriceIdx}
                 selectedRating={selectedRating}
                 total={filtered.length}
                 onCategory={handleCategory}
+                onSubcategory={handleSubcategory}
+                onBrand={handleBrand}
+                onAttr={handleAttr}
                 onPrice={setSelectedPriceIdx}
                 onRating={setSelectedRating}
                 onReset={handleReset}
@@ -218,7 +276,7 @@ export function Home() {
             <div className="flex-1 min-w-0 pr-4 sm:pr-6 lg:pr-8">
 
               {/* Top bar */}
-              <div className="flex items-center justify-between gap-4 mb-6 pb-5 border-b border-gray-100">
+              <div className="flex items-center justify-between gap-4 mb-5 pb-5 border-b border-gray-100">
                 <div className="flex items-center gap-3 flex-wrap">
 
                   {/* Mobile filter btn */}
@@ -271,6 +329,85 @@ export function Home() {
                   <option value="name">Nombre A–Z</option>
                 </select>
               </div>
+
+              {/* ── Subcategory quick-chips ── */}
+              {selectedCategory !== "Todos" && subcategoryChips.length > 0 && (
+                <div className="mb-5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); p.delete("attr"); setSearchParams(p); }}
+                      className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${
+                        !selectedSubcat
+                          ? "border-gray-900 bg-gray-900 text-white"
+                          : "border-gray-200 text-gray-600 hover:border-gray-400"
+                      }`}
+                    >
+                      Todos
+                    </button>
+                    {subcategoryChips.map((sub) => {
+                      const count = products.filter(
+                        (p) => p.category === selectedCategory && p.subcategory === sub
+                      ).length;
+                      const isActive = selectedSubcat === sub;
+                      return (
+                        <button
+                          key={sub}
+                          onClick={() => handleSubcategory(selectedCategory, sub)}
+                          className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${
+                            isActive
+                              ? "border-gray-900 bg-gray-900 text-white"
+                              : "border-gray-200 text-gray-600 hover:border-gray-400"
+                          }`}
+                        >
+                          {sub}
+                          <span className={`text-[10px] ${isActive ? "text-white/60" : "text-gray-400"}`}>
+                            {count}
+                          </span>
+                        </button>
+                      );
+                    })}
+                    {/* Attr quick-chips per group */}
+                    {categoryAttrGroups.length > 0 && (
+                      <span className="w-px h-4 bg-gray-200 mx-1" />
+                    )}
+                    {categoryAttrGroups.map((group) =>
+                      group.options
+                        .filter((opt) => {
+                          const matchFn = ATTR_MATCH[selectedCategory]?.[opt];
+                          return matchFn
+                            ? products.some(
+                                (p) => p.category === selectedCategory && matchFn(p)
+                              )
+                            : false;
+                        })
+                        .map((opt) => {
+                          const isActive = selectedAttr === opt;
+                          return (
+                            <button
+                              key={opt}
+                              onClick={() => handleAttr(isActive ? "" : opt)}
+                              className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${
+                                isActive
+                                  ? "border-gray-700 bg-gray-700 text-white"
+                                  : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                              }`}
+                            >
+                              {opt}
+                              {isActive && <X className="w-2.5 h-2.5 ml-0.5" />}
+                            </button>
+                          );
+                        })
+                    )}
+                    {/* Divider */}
+                    {selectedCategory !== "Todos" && (
+                      <span className="ml-auto text-xs text-gray-400 flex items-center gap-1">
+                        <ChevronRight className="w-3 h-3" />
+                        {filtered.length} resultados
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Grid */}
               {filtered.length > 0 ? (
@@ -355,10 +492,16 @@ export function Home() {
             </div>
             <HomeSidebar
               selectedCategory={selectedCategory}
+              selectedSubcat={selectedSubcat}
+              selectedBrand={selectedBrand}
+              selectedAttr={selectedAttr}
               selectedPriceIdx={selectedPriceIdx}
               selectedRating={selectedRating}
               total={filtered.length}
               onCategory={(cat) => { handleCategory(cat); setMobileOpen(false); }}
+              onSubcategory={(cat, sub) => { handleSubcategory(cat, sub); setMobileOpen(false); }}
+              onBrand={handleBrand}
+              onAttr={handleAttr}
               onPrice={setSelectedPriceIdx}
               onRating={setSelectedRating}
               onReset={() => { handleReset(); setMobileOpen(false); }}

@@ -1,0 +1,111 @@
+{
+  "product": {
+    "id": "prod_001",
+    "name": "iPhone 15 Pro Max",
+    "slug": "iphone-15-pro-max",
+    "sku": "APL-IP15PM-256-BLK",
+    "brand": "Apple",
+    "description": "El iPhone 15 Pro Max con chip A17 Pro, cámara avanzada y diseño en titanio.",
+    "short_description": "iPhone 15 Pro Max 256GB en titanio negro.",
+    
+    "categories": [
+      {
+        "id": "2",
+        "name": "Smartphones"
+      }
+    ],
+
+    "keywords": [
+      "iphone 15",
+      "iphone 15 pro max",
+      "apple smartphone",
+      "celular apple",
+      "iphone titanio"
+    ],
+
+    "price": {
+      "currency": "USD",
+      "regular_price": 1299,
+      "sale_price": 1199,
+      "cost_price": 900,
+      "tax_class": "standard"
+    },
+
+    "inventory": {
+      "sku": "APL-IP15PM-256-BLK",
+      "barcode": "1234567890123",
+      "stock_quantity": 50,
+      "stock_status": "in_stock",
+      "manage_stock": true,
+      "allow_backorder": false
+    },
+
+    "images": [
+      {
+        "url": "https://example.com/images/iphone15-front.jpg",
+        "alt": "iPhone 15 Pro Max vista frontal",
+        "position": 1
+      },
+      {
+        "url": "https://example.com/images/iphone15-back.jpg",
+        "alt": "iPhone 15 Pro Max vista trasera",
+        "position": 2
+      }
+    ],
+
+    "attributes": [
+      {
+        "name": "Color",
+        "value": "Titanio Negro"
+      },
+      {
+        "name": "Capacidad",
+        "value": "256GB"
+      },
+      {
+        "name": "Pantalla",
+        "value": "6.7 pulgadas"
+      }
+    ],
+
+    "variants": [
+      {
+        "id": "var_001",
+        "sku": "APL-IP15PM-256-BLK",
+        "price": 1299,
+        "stock_quantity": 20,
+        "attributes": {
+          "Color": "Titanio Negro",
+          "Capacidad": "256GB"
+        }
+      },
+      {
+        "id": "var_002",
+        "sku": "APL-IP15PM-512-BLK",
+        "price": 1499,
+        "stock_quantity": 30,
+        "attributes": {
+          "Color": "Titanio Negro",
+          "Capacidad": "512GB"
+        }
+      }
+    ],
+
+    "shipping": {
+      "weight": 0.22,
+      "length": 16,
+      "width": 7.5,
+      "height": 0.8,
+      "shipping_class": "standard"
+    },
+
+    "seo": {
+      "meta_title": "iPhone 15 Pro Max | Comprar Apple iPhone",
+      "meta_description": "Compra el iPhone 15 Pro Max con chip A17 Pro y cámara avanzada al mejor precio."
+    },
+
+    "status": "active",
+    "visibility": "public",
+    "created_at": "2026-03-12T10:00:00Z"
+  }
+}
