@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useUser, Address } from "../../context/UserContext";
 import {
-  MapPin, Plus, Edit3, Trash2, Check, Home, Briefcase,
+  MapPin, Plus, Pencil, Trash2, Check, Home, Briefcase,
   Truck, Store, Package2, ChevronRight, Clock, Phone,
   Search, X, Info, Building2,
 } from "lucide-react";
@@ -528,7 +528,7 @@ function AddressCard({
               className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
               title="Editar"
             >
-              <Edit3 className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
             {!addr.isDefault && (
               <button

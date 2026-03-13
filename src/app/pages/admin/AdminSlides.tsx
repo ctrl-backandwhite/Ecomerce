@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Image as ImageIcon, Trash2, Edit2, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Image as ImageIcon, Trash2, Pencil, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -409,7 +409,7 @@ function DraggableSlideRow({
             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             title="Editar"
           >
-            <Edit2 className="w-4 h-4" strokeWidth={1.5} />
+            <Pencil className="w-4 h-4" strokeWidth={1.5} />
           </button>
           <button
             onClick={onDelete}

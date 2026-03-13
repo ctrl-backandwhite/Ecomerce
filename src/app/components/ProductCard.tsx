@@ -1,9 +1,11 @@
-import { Star, ShoppingCart, Heart } from "lucide-react";
+import { Star, ShoppingCart, Heart, BarChart2, Eye, Check } from "lucide-react";
 import { Link } from "react-router";
 import { Product } from "../data/products";
 import { useCart } from "../context/CartContext";
+import { useCompare } from "../context/CompareContext";
 import { toast } from "sonner";
 import { useRef, useState } from "react";
+import { QuickViewModal } from "./QuickViewModal";
 
 interface ProductCardProps {
   product: Product;
@@ -11,9 +13,11 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
+  const { add: addCompare, has: inCompare } = useCompare();
   const imgRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState("perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)");
   const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
+  const [quickView, setQuickView] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = imgRef.current;
@@ -42,109 +46,152 @@ export function ProductCard({ product }: ProductCardProps) {
     toast.success("Producto agregado al carrito");
   };
 
+  const handleCompare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    addCompare(product);
+  };
+
+  const handleQuickView = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setQuickView(true);
+  };
+
   const discount = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
   return (
-    <Link
-      to={`/producto/${product.id}`}
-      state={{ from: window.location.pathname + window.location.search }}
-      className="group"
-      style={{ display: "block" }}
-    >
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
+    <>
+      <Link
+        to={`/producto/${product.id}`}
+        state={{ from: window.location.pathname + window.location.search }}
+        className="group"
+        style={{ display: "block" }}
+      >
+        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
 
-        {/* Image with 3D effect */}
-        <div
-          ref={imgRef}
-          onMouseMove={handleMouseMove}
-          onMouseLeave={handleMouseLeave}
-          style={{ transformStyle: "preserve-3d" }}
-          className="relative h-48 bg-white overflow-hidden cursor-pointer"
-        >
+          {/* Image with 3D effect */}
           <div
-            style={{
-              transform,
-              transition: glare.opacity === 0 ? "transform 0.55s ease" : "transform 0.08s ease",
-              willChange: "transform",
-              width: "100%",
-              height: "100%",
-              position: "relative",
-            }}
+            ref={imgRef}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseLeave}
+            style={{ transformStyle: "preserve-3d" }}
+            className="relative h-48 bg-white overflow-hidden cursor-pointer"
           >
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-            {/* Glare */}
             <div
               style={{
-                position: "absolute",
-                inset: 0,
-                pointerEvents: "none",
-                background: `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,${glare.opacity}) 0%, transparent 65%)`,
-                transition: "opacity 0.2s ease",
+                transform,
+                transition: glare.opacity === 0 ? "transform 0.55s ease" : "transform 0.08s ease",
+                willChange: "transform",
+                width: "100%",
+                height: "100%",
+                position: "relative",
               }}
-            />
-          </div>
-
-          {discount > 0 && (
-            <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">
-              -{discount}%
-            </div>
-          )}
-          <button
-            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors z-10"
-            onClick={(e) => e.preventDefault()}
-          >
-            <Heart className="w-4 h-4" />
-          </button>
-          {product.stock < 10 && (
-            <div className="absolute bottom-3 left-3 bg-amber-500 text-white text-xs px-2 py-1 rounded z-10">
-              ¡Últimas unidades!
-            </div>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="p-4 flex-1 flex flex-col">
-          <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
-            {product.category}
-          </div>
-          <h3 className="text-base mb-2 line-clamp-2 group-hover:text-gray-600 transition-colors">
-            {product.name}
-          </h3>
-
-          {/* Rating */}
-          <div className="flex items-center gap-1 text-sm mb-3">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <span className="text-gray-900">{product.rating}</span>
-            <span className="text-gray-500">({product.reviews})</span>
-          </div>
-
-          {/* Price */}
-          <div className="mt-auto">
-            <div className="flex items-baseline gap-2 mb-3">
-              <span className="text-2xl text-gray-900">${product.price}</span>
-              {product.originalPrice && (
-                <span className="text-sm text-gray-500 line-through">
-                  ${product.originalPrice}
-                </span>
-              )}
-            </div>
-
-            <button
-              onClick={handleAddToCart}
-              className="w-full px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
             >
-              <ShoppingCart className="w-4 h-4" />
-              Agregar al carrito
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+              {/* Glare */}
+              <div
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  pointerEvents: "none",
+                  background: `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,${glare.opacity}) 0%, transparent 65%)`,
+                  transition: "opacity 0.2s ease",
+                }}
+              />
+            </div>
+
+            {discount > 0 && (
+              <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">
+                -{discount}%
+              </div>
+            )}
+
+            {/* Action buttons overlay */}
+            <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
+              <button
+                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
+                onClick={(e) => e.preventDefault()}
+                title="Favorito"
+              >
+                <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
+              </button>
+              <button
+                className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-colors ${
+                  inCompare(product.id)
+                    ? "bg-gray-900 text-white"
+                    : "bg-white/90 hover:bg-white text-gray-600"
+                }`}
+                onClick={handleCompare}
+                title="Comparar"
+              >
+                {inCompare(product.id)
+                  ? <Check className="w-3.5 h-3.5" />
+                  : <BarChart2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                }
+              </button>
+            </div>
+
+            {/* Quick view — aparece en hover */}
+            <button
+              onClick={handleQuickView}
+              className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1.5 h-7 px-3 bg-white/95 text-gray-700 text-xs rounded-full shadow-sm border border-gray-100 z-10 whitespace-nowrap"
+            >
+              <Eye className="w-3 h-3" strokeWidth={1.5} /> Vista rápida
             </button>
+
+            {product.stock < 10 && (
+              <div className="absolute bottom-3 left-3 bg-amber-500 text-white text-xs px-2 py-1 rounded z-10">
+                ¡Últimas unidades!
+              </div>
+            )}
+          </div>
+
+          {/* Content */}
+          <div className="p-4 flex-1 flex flex-col">
+            <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+              {product.category}
+            </div>
+            <h3 className="text-base mb-2 line-clamp-2 group-hover:text-gray-600 transition-colors">
+              {product.name}
+            </h3>
+
+            {/* Rating */}
+            <div className="flex items-center gap-1 text-sm mb-3">
+              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <span className="text-gray-900">{product.rating}</span>
+              <span className="text-gray-500">({product.reviews})</span>
+            </div>
+
+            {/* Price */}
+            <div className="mt-auto">
+              <div className="flex items-baseline gap-2 mb-3">
+                <span className="text-2xl text-gray-900">${product.price}</span>
+                {product.originalPrice && (
+                  <span className="text-sm text-gray-500 line-through">
+                    ${product.originalPrice}
+                  </span>
+                )}
+              </div>
+
+              <button
+                onClick={handleAddToCart}
+                className="w-full px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+              >
+                <ShoppingCart className="w-4 h-4" />
+                Agregar al carrito
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      {/* Quick View Modal */}
+      <QuickViewModal product={quickView ? product : null} onClose={() => setQuickView(false)} />
+    </>
   );
 }

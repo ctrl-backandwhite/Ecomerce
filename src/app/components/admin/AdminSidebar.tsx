@@ -1,44 +1,67 @@
 import { Link, useLocation } from "react-router";
 import {
   LayoutDashboard, Package, ShoppingCart, Users,
-  Settings, LogOut, Store, X, Tag, ChevronRight,
+  Settings, LogOut, Store, X, Tag,
   Image, Presentation, Menu, Bookmark, Sliders,
+  Ticket, Star, RotateCcw, BarChart2, FileText,
+  Truck, Percent, Search, Mail, Award, Gift, Send,
+  Megaphone, Shield, GitBranch,
 } from "lucide-react";
 
 const menuGroups = [
   {
-    label: "Principal",
+    label: "Panel",
     items: [
-      { title: "Dashboard",   icon: LayoutDashboard, path: "/admin" },
+      { title: "Dashboard",       icon: LayoutDashboard, path: "/admin" },
+      { title: "Reportes",        icon: BarChart2,       path: "/admin/reportes" },
     ],
   },
   {
-    label: "Comercio",
+    label: "Ventas",
     items: [
-      { title: "Órdenes",     icon: ShoppingCart, path: "/admin/ordenes" },
-      { title: "Clientes",    icon: Users,        path: "/admin/clientes" },
+      { title: "Órdenes",         icon: ShoppingCart,    path: "/admin/ordenes" },
+      { title: "Facturas",        icon: FileText,        path: "/admin/facturas" },
+      { title: "Devoluciones",    icon: RotateCcw,       path: "/admin/devoluciones" },
+    ],
+  },
+  {
+    label: "Clientes",
+    items: [
+      { title: "Clientes",        icon: Users,           path: "/admin/clientes" },
+      { title: "Reseñas",         icon: Star,            path: "/admin/resenas" },
+      { title: "Cupones",         icon: Ticket,          path: "/admin/cupones" },
+      { title: "Fidelidad",       icon: Award,           path: "/admin/puntos" },
+      { title: "Tarjetas regalo", icon: Gift,            path: "/admin/regalo" },
     ],
   },
   {
     label: "Catálogo",
     items: [
-      { title: "Productos",   icon: Package,      path: "/admin/productos" },
-      { title: "Categorías",  icon: Tag,          path: "/admin/categorias" },
-      { title: "Marcas",      icon: Bookmark,     path: "/admin/marcas" },
-      { title: "Atributos",   icon: Sliders,      path: "/admin/atributos" },
-      { title: "Medios",      icon: Image,        path: "/admin/medios" },
+      { title: "Productos",       icon: Package,         path: "/admin/productos" },
+      { title: "Categorías",      icon: Tag,             path: "/admin/categorias" },
+      { title: "Marcas",          icon: Bookmark,        path: "/admin/marcas" },
+      { title: "Atributos",       icon: Sliders,         path: "/admin/atributos" },
+      { title: "Medios",          icon: Image,           path: "/admin/medios" },
+      { title: "Garantías",       icon: Shield,          path: "/admin/garantias" },
     ],
   },
   {
-    label: "Contenido",
+    label: "Marketing",
     items: [
-      { title: "Slides Home", icon: Presentation, path: "/admin/slides" },
+      { title: "Campañas",        icon: Megaphone,       path: "/admin/campanas" },
+      { title: "Newsletter",      icon: Send,            path: "/admin/newsletter" },
+      { title: "SEO",             icon: Search,          path: "/admin/seo" },
+      { title: "Slides Home",     icon: Presentation,    path: "/admin/slides" },
     ],
   },
   {
     label: "Sistema",
     items: [
-      { title: "Configuración", icon: Settings,   path: "/admin/configuracion" },
+      { title: "Flujos",          icon: GitBranch,       path: "/admin/flujos" },
+      { title: "Envíos",          icon: Truck,           path: "/admin/envios" },
+      { title: "Impuestos",       icon: Percent,         path: "/admin/impuestos" },
+      { title: "Emails",          icon: Mail,            path: "/admin/emails" },
+      { title: "Configuración",   icon: Settings,        path: "/admin/configuracion" },
     ],
   },
 ];
@@ -60,10 +83,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
     <>
       {/* Mobile overlay */}
       {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40 lg:hidden"
-          onClick={onClose}
-        />
+        <div className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onClose} />
       )}
 
       {/* Sidebar */}
@@ -85,11 +105,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
             </button>
           ) : (
             <>
-              <Link 
-                to="/admin" 
-                className="flex items-center gap-2.5" 
-                onClick={onClose}
-              >
+              <Link to="/admin" className="flex items-center gap-2.5" onClick={onClose}>
                 <div className="w-7 h-7 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Store className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
                 </div>
@@ -98,8 +114,6 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
                   <p className="text-[9px] text-gray-400 tracking-wider uppercase mt-0.5 whitespace-nowrap">Admin</p>
                 </div>
               </Link>
-              
-              {/* Toggle button - Desktop */}
               <button
                 className="hidden lg:flex w-7 h-7 items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-full transition-colors -mr-1"
                 onClick={onToggleCollapse}
@@ -127,9 +141,8 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
                   {group.label}
                 </p>
               )}
-              {isCollapsed && (
-                <div className="h-px bg-gray-100 mx-2 mb-2" />
-              )}
+              {isCollapsed && <div className="h-px bg-gray-100 mx-2 mb-2" />}
+
               {group.items.map(({ title, icon: Icon, path }) => {
                 const active = isActive(path);
                 return (
@@ -138,13 +151,11 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
                     to={path}
                     onClick={onClose}
                     title={isCollapsed ? title : undefined}
-                    className={`flex items-center mx-2 rounded-xl text-sm transition-all group relative ${
-                      isCollapsed 
-                        ? "justify-center px-0 py-2.5" 
-                        : "justify-between px-3 py-2.5"
+                    className={`flex items-center mx-2 rounded-xl text-[13px] transition-all group relative ${
+                      isCollapsed ? "justify-center px-0 py-2.5" : "justify-between px-3 py-2.5"
                     } ${
                       active
-                        ? "bg-gray-900 text-white"
+                        ? "text-gray-900 bg-gray-50"
                         : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
@@ -157,7 +168,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
                       </span>
                     </div>
                     {active && !isCollapsed && (
-                      <ChevronRight className="w-3.5 h-3.5 opacity-60" strokeWidth={1.5} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-900 flex-shrink-0" />
                     )}
                   </Link>
                 );
@@ -184,7 +195,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
               Ver Tienda
             </span>
           </Link>
-          <button 
+          <button
             title={isCollapsed ? "Cerrar Sesión" : undefined}
             className={`w-full flex items-center rounded-xl text-sm text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors ${
               isCollapsed ? "lg:justify-center lg:px-0 lg:py-2.5" : "gap-2.5 px-3 py-2.5"

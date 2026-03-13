@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUser } from "../../context/UserContext";
-import { Save, Edit3 } from "lucide-react";
+import { Save, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
 const docTypes = [
@@ -121,7 +121,7 @@ export function ProfileDatos() {
               onClick={() => setEditing(true)}
               className="inline-flex items-center gap-2 text-sm text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all"
             >
-              <Edit3 className="w-4 h-4" strokeWidth={1.5} />
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
               Editar
             </button>
           ) : (

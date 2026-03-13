@@ -12,6 +12,8 @@ import {
   Check,
   Layers,
   Cpu,
+  ArrowUpDown,
+  DollarSign,
 } from "lucide-react";
 import { categoryTree, products, priceRanges } from "../data/products";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../data/filters";
@@ -23,6 +25,7 @@ interface HomeSidebarProps {
   selectedAttr: string;
   selectedPriceIdx: number;
   selectedRating: number;
+  sortBy: string;
   total: number;
   onCategory: (cat: string) => void;
   onSubcategory: (cat: string, sub: string) => void;
@@ -30,6 +33,7 @@ interface HomeSidebarProps {
   onAttr: (attr: string) => void;
   onPrice: (idx: number) => void;
   onRating: (r: number) => void;
+  onSort: (s: string) => void;
   onReset: () => void;
 }
 
@@ -80,6 +84,7 @@ export function HomeSidebar({
   selectedAttr,
   selectedPriceIdx,
   selectedRating,
+  sortBy,
   total,
   onCategory,
   onSubcategory,
@@ -87,6 +92,7 @@ export function HomeSidebar({
   onAttr,
   onPrice,
   onRating,
+  onSort,
   onReset,
 }: HomeSidebarProps) {
   const [openCats, setOpenCats] = useState<string[]>(
@@ -109,16 +115,19 @@ export function HomeSidebar({
 
   /* ── Brands in scope ───────────────────────────────────────── */
   const brandsInScope = useMemo(() => {
-    const base =
-      selectedCategory === "Todos"
-        ? products
-        : products.filter((p) => p.category === selectedCategory);
+    // Only show brands when a specific category is active
+    if (selectedCategory === "Todos") return [];
+    const base = products.filter((p) => {
+      if (p.category !== selectedCategory) return false;
+      if (selectedSubcat && p.subcategory !== selectedSubcat) return false;
+      return true;
+    });
     const map: Record<string, number> = {};
     base.forEach((p) => {
       if (p.brand) map[p.brand] = (map[p.brand] || 0) + 1;
     });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedSubcat]);
 
   /* ── Category-specific attribute filters ─────────────────── */
   const categoryFilters = CATEGORY_ATTR_FILTERS[selectedCategory] ?? [];
@@ -306,7 +315,7 @@ export function HomeSidebar({
           </div>
 
           {/* ── Marcas ── */}
-          {brandsInScope.length > 1 && (
+          {brandsInScope.length > 0 && (
             <div className="border-b border-gray-100">
               <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
                 <Layers className="w-3 h-3" /> Marcas
@@ -380,27 +389,60 @@ export function HomeSidebar({
           })}
 
           {/* ── Precio ── */}
-          <div className="border-b border-gray-100">
-            <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400">
-              Precio
-            </p>
-            {priceRanges.map((range, idx) => (
-              <button
-                key={idx}
-                onClick={() => onPrice(idx)}
-                className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
-                  selectedPriceIdx === idx
-                    ? "text-gray-900"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-              >
-                {range.label}
-                {selectedPriceIdx === idx && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
-                )}
-              </button>
-            ))}
-          </div>
+          {selectedCategory !== "Todos" && (
+            <div className="border-b border-gray-100">
+              <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
+                <DollarSign className="w-3 h-3" /> Rango de precio
+              </p>
+              {priceRanges.map((range, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => onPrice(idx)}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
+                    selectedPriceIdx === idx
+                      ? "text-gray-900"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  {range.label}
+                  {selectedPriceIdx === idx && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Ordenar ── */}
+          {selectedCategory !== "Todos" && (
+            <div className="border-b border-gray-100">
+              <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
+                <ArrowUpDown className="w-3 h-3" /> Ordenar por
+              </p>
+              {[
+                { value: "featured",   label: "Destacados" },
+                { value: "price-low",  label: "Menor precio" },
+                { value: "price-high", label: "Mayor precio" },
+                { value: "rating",     label: "Mejor valorados" },
+                { value: "name",       label: "Nombre A–Z" },
+              ].map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => onSort(opt.value)}
+                  className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
+                    sortBy === opt.value
+                      ? "text-gray-900"
+                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                  }`}
+                >
+                  {opt.label}
+                  {sortBy === opt.value && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* ── Valoración ── */}
           <div className="pb-2">

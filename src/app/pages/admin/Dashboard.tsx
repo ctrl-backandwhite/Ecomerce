@@ -6,7 +6,7 @@ import {
 import {
   DollarSign, ShoppingCart, Users, Package,
   TrendingUp, TrendingDown, ArrowRight, Clock,
-  CheckCircle2, Truck, AlertCircle,
+  CheckCircle2, Truck, AlertTriangle,
 } from "lucide-react";
 import { Link } from "react-router";
 import { orders } from "../../data/orders";
@@ -113,7 +113,7 @@ export function Dashboard() {
         <div className="flex flex-wrap gap-3">
           {lowStock > 0 && (
             <div className="flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-100 rounded-xl">
-              <AlertCircle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
               <span className="text-xs text-amber-700">
                 <strong>{lowStock} productos</strong> con stock bajo (&lt;10 unidades)
               </span>
@@ -167,7 +167,7 @@ export function Dashboard() {
           <ResponsiveContainer width="100%" height={200}>
             <AreaChart data={dashboardStats.revenueByMonth} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
               <defs>
-                <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="dashRevGrad" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#111827" stopOpacity={0.12} />
                   <stop offset="95%" stopColor="#111827" stopOpacity={0} />
                 </linearGradient>
@@ -176,7 +176,7 @@ export function Dashboard() {
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${(v/1000).toFixed(0)}K`} />
               <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="revenue" stroke="#111827" strokeWidth={1.5} fill="url(#revGrad)" dot={false} />
+              <Area type="monotone" dataKey="revenue" stroke="#111827" strokeWidth={1.5} fill="url(#dashRevGrad)" dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -188,8 +188,8 @@ export function Dashboard() {
             <ResponsiveContainer width="100%" height={150}>
               <PieChart>
                 <Pie data={dashboardStats.categoryRevenue} cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value">
-                  {dashboardStats.categoryRevenue.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} strokeWidth={0} />
+                  {dashboardStats.categoryRevenue.map((entry) => (
+                    <Cell key={`cell-${entry.name}`} fill={entry.color} strokeWidth={0} />
                   ))}
                 </Pie>
                 <Tooltip formatter={(v: number) => `${v}%`} contentStyle={{ fontSize: 11, border: "1px solid #f3f4f6", borderRadius: 8 }} />

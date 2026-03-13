@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  Search, Plus, Edit2, Trash2, X, Check,
+  Search, Plus, Pencil, Trash2, X, Check,
   ChevronDown, Tag, Palette, Type, List,
 } from "lucide-react";
 import { attributes as initialAttributes, type Attribute, type AttributeValue } from "../../data/attributes";
@@ -75,7 +75,7 @@ function AttributeModal({
     });
   }
 
-  const field = "w-full text-sm text-gray-900 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
+  const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
   const lbl = "block text-xs text-gray-400 mb-1.5";
 
   return (
@@ -299,7 +299,7 @@ export function AdminAttributes() {
                     onClick={() => setModal(attr)}
                     className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   >
-                    <Edit2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
                   <button
                     onClick={() => setDeleteId(attr.id)}

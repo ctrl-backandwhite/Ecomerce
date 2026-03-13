@@ -1,8 +1,8 @@
 import { useState, useRef, useMemo, useEffect } from "react";
 import {
   Upload, X, Search, Trash2, Image as ImageIcon,
-  Download, Copy, Check, Grid3x3, List, Calendar,
-  FileImage, AlertCircle, Eye, Plus, Filter, SortAsc,
+  Download, Copy, Check, LayoutGrid, List, Calendar,
+  FileImage, AlertTriangle, Eye, Plus, Filter, ArrowUpDown,
   ExternalLink, Maximize2, Info, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
@@ -792,7 +792,7 @@ export function AdminMedia() {
                   : "text-gray-400 hover:text-gray-700"
               }`}
             >
-              <Grid3x3 className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <LayoutGrid className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
             <button
               onClick={() => setViewMode("list")}

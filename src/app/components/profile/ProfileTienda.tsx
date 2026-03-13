@@ -2,7 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { useUser } from "../../context/UserContext";
 import {
   Store,
-  Edit3,
   Save,
   X,
   Globe,
@@ -31,6 +30,7 @@ import {
   Camera,
   RefreshCw,
   Info,
+  Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -481,7 +481,7 @@ export function ProfileTienda() {
                 onClick={() => setEditing(true)}
                 className="inline-flex items-center gap-2 text-sm text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all"
               >
-                <Edit3 className="w-4 h-4" strokeWidth={1.5} />
+                <Pencil className="w-4 h-4" strokeWidth={1.5} />
                 Editar
               </button>
             ) : (
@@ -518,7 +518,7 @@ export function ProfileTienda() {
             </div>
             {editing && (
               <button className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center">
-                <Edit3 className="w-2.5 h-2.5" strokeWidth={2} />
+                <Pencil className="w-2.5 h-2.5" strokeWidth={2} />
               </button>
             )}
           </div>
@@ -609,7 +609,7 @@ export function ProfileTienda() {
               onClick={() => setEditing(true)}
               className="inline-flex items-center gap-2 text-sm text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all"
             >
-              <Edit3 className="w-4 h-4" strokeWidth={1.5} />
+              <Pencil className="w-4 h-4" strokeWidth={1.5} />
               Editar
             </button>
           )}

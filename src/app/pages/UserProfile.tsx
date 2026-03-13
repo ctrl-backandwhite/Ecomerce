@@ -8,24 +8,26 @@ import { ProfileDirecciones } from "../components/profile/ProfileDirecciones";
 import { ProfileSeguridad } from "../components/profile/ProfileSeguridad";
 import { ProfileTienda } from "../components/profile/ProfileTienda";
 import { ProfilePagos } from "../components/profile/ProfilePagos";
+import { ProfileGiftCards } from "../components/profile/ProfileGiftCards";
 import {
   User, ShoppingBag, Heart, MapPin, Shield, LogOut,
-  ChevronRight, LayoutDashboard, Store, CreditCard,
+  ChevronRight, LayoutDashboard, Store, CreditCard, Gift,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useSearchParams } from "react-router";
 
-type Tab = "resumen" | "datos" | "pedidos" | "favoritos" | "direcciones" | "pagos" | "tienda" | "seguridad";
+type Tab = "resumen" | "datos" | "pedidos" | "favoritos" | "direcciones" | "pagos" | "giftcards" | "tienda" | "seguridad";
 
 const tabs: { id: Tab; label: string; icon: typeof User; sellerOnly?: boolean }[] = [
-  { id: "resumen",     label: "Resumen",         icon: LayoutDashboard },
-  { id: "datos",       label: "Mis Datos",       icon: User },
-  { id: "pedidos",     label: "Mis Pedidos",     icon: ShoppingBag },
-  { id: "favoritos",   label: "Favoritos",       icon: Heart },
-  { id: "direcciones", label: "Direcciones",     icon: MapPin },
-  { id: "pagos",       label: "Métodos de Pago", icon: CreditCard },
-  { id: "tienda",      label: "Mi Tienda",       icon: Store, sellerOnly: true },
-  { id: "seguridad",   label: "Seguridad",       icon: Shield },
+  { id: "resumen",     label: "Resumen",           icon: LayoutDashboard },
+  { id: "datos",       label: "Mis Datos",         icon: User },
+  { id: "pedidos",     label: "Mis Pedidos",       icon: ShoppingBag },
+  { id: "favoritos",   label: "Favoritos",         icon: Heart },
+  { id: "direcciones", label: "Direcciones",       icon: MapPin },
+  { id: "pagos",       label: "Métodos de Pago",   icon: CreditCard },
+  { id: "giftcards",   label: "Tarjetas Regalo",   icon: Gift },
+  { id: "tienda",      label: "Mi Tienda",         icon: Store, sellerOnly: true },
+  { id: "seguridad",   label: "Seguridad",         icon: Shield },
 ];
 
 export function UserProfile() {
@@ -38,12 +40,13 @@ export function UserProfile() {
   const initials = `${user.firstName[0]}${user.lastName[0]}`;
 
   const contentMap: Record<Tab, JSX.Element> = {
-    resumen:     <ProfileOverview onTabChange={setActiveTab} />,
+    resumen:     <ProfileOverview onTabChange={setActiveTab as any} />,
     datos:       <ProfileDatos />,
     pedidos:     <ProfilePedidos />,
     favoritos:   <ProfileFavoritos />,
     direcciones: <ProfileDirecciones />,
     pagos:       <ProfilePagos />,
+    giftcards:   <ProfileGiftCards />,
     tienda:      <ProfileTienda />,
     seguridad:   <ProfileSeguridad />,
   };

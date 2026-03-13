@@ -1,6 +1,8 @@
 import { Outlet } from "react-router";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
+import { CompareBar } from "./CompareBar";
+import { NewsletterPopup } from "./NewsletterPopup";
 
 export function Layout() {
   return (
@@ -10,6 +12,8 @@ export function Layout() {
         <Outlet />
       </main>
       <Footer />
+      <CompareBar />
+      <NewsletterPopup />
     </div>
   );
 }

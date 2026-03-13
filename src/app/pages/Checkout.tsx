@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useCart } from "../context/CartContext";
+import type { CartItem } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
+import { InvoiceDocument } from "../components/InvoiceDocument";
 import { useNavigate } from "react-router";
 import {
   CreditCard, Truck, CheckCircle2, ArrowLeft, Lock,
@@ -86,6 +88,8 @@ export function Checkout() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderId] = useState(`ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
+  const [invoiceId] = useState(`FAC-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`);
+  const [orderSnapshot, setOrderSnapshot] = useState<CartItem[]>([]);
 
   /* Contact */
   const [contact, setContact] = useState({ email: user.email, phone: user.phone });
@@ -202,6 +206,7 @@ export function Checkout() {
   const handleSubmit = async () => {
     if (!step1Valid || !step2Valid || !step3Valid) return;
     setIsProcessing(true);
+    setOrderSnapshot([...items]);
     await new Promise((resolve) => setTimeout(resolve, 2000));
     setIsProcessing(false);
     setOrderComplete(true);
@@ -211,50 +216,68 @@ export function Checkout() {
 
   /* ── Order confirmed screen ── */
   if (orderComplete) {
+    const today = new Date().toISOString().slice(0, 10);
+    const due   = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const invoiceData = {
+      invoiceNumber: invoiceId,
+      orderNumber: orderId,
+      date: today,
+      dueDate: due,
+      status: "paid" as const,
+      customer: {
+        name:    `${user.firstName} ${user.lastName}`,
+        email:   contact.email,
+        phone:   contact.phone,
+        address: deliverySummary() || undefined,
+      },
+      lines: orderSnapshot.map(item => ({
+        name:      item.name,
+        sku:       item.sku,
+        quantity:  item.quantity,
+        unitPrice: item.price,
+        total:     item.price * item.quantity,
+      })),
+      subtotal,
+      shipping,
+      tax,
+      total,
+      paymentMethod: paymentSummaryLabel() || undefined,
+    };
+
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 max-w-md w-full text-center">
-          <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-5">
-            <CheckCircle2 className="w-8 h-8 text-green-500" strokeWidth={1.5} />
-          </div>
-          <h2 className="text-xl text-gray-900 mb-2">¡Pedido confirmado!</h2>
-          <p className="text-sm text-gray-400 mb-6">
-            Recibirás un correo de confirmación en breve con los detalles de tu pedido.
-          </p>
-          <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4 text-left space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Número de orden</span>
-              <span className="text-sm text-gray-900 font-mono">{orderId}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Total pagado</span>
-              <span className="text-sm text-gray-900">${total.toFixed(2)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-gray-400">Método de pago</span>
-              <span className="text-xs text-gray-600">{paymentSummaryLabel() || "—"}</span>
-            </div>
-            {deliverySummary() && (
-              <div className="flex items-start justify-between gap-4 pt-1 border-t border-gray-100">
-                <span className="text-xs text-gray-400 mt-0.5">Entrega</span>
-                <span className="text-xs text-gray-600 text-right">{deliverySummary()}</span>
+      <div className="min-h-screen bg-gray-50">
+        {/* Confirmation banner */}
+        <div className="bg-white border-b border-gray-100 px-4 py-4">
+          <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0">
+                <CheckCircle2 className="w-4 h-4 text-green-500" strokeWidth={1.5} />
               </div>
-            )}
+              <div>
+                <p className="text-sm text-gray-900">¡Pedido confirmado!</p>
+                <p className="text-xs text-gray-400 mt-0.5">Recibirás un correo de confirmación en breve · <span className="font-mono">{orderId}</span></p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => navigate("/cuenta?tab=pedidos")}
+                className="h-8 px-4 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Mis pedidos
+              </button>
+              <button
+                onClick={() => navigate("/")}
+                className="h-8 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Seguir comprando
+              </button>
+            </div>
           </div>
-          <div className="space-y-2">
-            <button
-              onClick={() => navigate("/cuenta?tab=pedidos")}
-              className="w-full text-sm text-white bg-gray-900 rounded-xl px-4 py-3 hover:bg-gray-800 transition-colors"
-            >
-              Ver mis pedidos
-            </button>
-            <button
-              onClick={() => navigate("/")}
-              className="w-full text-sm text-gray-500 border border-gray-200 rounded-xl px-4 py-3 hover:bg-gray-50 transition-colors"
-            >
-              Seguir comprando
-            </button>
-          </div>
+        </div>
+
+        {/* Full invoice */}
+        <div className="py-8 px-4">
+          <InvoiceDocument data={invoiceData} mode="page" />
         </div>
       </div>
     );

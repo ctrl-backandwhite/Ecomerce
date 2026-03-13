@@ -7,7 +7,7 @@ import {
   Star, ShoppingCart, Heart, Truck, Shield,
   ArrowLeft, Plus, Minus, ChevronRight, Package,
   RefreshCw, Award, Check, ThumbsUp, ChevronDown,
-  MessageSquare, PenLine,
+  MessageSquare, Pencil,
 } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import { toast } from "sonner";
@@ -206,7 +206,7 @@ function ReviewsSection({
     setTimeout(() => { setShowForm(false); setSubmitted(false); }, 2000);
   }
 
-  const field = "w-full text-sm text-gray-900 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
+  const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
 
   return (
     <section className="mb-16">
@@ -225,7 +225,7 @@ function ReviewsSection({
             onClick={() => { setShowForm(!showForm); setSubmitted(false); }}
             className="flex items-center gap-1.5 text-xs text-white bg-gray-900 px-4 py-2 rounded-xl hover:bg-gray-800 transition-colors"
           >
-            <PenLine className="w-3.5 h-3.5" strokeWidth={1.5} />
+            <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
             Escribir reseña
           </button>
         </div>
@@ -492,33 +492,20 @@ export function ProductDetail() {
         </button>
 
         {/* Main grid */}
-        <div className="grid lg:grid-cols-2 gap-8 xl:gap-16 mb-16">
+        <div className="grid lg:grid-cols-2 gap-8 xl:gap-16 mb-16 lg:items-stretch">
 
           {/* Image Gallery */}
-          <div className="flex gap-3">
-            {images.length > 1 && (
-              <div className="hidden lg:flex flex-col gap-2 w-16 flex-shrink-0">
-                {images.map((img, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveImage(i)}
-                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 ${
-                      activeImage === i ? "border-gray-900" : "border-transparent hover:border-gray-300"
-                    }`}
-                  >
-                    <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="flex flex-col gap-3 h-full">
 
-            <div className="flex-1 relative bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-              <div className="aspect-square relative overflow-hidden">
+            {/* ── Main image ── */}
+            <div className="relative bg-gray-50 rounded-2xl overflow-hidden border border-gray-100 shadow-sm flex-1 flex flex-col">
+              <div className="flex-1 min-h-[320px] relative flex items-center justify-center p-6">
                 <img
                   src={images[activeImage]?.url ?? product.image}
                   alt={images[activeImage]?.alt ?? product.name}
-                  className="w-full h-full object-cover transition-all duration-300"
+                  className="w-full h-full object-contain transition-all duration-300"
                 />
+                {/* Badges */}
                 <div className="absolute top-4 left-4 flex flex-col gap-2">
                   {discount > 0 && (
                     <span className="bg-red-500 text-white text-xs px-2.5 py-1 rounded-lg">-{discount}%</span>
@@ -530,38 +517,71 @@ export function ProductDetail() {
                     </span>
                   )}
                 </div>
+                {/* Wishlist */}
                 <button
                   onClick={() => { setWishlist(!wishlist); toast.success(wishlist ? "Eliminado de favoritos" : "Agregado a favoritos"); }}
-                  className="absolute top-4 right-4 w-10 h-10 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-sm transition-all"
+                  className="absolute top-4 right-4 w-10 h-10 bg-white hover:bg-gray-100 rounded-full flex items-center justify-center shadow-sm border border-gray-100 transition-all"
                 >
                   <Heart className={`w-5 h-5 ${wishlist ? "fill-red-500 text-red-500" : "text-gray-400"}`} strokeWidth={1.5} />
                 </button>
+                {/* Counter */}
                 {images.length > 1 && (
-                  <div className="absolute bottom-4 right-4 bg-black/50 text-white text-xs px-2.5 py-1 rounded-lg">
+                  <div className="absolute bottom-4 right-4 bg-black/40 text-white text-xs px-2.5 py-1 rounded-lg backdrop-blur-sm">
                     {activeImage + 1}/{images.length}
                   </div>
                 )}
+                {/* Prev / Next arrows */}
+                {images.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => setActiveImage(i => (i - 1 + images.length) % images.length)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white hover:bg-gray-100 rounded-full flex items-center justify-center shadow-sm border border-gray-100 transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4 text-gray-500 rotate-180" strokeWidth={1.5} />
+                    </button>
+                    <button
+                      onClick={() => setActiveImage(i => (i + 1) % images.length)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 bg-white hover:bg-gray-100 rounded-full flex items-center justify-center shadow-sm border border-gray-100 transition-all"
+                    >
+                      <ChevronRight className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
+                    </button>
+                  </>
+                )}
               </div>
-              {images.length > 1 && (
-                <div className="flex gap-2 p-3 overflow-x-auto lg:hidden">
+            </div>
+
+            {/* ── Thumbnail carousel ── */}
+            {images.length > 1 && (
+              <div className="relative">
+                <div
+                  className="flex gap-2 overflow-x-auto pb-1 scroll-smooth snap-x snap-mandatory"
+                  style={{ scrollbarWidth: "none" }}
+                >
                   {images.map((img, i) => (
                     <button
                       key={i}
                       onClick={() => setActiveImage(i)}
-                      className={`w-14 h-14 rounded-lg overflow-hidden border-2 flex-shrink-0 transition-all ${
-                        activeImage === i ? "border-gray-900" : "border-transparent hover:border-gray-300"
+                      className={`flex-shrink-0 snap-start w-16 h-16 rounded-xl overflow-hidden border-2 transition-all bg-gray-50 ${
+                        activeImage === i
+                          ? "border-gray-900 shadow-sm scale-[1.05]"
+                          : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
                       }`}
                     >
-                      <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
+                      <img
+                        src={img.url}
+                        alt={img.alt}
+                        className="w-full h-full object-contain p-1"
+                      />
                     </button>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+
           </div>
 
           {/* Product Info */}
-          <div className="flex flex-col">
+          <div className="flex flex-col h-full">
             <div className="flex items-center gap-2 mb-3">
               {product.brand && (
                 <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 rounded-lg">{product.brand}</span>
@@ -691,7 +711,7 @@ export function ProductDetail() {
             </div>
 
             {/* Trust signals */}
-            <div className="border-t border-gray-100 pt-5 space-y-3">
+            <div className="mt-auto border-t border-gray-100 pt-5 space-y-3">
               {[
                 { icon: Truck,     title: "Envío gratis",          sub: "En compras superiores a $100" },
                 { icon: Shield,    title: "Garantía de 1 año",     sub: "Protección total del producto" },

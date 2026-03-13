@@ -17,7 +17,7 @@ const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
   { id: "security",      label: "Seguridad",      icon: Shield   },
 ];
 
-const field = "w-full text-sm text-gray-900 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
+const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
 const label = "block text-xs text-gray-400 mb-1.5";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

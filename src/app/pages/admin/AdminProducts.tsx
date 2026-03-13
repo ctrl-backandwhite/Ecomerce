@@ -1,13 +1,15 @@
 import { useState } from "react";
 import {
-  Search, Plus, Edit2, Trash2, Monitor, X, Check,
+  Search, Plus, Pencil, Trash2, Eye, X, Check,
   Package, Star, ChevronDown, Filter, ArrowUpDown,
-  Heart, ShoppingCart, Image, AlertCircle,
+  Heart, ShoppingCart, Image, AlertTriangle,
   Tag, Truck, Globe, Layers, DollarSign, BarChart2,
+  Shield,
 } from "lucide-react";
 import { products as initialProducts, type Product, type ProductImage, type ProductAttribute, type ProductVariant } from "../../data/products";
 import { categories } from "../../data/adminData";
 import { brands as brandsData } from "../../data/brands";
+import { initialWarranties, WARRANTY_TYPE_META } from "../../data/warranties";
 import { toast } from "sonner";
 
 type SortKey = "name" | "price" | "stock" | "rating";
@@ -20,6 +22,7 @@ const TABS = [
   { id: "variantes",  label: "Variantes",  icon: Layers },
   { id: "envio",      label: "Envío",      icon: Truck },
   { id: "seo",        label: "SEO",        icon: Globe },
+  { id: "garantia",   label: "Garantía",   icon: Shield },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -197,7 +200,7 @@ function ProductModal({ product, onSave, onClose }: {
     set("variants", form.variants.filter((_, i) => i !== idx));
   }
 
-  const field = "w-full text-sm text-gray-900 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
+  const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
   const lbl = "block text-xs text-gray-400 mb-1.5";
   const section = "space-y-4";
 
@@ -663,6 +666,80 @@ function ProductModal({ product, onSave, onClose }: {
             </div>
           )}
 
+          {/* ── GARANTÍA ── */}
+          {tab === "garantia" && (() => {
+            const selectedWarranty = initialWarranties.find(w => w.id === form.warrantyId);
+            const meta = selectedWarranty ? WARRANTY_TYPE_META[selectedWarranty.type] : null;
+            return (
+              <div className={section}>
+                <div>
+                  <label className={lbl}>Garantía asociada al producto</label>
+                  <div className="relative">
+                    <select
+                      value={form.warrantyId ?? ""}
+                      onChange={e => set("warrantyId", e.target.value || undefined)}
+                      className={`${field} appearance-none pr-8`}
+                    >
+                      <option value="">Sin garantía</option>
+                      {initialWarranties.filter(w => w.active).map(w => (
+                        <option key={w.id} value={w.id}>{w.name}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">
+                    Administra las garantías en <span className="underline">Catálogo → Garantías</span>.
+                  </p>
+                </div>
+
+                {selectedWarranty && meta ? (
+                  <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    {/* Header */}
+                    <div className={`flex items-center gap-3 px-4 py-3 ${meta.bg}`}>
+                      <div className={`w-8 h-8 rounded-xl bg-white/60 flex items-center justify-center flex-shrink-0`}>
+                        <Shield className={`w-4 h-4 ${meta.text}`} strokeWidth={1.5} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-xs ${meta.text}`}>{selectedWarranty.name}</p>
+                        <p className={`text-[10px] opacity-70 ${meta.text}`}>{meta.label}</p>
+                      </div>
+                      <span className={`text-xs px-2.5 py-0.5 rounded-full bg-white/60 ${meta.text}`}>
+                        {selectedWarranty.durationMonths < 12
+                          ? `${selectedWarranty.durationMonths} meses`
+                          : `${selectedWarranty.durationMonths / 12} año${selectedWarranty.durationMonths / 12 !== 1 ? "s" : ""}`}
+                      </span>
+                    </div>
+                    {/* Details */}
+                    <div className="px-4 py-3 space-y-3 bg-white">
+                      <p className="text-xs text-gray-600">{selectedWarranty.coverage}</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedWarranty.includesLabor  && <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded">✓ Mano de obra</span>}
+                        {selectedWarranty.includesParts  && <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded">✓ Piezas</span>}
+                        {selectedWarranty.includesPickup && <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded">✓ Recogida domicilio</span>}
+                        {selectedWarranty.repairLimit === null
+                          ? <span className="text-[10px] bg-green-50 text-green-700 px-2 py-0.5 rounded">✓ Reparaciones ilimitadas</span>
+                          : <span className="text-[10px] bg-amber-50 text-amber-700 px-2 py-0.5 rounded">Máx. {selectedWarranty.repairLimit} reparación{selectedWarranty.repairLimit !== 1 ? "es" : ""}</span>
+                        }
+                      </div>
+                      {(selectedWarranty.contactPhone || selectedWarranty.contactEmail) && (
+                        <div className="flex items-center gap-3 pt-2 border-t border-gray-100 text-[10px] text-gray-400">
+                          {selectedWarranty.contactPhone && <span>📞 {selectedWarranty.contactPhone}</span>}
+                          {selectedWarranty.contactEmail && <span>✉ {selectedWarranty.contactEmail}</span>}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <Shield className="w-8 h-8 text-gray-200 mb-2" strokeWidth={1} />
+                    <p className="text-xs text-gray-400">Sin garantía asignada</p>
+                    <p className="text-[10px] text-gray-300 mt-1">Selecciona una garantía del desplegable de arriba</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
         </div>
 
         {/* Footer */}
@@ -775,7 +852,7 @@ export function AdminProducts() {
         </div>
         {lowStock > 0 && (
           <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl">
-            <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
+            <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.5} />
             {lowStock} con stock bajo
           </div>
         )}
@@ -841,10 +918,10 @@ export function AdminProducts() {
                 <td className="px-5 py-3">
                   <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button onClick={() => setPreview(p)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Vista previa">
-                      <Monitor className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                     <button onClick={() => setModal(p)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
-                      <Edit2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                     <button onClick={() => setDeleteId(p.id)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
                       <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />

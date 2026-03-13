@@ -181,7 +181,7 @@
   }
 
   input {
-    font-size: var(--text-base);
+    font-size: var(--text-xs);
     font-weight: var(--font-weight-light);
     line-height: 1.5;
   }

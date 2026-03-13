@@ -58,6 +58,7 @@ export interface Product {
   status: "active" | "draft" | "archived";
   visibility: "public" | "private" | "hidden";
   featured: boolean;
+  warrantyId?: string;
 }
 
 // ── Default values ─────────────────────────────────────────
@@ -999,10 +1000,10 @@ export const products: Product[] = [
     category: "Electrónica",
     subcategory: "Tablets",
     keywords: ["samsung tab s9", "tablet samsung", "s pen", "amoled tablet", "android tablet"],
-    image: "https://images.unsplash.com/photo-1632774571322-8e5c7680d4e0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+    image: "https://images.unsplash.com/photo-1722150635400-781fa4b5f40e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxTYW1zdW5nJTIwR2FsYXh5JTIwVGFiJTIwUzklMjB0YWJsZXQlMjBhbmRyb2lkfGVufDF8fHx8MTc3MzQ0Mzc2Nnww&ixlib=rb-4.1.0&q=80&w=1080",
     images: [
-      { url: "https://images.unsplash.com/photo-1632774571322-8e5c7680d4e0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", alt: "Samsung Galaxy Tab S9 frontal", position: 1 },
-      { url: "https://images.unsplash.com/photo-1587033411391-5d9e51cce126?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", alt: "Samsung Galaxy Tab S9 con S Pen", position: 2 },
+      { url: "https://images.unsplash.com/photo-1722150635400-781fa4b5f40e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxTYW1zdW5nJTIwR2FsYXh5JTIwVGFiJTIwUzklMjB0YWJsZXQlMjBhbmRyb2lkfGVufDF8fHx8MTc3MzQ0Mzc2Nnww&ixlib=rb-4.1.0&q=80&w=1080", alt: "Samsung Galaxy Tab S9 frontal", position: 1 },
+      { url: "https://images.unsplash.com/photo-1766241632392-1c84994a5e62?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0YWJsZXQlMjBhbmRyb2lkJTIwc2xpbSUyMHNjcmVlbiUyMGRpc3BsYXl8ZW58MXx8fHwxNzczNDQzNzY5fDA&ixlib=rb-4.1.0&q=80&w=1080", alt: "Samsung Galaxy Tab S9 lateral", position: 2 },
     ],
     rating: 4.6,
     reviews: 123,

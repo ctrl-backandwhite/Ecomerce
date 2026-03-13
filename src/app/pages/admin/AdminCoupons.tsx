@@ -1,0 +1,624 @@
+import { useState, useMemo } from "react";
+import {
+  Search, Plus, Pencil, Trash2, X, Copy, Check,
+  Tag, Percent, DollarSign, Calendar, Users,
+  ToggleLeft, ToggleRight, Infinity as InfinityIcon,
+  AlertTriangle, TrendingUp, Gift,
+} from "lucide-react";
+import { toast } from "sonner";
+
+/* ── Types ────────────────────────────────────────────────── */
+interface Coupon {
+  id: string;
+  code: string;
+  type: "percentage" | "fixed";
+  value: number;
+  minOrder: number;
+  maxUses: number | null;
+  usedCount: number;
+  expiresAt: string | null;
+  status: "active" | "inactive" | "expired";
+  description: string;
+  createdAt: string;
+}
+
+/* ── Mock data ───────────────────────────────────────────── */
+const INITIAL_COUPONS: Coupon[] = [
+  { id: "c1",  code: "WELCOME10",   type: "percentage", value: 10,  minOrder: 0,   maxUses: null, usedCount: 47,  expiresAt: null,         status: "active",   description: "Descuento de bienvenida para nuevos clientes", createdAt: "2025-01-15" },
+  { id: "c2",  code: "SUMMER25",    type: "percentage", value: 25,  minOrder: 100, maxUses: 200,  usedCount: 183, expiresAt: "2025-08-31", status: "active",   description: "Campaña de verano 2025", createdAt: "2025-06-01" },
+  { id: "c3",  code: "SAVE50",      type: "fixed",      value: 50,  minOrder: 200, maxUses: 100,  usedCount: 100, expiresAt: "2025-12-31", status: "inactive", description: "Descuento fijo de $50 en pedidos grandes", createdAt: "2025-03-10" },
+  { id: "c4",  code: "NEXA2025",    type: "percentage", value: 15,  minOrder: 50,  maxUses: null, usedCount: 312, expiresAt: "2025-12-31", status: "active",   description: "Código anual de la tienda NEXA", createdAt: "2025-01-01" },
+  { id: "c5",  code: "FLASH20",     type: "percentage", value: 20,  minOrder: 0,   maxUses: 50,   usedCount: 50,  expiresAt: "2025-03-01", status: "expired",  description: "Oferta flash de 24 horas", createdAt: "2025-02-28" },
+  { id: "c6",  code: "TECH30",      type: "percentage", value: 30,  minOrder: 300, maxUses: 75,   usedCount: 28,  expiresAt: "2026-01-01", status: "active",   description: "Descuento en tecnología de gama alta", createdAt: "2025-09-01" },
+  { id: "c7",  code: "FREESHIP",    type: "fixed",      value: 15,  minOrder: 75,  maxUses: null, usedCount: 89,  expiresAt: null,         status: "active",   description: "Cubre el costo de envío estándar", createdAt: "2025-04-20" },
+  { id: "c8",  code: "VIP100",      type: "fixed",      value: 100, minOrder: 500, maxUses: 20,   usedCount: 7,   expiresAt: "2026-06-30", status: "active",   description: "Cupón exclusivo para clientes VIP", createdAt: "2025-11-01" },
+  { id: "c9",  code: "BLACKFRI40",  type: "percentage", value: 40,  minOrder: 150, maxUses: 500,  usedCount: 500, expiresAt: "2025-11-30", status: "expired",  description: "Black Friday 2025", createdAt: "2025-11-25" },
+  { id: "c10", code: "LOYALTY5",    type: "percentage", value: 5,   minOrder: 0,   maxUses: null, usedCount: 204, expiresAt: null,         status: "inactive", description: "Programa de fidelización — uso interno", createdAt: "2025-05-12" },
+];
+
+const EMPTY_FORM: Omit<Coupon, "id" | "usedCount" | "createdAt"> = {
+  code: "", type: "percentage", value: 10, minOrder: 0,
+  maxUses: null, expiresAt: null, status: "active", description: "",
+};
+
+/* ── Status meta ─────────────────────────────────────────── */
+const STATUS_META = {
+  active:   { label: "Activo",   bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-400" },
+  inactive: { label: "Inactivo", bg: "bg-gray-100",   text: "text-gray-500",   dot: "bg-gray-400" },
+  expired:  { label: "Expirado", bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-400" },
+};
+
+/* ── Helpers ─────────────────────────────────────────────── */
+function isExpired(expiresAt: string | null) {
+  if (!expiresAt) return false;
+  return new Date(expiresAt) < new Date();
+}
+
+function formatDate(d: string | null) {
+  if (!d) return "—";
+  return new Date(d).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+function usagePercent(used: number, max: number | null) {
+  if (max === null) return null;
+  return Math.round((used / max) * 100);
+}
+
+/* ── Copy button ─────────────────────────────────────────── */
+function CopyBtn({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      className="ml-1.5 text-gray-300 hover:text-gray-600 transition-colors"
+      title="Copiar código"
+    >
+      {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+    </button>
+  );
+}
+
+/* ── Modal ───────────────────────────────────────────────── */
+function CouponModal({
+  coupon, onSave, onClose,
+}: {
+  coupon: Partial<Coupon> & { id?: string };
+  onSave: (c: Coupon) => void;
+  onClose: () => void;
+}) {
+  const isNew = !coupon.id;
+  const [form, setForm] = useState<Omit<Coupon, "id" | "usedCount" | "createdAt">>({
+    code:        coupon.code        ?? "",
+    type:        coupon.type        ?? "percentage",
+    value:       coupon.value       ?? 10,
+    minOrder:    coupon.minOrder    ?? 0,
+    maxUses:     coupon.maxUses     ?? null,
+    expiresAt:   coupon.expiresAt   ?? null,
+    status:      coupon.status      ?? "active",
+    description: coupon.description ?? "",
+  });
+  const [unlimited, setUnlimited] = useState(coupon.maxUses === null || coupon.maxUses === undefined ? true : false);
+  const [noExpiry, setNoExpiry]   = useState(!coupon.expiresAt);
+
+  const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }));
+
+  function handleSave() {
+    if (!form.code.trim()) { toast.error("El código es obligatorio"); return; }
+    if (form.value <= 0)   { toast.error("El valor debe ser mayor a 0"); return; }
+    if (form.type === "percentage" && form.value > 100) { toast.error("El porcentaje no puede superar 100"); return; }
+
+    const computed: Coupon = {
+      id:         coupon.id ?? `coup-${Date.now()}`,
+      usedCount:  coupon.usedCount ?? 0,
+      createdAt:  coupon.createdAt ?? new Date().toISOString().slice(0, 10),
+      ...form,
+      code:       form.code.toUpperCase().trim(),
+      maxUses:    unlimited ? null : form.maxUses,
+      expiresAt:  noExpiry  ? null : form.expiresAt,
+    };
+    onSave(computed);
+  }
+
+  const inp  = "w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-2.5 h-7 focus:outline-none focus:border-gray-400 bg-white placeholder-gray-300";
+  const lbl  = "block text-[11px] text-gray-400 mb-1";
+  const row  = "grid grid-cols-2 gap-3";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-xl w-full max-w-lg overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+              <Gift className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-900">{isNew ? "Nuevo cupón" : "Editar cupón"}</p>
+              {!isNew && <p className="text-[11px] text-gray-400 font-mono mt-0.5">{coupon.code}</p>}
+            </div>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-full transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+
+          {/* Código */}
+          <div>
+            <label className={lbl}>Código del cupón *</label>
+            <input
+              className={`${inp} uppercase font-mono tracking-widest`}
+              placeholder="Ej: DESCUENTO20"
+              value={form.code}
+              onChange={e => set("code", e.target.value.toUpperCase())}
+            />
+          </div>
+
+          {/* Tipo + Valor */}
+          <div className={row}>
+            <div>
+              <label className={lbl}>Tipo de descuento</label>
+              <div className="flex border border-gray-200 rounded-lg overflow-hidden h-7">
+                {(["percentage", "fixed"] as const).map(t => (
+                  <button
+                    key={t}
+                    onClick={() => set("type", t)}
+                    className={`flex-1 flex items-center justify-center gap-1 text-[11px] transition-colors ${
+                      form.type === t ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    {t === "percentage" ? <Percent className="w-3 h-3" /> : <DollarSign className="w-3 h-3" />}
+                    {t === "percentage" ? "%" : "Fijo"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className={lbl}>{form.type === "percentage" ? "Porcentaje (%)" : "Monto ($)"}</label>
+              <input
+                type="number" min={0} max={form.type === "percentage" ? 100 : undefined}
+                className={inp}
+                value={form.value}
+                onChange={e => set("value", Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          {/* Pedido mínimo */}
+          <div>
+            <label className={lbl}>Pedido mínimo ($) <span className="text-gray-300">— 0 = sin mínimo</span></label>
+            <input
+              type="number" min={0}
+              className={inp}
+              value={form.minOrder}
+              onChange={e => set("minOrder", Number(e.target.value))}
+            />
+          </div>
+
+          {/* Usos máximos */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className={`${lbl} mb-0`}>Usos máximos</label>
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <span className="text-[11px] text-gray-400">Ilimitado</span>
+                <button
+                  onClick={() => setUnlimited(v => !v)}
+                  className="text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  {unlimited
+                    ? <ToggleRight className="w-4 h-4 text-gray-900" />
+                    : <ToggleLeft  className="w-4 h-4" />}
+                </button>
+              </label>
+            </div>
+            {!unlimited && (
+              <input
+                type="number" min={1}
+                className={inp}
+                value={form.maxUses ?? ""}
+                onChange={e => set("maxUses", Number(e.target.value) || null)}
+                placeholder="Ej: 100"
+              />
+            )}
+            {unlimited && (
+              <div className="h-7 flex items-center gap-1.5 text-[11px] text-gray-400 border border-dashed border-gray-200 rounded-lg px-2.5">
+                <InfinityIcon className="w-3 h-3" /> Sin límite de usos
+              </div>
+            )}
+          </div>
+
+          {/* Vencimiento */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className={`${lbl} mb-0`}>Fecha de vencimiento</label>
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <span className="text-[11px] text-gray-400">Sin vencimiento</span>
+                <button
+                  onClick={() => setNoExpiry(v => !v)}
+                  className="text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  {noExpiry
+                    ? <ToggleRight className="w-4 h-4 text-gray-900" />
+                    : <ToggleLeft  className="w-4 h-4" />}
+                </button>
+              </label>
+            </div>
+            {!noExpiry && (
+              <input
+                type="date"
+                className={inp}
+                value={form.expiresAt ?? ""}
+                onChange={e => set("expiresAt", e.target.value || null)}
+              />
+            )}
+            {noExpiry && (
+              <div className="h-7 flex items-center gap-1.5 text-[11px] text-gray-400 border border-dashed border-gray-200 rounded-lg px-2.5">
+                <Calendar className="w-3 h-3" /> No expira
+              </div>
+            )}
+          </div>
+
+          {/* Descripción */}
+          <div>
+            <label className={lbl}>Descripción interna</label>
+            <textarea
+              rows={2}
+              className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-gray-400 bg-white placeholder-gray-300 resize-none"
+              placeholder="Para uso interno, no visible al cliente"
+              value={form.description}
+              onChange={e => set("description", e.target.value)}
+            />
+          </div>
+
+          {/* Estado */}
+          <div>
+            <label className={lbl}>Estado</label>
+            <div className="flex border border-gray-200 rounded-lg overflow-hidden h-7">
+              {(["active", "inactive"] as const).map(s => (
+                <button
+                  key={s}
+                  onClick={() => set("status", s)}
+                  className={`flex-1 text-[11px] transition-colors ${
+                    form.status === s ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50"
+                  }`}
+                >
+                  {s === "active" ? "Activo" : "Inactivo"}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
+          <button
+            onClick={onClose}
+            className="h-7 px-3 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            className="h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+          >
+            <Check className="w-3 h-3" />
+            {isNew ? "Crear cupón" : "Guardar cambios"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Delete confirm ─────────────────────────────────────── */
+function DeleteConfirm({ code, onConfirm, onClose }: { code: string; onConfirm: () => void; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-xl w-full max-w-sm p-6 text-center">
+        <div className="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center mx-auto mb-3">
+          <AlertTriangle className="w-5 h-5 text-red-500" />
+        </div>
+        <p className="text-sm text-gray-900 mb-1">¿Eliminar cupón?</p>
+        <p className="text-xs text-gray-400 mb-5">
+          El cupón <span className="font-mono text-gray-700">{code}</span> será eliminado permanentemente.
+        </p>
+        <div className="flex gap-2 justify-center">
+          <button onClick={onClose}   className="h-7 px-4 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
+          <button onClick={onConfirm} className="h-7 px-4 text-xs text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors">Eliminar</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main page ───────────────────────────────────────────── */
+export function AdminCoupons() {
+  const [coupons, setCoupons]       = useState<Coupon[]>(INITIAL_COUPONS);
+  const [search,  setSearch]        = useState("");
+  const [statusFilter, setStatusF]  = useState<"all" | Coupon["status"]>("all");
+  const [typeFilter,   setTypeF]    = useState<"all" | Coupon["type"]>("all");
+  const [modal, setModal]           = useState<{ open: boolean; coupon: Partial<Coupon> } | null>(null);
+  const [deleteId, setDeleteId]     = useState<string | null>(null);
+
+  /* ── Filtered list ── */
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return coupons.filter(c => {
+      if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      if (typeFilter   !== "all" && c.type   !== typeFilter)   return false;
+      if (q && !c.code.toLowerCase().includes(q) && !c.description.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [coupons, search, statusFilter, typeFilter]);
+
+  /* ── Stats ── */
+  const stats = useMemo(() => ({
+    total:    coupons.length,
+    active:   coupons.filter(c => c.status === "active").length,
+    totalUses: coupons.reduce((s, c) => s + c.usedCount, 0),
+    expiring: coupons.filter(c => {
+      if (!c.expiresAt || c.status !== "active") return false;
+      const days = (new Date(c.expiresAt).getTime() - Date.now()) / 86400000;
+      return days >= 0 && days <= 7;
+    }).length,
+  }), [coupons]);
+
+  function handleSave(coupon: Coupon) {
+    setCoupons(prev => {
+      const idx = prev.findIndex(c => c.id === coupon.id);
+      if (idx >= 0) { const n = [...prev]; n[idx] = coupon; return n; }
+      return [coupon, ...prev];
+    });
+    toast.success(modal?.coupon?.id ? "Cupón actualizado" : "Cupón creado");
+    setModal(null);
+  }
+
+  function handleDelete() {
+    if (!deleteId) return;
+    const c = coupons.find(x => x.id === deleteId);
+    setCoupons(prev => prev.filter(x => x.id !== deleteId));
+    toast.success(`Cupón ${c?.code} eliminado`);
+    setDeleteId(null);
+  }
+
+  function toggleStatus(id: string) {
+    setCoupons(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      const next = c.status === "active" ? "inactive" : "active";
+      toast.success(`Cupón ${next === "active" ? "activado" : "desactivado"}`);
+      return { ...c, status: next };
+    }));
+  }
+
+  const deleteTarget = coupons.find(c => c.id === deleteId);
+
+  return (
+    <div className="p-6 space-y-5">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl tracking-tight text-gray-900">Cupones</h1>
+          <p className="text-xs text-gray-400 mt-0.5">{coupons.length} cupones en total</p>
+        </div>
+        <button
+          onClick={() => setModal({ open: true, coupon: EMPTY_FORM })}
+          className="flex items-center gap-1.5 h-7 px-3 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" /> Nuevo cupón
+        </button>
+      </div>
+
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: "Total cupones",  value: stats.total,    icon: Tag,       color: "text-gray-700" },
+          { label: "Activos",        value: stats.active,   icon: Check,     color: "text-green-600" },
+          { label: "Usos totales",   value: stats.totalUses, icon: TrendingUp, color: "text-blue-600" },
+          { label: "Expiran pronto", value: stats.expiring, icon: Calendar,  color: "text-amber-600" },
+        ].map(s => (
+          <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
+              <s.icon className={`w-4 h-4 ${s.color}`} strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-lg text-gray-900 leading-none">{s.value}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">{s.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Toolbar ── */}
+      <div className="flex flex-wrap items-center gap-2">
+        {/* Search */}
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
+          <input
+            className="w-full h-7 pl-8 pr-7 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 placeholder-gray-300"
+            placeholder="Buscar por código o descripción…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-600">
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+
+        {/* Status filter */}
+        <select
+          value={statusFilter}
+          onChange={e => setStatusF(e.target.value as any)}
+          className="h-7 px-2.5 text-xs text-gray-600 border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400"
+        >
+          <option value="all">Todos los estados</option>
+          <option value="active">Activos</option>
+          <option value="inactive">Inactivos</option>
+          <option value="expired">Expirados</option>
+        </select>
+
+        {/* Type filter */}
+        <select
+          value={typeFilter}
+          onChange={e => setTypeF(e.target.value as any)}
+          className="h-7 px-2.5 text-xs text-gray-600 border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400"
+        >
+          <option value="all">Todos los tipos</option>
+          <option value="percentage">Porcentaje</option>
+          <option value="fixed">Monto fijo</option>
+        </select>
+
+        {/* Result count */}
+        <span className="text-xs text-gray-400 ml-1">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>
+      </div>
+
+      {/* ── Table ── */}
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+        {/* Table head */}
+        <div className="grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+          {["Código", "Descuento", "Pedido mín.", "Usos", "Vencimiento", "Estado", ""].map(h => (
+            <p key={h} className="text-[10px] text-gray-400 uppercase tracking-wider">{h}</p>
+          ))}
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="py-16 text-center">
+            <Tag className="w-8 h-8 text-gray-200 mx-auto mb-2" strokeWidth={1} />
+            <p className="text-sm text-gray-400">No se encontraron cupones</p>
+            <p className="text-xs text-gray-300 mt-1">Prueba con otro filtro o crea uno nuevo</p>
+          </div>
+        )}
+
+        {filtered.map((c, i) => {
+          const sm = STATUS_META[c.status];
+          const pct = usagePercent(c.usedCount, c.maxUses);
+          const expiring = c.expiresAt && c.status === "active" &&
+            (new Date(c.expiresAt).getTime() - Date.now()) / 86400000 <= 7 &&
+            !isExpired(c.expiresAt);
+
+          return (
+            <div
+              key={c.id}
+              className={`grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_auto] gap-3 px-4 py-3 items-center transition-colors hover:bg-gray-50/60 ${
+                i !== filtered.length - 1 ? "border-b border-gray-50" : ""
+              }`}
+            >
+              {/* Code */}
+              <div className="flex items-center gap-0 min-w-0">
+                <span className="font-mono text-xs text-gray-900 tracking-wider truncate">{c.code}</span>
+                <CopyBtn text={c.code} />
+                {c.description && (
+                  <p className="hidden lg:block text-[11px] text-gray-400 truncate mt-0.5 col-span-full">{c.description}</p>
+                )}
+              </div>
+
+              {/* Discount */}
+              <div>
+                <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${
+                  c.type === "percentage" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"
+                }`}>
+                  {c.type === "percentage"
+                    ? <><Percent className="w-2.5 h-2.5" />{c.value}%</>
+                    : <><DollarSign className="w-2.5 h-2.5" />${c.value}</>}
+                </span>
+              </div>
+
+              {/* Min order */}
+              <p className="text-xs text-gray-500">
+                {c.minOrder > 0 ? `$${c.minOrder}` : <span className="text-gray-300">—</span>}
+              </p>
+
+              {/* Uses */}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                  <Users className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                  <span>{c.usedCount}</span>
+                  {c.maxUses !== null
+                    ? <span className="text-gray-400">/ {c.maxUses}</span>
+                    : <InfinityIcon className="w-3 h-3 text-gray-300" />}
+                </div>
+                {pct !== null && (
+                  <div className="mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-20">
+                    <div
+                      className={`h-full rounded-full ${pct >= 90 ? "bg-red-400" : pct >= 70 ? "bg-amber-400" : "bg-green-400"}`}
+                      style={{ width: `${Math.min(pct, 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Expiry */}
+              <div className="flex items-center gap-1">
+                {expiring && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Expira pronto" />}
+                <span className={`text-xs ${expiring ? "text-amber-600" : "text-gray-500"}`}>
+                  {formatDate(c.expiresAt)}
+                </span>
+              </div>
+
+              {/* Status */}
+              <div>
+                <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full ${sm.bg} ${sm.text}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
+                  {sm.label}
+                </span>
+              </div>
+
+              {/* Actions */}
+              <div className="flex items-center gap-1">
+                {/* Toggle active/inactive */}
+                {c.status !== "expired" && (
+                  <button
+                    onClick={() => toggleStatus(c.id)}
+                    title={c.status === "active" ? "Desactivar" : "Activar"}
+                    className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    {c.status === "active"
+                      ? <ToggleRight className="w-3.5 h-3.5 text-green-500" />
+                      : <ToggleLeft  className="w-3.5 h-3.5" />}
+                  </button>
+                )}
+                <button
+                  onClick={() => setModal({ open: true, coupon: c })}
+                  className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => setDeleteId(c.id)}
+                  className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Modals */}
+      {modal?.open && (
+        <CouponModal
+          coupon={modal.coupon}
+          onSave={handleSave}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {deleteId && deleteTarget && (
+        <DeleteConfirm
+          code={deleteTarget.code}
+          onConfirm={handleDelete}
+          onClose={() => setDeleteId(null)}
+        />
+      )}
+    </div>
+  );
+}
