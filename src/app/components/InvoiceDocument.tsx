@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { Printer, Download, X, CheckCircle2, Clock, AlertTriangle, Ban } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import type { InvoiceStatus } from "../data/invoices";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -40,13 +41,25 @@ const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; text: stri
   void:    { label: "ANULADA",  bg: "bg-gray-100",  text: "text-gray-500",   border: "border-gray-200",  icon: Ban           },
 };
 
-/* ── Helpers ───────────────────────────────────────────────── */
+/* ── Helpers ─────────────────────────────────────────────── */
 function fmt(n: number) {
   return n.toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function buildQRValue(data: InvoiceData): string {
+  const base = typeof window !== "undefined" ? window.location.origin : "https://nexa.com";
+  return [
+    `${base}/verificar-factura/${data.invoiceNumber}`,
+    `Factura: ${data.invoiceNumber}`,
+    `Orden: ${data.orderNumber}`,
+    `Cliente: ${data.customer.name}`,
+    `Total: $${fmt(data.total)}`,
+    `Fecha: ${data.date}`,
+  ].join("\n");
 }
 
 /* ── Print styles injected once ────────────────────────────── */
@@ -72,6 +85,7 @@ export function InvoiceDocument({
   const printRef = useRef<HTMLDivElement>(null);
   const sm = STATUS_META[data.status];
   const StatusIcon = sm.icon;
+  const qrValue = buildQRValue(data);
 
   function handlePrint() {
     // Inject style once
@@ -250,11 +264,34 @@ export function InvoiceDocument({
             </div>
           )}
 
-          {/* Footer */}
-          <div className="px-10 py-5 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-            <p className="text-[10px] text-gray-400">NEXA Commerce S.L. · CIF: B-12345678 · info@nexa.com</p>
-            <p className="text-[10px] text-gray-400">{data.invoiceNumber} · Página 1 de 1</p>
+          {/* QR + Footer */}
+          <div className="px-10 py-5 border-t border-gray-100 bg-gray-50/50 flex items-end justify-between gap-6">
+            {/* Legal */}
+            <div className="space-y-1">
+              <p className="text-[10px] text-gray-400">NEXA Commerce S.L. · CIF: B-12345678 · info@nexa.com</p>
+              <p className="text-[10px] text-gray-400">{data.invoiceNumber} · Página 1 de 1</p>
+              <p className="text-[10px] text-gray-300 mt-2 max-w-xs leading-relaxed">
+                Documento generado electrónicamente. Escanea el código QR para verificar la autenticidad de esta factura.
+              </p>
+            </div>
+
+            {/* QR block */}
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div className="bg-white border border-gray-200 rounded-lg p-2 shadow-sm">
+                <QRCodeSVG
+                  value={qrValue}
+                  size={80}
+                  bgColor="#ffffff"
+                  fgColor="#111827"
+                  level="M"
+                  marginSize={0}
+                />
+              </div>
+              <p className="text-[9px] text-gray-400 tracking-wide text-center">Verificar factura</p>
+              <p className="text-[8px] text-gray-300 font-mono text-center">{data.invoiceNumber}</p>
+            </div>
           </div>
+
         </div>
       </div>
     </div>

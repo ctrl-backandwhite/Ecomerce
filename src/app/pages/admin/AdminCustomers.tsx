@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, Eye, Users, DollarSign, ShoppingCart,
   UserCheck, UserX, X, Mail, Phone, Calendar,
@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { customers as initialCustomers, type Customer } from "../../data/customers";
 import { toast } from "sonner";
+import { Pagination } from "../../components/admin/Pagination";
 
 function StatusBadge({ status }: { status: "active" | "inactive" }) {
   return (
@@ -124,6 +125,8 @@ export function AdminCustomers() {
   const [selectedCustomer, setSel]  = useState<Customer | null>(null);
   const [sortKey, setSortKey]       = useState<"name" | "orders" | "totalSpent" | "joinDate">("totalSpent");
   const [sortDir, setSortDir]       = useState<"asc" | "desc">("desc");
+  const [page, setPage]             = useState(1);
+  const PAGE_SIZE = 15;
 
   const filtered = useMemo(() => {
     let l = [...list];
@@ -137,6 +140,11 @@ export function AdminCustomers() {
     });
     return l;
   }, [list, search, statusFilter, sortKey, sortDir]);
+
+  useEffect(() => setPage(1), [search, statusFilter, sortKey, sortDir]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function handleToggleStatus(id: string) {
     setList((prev) => prev.map((c) => c.id === id ? { ...c, status: c.status === "active" ? "inactive" : "active" } : c));
@@ -159,7 +167,7 @@ export function AdminCustomers() {
   );
 
   return (
-    <div className="space-y-5 max-w-[1400px]">
+    <div className="flex flex-col gap-5 h-full">
 
       {/* Header */}
       <div>
@@ -211,8 +219,8 @@ export function AdminCustomers() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="overflow-auto flex-1">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100">
@@ -220,13 +228,13 @@ export function AdminCustomers() {
                 <th className="text-left px-4 py-3.5 text-xs text-gray-400 font-normal hidden sm:table-cell">Email</th>
                 <th className="text-right px-4 py-3.5 text-xs text-gray-400 font-normal"><SortBtn k="orders" label="Pedidos" /></th>
                 <th className="text-right px-4 py-3.5 text-xs text-gray-400 font-normal hidden md:table-cell"><SortBtn k="totalSpent" label="Total gastado" /></th>
-                <th className="text-right px-4 py-3.5 text-xs text-gray-400 font-normal hidden lg:table-cell"><SortBtn k="joinDate" label="Miembro desde" /></th>
+                <th className="text-center px-4 py-3.5 text-xs text-gray-400 font-normal hidden lg:table-cell"><SortBtn k="joinDate" label="Miembro desde" /></th>
                 <th className="text-left px-4 py-3.5 text-xs text-gray-400 font-normal">Estado</th>
                 <th className="text-right px-5 py-3.5 text-xs text-gray-400 font-normal">Ver</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filtered.map((c) => (
+              {paginated.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
@@ -240,9 +248,9 @@ export function AdminCustomers() {
                     </div>
                   </td>
                   <td className="px-4 py-3.5 text-xs text-gray-400 hidden sm:table-cell">{c.email}</td>
-                  <td className="px-4 py-3.5 text-right text-xs text-gray-700">{c.orders}</td>
-                  <td className="px-4 py-3.5 text-right text-xs text-gray-900 hidden md:table-cell">${c.totalSpent.toLocaleString()}</td>
-                  <td className="px-4 py-3.5 text-right text-xs text-gray-400 hidden lg:table-cell">{c.joinDate}</td>
+                  <td className="px-4 py-3.5 text-right text-xs text-gray-700 tabular-nums">{c.orders}</td>
+                  <td className="px-4 py-3.5 text-right text-xs text-gray-900 hidden md:table-cell tabular-nums">${c.totalSpent.toLocaleString()}</td>
+                  <td className="px-4 py-3.5 text-center text-xs text-gray-400 hidden lg:table-cell">{c.joinDate}</td>
                   <td className="px-4 py-3.5"><StatusBadge status={c.status} /></td>
                   <td className="px-5 py-3.5 text-right">
                     <button onClick={() => setSel(c)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors ml-auto">
@@ -261,6 +269,7 @@ export function AdminCustomers() {
             </div>
           )}
         </div>
+        <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
 
       {selectedCustomer && (

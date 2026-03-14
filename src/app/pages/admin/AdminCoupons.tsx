@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, Plus, Pencil, Trash2, X, Copy, Check,
   Tag, Percent, DollarSign, Calendar, Users,
@@ -6,6 +6,7 @@ import {
   AlertTriangle, TrendingUp, Gift,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Pagination } from "../../components/admin/Pagination";
 
 /* ── Types ────────────────────────────────────────────────── */
 interface Coupon {
@@ -343,9 +344,11 @@ export function AdminCoupons() {
   const [coupons, setCoupons]       = useState<Coupon[]>(INITIAL_COUPONS);
   const [search,  setSearch]        = useState("");
   const [statusFilter, setStatusF]  = useState<"all" | Coupon["status"]>("all");
-  const [typeFilter,   setTypeF]    = useState<"all" | Coupon["type"]>("all");
+  const [typeFilter, setTypeF]     = useState<"all" | "percentage" | "fixed">("all");
   const [modal, setModal]           = useState<{ open: boolean; coupon: Partial<Coupon> } | null>(null);
   const [deleteId, setDeleteId]     = useState<string | null>(null);
+  const [page, setPage]             = useState(1);
+  const PAGE_SIZE = 15;
 
   /* ── Filtered list ── */
   const filtered = useMemo(() => {
@@ -399,8 +402,13 @@ export function AdminCoupons() {
 
   const deleteTarget = coupons.find(c => c.id === deleteId);
 
+  useEffect(() => setPage(1), [search, statusFilter, typeFilter]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
-    <div className="p-6 space-y-5">
+    <div className="flex flex-col gap-5 h-full">
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
@@ -410,9 +418,10 @@ export function AdminCoupons() {
         </div>
         <button
           onClick={() => setModal({ open: true, coupon: EMPTY_FORM })}
-          className="flex items-center gap-1.5 h-7 px-3 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          title="Nuevo cupón"
         >
-          <Plus className="w-3.5 h-3.5" /> Nuevo cupón
+          <Plus className="w-4 h-4" strokeWidth={1.5} />
         </button>
       </div>
 
@@ -482,126 +491,135 @@ export function AdminCoupons() {
       </div>
 
       {/* ── Table ── */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
         {/* Table head */}
-        <div className="grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
-          {["Código", "Descuento", "Pedido mín.", "Usos", "Vencimiento", "Estado", ""].map(h => (
-            <p key={h} className="text-[10px] text-gray-400 uppercase tracking-wider">{h}</p>
+        <div className="grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_80px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60 flex-shrink-0">
+          {[
+            { label: "Código",       cls: "text-left"   },
+            { label: "Descuento",    cls: "text-left"   },
+            { label: "Pedido mín.",  cls: "text-right"  },
+            { label: "Usos",         cls: "text-left"   },
+            { label: "Vencimiento",  cls: "text-center" },
+            { label: "Estado",       cls: "text-left"   },
+            { label: "",             cls: "text-right"  },
+          ].map(h => (
+            <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
         </div>
 
-        {filtered.length === 0 && (
-          <div className="py-16 text-center">
-            <Tag className="w-8 h-8 text-gray-200 mx-auto mb-2" strokeWidth={1} />
-            <p className="text-sm text-gray-400">No se encontraron cupones</p>
-            <p className="text-xs text-gray-300 mt-1">Prueba con otro filtro o crea uno nuevo</p>
-          </div>
-        )}
-
-        {filtered.map((c, i) => {
-          const sm = STATUS_META[c.status];
-          const pct = usagePercent(c.usedCount, c.maxUses);
-          const expiring = c.expiresAt && c.status === "active" &&
-            (new Date(c.expiresAt).getTime() - Date.now()) / 86400000 <= 7 &&
-            !isExpired(c.expiresAt);
-
-          return (
-            <div
-              key={c.id}
-              className={`grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_auto] gap-3 px-4 py-3 items-center transition-colors hover:bg-gray-50/60 ${
-                i !== filtered.length - 1 ? "border-b border-gray-50" : ""
-              }`}
-            >
-              {/* Code */}
-              <div className="flex items-center gap-0 min-w-0">
-                <span className="font-mono text-xs text-gray-900 tracking-wider truncate">{c.code}</span>
-                <CopyBtn text={c.code} />
-                {c.description && (
-                  <p className="hidden lg:block text-[11px] text-gray-400 truncate mt-0.5 col-span-full">{c.description}</p>
-                )}
-              </div>
-
-              {/* Discount */}
-              <div>
-                <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${
-                  c.type === "percentage" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"
-                }`}>
-                  {c.type === "percentage"
-                    ? <><Percent className="w-2.5 h-2.5" />{c.value}%</>
-                    : <><DollarSign className="w-2.5 h-2.5" />${c.value}</>}
-                </span>
-              </div>
-
-              {/* Min order */}
-              <p className="text-xs text-gray-500">
-                {c.minOrder > 0 ? `$${c.minOrder}` : <span className="text-gray-300">—</span>}
-              </p>
-
-              {/* Uses */}
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                  <Users className="w-3 h-3 text-gray-300 flex-shrink-0" />
-                  <span>{c.usedCount}</span>
-                  {c.maxUses !== null
-                    ? <span className="text-gray-400">/ {c.maxUses}</span>
-                    : <InfinityIcon className="w-3 h-3 text-gray-300" />}
-                </div>
-                {pct !== null && (
-                  <div className="mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-20">
-                    <div
-                      className={`h-full rounded-full ${pct >= 90 ? "bg-red-400" : pct >= 70 ? "bg-amber-400" : "bg-green-400"}`}
-                      style={{ width: `${Math.min(pct, 100)}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Expiry */}
-              <div className="flex items-center gap-1">
-                {expiring && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Expira pronto" />}
-                <span className={`text-xs ${expiring ? "text-amber-600" : "text-gray-500"}`}>
-                  {formatDate(c.expiresAt)}
-                </span>
-              </div>
-
-              {/* Status */}
-              <div>
-                <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full ${sm.bg} ${sm.text}`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
-                  {sm.label}
-                </span>
-              </div>
-
-              {/* Actions */}
-              <div className="flex items-center gap-1">
-                {/* Toggle active/inactive */}
-                {c.status !== "expired" && (
-                  <button
-                    onClick={() => toggleStatus(c.id)}
-                    title={c.status === "active" ? "Desactivar" : "Activar"}
-                    className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    {c.status === "active"
-                      ? <ToggleRight className="w-3.5 h-3.5 text-green-500" />
-                      : <ToggleLeft  className="w-3.5 h-3.5" />}
-                  </button>
-                )}
-                <button
-                  onClick={() => setModal({ open: true, coupon: c })}
-                  className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-                <button
-                  onClick={() => setDeleteId(c.id)}
-                  className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
+        <div className="overflow-auto flex-1">
+          {filtered.length === 0 && (
+            <div className="py-16 text-center">
+              <Tag className="w-8 h-8 text-gray-200 mx-auto mb-2" strokeWidth={1} />
+              <p className="text-sm text-gray-400">No se encontraron cupones</p>
+              <p className="text-xs text-gray-300 mt-1">Prueba con otro filtro o crea uno nuevo</p>
             </div>
-          );
-        })}
+          )}
+
+          {paginated.map((c, i) => {
+            const sm = STATUS_META[c.status];
+            const pct = usagePercent(c.usedCount, c.maxUses);
+            const expiring = c.expiresAt && c.status === "active" &&
+              (new Date(c.expiresAt).getTime() - Date.now()) / 86400000 <= 7 &&
+              !isExpired(c.expiresAt);
+
+            return (
+              <div
+                key={c.id}
+                className={`grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_80px] gap-3 px-4 py-3 items-center transition-colors hover:bg-gray-50/60 ${
+                  i !== paginated.length - 1 ? "border-b border-gray-50" : ""
+                }`}
+              >
+                {/* Código */}
+                <div className="flex items-center gap-1 min-w-0">
+                  <span className="font-mono text-xs text-gray-900 tracking-wider truncate">{c.code}</span>
+                  <CopyBtn text={c.code} />
+                </div>
+
+                {/* Descuento */}
+                <div className="flex items-center">
+                  <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${
+                    c.type === "percentage" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"
+                  }`}>
+                    {c.type === "percentage"
+                      ? <><Percent className="w-2.5 h-2.5" />{c.value}%</>
+                      : <><DollarSign className="w-2.5 h-2.5" />${c.value}</>}
+                  </span>
+                </div>
+
+                {/* Pedido mínimo */}
+                <p className="text-xs text-gray-500 text-right tabular-nums">
+                  {c.minOrder > 0 ? `$${c.minOrder}` : <span className="text-gray-300">—</span>}
+                </p>
+
+                {/* Usos */}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
+                    <Users className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                    <span className="tabular-nums">{c.usedCount}</span>
+                    {c.maxUses !== null
+                      ? <span className="text-gray-400 tabular-nums">/ {c.maxUses}</span>
+                      : <InfinityIcon className="w-3 h-3 text-gray-300" />}
+                  </div>
+                  {pct !== null && (
+                    <div className="mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-20">
+                      <div
+                        className={`h-full rounded-full ${pct >= 90 ? "bg-red-400" : pct >= 70 ? "bg-amber-400" : "bg-green-400"}`}
+                        style={{ width: `${Math.min(pct, 100)}%` }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Vencimiento */}
+                <div className="flex items-center justify-center gap-1">
+                  {expiring && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Expira pronto" />}
+                  <span className={`text-xs tabular-nums ${expiring ? "text-amber-600" : "text-gray-500"}`}>
+                    {formatDate(c.expiresAt)}
+                  </span>
+                </div>
+
+                {/* Estado */}
+                <div className="flex items-center">
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full ${sm.bg} ${sm.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
+                    {sm.label}
+                  </span>
+                </div>
+
+                {/* Acciones */}
+                <div className="flex items-center justify-end gap-1">
+                  {/* Toggle active/inactive */}
+                  {c.status !== "expired" && (
+                    <button
+                      onClick={() => toggleStatus(c.id)}
+                      title={c.status === "active" ? "Desactivar" : "Activar"}
+                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      {c.status === "active"
+                        ? <ToggleRight className="w-3.5 h-3.5 text-green-500" />
+                        : <ToggleLeft  className="w-3.5 h-3.5" />}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setModal({ open: true, coupon: c })}
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  </button>
+                  <button
+                    onClick={() => setDeleteId(c.id)}
+                    className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
 
       {/* Modals */}

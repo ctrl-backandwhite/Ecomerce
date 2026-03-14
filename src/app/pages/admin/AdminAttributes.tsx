@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search, Plus, Pencil, Trash2, X, Check,
   ChevronDown, Tag, Palette, Type, List,
 } from "lucide-react";
-import { attributes as initialAttributes, type Attribute, type AttributeValue } from "../../data/attributes";
+import { type Attribute, type AttributeValue } from "../../data/attributes";
 import { toast } from "sonner";
+import { Pagination } from "../../components/admin/Pagination";
+import { useStore } from "../../context/StoreContext";
 
 const TYPE_LABELS: Record<Attribute["type"], string> = {
   color: "Color",
@@ -187,34 +189,38 @@ function AttributeModal({
 
 /* ── Main ────────────────────────────────────────────────── */
 export function AdminAttributes() {
-  const [list, setList] = useState<Attribute[]>(initialAttributes);
-  const [search, setSearch] = useState("");
-  const [modal, setModal] = useState<Partial<Attribute> | null>(null);
+  const { attributes: list, saveAttribute, deleteAttribute } = useStore();
+
+  const [search, setSearch]     = useState("");
+  const [modal, setModal]       = useState<Partial<Attribute> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [page, setPage]         = useState(1);
+  const PAGE_SIZE = 10;
 
   const filtered = list.filter((a) =>
     a.name.toLowerCase().includes(search.toLowerCase())
   );
 
+  useEffect(() => setPage(1), [search]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   function handleSave(a: Attribute) {
-    setList((prev) => {
-      const exists = prev.find((x) => x.id === a.id);
-      if (exists) return prev.map((x) => (x.id === a.id ? a : x));
-      return [...prev, a];
-    });
+    saveAttribute(a);
     toast.success(modal?.id ? "Atributo actualizado" : "Atributo creado");
     setModal(null);
   }
 
   function handleDelete(id: string) {
-    setList((prev) => prev.filter((a) => a.id !== id));
+    deleteAttribute(id);
     toast.success("Atributo eliminado");
     setDeleteId(null);
   }
 
   return (
-    <div className="h-full flex flex-col space-y-5">
+    <div className="h-full flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -252,7 +258,7 @@ export function AdminAttributes() {
           </div>
         )}
 
-        {filtered.map((attr) => {
+        {paginated.map((attr) => {
           const Icon = TYPE_ICONS[attr.type];
           const isExpanded = expanded === attr.id;
 
@@ -293,7 +299,7 @@ export function AdminAttributes() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                <div className="flex items-center gap-1 flex-shrink-0"
                   onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => setModal(attr)}
@@ -335,6 +341,8 @@ export function AdminAttributes() {
           );
         })}
       </div>
+
+      <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
 
       {modal !== null && (
         <AttributeModal attribute={modal} onSave={handleSave} onClose={() => setModal(null)} />

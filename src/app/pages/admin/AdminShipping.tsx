@@ -524,17 +524,19 @@ export function AdminShipping() {
         {tab === "carriers" && (
           <button
             onClick={openNewCarrier}
-            className="flex items-center gap-2 h-8 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+            className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+            title="Nuevo transportista"
           >
-            <Plus className="w-3.5 h-3.5" /> Nuevo transportista
+            <Plus className="w-4 h-4" strokeWidth={1.5} />
           </button>
         )}
         {tab === "rules" && (
           <button
             onClick={openNewRule}
-            className="flex items-center gap-2 h-8 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+            className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+            title="Nueva regla"
           >
-            <Plus className="w-3.5 h-3.5" /> Nueva regla
+            <Plus className="w-4 h-4" strokeWidth={1.5} />
           </button>
         )}
       </div>
@@ -576,8 +578,16 @@ export function AdminShipping() {
       {tab === "carriers" && (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="hidden lg:grid grid-cols-[2fr_1.5fr_0.8fr_0.8fr_0.8fr_0.8fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
-            {["Transportista", "Cobertura", "Días", "Gratis +", "Tarifa base", "Estado", ""].map(h => (
-              <p key={h} className="text-[10px] text-gray-400 uppercase tracking-wider">{h}</p>
+            {[
+              { label: "Transportista", cls: "text-left"   },
+              { label: "Cobertura",     cls: "text-left"   },
+              { label: "Días",          cls: "text-center" },
+              { label: "Gratis +",      cls: "text-right"  },
+              { label: "Tarifa base",   cls: "text-right"  },
+              { label: "Estado",        cls: "text-left"   },
+              { label: "",              cls: "text-right"  },
+            ].map(h => (
+              <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
             ))}
           </div>
 
@@ -607,9 +617,9 @@ export function AdminShipping() {
               </div>
 
               <p className="text-xs text-gray-500 lg:block">{c.zones}</p>
-              <p className="text-xs text-gray-500">{c.minDays}–{c.maxDays} días</p>
-              <p className="text-xs text-gray-500">{c.freeAbove != null ? `€${c.freeAbove}` : "—"}</p>
-              <p className="text-xs text-gray-900">€{c.baseCost.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 text-center">{c.minDays}–{c.maxDays} días</p>
+              <p className="text-xs text-gray-500 text-right tabular-nums">{c.freeAbove != null ? `€${c.freeAbove}` : "—"}</p>
+              <p className="text-xs text-gray-900 text-right tabular-nums">€{c.baseCost.toFixed(2)}</p>
 
               {/* Status toggle */}
               <button
@@ -621,17 +631,17 @@ export function AdminShipping() {
               </button>
 
               {/* Actions */}
-              <div className="flex gap-1">
+              <div className="flex gap-1 justify-end">
                 <button
                   onClick={() => openEditCarrier(c)}
-                  className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   title="Editar"
                 >
                   <Pencil className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => confirmDeleteCarrier(c)}
-                  className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                   title="Eliminar"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -658,8 +668,15 @@ export function AdminShipping() {
       {tab === "rules" && (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="hidden lg:grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
-            {["Zona", "Transportista", "Peso desde", "Peso hasta", "Precio", ""].map(h => (
-              <p key={h} className="text-[10px] text-gray-400 uppercase tracking-wider">{h}</p>
+            {[
+              { label: "Zona",          cls: "text-left"   },
+              { label: "Transportista", cls: "text-left"   },
+              { label: "Peso desde",    cls: "text-right"  },
+              { label: "Peso hasta",    cls: "text-right"  },
+              { label: "Precio",        cls: "text-right"  },
+              { label: "",              cls: "text-right"  },
+            ].map(h => (
+              <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
             ))}
           </div>
 
@@ -682,12 +699,12 @@ export function AdminShipping() {
                 </div>
                 <p className="text-xs text-gray-500">{r.carrier}</p>
               </div>
-              <p className="text-xs text-gray-500">{r.weightFrom} kg</p>
-              <p className="text-xs text-gray-500">{r.weightTo} kg</p>
-              <p className="text-xs text-gray-900">€{r.price.toFixed(2)}</p>
-              <div className="flex gap-1">
-                <button onClick={() => openEditRule(r)} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><Pencil className="w-3 h-3" /></button>
-                <button onClick={() => confirmDeleteRule(r)} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3 h-3" /></button>
+              <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightFrom} kg</p>
+              <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightTo} kg</p>
+              <p className="text-xs text-gray-900 text-right tabular-nums">€{r.price.toFixed(2)}</p>
+              <div className="flex gap-1 justify-end">
+                <button onClick={() => openEditRule(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" strokeWidth={1.5} /></button>
+                <button onClick={() => confirmDeleteRule(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} /></button>
               </div>
             </div>
           ))}

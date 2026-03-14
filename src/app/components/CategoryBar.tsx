@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { categoryTree, products } from "../data/products";
+import { categoryTree } from "../data/products";
 import { ArrowRight, Tag, Layers } from "lucide-react";
+import { useStore } from "../context/StoreContext";
 
 const categoryMeta: Record<string, { description: string; promo: string }> = {
   "Electrónica":  { description: "Smartphones, laptops, tablets y accesorios de última generación.",  promo: "Hasta 23% de descuento en seleccionados" },
@@ -14,26 +15,25 @@ const categoryMeta: Record<string, { description: string; promo: string }> = {
   "Accesorios":   { description: "Mochilas, gafas, carteras y complementos de diseño funcional.",      promo: "Diseño funcional desde $45" },
 };
 
-function getSubcategoryCount(subcategory: string) {
-  return products.filter((p) => p.subcategory === subcategory).length;
-}
-
 export function CategoryBar() {
+  const { products } = useStore();
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const activeCategory = searchParams.get("category");
 
+  function getSubcategoryCount(subcategory: string) {
+    return products.filter((p) => p.subcategory === subcategory).length;
+  }
+
   /* ── hover helpers ──────────────────────────────────────────── */
   const scheduleClose = () => {
     closeTimerRef.current = setTimeout(() => setOpenCategory(null), 160);
   };
-
   const cancelClose = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
   };
-
   const handleMouseEnter = (name: string) => {
     cancelClose();
     setOpenCategory(name);
@@ -57,7 +57,6 @@ export function CategoryBar() {
     scrollToProducts();
   };
 
-  /* ── active category data ───────────────────────────────────── */
   const openCat = categoryTree.find((c) => c.name === openCategory);
   const meta    = openCategory ? categoryMeta[openCategory] : null;
 
@@ -107,7 +106,7 @@ export function CategoryBar() {
           <div className="w-full px-6 lg:px-10 py-8">
             <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr_220px] gap-10">
 
-              {/* ── Left: Category overview ─────────────────── */}
+              {/* Left: Category overview */}
               <div className="flex flex-col">
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
@@ -115,9 +114,7 @@ export function CategoryBar() {
                   </div>
                   <h3 className="text-base text-gray-900">{openCategory}</h3>
                 </div>
-                <p className="text-sm text-gray-500 leading-relaxed mb-6">
-                  {meta.description}
-                </p>
+                <p className="text-sm text-gray-500 leading-relaxed mb-6">{meta.description}</p>
                 <button
                   onClick={() => goToCategory(openCategory!)}
                   className="mt-auto inline-flex items-center gap-2 text-sm text-white bg-gray-900 px-4 py-2.5 rounded-lg hover:bg-gray-800 transition-colors w-fit"
@@ -131,7 +128,7 @@ export function CategoryBar() {
                 </div>
               </div>
 
-              {/* ── Middle: Subcategories grid ──────────────── */}
+              {/* Middle: Subcategories grid */}
               <div>
                 <p className="text-xs tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-2">
                   <Layers className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -146,36 +143,25 @@ export function CategoryBar() {
                         onClick={() => goToSubcategory(openCategory!, sub)}
                         className="group flex items-center justify-between px-4 py-3 rounded-lg text-left border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all"
                       >
-                        <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">
-                          {sub}
-                        </span>
-                        <span className="text-xs text-gray-300 group-hover:text-gray-500 transition-colors ml-2 flex-shrink-0">
-                          {count}
-                        </span>
+                        <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">{sub}</span>
+                        <span className="text-xs text-gray-300 group-hover:text-gray-500 transition-colors ml-2 flex-shrink-0">{count}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* ── Right: Visual card ─────────────────────── */}
+              {/* Right: Visual card */}
               <div className="hidden lg:flex flex-col bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <span className="text-xs tracking-widest text-gray-400 uppercase">
-                  Destacado
-                </span>
-                <h4 className="text-sm text-gray-900 mt-3 mb-1">
-                  Tendencias en {openCategory}
-                </h4>
+                <span className="text-xs tracking-widest text-gray-400 uppercase">Destacado</span>
+                <h4 className="text-sm text-gray-900 mt-3 mb-1">Tendencias en {openCategory}</h4>
                 <p className="text-xs text-gray-500 leading-relaxed flex-1">
                   Descubre los productos más valorados y con mayor demanda de la categoría.
                 </p>
                 <div className="mt-5 pt-4 border-t border-gray-200">
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>{products.filter((p) => p.category === openCategory).length} productos</span>
-                    <button
-                      onClick={() => goToCategory(openCategory!)}
-                      className="flex items-center gap-1 text-gray-900 hover:underline"
-                    >
+                    <button onClick={() => goToCategory(openCategory!)} className="flex items-center gap-1 text-gray-900 hover:underline">
                       Ver todos <ArrowRight className="w-3 h-3" />
                     </button>
                   </div>

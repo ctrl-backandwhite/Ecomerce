@@ -959,9 +959,10 @@ export function AdminFlows() {
         </div>
         <button
           onClick={() => setPanelData({ mode: "new", data: { ...emptyFlow } })}
-          className="flex items-center gap-2 h-8 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          title="Nuevo flujo"
         >
-          <Plus className="w-3.5 h-3.5" /> Nuevo flujo
+          <Plus className="w-4 h-4" strokeWidth={1.5} />
         </button>
       </div>
 

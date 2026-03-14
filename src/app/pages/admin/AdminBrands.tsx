@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search, Plus, Pencil, Trash2, X, Check,
   Globe, Package, ChevronDown, ExternalLink,
 } from "lucide-react";
-import { brands as initialBrands, type Brand } from "../../data/brands";
+import { Brand } from "../../data/brands";
 import { toast } from "sonner";
+import { Pagination } from "../../components/admin/Pagination";
+import { useStore } from "../../context/StoreContext";
 
 const EMPTY: Omit<Brand, "id"> = {
   name: "", slug: "", logo: "", website: "", description: "", productCount: 0, status: "active",
@@ -131,34 +133,38 @@ function BrandModal({
 
 /* ── Main ────────────────────────────────────────────────── */
 export function AdminBrands() {
-  const [list, setList] = useState<Brand[]>(initialBrands);
+  const { brands: list, saveBrand, deleteBrand } = useStore();
+
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<Partial<Brand> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 15;
 
   const filtered = list.filter((b) =>
     b.name.toLowerCase().includes(search.toLowerCase()) ||
     b.description.toLowerCase().includes(search.toLowerCase())
   );
 
+  useEffect(() => setPage(1), [search]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   function handleSave(b: Brand) {
-    setList((prev) => {
-      const exists = prev.find((x) => x.id === b.id);
-      if (exists) return prev.map((x) => (x.id === b.id ? b : x));
-      return [...prev, b];
-    });
+    saveBrand(b);
     toast.success(modal?.id ? "Marca actualizada" : "Marca creada");
     setModal(null);
   }
 
   function handleDelete(id: string) {
-    setList((prev) => prev.filter((b) => b.id !== id));
+    deleteBrand(id);
     toast.success("Marca eliminada");
     setDeleteId(null);
   }
 
   return (
-    <div className="h-full flex flex-col space-y-5">
+    <div className="h-full flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -188,85 +194,88 @@ export function AdminBrands() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto bg-white border border-gray-100 rounded-xl">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-100">
-              <th className="text-left text-xs text-gray-400 px-5 py-3.5">Marca</th>
-              <th className="text-left text-xs text-gray-400 px-5 py-3.5 hidden md:table-cell">Sitio web</th>
-              <th className="text-left text-xs text-gray-400 px-5 py-3.5 hidden sm:table-cell">Productos</th>
-              <th className="text-left text-xs text-gray-400 px-5 py-3.5">Estado</th>
-              <th className="text-right text-xs text-gray-400 px-5 py-3.5">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 && (
-              <tr>
-                <td colSpan={5} className="text-center py-16 text-xs text-gray-400">
-                  {search ? "No se encontraron marcas" : "No hay marcas registradas"}
-                </td>
+      <div className="flex flex-col flex-1 min-h-0 bg-white border border-gray-100 rounded-xl overflow-hidden">
+        <div className="overflow-auto flex-1">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-gray-100">
+                <th className="text-left text-xs text-gray-400 px-5 py-3.5">Marca</th>
+                <th className="text-left text-xs text-gray-400 px-5 py-3.5 hidden md:table-cell">Sitio web</th>
+                <th className="text-right text-xs text-gray-400 px-5 py-3.5 hidden sm:table-cell">Productos</th>
+                <th className="text-left text-xs text-gray-400 px-5 py-3.5">Estado</th>
+                <th className="text-right text-xs text-gray-400 px-5 py-3.5">Acciones</th>
               </tr>
-            )}
-            {filtered.map((brand) => (
-              <tr key={brand.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
-                <td className="px-5 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {brand.logo ? (
-                        <img src={brand.logo} alt={brand.name} className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-                      ) : (
-                        <span className="text-xs text-gray-500">{brand.name.slice(0, 2).toUpperCase()}</span>
-                      )}
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center py-16 text-xs text-gray-400">
+                    {search ? "No se encontraron marcas" : "No hay marcas registradas"}
+                  </td>
+                </tr>
+              )}
+              {paginated.map((brand) => (
+                <tr key={brand.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {brand.logo ? (
+                          <img src={brand.logo} alt={brand.name} className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
+                        ) : (
+                          <span className="text-xs text-gray-500">{brand.name.slice(0, 2).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900">{brand.name}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{brand.slug}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-gray-900">{brand.name}</p>
-                      <p className="text-xs text-gray-400 mt-0.5">{brand.slug}</p>
+                  </td>
+                  <td className="px-5 py-4 hidden md:table-cell">
+                    {brand.website ? (
+                      <a href={brand.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                        <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
+                        {brand.website.replace("https://", "")}
+                      </a>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
+                  </td>
+                  <td className="px-5 py-4 hidden sm:table-cell">
+                    <div className="flex items-center justify-end gap-1.5 text-xs text-gray-600">
+                       <Package className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                       {brand.productCount}
+                     </div>
+                   </td>
+                  <td className="px-5 py-4">
+                    <span className={`text-[10px] px-2.5 py-1 rounded-full ${brand.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {brand.status === "active" ? "Activa" : "Inactiva"}
+                    </span>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setModal(brand)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Editar"
+                      >
+                        <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteId(brand.id)}
+                        className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      </button>
                     </div>
-                  </div>
-                </td>
-                <td className="px-5 py-4 hidden md:table-cell">
-                  {brand.website ? (
-                    <a href={brand.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition-colors">
-                      <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
-                      {brand.website.replace("https://", "")}
-                    </a>
-                  ) : (
-                    <span className="text-xs text-gray-300">—</span>
-                  )}
-                </td>
-                <td className="px-5 py-4 hidden sm:table-cell">
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <Package className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                    {brand.productCount}
-                  </div>
-                </td>
-                <td className="px-5 py-4">
-                  <span className={`text-[10px] px-2.5 py-1 rounded-full ${brand.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                    {brand.status === "active" ? "Activa" : "Inactiva"}
-                  </span>
-                </td>
-                <td className="px-5 py-4">
-                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => setModal(brand)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Editar"
-                    >
-                      <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    </button>
-                    <button
-                      onClick={() => setDeleteId(brand.id)}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
 
       {/* Brand Modal */}

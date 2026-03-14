@@ -182,7 +182,7 @@ export function AdminReviews() {
   }
 
   return (
-    <div className="p-6 space-y-5">
+    <div className="flex flex-col gap-5 h-full">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -246,73 +246,85 @@ export function AdminReviews() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[2fr_1.5fr_0.8fr_0.8fr_0.8fr_0.8fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
-          {["Reseña", "Producto", "Valoración", "Fecha", "Útil", "Estado", ""].map(h => (
-            <p key={h} className="text-[10px] text-gray-400 uppercase tracking-wider">{h}</p>
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="grid grid-cols-[2fr_1.5fr_0.8fr_0.8fr_0.8fr_0.8fr_96px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60 flex-shrink-0">
+          {[
+            { label: "Reseña",     cls: "text-left"   },
+            { label: "Producto",   cls: "text-left"   },
+            { label: "Valoración", cls: "text-center" },
+            { label: "Fecha",      cls: "text-center" },
+            { label: "Útil",       cls: "text-right"  },
+            { label: "Estado",     cls: "text-left"   },
+            { label: "",           cls: "text-right"  },
+          ].map(h => (
+            <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
         </div>
 
-        {filtered.length === 0 && (
-          <div className="py-16 text-center">
-            <Star className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-            <p className="text-sm text-gray-400">No se encontraron reseñas</p>
-          </div>
-        )}
+        <div className="overflow-auto flex-1">
+          {filtered.length === 0 && (
+            <div className="py-16 text-center">
+              <Star className="w-8 h-8 text-gray-200 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No se encontraron reseñas</p>
+            </div>
+          )}
 
-        {filtered.map((r, i) => {
-          const sm = STATUS_META[r.status];
-          return (
-            <div key={r.id}
-              className={`grid grid-cols-[2fr_1.5fr_0.8fr_0.8fr_0.8fr_0.8fr_auto] gap-3 px-4 py-3 items-center hover:bg-gray-50/60 transition-colors ${i !== filtered.length - 1 ? "border-b border-gray-50" : ""}`}
-            >
-              {/* Review */}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${r.avatarColor}`}>{r.avatar}</div>
-                  <div className="min-w-0">
-                    <p className="text-xs text-gray-900 truncate">{r.author}</p>
-                    <p className="text-[11px] text-gray-400 truncate">{r.title}</p>
+          {filtered.map((r, i) => {
+            const sm = STATUS_META[r.status];
+            return (
+              <div key={r.id}
+                className={`grid grid-cols-[2fr_1.5fr_0.8fr_0.8fr_0.8fr_0.8fr_96px] gap-3 px-4 py-3 items-center hover:bg-gray-50/60 transition-colors ${i !== filtered.length - 1 ? "border-b border-gray-50" : ""}`}
+              >
+                {/* Reseña: autor + título */}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${r.avatarColor}`}>{r.avatar}</div>
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-900 truncate">{r.author}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{r.title}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              {/* Product */}
-              <p className="text-xs text-gray-500 truncate">{r.productName}</p>
-              {/* Rating */}
-              <Stars rating={r.rating} />
-              {/* Date */}
-              <p className="text-xs text-gray-400">{new Date(r.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}</p>
-              {/* Helpful */}
-              <div className="flex items-center gap-1 text-xs text-gray-400">
-                <ThumbsUp className="w-3 h-3" />{r.helpful}
-              </div>
-              {/* Status */}
-              <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
-                {sm.label}
-              </span>
-              {/* Actions */}
-              <div className="flex items-center gap-1">
-                <button onClick={() => setDetail(r)} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Ver detalle">
-                  <Eye className="w-3 h-3" />
-                </button>
-                {r.status !== "approved" && (
-                  <button onClick={() => setStatus(r.id, "approved")} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Aprobar">
-                    <Check className="w-3 h-3" />
+                {/* Producto */}
+                <p className="text-xs text-gray-500 truncate text-left">{r.productName}</p>
+                {/* Valoración */}
+                <div className="flex justify-center"><Stars rating={r.rating} /></div>
+                {/* Fecha */}
+                <p className="text-xs text-gray-400 text-center tabular-nums">
+                  {new Date(r.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+                </p>
+                {/* Útil */}
+                <p className="text-xs text-gray-400 text-right tabular-nums">{r.helpful}</p>
+                {/* Estado */}
+                <div className="flex items-center">
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
+                    {sm.label}
+                  </span>
+                </div>
+                {/* Acciones */}
+                <div className="flex items-center justify-end gap-1">
+                  <button onClick={() => setDetail(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Ver detalle">
+                    <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
-                )}
-                {r.status !== "rejected" && (
-                  <button onClick={() => setStatus(r.id, "rejected")} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Rechazar">
-                    <XCircle className="w-3 h-3" />
+                  {r.status !== "approved" && (
+                    <button onClick={() => setStatus(r.id, "approved")} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Aprobar">
+                      <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </button>
+                  )}
+                  {r.status !== "rejected" && (
+                    <button onClick={() => setStatus(r.id, "rejected")} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Rechazar">
+                      <XCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </button>
+                  )}
+                  <button onClick={() => setDeleteId(r.id)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
-                )}
-                <button onClick={() => setDeleteId(r.id)} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
-                  <Trash2 className="w-3 h-3" />
-                </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Detail modal */}

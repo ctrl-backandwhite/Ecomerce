@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Search, X, Eye, Filter, ChevronDown, Check, Truck,
   Clock, CheckCircle2, XCircle, ArrowUpDown, Calendar, Package,
@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { orders as initialOrders, type Order } from "../../data/orders";
 import { toast } from "sonner";
+import { Pagination } from "../../components/admin/Pagination";
 
 type Status = Order["status"];
 
@@ -167,6 +168,8 @@ export function AdminOrders() {
   const [statusFilter, setStatus]    = useState<Status | "all">("all");
   const [selectedOrder, setSelOrder] = useState<Order | null>(null);
   const [sortDir, setSortDir]        = useState<"asc" | "desc">("desc");
+  const [page, setPage]              = useState(1);
+  const PAGE_SIZE = 15;
 
   const filtered = useMemo(() => {
     let l = [...list];
@@ -188,8 +191,13 @@ export function AdminOrders() {
   const totalRevenue = filtered.reduce((s, o) => s + o.total, 0);
   const statuses: (Status | "all")[] = ["all", "pending", "processing", "shipped", "delivered", "cancelled"];
 
+  useEffect(() => setPage(1), [search, statusFilter, sortDir]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
-    <div className="space-y-5 max-w-[1400px]">
+    <div className="flex flex-col gap-5 h-full">
 
       {/* Header */}
       <div>
@@ -264,14 +272,14 @@ export function AdminOrders() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <div className="overflow-x-auto">
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="overflow-auto flex-1">
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100">
                 <th className="text-left px-5 py-3.5 text-xs text-gray-400 font-normal">Orden</th>
                 <th className="text-left px-4 py-3.5 text-xs text-gray-400 font-normal hidden sm:table-cell">Cliente</th>
-                <th className="text-left px-4 py-3.5 text-xs text-gray-400 font-normal hidden md:table-cell">Fecha</th>
+                <th className="text-center px-4 py-3.5 text-xs text-gray-400 font-normal hidden md:table-cell">Fecha</th>
                 <th className="text-left px-4 py-3.5 text-xs text-gray-400 font-normal">Estado</th>
                 <th className="text-right px-4 py-3.5 text-xs text-gray-400 font-normal hidden sm:table-cell">Ítems</th>
                 <th className="text-right px-5 py-3.5 text-xs text-gray-400 font-normal">Total</th>
@@ -279,7 +287,7 @@ export function AdminOrders() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filtered.map((order) => (
+              {paginated.map((order) => (
                 <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3.5">
                     <p className="text-xs text-gray-900 font-mono">{order.orderNumber}</p>
@@ -289,10 +297,10 @@ export function AdminOrders() {
                     <p className="text-xs text-gray-700">{order.customer.name}</p>
                     <p className="text-[11px] text-gray-400">{order.customer.email}</p>
                   </td>
-                  <td className="px-4 py-3.5 text-xs text-gray-400 hidden md:table-cell">{order.date}</td>
+                  <td className="px-4 py-3.5 text-center text-xs text-gray-400 hidden md:table-cell">{order.date}</td>
                   <td className="px-4 py-3.5"><StatusBadge status={order.status} /></td>
-                  <td className="px-4 py-3.5 text-right text-xs text-gray-500 hidden sm:table-cell">{order.items}</td>
-                  <td className="px-5 py-3.5 text-right text-xs text-gray-900">${order.total.toLocaleString()}</td>
+                  <td className="px-4 py-3.5 text-right text-xs text-gray-500 hidden sm:table-cell tabular-nums">{order.items}</td>
+                  <td className="px-5 py-3.5 text-right text-xs text-gray-900 tabular-nums">${order.total.toLocaleString()}</td>
                   <td className="px-5 py-3.5 text-right">
                     <button
                       onClick={() => setSelOrder(order)}
@@ -314,12 +322,14 @@ export function AdminOrders() {
           )}
         </div>
 
-        {filtered.length > 0 && (
-          <div className="px-5 py-3 border-t border-gray-100 flex justify-between items-center">
-            <span className="text-xs text-gray-400">{filtered.length} resultados</span>
-            <span className="text-xs text-gray-900">Total: ${totalRevenue.toLocaleString()}</span>
-          </div>
-        )}
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          total={filtered.length}
+          pageSize={PAGE_SIZE}
+          onChange={setPage}
+          extra={<span className="text-xs text-gray-900">Total: ${totalRevenue.toLocaleString()}</span>}
+        />
       </div>
 
       {/* Drawer */}

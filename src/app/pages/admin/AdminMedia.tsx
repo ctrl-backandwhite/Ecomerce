@@ -923,7 +923,7 @@ export function AdminMedia() {
                         e.stopPropagation();
                         setSelectedImage(item);
                       }}
-                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                       <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>

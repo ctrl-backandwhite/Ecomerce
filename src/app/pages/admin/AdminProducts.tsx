@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search, Plus, Pencil, Trash2, Eye, X, Check,
   Package, Star, ChevronDown, Filter, ArrowUpDown,
   Heart, ShoppingCart, Image, AlertTriangle,
   Tag, Truck, Globe, Layers, DollarSign, BarChart2,
-  Shield,
+  Shield, QrCode,
 } from "lucide-react";
-import { products as initialProducts, type Product, type ProductImage, type ProductAttribute, type ProductVariant } from "../../data/products";
-import { categories } from "../../data/adminData";
-import { brands as brandsData } from "../../data/brands";
+import { type Product, type ProductImage, type ProductAttribute, type ProductVariant } from "../../data/products";
 import { initialWarranties, WARRANTY_TYPE_META } from "../../data/warranties";
 import { toast } from "sonner";
+import { Pagination } from "../../components/admin/Pagination";
+import { useStore } from "../../context/StoreContext";
+import { ProductQRModal } from "../../components/admin/ProductQRModal";
 
 type SortKey = "name" | "price" | "stock" | "rating";
 
@@ -112,10 +113,12 @@ function ProductPreview({ product, onClose }: { product: Product; onClose: () =>
 }
 
 /* ── Product Modal (tabbed) ───────────────────────────────── */
-function ProductModal({ product, onSave, onClose }: {
+function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }: {
   product: Partial<Product> & { id?: string };
   onSave: (p: Product) => void;
   onClose: () => void;
+  storeCategories: import("../../data/adminData").Category[];
+  storeBrands: import("../../data/brands").Brand[];
 }) {
   const isNew = !product.id;
   const [tab, setTab] = useState<TabId>("general");
@@ -137,9 +140,9 @@ function ProductModal({ product, onSave, onClose }: {
 
   const set = (k: keyof typeof form, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
-  const parentCategories = categories.filter((c) => !c.parent_id);
+  const parentCategories = storeCategories.filter((c) => !c.parent_id && c.status === "active");
   const selectedCat = parentCategories.find((c) => c.name === form.category);
-  const subcats = selectedCat ? categories.filter((c) => c.parent_id === selectedCat.id) : [];
+  const subcats = selectedCat ? storeCategories.filter((c) => c.parent_id === selectedCat.id && c.status === "active") : [];
 
   function validate() {
     if (!form.name.trim()) { toast.error("El nombre es obligatorio"); setTab("general"); return false; }
@@ -270,7 +273,7 @@ function ProductModal({ product, onSave, onClose }: {
                   <div className="relative">
                     <select value={form.brand} onChange={(e) => set("brand", e.target.value)} className={`${field} appearance-none pr-8`}>
                       <option value="">Sin marca</option>
-                      {brandsData.filter(b => b.status === "active").map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
+                      {storeBrands.filter(b => b.status === "active").map((b) => <option key={b.id} value={b.name}>{b.name}</option>)}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" strokeWidth={1.5} />
                   </div>
@@ -759,37 +762,49 @@ function ProductModal({ product, onSave, onClose }: {
 
 /* ── Main ────────────────────────────────────────────────── */
 export function AdminProducts() {
-  const [list, setList]         = useState<Product[]>(initialProducts);
-  const [search, setSearch]     = useState("");
+  const { products: storeProducts, saveProduct, deleteProduct, categories: storeCategories, brands: storeBrands } = useStore();
+
+  const [search, setSearch]       = useState("");
   const [catFilter, setCatFilter] = useState("all");
-  const [sort, setSort]         = useState<SortKey>("name");
-  const [sortDir, setSortDir]   = useState<"asc" | "desc">("asc");
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
-  const [modal, setModal]       = useState<Partial<Product> & { id?: string } | null>(null);
-  const [preview, setPreview]   = useState<Product | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [sort, setSort]           = useState<SortKey>("name");
+  const [sortDir, setSortDir]     = useState<"asc" | "desc">("asc");
+  const [viewMode, setViewMode]   = useState<"table" | "grid">("table");
+  const [modal, setModal]         = useState<Partial<Product> & { id?: string } | null>(null);
+  const [preview, setPreview]     = useState<Product | null>(null);
+  const [deleteId, setDeleteId]   = useState<string | null>(null);
+  const [qrProduct, setQrProduct] = useState<Product | null>(null);
+  const [page, setPage]           = useState(1);
+  const PAGE_SIZE = 15;
 
-  const lowStock = list.filter((p) => p.stock > 0 && p.stock < 10).length;
+  const lowStock = storeProducts.filter((p) => p.stock > 0 && p.stock < 10).length;
 
-  const catOptions = ["all", ...Array.from(new Set(list.map((p) => p.category)))];
+  const catOptions = ["all", ...Array.from(new Set(storeProducts.map((p) => p.category)))];
 
   const handleSearchChange = (v: string) => setSearch(v);
   const handleCategoryFilterChange = (v: string) => setCatFilter(v);
 
-  const filtered = list
-    .filter((p) => {
-      const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()) || p.brand.toLowerCase().includes(search.toLowerCase());
-      const matchCat = catFilter === "all" || p.category === catFilter;
-      return matchSearch && matchCat;
-    })
-    .sort((a, b) => {
-      let cmp = 0;
-      if (sort === "name")   cmp = a.name.localeCompare(b.name);
-      if (sort === "price")  cmp = a.price - b.price;
-      if (sort === "stock")  cmp = a.stock - b.stock;
-      if (sort === "rating") cmp = a.rating - b.rating;
-      return sortDir === "asc" ? cmp : -cmp;
-    });
+  const filtered = useMemo(() =>
+    storeProducts
+      .filter((p) => {
+        const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.sku.toLowerCase().includes(search.toLowerCase()) || p.brand.toLowerCase().includes(search.toLowerCase());
+        const matchCat = catFilter === "all" || p.category === catFilter;
+        return matchSearch && matchCat;
+      })
+      .sort((a, b) => {
+        let cmp = 0;
+        if (sort === "name")   cmp = a.name.localeCompare(b.name);
+        if (sort === "price")  cmp = a.price - b.price;
+        if (sort === "stock")  cmp = a.stock - b.stock;
+        if (sort === "rating") cmp = a.rating - b.rating;
+        return sortDir === "asc" ? cmp : -cmp;
+      }),
+    [storeProducts, search, catFilter, sort, sortDir]
+  );
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  useEffect(() => setPage(1), [search, catFilter, sort, sortDir]);
 
   function toggleSort(k: SortKey) {
     if (sort === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -797,16 +812,13 @@ export function AdminProducts() {
   }
 
   function handleSave(p: Product) {
-    setList((prev) => {
-      const exists = prev.find((x) => x.id === p.id);
-      return exists ? prev.map((x) => (x.id === p.id ? p : x)) : [...prev, p];
-    });
+    saveProduct(p);
     toast.success(modal?.id ? "Producto actualizado" : "Producto creado");
     setModal(null);
   }
 
   function handleDelete(id: string) {
-    setList((prev) => prev.filter((p) => p.id !== id));
+    deleteProduct(id);
     toast.success("Producto eliminado");
     setDeleteId(null);
   }
@@ -819,7 +831,7 @@ export function AdminProducts() {
   );
 
   return (
-    <div className="h-full flex flex-col space-y-5">
+    <div className="h-full flex flex-col gap-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -859,16 +871,17 @@ export function AdminProducts() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto bg-white border border-gray-100 rounded-xl">
+      <div className="flex flex-col flex-1 min-h-0 bg-white border border-gray-100 rounded-xl overflow-hidden">
+        <div className="overflow-auto flex-1">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100">
               <th className="text-left text-xs text-gray-400 px-5 py-3.5 w-12">Img</th>
               <th className="text-left text-xs text-gray-400 px-5 py-3.5"><SortBtn k="name" label="Producto" /></th>
               <th className="text-left text-xs text-gray-400 px-5 py-3.5 hidden md:table-cell">Marca / Cat.</th>
-              <th className="text-left text-xs text-gray-400 px-5 py-3.5"><SortBtn k="price" label="Precio" /></th>
-              <th className="text-left text-xs text-gray-400 px-5 py-3.5 hidden sm:table-cell"><SortBtn k="stock" label="Stock" /></th>
-              <th className="text-left text-xs text-gray-400 px-5 py-3.5 hidden lg:table-cell"><SortBtn k="rating" label="Rating" /></th>
+              <th className="text-right text-xs text-gray-400 px-5 py-3.5"><SortBtn k="price" label="Precio" /></th>
+              <th className="text-right text-xs text-gray-400 px-5 py-3.5 hidden sm:table-cell"><SortBtn k="stock" label="Stock" /></th>
+              <th className="text-right text-xs text-gray-400 px-5 py-3.5 hidden lg:table-cell"><SortBtn k="rating" label="Rating" /></th>
               <th className="text-left text-xs text-gray-400 px-5 py-3.5 hidden lg:table-cell">Estado</th>
               <th className="text-right text-xs text-gray-400 px-5 py-3.5">Acciones</th>
             </tr>
@@ -877,7 +890,7 @@ export function AdminProducts() {
             {filtered.length === 0 && (
               <tr><td colSpan={8} className="text-center py-16 text-xs text-gray-400">{search ? "No se encontraron productos" : "No hay productos"}</td></tr>
             )}
-            {filtered.map((p) => (
+            {paginated.map((p) => (
               <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
                 <td className="px-4 py-3">
                   <div className="w-10 h-10 bg-gray-100 rounded-xl overflow-hidden flex-shrink-0">
@@ -894,19 +907,19 @@ export function AdminProducts() {
                   <p className="text-xs text-gray-700">{p.brand || "—"}</p>
                   <p className="text-xs text-gray-400">{p.category}</p>
                 </td>
-                <td className="px-5 py-3">
-                  <p className="text-sm text-gray-900">${p.price}</p>
-                  {p.originalPrice && <p className="text-xs text-gray-400 line-through">${p.originalPrice}</p>}
+                <td className="px-5 py-3 text-right">
+                  <p className="text-sm text-gray-900 tabular-nums">${p.price}</p>
+                  {p.originalPrice && <p className="text-xs text-gray-400 line-through tabular-nums">${p.originalPrice}</p>}
                 </td>
                 <td className="px-5 py-3 hidden sm:table-cell">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-end gap-1.5">
                     <Badge label={`${p.stock}`} variant={stockVariant(p.stock)} />
                   </div>
                 </td>
                 <td className="px-5 py-3 hidden lg:table-cell">
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center justify-end gap-1">
                     <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                    <span className="text-xs text-gray-700">{p.rating}</span>
+                    <span className="text-xs text-gray-700 tabular-nums">{p.rating}</span>
                   </div>
                 </td>
                 <td className="px-5 py-3 hidden lg:table-cell">
@@ -916,9 +929,12 @@ export function AdminProducts() {
                   />
                 </td>
                 <td className="px-5 py-3">
-                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center justify-end gap-1">
                     <button onClick={() => setPreview(p)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Vista previa">
                       <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </button>
+                    <button onClick={() => setQrProduct(p)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors" title="Código QR">
+                      <QrCode className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                     <button onClick={() => setModal(p)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Editar">
                       <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -932,11 +948,14 @@ export function AdminProducts() {
             ))}
           </tbody>
         </table>
+        </div>
+        <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
 
       {/* Modals */}
-      {modal !== null && <ProductModal product={modal} onSave={handleSave} onClose={() => setModal(null)} />}
+      {modal !== null && <ProductModal product={modal} onSave={handleSave} onClose={() => setModal(null)} storeCategories={storeCategories} storeBrands={storeBrands} />}
       {preview && <ProductPreview product={preview} onClose={() => setPreview(null)} />}
+      {qrProduct && <ProductQRModal product={qrProduct} onClose={() => setQrProduct(null)} />}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
           <div className="bg-white rounded-2xl border border-gray-100 shadow-lg w-full max-w-sm p-6 text-center">

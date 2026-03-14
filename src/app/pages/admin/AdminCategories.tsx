@@ -18,8 +18,9 @@ import {
   Puzzle, Rocket, Shield, Truck, Wrench, Hammer,
   type LucideIcon,
 } from "lucide-react";
-import { categories as initialCategories, type Category } from "../../data/adminData";
+import { type Category } from "../../data/adminData";
 import { toast } from "sonner";
+import { useStore } from "../../context/StoreContext";
 
 /* ── Icon registry ────────────────────────────────────── */
 const INITIAL_ICON_MAP: Record<string, LucideIcon> = {
@@ -1232,7 +1233,7 @@ function PreviewPublishModal({
 
 /* ── Main page ───────────────────────────────────────── */
 export function AdminCategories() {
-  const [list, setList] = useState<Category[]>(initialCategories);
+  const { categories: list, saveCategory, deleteCategory, reorderCategories } = useStore();
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [catModal, setCatModal] = useState<null | "new" | { category: Category; parentId?: string }>(null);
@@ -1291,91 +1292,69 @@ export function AdminCategories() {
 
   function moveCategory(dragIndex: number, hoverIndex: number) {
     const draggedCat = filtered[dragIndex];
-    const newList = [...filtered];
-    newList.splice(dragIndex, 1);
-    newList.splice(hoverIndex, 0, draggedCat);
-    
-    // Update order numbers
-    const reordered = newList.map((cat, idx) => ({ ...cat, order: idx + 1 }));
-    
-    // Merge with unchanged categories
-    setList((prev) => {
-      const unchanged = prev.filter((c) => c.parent_id);
-      return [...reordered, ...unchanged];
-    });
+    const newFiltered = [...filtered];
+    newFiltered.splice(dragIndex, 1);
+    newFiltered.splice(hoverIndex, 0, draggedCat);
+    const reordered = newFiltered.map((cat, idx) => ({ ...cat, order: idx + 1 }));
+    const unchanged = list.filter((c) => c.parent_id);
+    reorderCategories([...reordered, ...unchanged]);
   }
 
   function moveSubcategory(parentId: string, dragIndex: number, hoverIndex: number) {
-    setList((prev) => {
-      const subs = prev.filter((c) => c.parent_id === parentId);
-      const draggedSub = subs[dragIndex];
-      subs.splice(dragIndex, 1);
-      subs.splice(hoverIndex, 0, draggedSub);
-      
-      // Update order numbers
-      const reordered = subs.map((sub, idx) => ({ ...sub, order: idx + 1 }));
-      
-      // Merge back
-      const others = prev.filter((c) => c.parent_id !== parentId);
-      return [...others, ...reordered];
-    });
+    const subs = list.filter((c) => c.parent_id === parentId);
+    const newSubs = [...subs];
+    const draggedSub = newSubs[dragIndex];
+    newSubs.splice(dragIndex, 1);
+    newSubs.splice(hoverIndex, 0, draggedSub);
+    const reordered = newSubs.map((sub, idx) => ({ ...sub, order: idx + 1 }));
+    const others = list.filter((c) => c.parent_id !== parentId);
+    reorderCategories([...others, ...reordered]);
   }
 
   function handleSaveCat(cat: Category) {
-    setList((prev) => {
-      const existing = prev.find((c) => c.id === cat.id);
-      if (existing) {
-        return prev.map((c) => (c.id === cat.id ? cat : c));
-      } else {
-        // New category
-        if (cat.parent_id) {
-          // Subcategory - get max order within parent
-          const siblings = prev.filter((c) => c.parent_id === cat.parent_id);
-          const maxOrder = Math.max(...siblings.map((c) => c.order), 0);
-          return [...prev, { ...cat, order: maxOrder + 1 }];
-        } else {
-          // Parent category - get max order
-          const parents = prev.filter((c) => !c.parent_id);
-          const maxOrder = Math.max(...parents.map((c) => c.order), 0);
-          return [...prev, { ...cat, order: maxOrder + 1 }];
-        }
-      }
-    });
+    const existing = list.find((c) => c.id === cat.id);
+    if (existing) {
+      saveCategory(cat);
+    } else if (cat.parent_id) {
+      const siblings = list.filter((c) => c.parent_id === cat.parent_id);
+      const maxOrder = Math.max(...siblings.map((c) => c.order), 0);
+      saveCategory({ ...cat, order: maxOrder + 1 });
+    } else {
+      const parents = list.filter((c) => !c.parent_id);
+      const maxOrder = Math.max(...parents.map((c) => c.order), 0);
+      saveCategory({ ...cat, order: maxOrder + 1 });
+    }
     setCatModal(null);
     toast.success(catModal === "new" ? "Categoría creada" : "Categoría actualizada");
   }
 
   function handleDeleteCat(id: string) {
-    // Delete category and all its subcategories
-    setList((prev) => prev.filter((c) => c.id !== id && c.parent_id !== id));
+    const toDelete = list.filter((c) => c.id === id || c.parent_id === id).map((c) => c.id);
+    toDelete.forEach((cid) => deleteCategory(cid));
     setDeleteId(null);
     toast.success("Categoría eliminada");
   }
 
   function handleToggleCatStatus(id: string) {
-    setList((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: c.status === "active" ? "inactive" : "active" } : c))
-    );
+    const cat = list.find((c) => c.id === id);
+    if (cat) saveCategory({ ...cat, status: cat.status === "active" ? "inactive" : "active" });
     toast.success("Estado actualizado");
   }
 
-  function handleBulkImport(categories: Category[]) {
-    setList((prev) => [...prev, ...categories]);
+  function handleBulkImport(cats: Category[]) {
+    cats.forEach((c) => saveCategory(c));
     setShowBulkImport(false);
   }
 
   function handlePublishAllDrafts() {
-    const draftCount = parentCategories.filter((c) => !c.published).length;
-    if (draftCount === 0) {
+    const drafts = parentCategories.filter((c) => !c.published);
+    if (drafts.length === 0) {
       toast.error("No hay categorías en borrador para publicar");
       return;
     }
-
-    setList((prev) =>
-      prev.map((c) => (!c.parent_id && !c.published ? { ...c, published: true } : c))
-    );
+    drafts.forEach((c) => saveCategory({ ...c, published: true }));
     setShowPreview(false);
-    toast.success(`${draftCount} categoría(s) publicada(s)`);
+    toast.success(`${drafts.length} categoría(s) publicada(s)`);
   }
 
   const totalProducts = list.reduce((s, c) => s + c.productCount, 0);
@@ -1413,13 +1392,13 @@ export function AdminCategories() {
               onEdit={() => setCatModal({ category: cat })}
               onDelete={() => setDeleteId(cat.id)}
               onToggleStatus={() => handleToggleCatStatus(cat.id)}
-              onTogglePublished={() => setList((prev) => prev.map((c) => (c.id === cat.id ? { ...c, published: !c.published } : c)))}
+              onTogglePublished={() => { const cat2 = list.find((c) => c.id === cat.id); if (cat2) saveCategory({ ...cat2, published: !cat2.published }); }}
               onExpand={() => setExpanded(expanded === cat.id ? null : cat.id)}
               isExpanded={expanded === cat.id}
               onAddSubcategory={() => setCatModal({ category: { ...cat, id: `${Date.now()}`, parent_id: cat.id }, parentId: cat.id })}
               onEditSubcategory={(sub) => setCatModal({ category: sub })}
               onDeleteSubcategory={(subId) => {
-                setList((prev) => prev.filter((c) => c.id !== subId));
+                deleteCategory(subId);
                 toast.success("Subcategoría eliminada");
               }}
               onToggleSubStatus={(subId) => handleToggleCatStatus(subId)}

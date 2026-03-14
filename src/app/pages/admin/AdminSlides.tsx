@@ -384,39 +384,39 @@ function DraggableSlideRow({
         <div className="flex items-center gap-1">
           <button
             onClick={onToggleExpand}
-            className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
             title={isExpanded ? "Contraer" : "Expandir"}
           >
             {isExpanded ? (
-              <ChevronUp className="w-4 h-4" strokeWidth={1.5} />
+              <ChevronUp className="w-3.5 h-3.5" strokeWidth={1.5} />
             ) : (
-              <ChevronDown className="w-4 h-4" strokeWidth={1.5} />
+              <ChevronDown className="w-3.5 h-3.5" strokeWidth={1.5} />
             )}
           </button>
           <button
             onClick={onToggleStatus}
-            className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
             title={slide.status === "active" ? "Desactivar" : "Activar"}
           >
             {slide.status === "active" ? (
-              <Eye className="w-4 h-4" strokeWidth={1.5} />
+              <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
             ) : (
-              <EyeOff className="w-4 h-4" strokeWidth={1.5} />
+              <EyeOff className="w-3.5 h-3.5" strokeWidth={1.5} />
             )}
           </button>
           <button
             onClick={onEdit}
-            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             title="Editar"
           >
-            <Pencil className="w-4 h-4" strokeWidth={1.5} />
+            <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
           </button>
           <button
             onClick={onDelete}
-            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Eliminar"
           >
-            <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
           </button>
         </div>
       </div>

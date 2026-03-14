@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Star, Gift, TrendingUp, Users, Pencil, Check, X, Award } from "lucide-react";
 import { toast } from "sonner";
 
@@ -132,8 +133,15 @@ export function AdminLoyalty() {
         <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Miembros destacados</p>
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="grid grid-cols-[2fr_1fr_0.8fr_1fr_1fr_0.9fr] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
-            {["Cliente", "Nivel", "Puntos", "Total gastado", "Último acceso", "Acciones"].map(h => (
-              <p key={h} className="text-[10px] text-gray-400 uppercase tracking-wider">{h}</p>
+            {[
+              { label: "Cliente",         cls: "text-left"   },
+              { label: "Nivel",           cls: "text-left"   },
+              { label: "Puntos",          cls: "text-right"  },
+              { label: "Total gastado",   cls: "text-right"  },
+              { label: "Último acceso",   cls: "text-center" },
+              { label: "Acciones",        cls: "text-right"  },
+            ].map(h => (
+              <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
             ))}
           </div>
           {members.map((m, i) => {
@@ -147,10 +155,10 @@ export function AdminLoyalty() {
                 <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${tm.bg} ${tm.color}`}>
                   <Award className="w-2.5 h-2.5" strokeWidth={1.5} /> {m.tier}
                 </span>
-                <p className="text-sm text-gray-900">{m.points.toLocaleString()}</p>
-                <p className="text-sm text-gray-700">${m.spent.toLocaleString()}</p>
-                <p className="text-xs text-gray-400">{m.lastActivity}</p>
-                <div className="flex gap-1">
+                <p className="text-sm text-gray-900 text-right tabular-nums">{m.points.toLocaleString()}</p>
+                <p className="text-sm text-gray-700 text-right tabular-nums">${m.spent.toLocaleString()}</p>
+                <p className="text-xs text-gray-400 text-center">{m.lastActivity}</p>
+                <div className="flex gap-1 justify-end">
                   <button onClick={() => toast.info(`Ajustar puntos de ${m.name}`)} className="h-6 px-2 text-[11px] text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                     Ajustar pts
                   </button>

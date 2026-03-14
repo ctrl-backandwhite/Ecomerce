@@ -15,8 +15,9 @@ import {
   ArrowUpDown,
   DollarSign,
 } from "lucide-react";
-import { categoryTree, products, priceRanges } from "../data/products";
+import { categoryTree, priceRanges } from "../data/products";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../data/filters";
+import { useStore } from "../context/StoreContext";
 
 interface HomeSidebarProps {
   selectedCategory: string;
@@ -39,6 +40,7 @@ interface HomeSidebarProps {
 
 /* ── Top rated mini-widget ───────────────────────────────────── */
 function TopRated() {
+  const { products } = useStore();
   const top = [...products].sort((a, b) => b.rating - a.rating).slice(0, 3);
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
@@ -95,6 +97,7 @@ export function HomeSidebar({
   onSort,
   onReset,
 }: HomeSidebarProps) {
+  const { products } = useStore();
   const [openCats, setOpenCats] = useState<string[]>(
     selectedCategory !== "Todos" ? [selectedCategory] : []
   );

@@ -108,15 +108,23 @@ export function AdminNewsletter() {
 
       {/* Table */}
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.7fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
-          {["Suscriptor", "Email", "Fuente", "Suscrito", "Etiquetas", "Estado", ""].map(h => (
-            <p key={h} className="text-[10px] text-gray-400 uppercase tracking-wider">{h}</p>
+        <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.7fr_72px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+          {[
+            { label: "Suscriptor",  cls: "text-left"   },
+            { label: "Email",       cls: "text-left"   },
+            { label: "Fuente",      cls: "text-left"   },
+            { label: "Suscrito",    cls: "text-center" },
+            { label: "Etiquetas",   cls: "text-left"   },
+            { label: "Estado",      cls: "text-left"   },
+            { label: "",            cls: "text-right"  },
+          ].map(h => (
+            <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
         </div>
         {filtered.map((s, i) => {
           const sm = STATUS_META[s.status];
           return (
-            <div key={s.id} className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.7fr_auto] gap-3 px-4 py-3 items-center ${i !== filtered.length - 1 ? "border-b border-gray-50" : ""}`}>
+            <div key={s.id} className={`grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.7fr_72px] gap-3 px-4 py-3 items-center ${i !== filtered.length - 1 ? "border-b border-gray-50" : ""}`}>
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-600 flex-shrink-0">
                   {s.name.slice(0, 1)}
@@ -125,7 +133,7 @@ export function AdminNewsletter() {
               </div>
               <p className="text-xs text-gray-500 truncate">{s.email}</p>
               <p className="text-xs text-gray-400">{SOURCE_LABELS[s.source]}</p>
-              <p className="text-xs text-gray-400">{s.subscribedAt}</p>
+              <p className="text-xs text-gray-400 text-center">{s.subscribedAt}</p>
               <div className="flex flex-wrap gap-1">
                 {s.tags.map(tag => (
                   <span key={tag} className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full">{tag}</span>
@@ -135,8 +143,8 @@ export function AdminNewsletter() {
                 <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
                 {sm.label}
               </span>
-              <button onClick={() => remove(s.id)} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                <Trash2 className="w-3 h-3" />
+              <button onClick={() => remove(s.id)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors ml-auto">
+                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
             </div>
           );

@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router";
-import { products } from "../data/products";
 import { reviews as allReviews, type Review } from "../data/reviews";
 import { useCart } from "../context/CartContext";
+import { useStore } from "../context/StoreContext";
 import {
   Star, ShoppingCart, Heart, Truck, Shield,
   ArrowLeft, Plus, Minus, ChevronRight, Package,
@@ -387,7 +387,8 @@ function ReviewsSection({
 
 // ── Main component ────────────────────────────────────────────
 export function ProductDetail() {
-  const { id } = useParams();
+  const { id } = useParams<{ id: string }>();
+  const { products } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();

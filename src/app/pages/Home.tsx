@@ -6,9 +6,10 @@ import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
 import { HomeSidebar } from "../components/HomeSidebar";
-import { products, priceRanges, categoryTree } from "../data/products";
+import { priceRanges, categoryTree } from "../data/products";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../data/filters";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useStore } from "../context/StoreContext";
 
 const PAGE_SIZE = 8;
 
@@ -18,6 +19,7 @@ function scrollToProducts() {
 }
 
 export function Home() {
+  const { products } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category")    || "Todos";
   const searchQuery      = searchParams.get("search")      || "";
@@ -82,7 +84,7 @@ export function Home() {
     }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-      selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas]);
+      selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -176,7 +178,7 @@ export function Home() {
     return currentCatNode.subcategories.filter((sub) =>
       products.some((p) => p.category === selectedCategory && p.subcategory === sub)
     );
-  }, [currentCatNode, selectedCategory]);
+  }, [currentCatNode, selectedCategory, products]);
 
   /* ── Category-specific quick-attr chips ─────────────────────── */
   const categoryAttrGroups = CATEGORY_ATTR_FILTERS[selectedCategory] ?? [];

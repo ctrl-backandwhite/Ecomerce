@@ -1,10 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Search, X, Eye, Check, XCircle, RefreshCcw,
   AlertTriangle, Clock, Package, DollarSign,
   ChevronRight, Truck, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Pagination } from "../../components/admin/Pagination";
 
 /* ── Types ─────────────────────────────────────────────────── */
 type ReturnStatus = "requested" | "reviewing" | "approved" | "rejected" | "refunded";
@@ -197,7 +198,9 @@ export function AdminReturns() {
   const [returns, setReturns]   = useState<ReturnRequest[]>(MOCK_RETURNS);
   const [search, setSearch]     = useState("");
   const [statusF, setStatusF]   = useState<"all" | ReturnStatus>("all");
-  const [drawer, setDrawer]     = useState<ReturnRequest | null>(null);
+  const [drawer,  setDrawer]      = useState<ReturnRequest | null>(null);
+  const [page, setPage]           = useState(1);
+  const PAGE_SIZE = 15;
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -231,8 +234,13 @@ export function AdminReturns() {
     if (drawer?.id === id) setDrawer(prev => prev ? { ...prev, status } : null);
   }
 
+  useEffect(() => setPage(1), [search, statusF]);
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   return (
-    <div className="p-6 space-y-5">
+    <div className="flex flex-col gap-5 h-full">
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -292,46 +300,58 @@ export function AdminReturns() {
       </div>
 
       {/* Table */}
-      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[1fr_1.6fr_1.8fr_1fr_1fr_0.9fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
-          {["Nº", "Cliente", "Producto", "Motivo", "Importe", "Estado", ""].map(h => (
-            <p key={h} className="text-[10px] text-gray-400 uppercase tracking-wider">{h}</p>
+      <div className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="grid grid-cols-[1fr_1.6fr_1.8fr_1fr_1fr_0.9fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60 flex-shrink-0">
+          {[
+            { label: "Nº",       cls: "text-left"  },
+            { label: "Cliente",  cls: "text-left"  },
+            { label: "Producto", cls: "text-left"  },
+            { label: "Motivo",   cls: "text-left"  },
+            { label: "Importe",  cls: "text-right" },
+            { label: "Estado",   cls: "text-left"  },
+            { label: "",         cls: "text-right" },
+          ].map(h => (
+            <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
         </div>
 
-        {filtered.length === 0 && (
-          <div className="py-16 text-center">
-            <RotateCcw className="w-8 h-8 text-gray-200 mx-auto mb-2" strokeWidth={1} />
-            <p className="text-sm text-gray-400">No se encontraron solicitudes</p>
-          </div>
-        )}
-
-        {filtered.map((r, i) => {
-          const sm = STATUS_META[r.status];
-          return (
-            <div key={r.id}
-              className={`grid grid-cols-[1fr_1.6fr_1.8fr_1fr_1fr_0.9fr_auto] gap-3 px-4 py-3 items-center hover:bg-gray-50/60 transition-colors cursor-pointer ${i !== filtered.length - 1 ? "border-b border-gray-50" : ""}`}
-              onClick={() => setDrawer(r)}
-            >
-              <div>
-                <p className="text-xs text-gray-900 font-mono">{r.returnNumber}</p>
-                <p className="text-[11px] text-gray-400">{r.orderNumber}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-900 truncate">{r.customer.name}</p>
-                <p className="text-[11px] text-gray-400 truncate">{r.customer.email}</p>
-              </div>
-              <p className="text-xs text-gray-600 truncate">{r.productName}</p>
-              <p className="text-xs text-gray-500 truncate">{REASON_LABELS[r.reason]}</p>
-              <p className="text-xs text-gray-900">${r.amount.toLocaleString()}</p>
-              <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
-                {sm.label}
-              </span>
-              <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+        <div className="overflow-auto flex-1">
+          {filtered.length === 0 && (
+            <div className="py-16 text-center">
+              <RotateCcw className="w-8 h-8 text-gray-200 mx-auto mb-2" strokeWidth={1} />
+              <p className="text-sm text-gray-400">No se encontraron solicitudes</p>
             </div>
-          );
-        })}
+          )}
+
+          {paginated.map((r, i) => {
+            const sm = STATUS_META[r.status];
+            return (
+              <div key={r.id}
+                className={`grid grid-cols-[1fr_1.6fr_1.8fr_1fr_1fr_0.9fr_auto] gap-3 px-4 py-3 items-center hover:bg-gray-50/60 transition-colors cursor-pointer ${i !== paginated.length - 1 ? "border-b border-gray-50" : ""}`}
+                onClick={() => setDrawer(r)}
+              >
+                <div>
+                  <p className="text-xs text-gray-900 font-mono">{r.returnNumber}</p>
+                  <p className="text-[11px] text-gray-400">{r.orderNumber}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-900 truncate">{r.customer.name}</p>
+                  <p className="text-[11px] text-gray-400 truncate">{r.customer.email}</p>
+                </div>
+                <p className="text-xs text-gray-600 truncate">{r.productName}</p>
+                <p className="text-xs text-gray-500 truncate">{REASON_LABELS[r.reason]}</p>
+                <p className="text-xs text-gray-900 text-right tabular-nums">${r.amount.toLocaleString()}</p>
+                <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
+                  {sm.label}
+                </span>
+                <ChevronRight className="w-3.5 h-3.5 text-gray-300" />
+              </div>
+            );
+          })}
+        </div>
+
+        <Pagination page={page} totalPages={totalPages} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
       </div>
 
       {drawer && (

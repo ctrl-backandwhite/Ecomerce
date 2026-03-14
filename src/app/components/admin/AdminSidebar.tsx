@@ -11,6 +11,7 @@ import {
 const menuGroups = [
   {
     label: "Panel",
+    tourId: "tour-panel-group",
     items: [
       { title: "Dashboard",       icon: LayoutDashboard, path: "/admin" },
       { title: "Reportes",        icon: BarChart2,       path: "/admin/reportes" },
@@ -18,6 +19,7 @@ const menuGroups = [
   },
   {
     label: "Ventas",
+    tourId: "tour-ventas-group",
     items: [
       { title: "Órdenes",         icon: ShoppingCart,    path: "/admin/ordenes" },
       { title: "Facturas",        icon: FileText,        path: "/admin/facturas" },
@@ -26,6 +28,7 @@ const menuGroups = [
   },
   {
     label: "Clientes",
+    tourId: "tour-clientes-group",
     items: [
       { title: "Clientes",        icon: Users,           path: "/admin/clientes" },
       { title: "Reseñas",         icon: Star,            path: "/admin/resenas" },
@@ -36,6 +39,7 @@ const menuGroups = [
   },
   {
     label: "Catálogo",
+    tourId: "tour-catalogo-group",
     items: [
       { title: "Productos",       icon: Package,         path: "/admin/productos" },
       { title: "Categorías",      icon: Tag,             path: "/admin/categorias" },
@@ -47,6 +51,7 @@ const menuGroups = [
   },
   {
     label: "Marketing",
+    tourId: "tour-marketing-group",
     items: [
       { title: "Campañas",        icon: Megaphone,       path: "/admin/campanas" },
       { title: "Newsletter",      icon: Send,            path: "/admin/newsletter" },
@@ -56,6 +61,7 @@ const menuGroups = [
   },
   {
     label: "Sistema",
+    tourId: "tour-sistema-group",
     items: [
       { title: "Flujos",          icon: GitBranch,       path: "/admin/flujos" },
       { title: "Envíos",          icon: Truck,           path: "/admin/envios" },
@@ -88,6 +94,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
 
       {/* Sidebar */}
       <aside
+        id="tour-sidebar"
         className={`fixed lg:static inset-y-0 left-0 z-50 bg-white border-r border-gray-100 min-h-screen flex flex-col transform transition-all duration-300 ${
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         } ${isCollapsed ? "lg:w-16" : "lg:w-60"} w-60`}
@@ -135,7 +142,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
         {/* Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto">
           {menuGroups.map((group) => (
-            <div key={group.label} className="mb-5">
+            <div key={group.label} id={group.tourId} className="mb-5">
               {!isCollapsed && (
                 <p className="px-5 mb-1.5 text-[10px] text-gray-400 uppercase tracking-widest">
                   {group.label}

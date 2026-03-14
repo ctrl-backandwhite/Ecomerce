@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router";
 import { AdminSidebar } from "./AdminSidebar";
-import { Bell, Menu } from "lucide-react";
+import { AdminTour } from "./AdminTour";
+import { Menu } from "lucide-react";
+import {
+  NotificationsPanel,
+  DEFAULT_NOTIFICATIONS,
+  type AppNotification,
+} from "./NotificationsPanel";
+import { Bell } from "lucide-react";
 
 const pageTitles: Record<string, string> = {
   "/admin":               "Dashboard",
@@ -10,59 +17,99 @@ const pageTitles: Record<string, string> = {
   "/admin/marcas":        "Marcas",
   "/admin/atributos":     "Atributos",
   "/admin/medios":        "Galería de Medios",
-  "/admin/slides":        "",
+  "/admin/slides":        "Slides Home",
   "/admin/ordenes":       "Órdenes",
+  "/admin/facturas":      "Facturas",
+  "/admin/devoluciones":  "Devoluciones",
   "/admin/clientes":      "Clientes",
+  "/admin/resenas":       "Reseñas",
+  "/admin/cupones":       "Cupones",
+  "/admin/puntos":        "Programa de Fidelidad",
+  "/admin/regalo":        "Tarjetas Regalo",
+  "/admin/campanas":      "Campañas",
+  "/admin/newsletter":    "Newsletter",
+  "/admin/seo":           "SEO & Meta datos",
+  "/admin/garantias":     "Garantías",
+  "/admin/flujos":        "Flujos de trabajo",
+  "/admin/envios":        "Envíos",
+  "/admin/impuestos":     "Impuestos",
+  "/admin/emails":        "Plantillas de Email",
   "/admin/configuracion": "Configuración",
+  "/admin/reportes":      "Reportes",
 };
 
 export function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen]           = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [notifOpen, setNotifOpen]               = useState(false);
+  const [notifications, setNotifications]       = useState<AppNotification[]>(DEFAULT_NOTIFICATIONS);
   const location = useLocation();
 
   const pageTitle = pageTitles[location.pathname] ?? "Admin";
 
+  const markRead    = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAllRead = ()            => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const deleteNotif = (id: string) => setNotifications(prev => prev.filter(n => n.id !== id));
+  const clearRead   = ()            => setNotifications(prev => prev.filter(n => !n.read));
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
   return (
     <div className="flex h-screen bg-gray-50 overflow-hidden">
+      <NotificationsPanel
+        open={notifOpen}
+        onClose={() => setNotifOpen(false)}
+        notifications={notifications}
+        onMarkRead={markRead}
+        onMarkAllRead={markAllRead}
+        onDelete={deleteNotif}
+        onClearRead={clearRead}
+      />
+
       {/* Sidebar */}
-      <AdminSidebar 
-        isOpen={sidebarOpen} 
-        onClose={() => setSidebarOpen(false)} 
-        isCollapsed={sidebarCollapsed} 
-        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} 
+      <AdminSidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden min-w-0">
 
         {/* Topbar */}
-        <header className="bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between gap-4 flex-shrink-0">
+        <header
+          id="tour-topbar"
+          className="bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between gap-4 flex-shrink-0"
+        >
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            {/* Mobile menu toggle */}
             <button
               className="lg:hidden w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors flex-shrink-0"
               onClick={() => setSidebarOpen(true)}
             >
               <Menu className="w-4 h-4" strokeWidth={1.5} />
             </button>
-
-            {/* Page title */}
             <h1 className="text-[13px] text-gray-900 tracking-wide font-light">
               {pageTitle}
             </h1>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">{/* Notifications */}
-            <button className="relative w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <AdminTour />
+
+            {/* Notifications */}
+            <button
+              onClick={() => setNotifOpen(true)}
+              className="relative w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+            >
               <Bell className="w-4 h-4" strokeWidth={1.5} />
-              <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white" />
+              )}
             </button>
 
-            {/* Divider */}
             <span className="w-px h-5 bg-gray-200" />
 
-            {/* Admin avatar */}
             <div className="flex items-center gap-2.5">
               <div className="text-right hidden md:block">
                 <p className="text-[11px] text-gray-900 font-light">Admin NEXA</p>
