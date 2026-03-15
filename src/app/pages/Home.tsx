@@ -1,4 +1,4 @@
-import { Loader2, Search, SlidersHorizontal, X, ChevronRight, Gift } from "lucide-react";
+import { Loader2, Search, SlidersHorizontal, X, ChevronRight, Gift, AlertTriangle, RefreshCw } from "lucide-react";
 import { useSearchParams } from "react-router";
 import { Link } from "react-router";
 import { ProductCard } from "../components/ProductCard";
@@ -6,7 +6,7 @@ import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
 import { HomeSidebar } from "../components/HomeSidebar";
-import { priceRanges, categoryTree } from "../data/products";
+import { priceRanges } from "../data/products";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../data/filters";
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useStore } from "../context/StoreContext";
@@ -19,7 +19,7 @@ function scrollToProducts() {
 }
 
 export function Home() {
-  const { products } = useStore();
+  const { products, productsLoading, productsError, productsTotal, refreshProducts, loadMoreProducts, dataSource } = useStore();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category")    || "Todos";
   const searchQuery      = searchParams.get("search")      || "";
@@ -171,14 +171,21 @@ export function Home() {
     setSearchParams({});
   };
 
-  /* ── Subcategory quick-chips (for the content area) ─────────── */
-  const currentCatNode = categoryTree.find((c) => c.name === selectedCategory);
+  /* ── Subcategory quick-chips (derived from loaded products) ── */
+  const currentCatSubcategories = useMemo(() => {
+    if (selectedCategory === "Todos") return [];
+    return [...new Set(
+      products
+        .filter((p) => p.category === selectedCategory && p.subcategory)
+        .map((p) => p.subcategory)
+    )].sort();
+  }, [selectedCategory, products]);
+
   const subcategoryChips = useMemo(() => {
-    if (!currentCatNode) return [];
-    return currentCatNode.subcategories.filter((sub) =>
+    return currentCatSubcategories.filter((sub) =>
       products.some((p) => p.category === selectedCategory && p.subcategory === sub)
     );
-  }, [currentCatNode, selectedCategory, products]);
+  }, [currentCatSubcategories, selectedCategory, products]);
 
   /* ── Category-specific quick-attr chips ─────────────────────── */
   const categoryAttrGroups = CATEGORY_ATTR_FILTERS[selectedCategory] ?? [];
@@ -443,47 +450,99 @@ export function Home() {
                 </div>
               )}
 
-              {/* Grid */}
-              {filtered.length > 0 ? (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
-                    {visible.map((product) => (
-                      <ProductCard key={product.id} product={product} />
-                    ))}
-                  </div>
+              {/* ── Data source badge (visible when API is live) ── */}
+              {dataSource === "api" && (
+                <div className="flex items-center gap-1.5 mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-[11px] text-gray-400">Catálogo CJ Dropshipping en vivo</span>
+                </div>
+              )}
+              {dataSource === "mock" && (
+                <div className="flex items-center gap-1.5 mb-4">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                  <span className="text-[11px] text-gray-400">Modo demo — conecta con CJ API para datos reales</span>
+                </div>
+              )}
 
-                  {/* Sentinel + loader */}
-                  <div ref={sentinelRef} className="mt-12 flex items-center justify-center min-h-[48px]">
-                    {isLoading && (
-                      <div className="flex items-center gap-2 text-sm text-gray-400">
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Cargando más productos...
-                      </div>
-                    )}
-                    {!hasMore && filtered.length > PAGE_SIZE && (
-                      <p className="text-xs text-gray-300 tracking-widest uppercase">
-                        Todos los productos cargados
-                      </p>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-28 text-center">
-                  <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-                    <Search className="w-6 h-6 text-gray-300" />
-                  </div>
-                  <h3 className="text-lg text-gray-900 mb-2">Sin resultados</h3>
-                  <p className="text-sm text-gray-400 mb-6">
-                    Prueba ajustando los filtros o cambia la búsqueda
-                  </p>
+              {/* ── Error state ── */}
+              {productsError && !productsLoading && products.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <AlertTriangle className="w-10 h-10 text-gray-200 mb-3" strokeWidth={1.5} />
+                  <p className="text-sm text-gray-500 mb-1">Error al cargar productos</p>
+                  <p className="text-xs text-gray-400 mb-4 max-w-sm">{productsError}</p>
                   <button
-                    onClick={handleReset}
-                    className="text-sm px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    onClick={() => refreshProducts({})}
+                    className="flex items-center gap-1.5 h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
                   >
-                    Limpiar filtros
+                    <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    Reintentar
                   </button>
                 </div>
               )}
+
+              {/* ── Initial loading skeleton ── */}
+              {productsLoading && products.length === 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
+                  {Array.from({ length: 10 }).map((_, i) => (
+                    <div key={i} className="border border-gray-100 rounded-2xl overflow-hidden animate-pulse">
+                      <div className="aspect-square bg-gray-100" />
+                      <div className="p-3.5 space-y-2">
+                        <div className="h-2 bg-gray-100 rounded w-1/2" />
+                        <div className="h-2 bg-gray-100 rounded" />
+                        <div className="h-2 bg-gray-100 rounded w-3/4" />
+                        <div className="flex justify-between mt-4">
+                          <div className="h-4 bg-gray-100 rounded w-14" />
+                          <div className="h-7 bg-gray-100 rounded-xl w-18" />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Grid */}
+              {!productsLoading || products.length > 0 ? (
+                filtered.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
+                      {visible.map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                      ))}
+                    </div>
+
+                    {/* Sentinel + loader */}
+                    <div ref={sentinelRef} className="mt-12 flex items-center justify-center min-h-[48px]">
+                      {isLoading && (
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Cargando más productos...
+                        </div>
+                      )}
+                      {!hasMore && filtered.length > PAGE_SIZE && (
+                        <p className="text-xs text-gray-300 tracking-widest uppercase">
+                          Todos los productos cargados
+                        </p>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-28 text-center">
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <Search className="w-6 h-6 text-gray-300" />
+                    </div>
+                    <h3 className="text-lg text-gray-900 mb-2">Sin resultados</h3>
+                    <p className="text-sm text-gray-400 mb-6">
+                      Prueba ajustando los filtros o cambia la búsqueda
+                    </p>
+                    <button
+                      onClick={handleReset}
+                      className="text-sm px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      Limpiar filtros
+                    </button>
+                  </div>
+                )
+              ) : null}
             </div>
           </div>
         </div>

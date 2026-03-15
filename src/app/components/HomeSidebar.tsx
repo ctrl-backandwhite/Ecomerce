@@ -11,11 +11,10 @@ import {
   ShoppingBag,
   Check,
   Layers,
-  Cpu,
   ArrowUpDown,
   DollarSign,
 } from "lucide-react";
-import { categoryTree, priceRanges } from "../data/products";
+import { priceRanges } from "../data/products";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../data/filters";
 import { useStore } from "../context/StoreContext";
 
@@ -116,9 +115,22 @@ export function HomeSidebar({
       prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
     );
 
-  /* ── Brands in scope ───────────────────────────────────────── */
+  /* ── Build category tree dynamically from loaded products ──── */
+  const dynamicCategoryTree = useMemo(() => {
+    const catMap = new Map<string, Set<string>>();
+    products.forEach((p) => {
+      if (!p.category) return;
+      if (!catMap.has(p.category)) catMap.set(p.category, new Set());
+      if (p.subcategory) catMap.get(p.category)!.add(p.subcategory);
+    });
+    return Array.from(catMap.entries()).map(([name, subs]) => ({
+      name,
+      subcategories: Array.from(subs).sort(),
+    }));
+  }, [products]);
+
+  /* ── Brands in scope ─────────────────────────────────────────── */
   const brandsInScope = useMemo(() => {
-    // Only show brands when a specific category is active
     if (selectedCategory === "Todos") return [];
     const base = products.filter((p) => {
       if (p.category !== selectedCategory) return false;
@@ -130,12 +142,11 @@ export function HomeSidebar({
       if (p.brand) map[p.brand] = (map[p.brand] || 0) + 1;
     });
     return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [selectedCategory, selectedSubcat]);
+  }, [selectedCategory, selectedSubcat, products]);
 
-  /* ── Category-specific attribute filters ─────────────────── */
+  /* ── Category-specific attribute filters ──────────────────── */
   const categoryFilters = CATEGORY_ATTR_FILTERS[selectedCategory] ?? [];
 
-  /* Count per attr option (based on full category scope, no other attr filter) */
   const attrCounts = useMemo(() => {
     const base =
       selectedCategory === "Todos"
@@ -149,7 +160,7 @@ export function HomeSidebar({
       });
     });
     return counts;
-  }, [selectedCategory, categoryFilters]);
+  }, [selectedCategory, categoryFilters, products]);
 
   const hasFilters =
     selectedCategory !== "Todos" ||
@@ -165,16 +176,18 @@ export function HomeSidebar({
         {/* ── Offer banner ─────────────────────────────────── */}
         <div className="bg-gray-700 rounded-lg p-4 text-white">
           <p className="text-[10px] tracking-widest uppercase text-white/50 mb-1">
-            Oferta del día
+            Catálogo activo
           </p>
           <p className="text-sm mb-3 leading-snug">
-            Hasta 30% OFF en Electrónica
+            {products.length > 0
+              ? `${products.length} productos disponibles`
+              : "Cargando catálogo..."}
           </p>
           <button
-            onClick={() => onCategory("Electrónica")}
+            onClick={() => onCategory("Todos")}
             className="inline-flex items-center gap-1.5 text-xs text-white/80 hover:text-white transition-colors border-b border-white/20 hover:border-white/60 pb-0.5"
           >
-            Ver ofertas
+            Ver todos
             <ChevronRight className="w-3 h-3" />
           </button>
         </div>
@@ -235,11 +248,11 @@ export function HomeSidebar({
               </span>
             </button>
 
-            {categoryTree.map((cat) => {
+            {/* Dynamic categories */}
+            {dynamicCategoryTree.map((cat) => {
               const isActive = selectedCategory === cat.name;
               const isOpen   = openCats.includes(cat.name);
               const count    = products.filter((p) => p.category === cat.name).length;
-              const CatIcon  = cat.icon;
 
               return (
                 <div key={cat.name}>
@@ -257,12 +270,12 @@ export function HomeSidebar({
                       }}
                       className="flex-1 flex items-center gap-2.5 px-4 py-2.5 text-sm text-left"
                     >
-                      <CatIcon
+                      <Layers
                         className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`}
                         strokeWidth={1.5}
                       />
-                      {cat.name}
-                      <span className={`ml-auto text-[10px] ${isActive ? "text-white/50" : "text-gray-400"}`}>
+                      <span className="truncate">{cat.name}</span>
+                      <span className={`ml-auto text-[10px] flex-shrink-0 ${isActive ? "text-white/50" : "text-gray-400"}`}>
                         {count}
                       </span>
                     </button>
@@ -300,10 +313,10 @@ export function HomeSidebar({
                               {isSubActive
                                 ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
                                 : <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />}
-                              {sub}
+                              <span className="truncate">{sub}</span>
                             </span>
                             {subCount > 0 && (
-                              <span className="text-[10px] text-gray-400">
+                              <span className="text-[10px] text-gray-400 flex-shrink-0 ml-1">
                                 {subCount}
                               </span>
                             )}
@@ -320,168 +333,157 @@ export function HomeSidebar({
           {/* ── Marcas ── */}
           {brandsInScope.length > 0 && (
             <div className="border-b border-gray-100">
-              <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
-                <Layers className="w-3 h-3" /> Marcas
+              <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400">
+                Marcas
               </p>
-              {brandsInScope.map(([brand, count]) => {
-                const isActive = selectedBrand === brand;
+              {brandsInScope.map(([brand, count]) => (
+                <button
+                  key={brand}
+                  onClick={() => onBrand(selectedBrand === brand ? "" : brand)}
+                  className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                    selectedBrand === brand
+                      ? "bg-gray-100 text-gray-900"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="flex items-center gap-2">
+                    {selectedBrand === brand
+                      ? <Check className="w-3 h-3 text-gray-700" strokeWidth={2} />
+                      : <span className="w-1 h-1 rounded-full bg-gray-300" />}
+                    <span className="truncate">{brand}</span>
+                  </span>
+                  <span className="text-[10px] text-gray-400">{count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Atributos dinámicos ── */}
+          {categoryFilters.length > 0 && (
+            <div className="border-b border-gray-100">
+              {categoryFilters.map((group) => {
+                const opts = group.options.filter((o) => (attrCounts[o] ?? 0) > 0);
+                if (opts.length === 0) return null;
                 return (
-                  <button
-                    key={brand}
-                    onClick={() => onBrand(isActive ? "" : brand)}
-                    className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
-                      isActive
-                        ? "text-gray-900 bg-gray-50"
-                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isActive ? "border-gray-600 bg-gray-600" : "border-gray-300"
-                      }`}>
-                        {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
-                      </span>
-                      {brand}
-                    </span>
-                    <span className="text-[10px] text-gray-400">{count}</span>
-                  </button>
+                  <div key={group.label} className="pt-3 pb-2 px-4">
+                    <p className="text-[10px] tracking-widest uppercase text-gray-400 mb-2 flex items-center gap-1">
+                      <Layers className="w-3 h-3" /> {group.label}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {opts.map((opt) => {
+                        const isActive = selectedAttr === opt;
+                        return (
+                          <button
+                            key={opt}
+                            onClick={() => onAttr(isActive ? "" : opt)}
+                            className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-all ${
+                              isActive
+                                ? "border-gray-600 bg-gray-600 text-white"
+                                : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-300"
+                            }`}
+                          >
+                            {opt}
+                            {isActive && <X className="w-2.5 h-2.5 ml-0.5" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 );
               })}
             </div>
           )}
 
-          {/* ── Filtros de categoría ── */}
-          {categoryFilters.map((group) => {
-            const visibleOptions = group.options.filter(
-              (opt) => (attrCounts[opt] ?? 0) > 0
-            );
-            if (visibleOptions.length < 2) return null;
-            return (
-              <div key={group.groupLabel} className="border-b border-gray-100">
-                <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
-                  <Cpu className="w-3 h-3" />
-                  {group.groupLabel}
-                </p>
-                {visibleOptions.map((opt) => {
-                  const isActive = selectedAttr === opt;
-                  const cnt = attrCounts[opt] ?? 0;
-                  return (
-                    <button
-                      key={opt}
-                      onClick={() => onAttr(isActive ? "" : opt)}
-                      className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
-                        isActive
-                          ? "text-gray-900 bg-gray-50"
-                          : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
-                          isActive ? "border-gray-600 bg-gray-600" : "border-gray-300"
-                        }`}>
-                          {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
-                        </span>
-                        {opt}
-                      </span>
-                      <span className="text-[10px] text-gray-400">{cnt}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-
           {/* ── Precio ── */}
-          {selectedCategory !== "Todos" && (
-            <div className="border-b border-gray-100">
-              <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
-                <DollarSign className="w-3 h-3" /> Rango de precio
-              </p>
-              {priceRanges.map((range, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => onPrice(idx)}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
-                    selectedPriceIdx === idx
-                      ? "text-gray-900"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                >
-                  {range.label}
-                  {selectedPriceIdx === idx && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* ── Ordenar ── */}
-          {selectedCategory !== "Todos" && (
-            <div className="border-b border-gray-100">
-              <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
-                <ArrowUpDown className="w-3 h-3" /> Ordenar por
-              </p>
-              {[
-                { value: "featured",   label: "Destacados" },
-                { value: "price-low",  label: "Menor precio" },
-                { value: "price-high", label: "Mayor precio" },
-                { value: "rating",     label: "Mejor valorados" },
-                { value: "name",       label: "Nombre A–Z" },
-              ].map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => onSort(opt.value)}
-                  className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
-                    sortBy === opt.value
-                      ? "text-gray-900"
-                      : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                  }`}
-                >
-                  {opt.label}
-                  {sortBy === opt.value && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* ── Valoración ── */}
-          <div className="pb-2">
-            <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400">
-              Valoración mínima
+          <div className="border-b border-gray-100">
+            <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
+              <DollarSign className="w-3 h-3" /> Precio
             </p>
-            {([0, 4, 4.5, 4.8] as number[]).map((r) => (
+            {priceRanges.map((range, i) => (
               <button
-                key={r}
-                onClick={() => onRating(r)}
-                className={`w-full flex items-center justify-between px-4 py-2.5 text-[13px] transition-colors ${
-                  selectedRating === r
-                    ? "text-gray-900"
-                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                key={range.label}
+                onClick={() => onPrice(i)}
+                className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
+                  selectedPriceIdx === i
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50"
                 }`}
               >
-                <span className="flex items-center gap-1.5">
-                  {r === 0 ? (
-                    "Cualquiera"
-                  ) : (
-                    <>
-                      <span className="text-amber-400 text-sm">★</span>
-                      {r}+
-                    </>
-                  )}
+                <span className="flex items-center gap-2">
+                  {selectedPriceIdx === i
+                    ? <Check className="w-3 h-3 text-gray-700" strokeWidth={2} />
+                    : <span className="w-1 h-1 rounded-full bg-gray-300" />}
+                  {range.label}
                 </span>
-                {selectedRating === r && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
-                )}
               </button>
             ))}
           </div>
+
+          {/* ── Valoración ── */}
+          <div className="border-b border-gray-100">
+            <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
+              <Star className="w-3 h-3" /> Valoración
+            </p>
+            {[5, 4, 3, 2].map((r) => (
+              <button
+                key={r}
+                onClick={() => onRating(selectedRating === r ? 0 : r)}
+                className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                  selectedRating === r
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {selectedRating === r
+                  ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
+                  : <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />}
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      className={`w-3.5 h-3.5 ${s <= r ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
+                      strokeWidth={1}
+                    />
+                  ))}
+                </div>
+                <span className="text-[11px] text-gray-500">y más</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ── Ordenar ── */}
+          <div>
+            <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
+              <ArrowUpDown className="w-3 h-3" /> Ordenar
+            </p>
+            {[
+              { val: "featured",   label: "Destacados" },
+              { val: "price-low",  label: "Precio: menor a mayor" },
+              { val: "price-high", label: "Precio: mayor a menor" },
+              { val: "name",       label: "Nombre A–Z" },
+            ].map(({ val, label }) => (
+              <button
+                key={val}
+                onClick={() => onSort(val)}
+                className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
+                  sortBy === val
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {sortBy === val
+                  ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
+                  : <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />}
+                {label}
+              </button>
+            ))}
+          </div>
+
         </div>
 
-        {/* ── Top rated ──────────────────────────────────────── */}
+        {/* ── Top rated ── */}
         <TopRated />
+
       </div>
     </aside>
   );

@@ -6,6 +6,7 @@ import { CompareProvider } from "./context/CompareContext";
 import { RecentlyViewedProvider } from "./context/RecentlyViewedContext";
 import { NewsletterProvider } from "./context/NewsletterContext";
 import { StoreProvider } from "./context/StoreContext";
+import { CJProvider } from "./context/CJContext";
 import { Toaster } from "./components/ui/sonner";
 
 export default function App() {
@@ -16,8 +17,10 @@ export default function App() {
           <CompareProvider>
             <RecentlyViewedProvider>
               <NewsletterProvider>
-                <RouterProvider router={router} />
-                <Toaster position="top-center" />
+                <CJProvider>
+                  <RouterProvider router={router} />
+                  <Toaster position="top-center" />
+                </CJProvider>
               </NewsletterProvider>
             </RecentlyViewedProvider>
           </CompareProvider>

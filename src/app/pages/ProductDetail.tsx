@@ -7,10 +7,11 @@ import {
   Star, ShoppingCart, Heart, Truck, Shield,
   ArrowLeft, Plus, Minus, ChevronRight, Package,
   RefreshCw, Award, Check, ThumbsUp, ChevronDown,
-  MessageSquare, Pencil, Eye,
+  MessageSquare, Pencil, Eye, Loader2,
 } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import { toast } from "sonner";
+import type { Product } from "../data/products";
 
 // ── Trust badges data ──────────────────────────────────────────
 const TRUST_BADGES = [
@@ -427,18 +428,30 @@ function resolveColor(name: string): string {
 // ── Main component ────────────────────────────────────────────
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
-  const { products } = useStore();
+  const { products, getProductById, productsLoading } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
 
+  // ── Async product load ─────────────────────────────────────
+  // undefined = loading, null = not found, Product = loaded
+  const [product, setProduct] = useState<Product | null | undefined>(undefined);
+  const [detailLoading, setDetailLoading] = useState(true);
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [id]);
+    if (!id) { setProduct(null); setDetailLoading(false); return; }
+
+    setDetailLoading(true);
+    setProduct(undefined);
+
+    getProductById(id)
+      .then((p) => setProduct(p))
+      .catch(() => setProduct(null))
+      .finally(() => setDetailLoading(false));
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const backTo: string = (location.state as any)?.from || "/";
-
-  const product = products.find((p) => p.id === id);
 
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -488,6 +501,21 @@ export function ProductDetail() {
   const images = product?.images?.length
     ? product.images
     : product ? [{ url: product.image, alt: product.name, position: 1 }] : [];
+
+  if (detailLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="w-16 h-16 text-gray-200 mx-auto mb-4 animate-spin" strokeWidth={1.5} />
+          <h2 className="text-xl text-gray-900 mb-2">Cargando producto...</h2>
+          <p className="text-sm text-gray-400 mb-6">Por favor, espera mientras cargamos los detalles del producto.</p>
+          <button onClick={() => navigate("/")} className="text-sm text-gray-700 bg-gray-200 px-6 py-2.5 rounded-xl hover:bg-gray-300 transition-colors">
+            Ver todos los productos
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -556,7 +584,7 @@ export function ProductDetail() {
           Volver
         </button>
 
-        {/* ════════════════════════════════════════════���═══════
+        {/* ═══════════════════════════════════════════════════
             TITLE BLOCK — full width above grid
         ════════════════════════════════════════════════════ */}
         <div className="mb-4">

@@ -3,6 +3,8 @@ import { createBrowserRouter } from "react-router";
 import { Layout } from "./components/Layout";
 import { Home } from "./pages/Home";
 import { ProductDetail } from "./pages/ProductDetail";
+import { CJCatalog } from "./pages/CJCatalog";
+import { CJProductDetail } from "./pages/CJProductDetail";
 import { Cart } from "./pages/Cart";
 import { Checkout } from "./pages/Checkout";
 import { NotFound } from "./pages/NotFound";
@@ -62,6 +64,8 @@ export const router = createBrowserRouter([
       { path: "seguimiento",      Component: OrderTracking },
       { path: "comparar",         Component: ComparePage },
       { path: "marca/:slug",      Component: BrandPage },
+      { path: "dropshipping",     Component: CJCatalog },
+      { path: "dropshipping/:pid", Component: CJProductDetail },
       { path: "*",                Component: NotFound },
     ],
   },
