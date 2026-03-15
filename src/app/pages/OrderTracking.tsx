@@ -102,7 +102,7 @@ export function OrderTracking() {
               className="w-full h-10 pl-10 pr-3 text-sm text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 placeholder-gray-300"
             />
           </div>
-          <button type="submit" className="h-10 px-5 text-sm text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+          <button type="submit" className="h-10 px-5 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">
             Rastrear
           </button>
         </form>
@@ -155,7 +155,7 @@ export function OrderTracking() {
                 {/* Line */}
                 <div className="absolute top-4 left-0 right-0 h-px bg-gray-100 z-0" />
                 <div
-                  className="absolute top-4 left-0 h-px bg-gray-900 z-0 transition-all duration-500"
+                  className="absolute top-4 left-0 h-px bg-gray-600 z-0 transition-all duration-500"
                   style={{ width: stepIndex >= 0 ? `${(stepIndex / (STEPS.length - 1)) * 100}%` : "0%" }}
                 />
 
@@ -165,8 +165,8 @@ export function OrderTracking() {
                   return (
                     <div key={s.key} className="relative z-10 flex flex-col items-center gap-2 flex-1">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                        done ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-300"
-                      } ${active ? "ring-4 ring-gray-900/10" : ""}`}>
+                        done ? "bg-gray-600 text-white" : "bg-white border border-gray-200 text-gray-300"
+                      } ${active ? "ring-4 ring-gray-600/10" : ""}`}>
                         <s.icon className="w-3.5 h-3.5" strokeWidth={active ? 2 : 1.5} />
                       </div>
                       <p className={`text-xs text-center ${done ? "text-gray-900" : "text-gray-400"}`}>{s.label}</p>
@@ -183,7 +183,7 @@ export function OrderTracking() {
                 {result.events.map((ev, i) => (
                   <div key={i} className="flex gap-4 pb-5 last:pb-0">
                     <div className="flex flex-col items-center">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${i === 0 ? "bg-gray-900" : "bg-gray-200"}`} />
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${i === 0 ? "bg-gray-600" : "bg-gray-200"}`} />
                       {i !== result.events.length - 1 && <div className="w-px flex-1 bg-gray-100 mt-1.5" />}
                     </div>
                     <div className="pb-1">

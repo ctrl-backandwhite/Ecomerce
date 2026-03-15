@@ -251,7 +251,7 @@ export function Home() {
       <InfoBanner />
 
       {/* Gift Card Banner */}
-      <div className="bg-gray-900 text-white">
+      <div className="bg-gray-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center flex-shrink-0">
@@ -307,7 +307,7 @@ export function Home() {
             </div>
 
             {/* RIGHT — Product grid */}
-            <div className="flex-1 min-w-0 pr-4 sm:pr-6 lg:pr-8">
+            <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-0 lg:pr-8">
 
               {/* Top bar */}
               <div className="flex items-center justify-between gap-4 mb-5 pb-5 border-b border-gray-100">
@@ -372,7 +372,7 @@ export function Home() {
                       onClick={() => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); p.delete("attr"); setSearchParams(p); }}
                       className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${
                         !selectedSubcat
-                          ? "border-gray-900 bg-gray-900 text-white"
+                          ? "border-gray-600 bg-gray-600 text-white"
                           : "border-gray-200 text-gray-600 hover:border-gray-400"
                       }`}
                     >
@@ -389,7 +389,7 @@ export function Home() {
                           onClick={() => handleSubcategory(selectedCategory, sub)}
                           className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${
                             isActive
-                              ? "border-gray-900 bg-gray-900 text-white"
+                              ? "border-gray-600 bg-gray-600 text-white"
                               : "border-gray-200 text-gray-600 hover:border-gray-400"
                           }`}
                         >
@@ -478,7 +478,7 @@ export function Home() {
                   </p>
                   <button
                     onClick={handleReset}
-                    className="text-sm px-5 py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors"
+                    className="text-sm px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                   >
                     Limpiar filtros
                   </button>

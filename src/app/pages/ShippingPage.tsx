@@ -104,7 +104,7 @@ export function ShippingPage() {
       </section>
 
       {/* Free shipping banner */}
-      <section className="py-10 px-4 bg-gray-900 text-center">
+      <section className="py-10 px-4 bg-gray-700 text-center">
         <p className="text-white text-sm">Envío gratuito en pedidos superiores a <span className="text-gray-300">€50</span> en España · <span className="text-gray-300">€100</span> en resto de Europa</p>
       </section>
     </div>

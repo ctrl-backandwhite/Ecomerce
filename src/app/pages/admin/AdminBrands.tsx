@@ -121,7 +121,7 @@ function BrandModal({
           <button onClick={onClose} className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-white transition-colors">
             Cancelar
           </button>
-          <button onClick={handleSave} className="flex items-center gap-1.5 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+          <button onClick={handleSave} className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
             <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
             {isNew ? "Crear marca" : "Guardar cambios"}
           </button>
@@ -173,7 +173,7 @@ export function AdminBrands() {
         </div>
         <button
           onClick={() => setModal(EMPTY)}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md"
           title="Nueva marca"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />

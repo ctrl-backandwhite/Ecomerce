@@ -393,7 +393,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                       {[5, 10, 15, 20, 25, 30, 40, 50].map(v => (
                         <button key={v} type="button"
                           onClick={() => set("discountValue", v)}
-                          className={`h-6 px-2.5 text-[11px] rounded-lg border transition-colors ${form.discountValue === v ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
+                          className={`h-6 px-2.5 text-[11px] rounded-lg border transition-colors ${form.discountValue === v ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
                         >
                           {v}%
                         </button>
@@ -420,7 +420,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                     {[5, 10, 20, 30, 50, 75, 100].map(v => (
                       <button key={v} type="button"
                         onClick={() => set("discountValue", v)}
-                        className={`h-6 px-2.5 text-[11px] rounded-lg border transition-colors ${form.discountValue === v ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
+                        className={`h-6 px-2.5 text-[11px] rounded-lg border transition-colors ${form.discountValue === v ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
                       >
                         €{v}
                       </button>
@@ -490,8 +490,8 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                       onClick={() => set("appliesTo", opt.value)}
                       className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border text-left transition-all ${form.appliesTo === opt.value ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-300"}`}
                     >
-                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${form.appliesTo === opt.value ? "border-gray-900" : "border-gray-300"}`}>
-                        {form.appliesTo === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />}
+                      <div className={`w-3.5 h-3.5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${form.appliesTo === opt.value ? "border-gray-500" : "border-gray-300"}`}>
+                        {form.appliesTo === opt.value && <span className="w-1.5 h-1.5 rounded-full bg-gray-500" />}
                       </div>
                       <div>
                         <p className="text-xs text-gray-900">{opt.label}</p>
@@ -515,7 +515,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                         className={`flex items-center justify-between w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${form.categoryIds.includes(cat.id) ? "bg-gray-50" : ""}`}
                       >
                         <div className="flex items-center gap-2">
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${form.categoryIds.includes(cat.id) ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${form.categoryIds.includes(cat.id) ? "bg-gray-600 border-gray-600" : "border-gray-300"}`}>
                             {form.categoryIds.includes(cat.id) && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                           </div>
                           <p className="text-xs text-gray-900">{cat.name}</p>
@@ -551,7 +551,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                         onClick={() => toggleProduct(p.id)}
                         className={`flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${form.productIds.includes(p.id) ? "bg-gray-50" : ""}`}
                       >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${form.productIds.includes(p.id) ? "bg-gray-900 border-gray-900" : "border-gray-300"}`}>
+                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${form.productIds.includes(p.id) ? "bg-gray-600 border-gray-600" : "border-gray-300"}`}>
                           {form.productIds.includes(p.id) && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                         </div>
                         <img src={p.image} alt={p.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
@@ -720,14 +720,14 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
           <div className="flex gap-1">
             {SECTIONS.map((s, idx) => (
               <button key={s.id} onClick={() => setSection(s.id)}
-                className={`w-2 h-2 rounded-full transition-colors ${section === s.id ? "bg-gray-900" : "bg-gray-200"}`} />
+                className={`w-2 h-2 rounded-full transition-colors ${section === s.id ? "bg-gray-600" : "bg-gray-200"}`} />
             ))}
           </div>
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="h-7 px-4 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
               Cancelar
             </button>
-            <button type="button" onClick={handleSubmit} className="flex items-center gap-1.5 h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors">
+            <button type="button" onClick={handleSubmit} className="flex items-center gap-1.5 h-7 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
               <Check className="w-3.5 h-3.5" /> {isEdit ? "Guardar cambios" : "Crear campaña"}
             </button>
           </div>
@@ -922,7 +922,7 @@ export function AdminCampaigns() {
         </div>
         <button
           onClick={() => setPanelData({ mode: "new", data: { ...emptyForm } })}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
           title="Nueva campaña"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />
@@ -1004,7 +1004,7 @@ export function AdminCampaigns() {
           {!searchQ && filterStatus === "all" && filterType === "all" && (
             <button
               onClick={() => setPanelData({ mode: "new", data: { ...emptyForm } })}
-              className="flex items-center gap-2 h-8 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors mx-auto"
+              className="flex items-center gap-2 h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors mx-auto"
             >
               <Plus className="w-3.5 h-3.5" /> Nueva campaña
             </button>

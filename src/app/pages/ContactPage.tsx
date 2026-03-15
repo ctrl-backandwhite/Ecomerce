@@ -109,7 +109,7 @@ export function ContactPage() {
                     className="w-full px-3 py-2.5 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 placeholder-gray-300 resize-none" />
                 </div>
                 <button type="submit"
-                  className="flex items-center gap-2 h-9 px-6 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+                  className="flex items-center gap-2 h-9 px-6 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">
                   <Send className="w-3.5 h-3.5" /> Enviar mensaje
                 </button>
               </form>

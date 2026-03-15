@@ -947,10 +947,10 @@ export const products: Product[] = [
     category: "Fotografía",
     subcategory: "Cámaras",
     keywords: ["gopro hero12", "camara accion", "5.3k video", "hypersmooth", "waterproof"],
-    image: "https://images.unsplash.com/photo-1484466196035-f61f73cad30b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
+    image: "https://images.unsplash.com/photo-1686226043803-51aea0da1c2c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxHb1BybyUyMGFjdGlvbiUyMGNhbWVyYSUyMGJsYWNrfGVufDF8fHx8MTc3MzQ5MjEyMHww&ixlib=rb-4.1.0&q=80&w=1080",
     images: [
-      { url: "https://images.unsplash.com/photo-1484466196035-f61f73cad30b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", alt: "GoPro HERO12 Black frontal", position: 1 },
-      { url: "https://images.unsplash.com/photo-1526401485004-46910ecc8e51?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080", alt: "GoPro HERO12 en acción", position: 2 },
+      { url: "https://images.unsplash.com/photo-1686226043803-51aea0da1c2c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxHb1BybyUyMGFjdGlvbiUyMGNhbWVyYSUyMGJsYWNrfGVufDF8fHx8MTc3MzQ5MjEyMHww&ixlib=rb-4.1.0&q=80&w=1080", alt: "GoPro HERO12 Black frontal", position: 1 },
+      { url: "https://images.unsplash.com/photo-1739742465651-7a775fff3ac5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhY3Rpb24lMjBjYW1lcmElMjB3YXRlcnByb29mJTIwb3V0ZG9vciUyMGFkdmVudHVyZXxlbnwxfHx8fDE3NzM0OTIxMjJ8MA&ixlib=rb-4.1.0&q=80&w=1080", alt: "GoPro HERO12 en acción", position: 2 },
     ],
     rating: 4.7,
     reviews: 165,

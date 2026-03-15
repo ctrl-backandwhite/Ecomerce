@@ -62,21 +62,21 @@ export function CategoryBar() {
 
   return (
     <nav
-      className="sticky top-16 z-40 bg-white border-b border-gray-200"
+      className="sticky top-16 z-40 bg-white border-b border-gray-100"
       onMouseLeave={scheduleClose}
     >
       {/* ── Category tabs ─────────────────────────────────────── */}
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <ul className="flex items-center justify-between overflow-x-auto scrollbar-none">
+        <ul className="flex items-stretch overflow-x-auto scrollbar-none divide-x divide-gray-100">
           {categoryTree.map(({ name, icon: Icon }) => {
             const isActive  = activeCategory === name;
             const isHovered = openCategory === name;
             return (
-              <li key={name} className="flex-shrink-0">
+              <li key={name} className="flex-shrink-0 lg:flex-1">
                 <button
                   onMouseEnter={() => handleMouseEnter(name)}
                   onClick={() => goToCategory(name)}
-                  className={`flex flex-col items-center gap-1.5 px-3 sm:px-5 py-3.5 text-xs tracking-wide transition-all border-b-2 ${
+                  className={`w-full flex flex-col items-center gap-1.5 px-3 sm:px-5 py-3.5 text-xs tracking-wide transition-all border-b-2 ${
                     isActive || isHovered
                       ? "border-gray-900 text-gray-900"
                       : "border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300"
@@ -109,15 +109,18 @@ export function CategoryBar() {
               {/* Left: Category overview */}
               <div className="flex flex-col">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    <openCat.icon className="w-5 h-5 text-gray-700" strokeWidth={1.5} />
+                  <div className="w-9 h-9 rounded-xl bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0">
+                    <openCat.icon className="w-4 h-4 text-gray-700" strokeWidth={1.5} />
                   </div>
-                  <h3 className="text-base text-gray-900">{openCategory}</h3>
+                  <div>
+                    <h3 className="text-[13px] text-gray-900">{openCategory}</h3>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-widest mt-0.5">Categoría</p>
+                  </div>
                 </div>
-                <p className="text-sm text-gray-500 leading-relaxed mb-6">{meta.description}</p>
+                <p className="text-xs text-gray-500 leading-relaxed mb-6">{meta.description}</p>
                 <button
                   onClick={() => goToCategory(openCategory!)}
-                  className="mt-auto inline-flex items-center gap-2 text-sm text-white bg-gray-900 px-4 py-2.5 rounded-lg hover:bg-gray-800 transition-colors w-fit"
+                  className="mt-auto inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 px-4 py-2.5 rounded-lg hover:bg-gray-300 transition-colors w-fit"
                 >
                   Ver todo en {openCategory}
                   <ArrowRight className="w-4 h-4" />
@@ -128,40 +131,43 @@ export function CategoryBar() {
                 </div>
               </div>
 
-              {/* Middle: Subcategories grid */}
+              {/* Middle: Subcategories */}
               <div>
-                <p className="text-xs tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-2">
+                <p className="text-[10px] tracking-widest text-gray-400 uppercase mb-4 flex items-center gap-2">
                   <Layers className="w-3.5 h-3.5" strokeWidth={1.5} />
                   Subcategorías
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-1.5">
                   {openCat.subcategories.map((sub) => {
                     const count = getSubcategoryCount(sub);
                     return (
                       <button
                         key={sub}
                         onClick={() => goToSubcategory(openCategory!, sub)}
-                        className="group flex items-center justify-between px-4 py-3 rounded-lg text-left border border-gray-100 hover:border-gray-300 hover:bg-gray-50 transition-all"
+                        className="group flex items-center justify-between px-3 py-2.5 rounded-xl text-left hover:bg-gray-50 transition-all"
                       >
-                        <span className="text-sm text-gray-700 group-hover:text-gray-900 transition-colors">{sub}</span>
-                        <span className="text-xs text-gray-300 group-hover:text-gray-500 transition-colors ml-2 flex-shrink-0">{count}</span>
+                        <span className="text-[13px] text-gray-500 group-hover:text-gray-900 transition-colors">{sub}</span>
+                        <span className="text-[10px] text-gray-300 group-hover:text-gray-400 transition-colors ml-2 flex-shrink-0">{count}</span>
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Right: Visual card */}
+              {/* Right: Visual card — mismo estilo que panel admin */}
               <div className="hidden lg:flex flex-col bg-gray-50 rounded-xl p-5 border border-gray-100">
-                <span className="text-xs tracking-widest text-gray-400 uppercase">Destacado</span>
-                <h4 className="text-sm text-gray-900 mt-3 mb-1">Tendencias en {openCategory}</h4>
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest">Destacado</p>
+                <h4 className="text-[13px] text-gray-900 mt-3 mb-1">Tendencias en {openCategory}</h4>
                 <p className="text-xs text-gray-500 leading-relaxed flex-1">
                   Descubre los productos más valorados y con mayor demanda de la categoría.
                 </p>
-                <div className="mt-5 pt-4 border-t border-gray-200">
+                <div className="mt-5 pt-4 border-t border-gray-100">
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span>{products.filter((p) => p.category === openCategory).length} productos</span>
-                    <button onClick={() => goToCategory(openCategory!)} className="flex items-center gap-1 text-gray-900 hover:underline">
+                    <button
+                      onClick={() => goToCategory(openCategory!)}
+                      className="flex items-center gap-1 text-gray-900 hover:underline"
+                    >
                       Ver todos <ArrowRight className="w-3 h-3" />
                     </button>
                   </div>

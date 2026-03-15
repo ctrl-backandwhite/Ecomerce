@@ -98,14 +98,14 @@ export function QuickViewModal({ product: p, onClose }: Props) {
                   <div className="flex gap-2 pt-1">
                     <button
                       onClick={() => { addToCart(p); toast.success("Añadido al carrito"); onClose(); }}
-                      className="flex-1 flex items-center justify-center gap-2 h-9 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors"
+                      className="flex-1 flex items-center justify-center gap-2 h-9 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
                     >
                       <ShoppingCart className="w-3.5 h-3.5" /> Agregar
                     </button>
                     <button
                       onClick={() => add(p)}
                       className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
-                        has(p.id) ? "border-gray-900 bg-gray-900 text-white" : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                        has(p.id) ? "border-gray-500 bg-gray-500 text-white" : "border-gray-200 text-gray-500 hover:bg-gray-50"
                       }`}
                     >
                       {has(p.id) ? <Check className="w-4 h-4" /> : <BarChart2 className="w-4 h-4" strokeWidth={1.5} />}

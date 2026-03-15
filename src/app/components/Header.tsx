@@ -57,7 +57,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-900 rounded flex items-center justify-center">
+            <div className="w-8 h-8 bg-gray-500 rounded flex items-center justify-center">
               <ShoppingCart className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl tracking-tight hidden sm:block">NEXA</span>
@@ -101,7 +101,7 @@ export function Header() {
                 onClick={() => setIsUserDropdownOpen((v) => !v)}
                 className="flex items-center gap-2 group"
               >
-                <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center text-white text-xs tracking-widest group-hover:bg-gray-700 transition-colors">
+                <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs tracking-widest group-hover:bg-gray-400 transition-colors">
                   {initials}
                 </div>
                 <ChevronDown
@@ -114,7 +114,7 @@ export function Header() {
                 <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
                   {/* Header del dropdown */}
                   <div className="px-4 py-5 border-b border-gray-100 bg-gray-50 flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white text-sm tracking-widest mb-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center text-white text-sm tracking-widest mb-3">
                       {initials}
                     </div>
                     <p className="text-sm text-gray-900">{user.firstName} {user.lastName}</p>
@@ -153,7 +153,7 @@ export function Header() {
                         onClick={() => setIsUserDropdownOpen(false)}
                         className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 transition-colors"
                       >
-                        <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center flex-shrink-0">
                           <LayoutDashboard className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -184,7 +184,7 @@ export function Header() {
             <Link to="/carrito" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
               <ShoppingCart className="w-5 h-5" />
               {getTotalItems() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gray-900 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                   {getTotalItems()}
                 </span>
               )}
@@ -196,7 +196,7 @@ export function Header() {
             <Link to="/carrito" className="relative p-2">
               <ShoppingCart className="w-5 h-5" />
               {getTotalItems() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gray-900 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
                   {getTotalItems()}
                 </span>
               )}
@@ -253,7 +253,7 @@ export function Header() {
               {/* Mobile user section */}
               <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
                 <div className="px-3 py-2 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center text-white text-xs tracking-widest">
+                  <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs tracking-widest">
                     {initials}
                   </div>
                   <div>

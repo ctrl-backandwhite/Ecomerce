@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useUser } from "../../context/UserContext";
-import { Shield, Eye, EyeOff, Bell, Mail, MessageSquare, ShoppingBag, Tag, Check } from "lucide-react";
+import { Shield, Eye, EyeOff, Bell, Mail, MessageSquare, ShoppingBag, Tag, Check, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export function ProfileSeguridad() {
@@ -65,7 +65,7 @@ export function ProfileSeguridad() {
   }) => (
     <button
       onClick={onChange}
-      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${checked ? "bg-gray-900" : "bg-gray-200"}`}
+      className={`relative w-10 h-5 rounded-full transition-colors flex-shrink-0 ${checked ? "bg-gray-500" : "bg-gray-200"}`}
     >
       <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0.5"}`} />
     </button>
@@ -135,10 +135,10 @@ export function ProfileSeguridad() {
 
             <button
               onClick={handlePwChange}
-              className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-lg px-5 py-2.5 hover:bg-gray-800 transition-colors"
+              className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors"
             >
-              <Check className="w-4 h-4" strokeWidth={1.5} />
-              Actualizar contraseña
+              <Save className="w-4 h-4" strokeWidth={1.5} />
+              Guardar contraseña
             </button>
           </div>
         </div>
@@ -179,9 +179,9 @@ export function ProfileSeguridad() {
 
           <button
             onClick={handleNotifSave}
-            className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-lg px-5 py-2.5 hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors"
           >
-            <Check className="w-4 h-4" strokeWidth={1.5} />
+            <Save className="w-4 h-4" strokeWidth={1.5} />
             Guardar preferencias
           </button>
         </div>

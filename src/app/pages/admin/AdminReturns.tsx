@@ -112,9 +112,9 @@ function ReturnDrawer({
               {STATUS_FLOW.map((s, idx) => (
                 <div key={s} className="flex items-center gap-1 flex-1">
                   <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] border ${
-                    idx <= currentIdx ? "bg-gray-900 border-gray-900 text-white" : "bg-white border-gray-200 text-gray-300"
+                    idx <= currentIdx ? "bg-gray-600 border-gray-600 text-white" : "bg-white border-gray-200 text-gray-300"
                   }`}>{idx + 1}</div>
-                  <div className={`flex-1 h-px ${idx < currentIdx ? "bg-gray-900" : "bg-gray-100"}`} />
+                  <div className={`flex-1 h-px ${idx < currentIdx ? "bg-gray-600" : "bg-gray-100"}`} />
                 </div>
               ))}
             </div>
@@ -155,7 +155,7 @@ function ReturnDrawer({
           </div>
 
           {/* Amount */}
-          <div className="bg-gray-900 text-white rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-gray-700 text-white rounded-xl p-4 flex items-center justify-between">
             <p className="text-xs text-gray-400">Monto a reembolsar</p>
             <p className="text-xl tracking-tight">${ret.amount.toLocaleString()}</p>
           </div>
@@ -165,7 +165,7 @@ function ReturnDrawer({
         <div className="px-6 py-4 border-t border-gray-100 space-y-2 flex-shrink-0">
           {ret.status === "requested" && (
             <button onClick={() => { onStatusChange(ret.id, "reviewing"); onClose(); }}
-              className="w-full h-8 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-2">
+              className="w-full h-8 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors flex items-center justify-center gap-2">
               <Eye className="w-3.5 h-3.5" /> Iniciar revisión
             </button>
           )}
@@ -176,7 +176,7 @@ function ReturnDrawer({
                 <XCircle className="w-3.5 h-3.5" /> Rechazar
               </button>
               <button onClick={() => { onStatusChange(ret.id, "approved"); onClose(); }}
-                className="h-8 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors flex items-center justify-center gap-1.5">
+                className="h-8 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors flex items-center justify-center gap-1.5">
                 <Check className="w-3.5 h-3.5" /> Aprobar
               </button>
             </div>

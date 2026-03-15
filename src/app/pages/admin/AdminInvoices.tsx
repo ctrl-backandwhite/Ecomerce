@@ -117,7 +117,7 @@ export function AdminInvoices() {
         </div>
         <button
           onClick={() => toast.info("La factura se genera automáticamente al confirmar un pedido")}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
           title="Nueva factura"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />

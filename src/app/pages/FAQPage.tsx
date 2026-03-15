@@ -121,7 +121,7 @@ export function FAQPage() {
         <div className="max-w-xl mx-auto text-center">
           <p className="text-sm text-gray-900 mb-2">¿No encontraste lo que buscabas?</p>
           <p className="text-xs text-gray-400 mb-5">Nuestro equipo está disponible de lunes a viernes de 9:00 a 18:00 CET.</p>
-          <Link to="/contacto" className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors">
+          <Link to="/contacto" className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 px-6 py-3 rounded-xl hover:bg-gray-300 transition-colors">
             Contactar con soporte
           </Link>
         </div>

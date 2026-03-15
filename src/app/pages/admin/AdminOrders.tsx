@@ -78,14 +78,14 @@ function OrderDrawer({
                         type="button"
                         onClick={() => { onStatusChange(order.id, s); toast.success(`Estado → ${m.label}`); }}
                         className={`w-8 h-8 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all ${
-                          done ? "bg-gray-900 border-gray-900 text-white" : "bg-white border-gray-200 text-gray-300"
-                        } ${current ? "ring-4 ring-gray-900/10" : ""}`}
+                          done ? "bg-gray-600 border-gray-600 text-white" : "bg-white border-gray-200 text-gray-300"
+                        } ${current ? "ring-4 ring-gray-600/10" : ""}`}
                         title={`Cambiar a ${m.label}`}
                       >
                         <IconComp className="w-3.5 h-3.5" strokeWidth={1.5} />
                       </button>
                       {i < STATUS_FLOW.length - 1 && (
-                        <div className={`flex-1 h-0.5 ${i < currentIdx ? "bg-gray-900" : "bg-gray-100"}`} />
+                        <div className={`flex-1 h-0.5 ${i < currentIdx ? "bg-gray-600" : "bg-gray-100"}`} />
                       )}
                     </div>
                   );
@@ -113,7 +113,7 @@ function OrderDrawer({
                     type="button"
                     onClick={() => { onStatusChange(order.id, s); toast.success(`Estado → ${m.label}`); }}
                     className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-xs transition-all text-left ${
-                      active ? "border-gray-900 bg-gray-900 text-white" : `border-gray-100 ${m.bg} ${m.text} hover:border-gray-300`
+                      active ? "border-gray-600 bg-gray-600 text-white" : `border-gray-100 ${m.bg} ${m.text} hover:border-gray-300`
                     }`}
                   >
                     <IconComp className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
@@ -238,7 +238,7 @@ export function AdminOrders() {
                 key={s}
                 onClick={() => setStatus(s)}
                 className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${
-                  active ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                  active ? "bg-gray-600 text-white border-gray-600" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
                 }`}
               >
                 {m && <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-white" : m.dot}`} />}

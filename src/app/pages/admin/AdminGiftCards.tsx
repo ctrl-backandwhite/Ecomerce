@@ -83,7 +83,7 @@ export function AdminGiftCards() {
         </div>
         <button
           onClick={() => setShowCreate(true)}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
           title="Nueva tarjeta regalo"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />
@@ -195,7 +195,7 @@ export function AdminGiftCards() {
                       onClick={() => setForm(f => ({ ...f, amount: a }))}
                       className={`h-8 px-4 text-xs rounded-lg border transition-colors ${
                         form.amount === a
-                          ? "bg-gray-900 text-white border-gray-900"
+                          ? "bg-gray-600 text-white border-gray-600"
                           : "border-gray-200 text-gray-600 hover:bg-gray-50"
                       }`}
                     >
@@ -232,7 +232,7 @@ export function AdminGiftCards() {
               </button>
               <button
                 onClick={handleCreate}
-                className="flex-1 h-8 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 h-8 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-1.5"
               >
                 <Gift className="w-3.5 h-3.5" /> Crear tarjeta ${form.amount}
               </button>

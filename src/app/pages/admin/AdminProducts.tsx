@@ -99,7 +99,7 @@ function ProductPreview({ product, onClose }: { product: Product; onClose: () =>
                 <span className="text-2xl text-gray-900">${product.price}</span>
                 {product.originalPrice && <span className="text-sm text-gray-500 line-through">${product.originalPrice}</span>}
               </div>
-              <button className="w-full px-4 py-2 bg-gray-900 text-white text-sm rounded-lg hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+              <button className="w-full px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2">
                 <ShoppingCart className="w-4 h-4" />
                 Agregar al carrito
               </button>
@@ -322,7 +322,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
                   <button
                     type="button"
                     onClick={() => set("featured", !form.featured)}
-                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-xs transition-all ${form.featured ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 text-xs transition-all ${form.featured ? "bg-gray-600 border-gray-600 text-white" : "border-gray-200 text-gray-500 hover:border-gray-300"}`}
                   >
                     <Star className="w-3.5 h-3.5" strokeWidth={1.5} fill={form.featured ? "currentColor" : "none"} />
                     {form.featured ? "Sí, destacado" : "No destacado"}
@@ -347,7 +347,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
                 <label className={lbl}>Palabras clave ({form.keywords.length})</label>
                 <div className="flex gap-2 mb-2">
                   <input value={newKeyword} onChange={(e) => setNewKeyword(e.target.value)} onKeyDown={(e) => e.key === "Enter" && addKeyword()} className={`${field} flex-1`} placeholder="Agregar keyword..." />
-                  <button onClick={addKeyword} className="px-4 py-2.5 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors whitespace-nowrap">
+                  <button onClick={addKeyword} className="px-4 py-2.5 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors whitespace-nowrap">
                     + Agregar
                   </button>
                 </div>
@@ -465,7 +465,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div
                     onClick={() => set("manageStock", !form.manageStock)}
-                    className={`w-10 h-5 rounded-full transition-colors relative ${form.manageStock ? "bg-gray-900" : "bg-gray-200"}`}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${form.manageStock ? "bg-gray-500" : "bg-gray-200"}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${form.manageStock ? "left-5" : "left-0.5"}`} />
                   </div>
@@ -474,7 +474,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
                 <label className="flex items-center gap-2 cursor-pointer">
                   <div
                     onClick={() => set("allowBackorder", !form.allowBackorder)}
-                    className={`w-10 h-5 rounded-full transition-colors relative ${form.allowBackorder ? "bg-gray-900" : "bg-gray-200"}`}
+                    className={`w-10 h-5 rounded-full transition-colors relative ${form.allowBackorder ? "bg-gray-500" : "bg-gray-200"}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all shadow-sm ${form.allowBackorder ? "left-5" : "left-0.5"}`} />
                   </div>
@@ -503,7 +503,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
                 <div className="flex gap-2 mb-2">
                   <input value={newImgUrl} onChange={(e) => setNewImgUrl(e.target.value)} className={`${field} flex-1`} placeholder="URL de imagen https://..." />
                   <input value={newImgAlt} onChange={(e) => setNewImgAlt(e.target.value)} className={`${field} w-32`} placeholder="Alt text" />
-                  <button onClick={addImage} className="px-4 py-2.5 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors whitespace-nowrap">+ Agregar</button>
+                  <button onClick={addImage} className="px-4 py-2.5 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors whitespace-nowrap">+ Agregar</button>
                 </div>
               </div>
 
@@ -518,7 +518,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
                     <div key={i} className="relative group aspect-square bg-gray-100 rounded-xl overflow-hidden border border-gray-200">
                       <img src={img.url} alt={img.alt} className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = "none"; }} />
                       {i === 0 && (
-                        <div className="absolute top-1.5 left-1.5 bg-gray-900 text-white text-[9px] px-1.5 py-0.5 rounded">Principal</div>
+                        <div className="absolute top-1.5 left-1.5 bg-gray-600 text-white text-[9px] px-1.5 py-0.5 rounded">Principal</div>
                       )}
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                         <button onClick={() => removeImage(i)} className="w-7 h-7 bg-white/90 rounded-full flex items-center justify-center text-red-500">
@@ -542,7 +542,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
                 <div className="flex gap-2 mb-2">
                   <input value={newAttrName} onChange={(e) => setNewAttrName(e.target.value)} className={`${field} flex-1`} placeholder="Nombre ej: Color" />
                   <input value={newAttrValue} onChange={(e) => setNewAttrValue(e.target.value)} className={`${field} flex-1`} placeholder="Valor ej: Titanio Negro" />
-                  <button onClick={addAttribute} className="px-4 py-2.5 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-800 transition-colors whitespace-nowrap">+ Agregar</button>
+                  <button onClick={addAttribute} className="px-4 py-2.5 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors whitespace-nowrap">+ Agregar</button>
                 </div>
                 {form.attributes.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -567,7 +567,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
                   <input value={newVarStock} onChange={(e) => setNewVarStock(e.target.value)} className={field} placeholder="Stock" type="number" min={0} />
                   <input value={newVarAttrs} onChange={(e) => setNewVarAttrs(e.target.value)} className={field} placeholder="Color:Negro,Cap:256GB" />
                 </div>
-                <button onClick={addVariant} className="text-xs text-white bg-gray-900 rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors">+ Agregar variante</button>
+                <button onClick={addVariant} className="text-xs text-gray-700 bg-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors">+ Agregar variante</button>
 
                 {form.variants.length > 0 && (
                   <div className="mt-3 border border-gray-100 rounded-xl overflow-hidden">
@@ -750,7 +750,7 @@ function ProductModal({ product, onSave, onClose, storeCategories, storeBrands }
           <button onClick={onClose} className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-white transition-colors">
             Cancelar
           </button>
-          <button onClick={handleSave} className="flex items-center gap-1.5 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+          <button onClick={handleSave} className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
             <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
             {isNew ? "Crear producto" : "Guardar cambios"}
           </button>
@@ -840,7 +840,7 @@ export function AdminProducts() {
         </div>
         <button
           onClick={() => setModal({})}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
           title="Nuevo producto"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />

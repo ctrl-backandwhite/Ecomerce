@@ -118,7 +118,7 @@ export function AdminLoyalty() {
                 </div>
                 <button
                   onClick={() => toggleRule(r.id)}
-                  className={`relative w-9 h-5 rounded-full transition-colors ${r.active ? "bg-gray-900" : "bg-gray-200"}`}
+                  className={`relative w-9 h-5 rounded-full transition-colors ${r.active ? "bg-gray-500" : "bg-gray-200"}`}
                 >
                   <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${r.active ? "left-4" : "left-0.5"}`} />
                 </button>

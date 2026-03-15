@@ -41,7 +41,7 @@ export function AboutPage() {
           </p>
           <Link
             to="/contacto"
-            className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 px-6 py-3 rounded-xl hover:bg-gray-700 transition-colors"
+            className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 px-6 py-3 rounded-xl hover:bg-gray-300 transition-colors"
           >
             Contáctanos <ArrowRight className="w-4 h-4" />
           </Link>
@@ -92,7 +92,7 @@ export function AboutPage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {["2019", "2021", "2023", "2026"].map((year, i) => (
-              <div key={year} className={`rounded-2xl p-5 border ${i % 2 === 0 ? "bg-gray-900 border-gray-900 text-white" : "bg-white border-gray-100 text-gray-900"}`}>
+              <div key={year} className={`rounded-2xl p-5 border ${i % 2 === 0 ? "bg-gray-700 border-gray-700 text-white" : "bg-white border-gray-100 text-gray-900"}`}>
                 <p className="text-xl tracking-tight">{year}</p>
                 <p className={`text-xs mt-1 ${i % 2 === 0 ? "text-gray-400" : "text-gray-500"}`}>
                   {["Fundación", "Primera ronda", "Expansión LATAM", "50K clientes"][i]}

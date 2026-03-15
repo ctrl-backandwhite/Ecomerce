@@ -179,7 +179,7 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
               </div>
               <button
                 onClick={onClose}
-                className="mt-6 text-sm text-white bg-gray-900 rounded-xl px-6 py-2.5 hover:bg-gray-800 transition-colors"
+                className="mt-6 text-sm text-gray-700 bg-gray-200 rounded-xl px-6 py-2.5 hover:bg-gray-300 transition-colors"
               >
                 Cerrar
               </button>
@@ -250,7 +250,7 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
               disabled={!allRated}
               className={`ml-auto inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${
                 allRated
-                  ? "bg-gray-900 text-white hover:bg-gray-800"
+                  ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   : "bg-gray-100 text-gray-300 cursor-not-allowed"
               }`}
             >
@@ -393,7 +393,7 @@ function OrderModal({
               <div className="relative mb-8 px-2">
                 <div className="h-1 bg-gray-200 rounded-full relative">
                   <div
-                    className="h-full bg-gray-900 rounded-full transition-all duration-700"
+                    className="h-full bg-gray-600 rounded-full transition-all duration-700"
                     style={{ width: `${truckPercent}%` }}
                   />
                   <div
@@ -402,9 +402,9 @@ function OrderModal({
                   >
                     <div className="relative">
                       {order.status !== "delivered" && (
-                        <span className="absolute inset-0 rounded-full bg-gray-900/20 animate-ping scale-150" />
+                        <span className="absolute inset-0 rounded-full bg-gray-600/20 animate-ping scale-150" />
                       )}
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md border-2 border-white ${order.status === "delivered" ? "bg-green-500" : "bg-gray-900"}`}>
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md border-2 border-white ${order.status === "delivered" ? "bg-green-500" : "bg-gray-600"}`}>
                         <Truck className="w-4 h-4 text-white" strokeWidth={1.5} />
                       </div>
                     </div>
@@ -412,7 +412,7 @@ function OrderModal({
                 </div>
                 <div className="flex justify-between mt-1">
                   {allSteps.map((_, i) => (
-                    <div key={i} className={`w-2 h-2 rounded-full -mt-[18px] transition-colors ${i <= completedStep ? "bg-gray-900" : "bg-gray-200"}`} />
+                    <div key={i} className={`w-2 h-2 rounded-full -mt-[18px] transition-colors ${i <= completedStep ? "bg-gray-600" : "bg-gray-200"}`} />
                   ))}
                 </div>
               </div>
@@ -426,8 +426,8 @@ function OrderModal({
                     <div key={step.key} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                          done && !active ? "bg-gray-900 text-white"
-                          : active ? "bg-gray-900 text-white ring-4 ring-gray-900/10"
+                          done && !active ? "bg-gray-600 text-white"
+                          : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
                           : "bg-gray-100 text-gray-300"
                         }`}>
                           {done && !active
@@ -436,7 +436,7 @@ function OrderModal({
                             : <CircleDot className="w-4 h-4" strokeWidth={1.5} />}
                         </div>
                         {i < allSteps.length - 1 && (
-                          <div className={`w-px flex-1 my-1 min-h-[20px] transition-colors ${i < completedStep ? "bg-gray-900" : "bg-gray-200"}`} />
+                          <div className={`w-px flex-1 my-1 min-h-[20px] transition-colors ${i < completedStep ? "bg-gray-600" : "bg-gray-200"}`} />
                         )}
                       </div>
                       <div className="pb-4 pt-1.5 min-w-0">
@@ -519,7 +519,7 @@ function OrderModal({
               {/* Reorder */}
               <button
                 onClick={handleReorder}
-                className="inline-flex items-center gap-1.5 text-xs bg-gray-900 text-white rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs bg-gray-200 text-gray-700 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors"
               >
                 <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Volver a pedir
@@ -530,7 +530,7 @@ function OrderModal({
           {order.status === "shipped" && (
             <button
               onClick={() => toast.success("Redirigiendo al sitio de rastreo...")}
-              className="inline-flex items-center gap-1.5 text-xs bg-gray-900 text-white rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs bg-gray-200 text-gray-700 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors"
             >
               <Truck className="w-3.5 h-3.5" strokeWidth={1.5} />
               Rastrear en tiempo real
@@ -594,7 +594,7 @@ export function ProfilePedidos() {
               onClick={() => setFilter(id)}
               className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 filter === id
-                  ? "bg-gray-900 text-white border-gray-900"
+                  ? "bg-gray-600 text-white border-gray-600"
                   : "text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700"
               }`}
             >
@@ -655,7 +655,7 @@ export function ProfilePedidos() {
                       <div className="flex items-center gap-2">
                         <div className="flex-1 max-w-32 h-1 bg-gray-100 rounded-full overflow-hidden">
                           <div
-                            className={`h-full rounded-full ${order.status === "delivered" ? "bg-green-500" : "bg-gray-900"}`}
+                            className={`h-full rounded-full ${order.status === "delivered" ? "bg-green-500" : "bg-gray-600"}`}
                             style={{ width: `${progressPct}%` }}
                           />
                         </div>

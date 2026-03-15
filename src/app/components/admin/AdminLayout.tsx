@@ -115,7 +115,7 @@ export function AdminLayout() {
                 <p className="text-[11px] text-gray-900 font-light">Admin NEXA</p>
                 <p className="text-[9px] text-gray-400">Administrador</p>
               </div>
-              <div className="w-7 h-7 bg-gray-900 rounded-full flex items-center justify-center text-white text-[10px] tracking-widest">
+              <div className="w-7 h-7 bg-gray-500 rounded-full flex items-center justify-center text-white text-[10px] tracking-widest">
                 AN
               </div>
             </div>

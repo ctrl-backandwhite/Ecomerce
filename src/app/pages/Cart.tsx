@@ -36,7 +36,7 @@ export function Cart() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold mb-8">Carrito de Compras</h1>
+        <h1 className="text-xl tracking-tight mb-6">Carrito de Compras</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart items */}
@@ -64,7 +64,7 @@ export function Cart() {
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1 min-w-0 pr-4">
                         <Link to={`/producto/${item.id}`}>
-                          <h3 className="font-semibold text-lg hover:text-blue-600 transition-colors line-clamp-2">
+                          <h3 className="text-sm text-gray-900 hover:text-gray-600 transition-colors line-clamp-2">
                             {item.name}
                           </h3>
                         </Link>
@@ -98,7 +98,7 @@ export function Cart() {
                         >
                           <Minus className="w-4 h-4" />
                         </Button>
-                        <span className="w-12 text-center font-semibold">
+                        <span className="w-10 text-center text-sm text-gray-900">
                           {item.quantity}
                         </span>
                         <Button
@@ -119,10 +119,10 @@ export function Cart() {
 
                       {/* Price */}
                       <div className="text-right">
-                        <p className="text-2xl font-bold">
+                        <p className="text-base text-gray-900">
                           ${(item.price * item.quantity).toFixed(2)}
                         </p>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs text-gray-400">
                           ${item.price} c/u
                         </p>
                       </div>
@@ -136,7 +136,7 @@ export function Cart() {
           {/* Order summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg p-6 shadow-sm sticky top-24">
-              <h2 className="text-xl font-bold mb-6">Resumen del Pedido</h2>
+              <h2 className="text-sm tracking-widest uppercase text-gray-400 mb-5">Resumen del Pedido</h2>
 
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
@@ -160,15 +160,15 @@ export function Cart() {
                   <span>${tax.toFixed(2)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">
-                  <span className="text-lg font-bold">Total</span>
-                  <span className="text-2xl font-bold">
+                  <span className="text-sm text-gray-900">Total</span>
+                  <span className="text-lg text-gray-900">
                     ${total.toFixed(2)}
                   </span>
                 </div>
               </div>
 
               {shipping > 0 && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-sm text-blue-800">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
                   <p>
                     ¡Agrega ${(100 - subtotal).toFixed(2)} más para envío
                     gratis!

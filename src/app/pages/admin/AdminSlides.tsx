@@ -273,7 +273,7 @@ function SlideModal({ slide, onSave, onClose }: SlideModalProps) {
             </button>
             <button
               type="submit"
-              className="text-xs text-white bg-gray-900 rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors"
+              className="text-xs text-gray-700 bg-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors"
             >
               {slide ? "Guardar cambios" : "Crear slide"}
             </button>
@@ -514,7 +514,7 @@ export function AdminSlides() {
           </div>
           <button
             onClick={() => setModal({})}
-            className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+            className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
             title="Nuevo slide"
           >
             <Plus className="w-4 h-4" strokeWidth={1.5} />
@@ -543,7 +543,7 @@ export function AdminSlides() {
               <p className="text-sm text-gray-400">No hay slides creados</p>
               <button
                 onClick={() => setModal({})}
-                className="mt-4 text-xs text-gray-700 bg-white border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition-colors"
+                className="mt-4 text-xs text-gray-700 bg-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors"
               >
                 Crear primer slide
               </button>

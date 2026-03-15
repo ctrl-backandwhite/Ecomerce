@@ -75,7 +75,7 @@ function ProductModal({
               className="w-full h-full object-cover"
             />
             {discount && (
-              <span className="absolute top-3 left-3 bg-gray-900 text-white text-xs px-2 py-0.5 rounded">
+              <span className="absolute top-3 left-3 bg-gray-600 text-white text-xs px-2 py-0.5 rounded">
                 -{discount}%
               </span>
             )}
@@ -156,7 +156,7 @@ function ProductModal({
             <div className="flex items-center gap-3">
               <button
                 onClick={handleAddToCart}
-                className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white text-sm rounded-xl py-2.5 hover:bg-gray-800 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 bg-gray-200 text-gray-700 text-sm rounded-xl py-2.5 hover:bg-gray-300 transition-colors"
               >
                 <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
                 Añadir al carrito
@@ -228,7 +228,7 @@ export function ProfileFavoritos() {
             </p>
             <Link
               to="/"
-              className="mt-6 inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-lg px-5 py-2.5 hover:bg-gray-800 transition-colors"
+              className="mt-6 inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors"
             >
               Explorar productos
             </Link>

@@ -57,8 +57,8 @@ function labelIcon(label: string) {
 function StepBadge({ n, active, done }: { n: number; active: boolean; done: boolean }) {
   return (
     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs transition-colors ${
-      done   ? "bg-gray-900 text-white"
-      : active ? "bg-gray-900 text-white ring-4 ring-gray-900/10"
+      done   ? "bg-gray-600 text-white"
+      : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
       : "bg-gray-100 text-gray-400"
     }`}>
       {done ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : n}
@@ -267,7 +267,7 @@ export function Checkout() {
               </button>
               <button
                 onClick={() => navigate("/")}
-                className="h-8 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+                className="h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
               >
                 Seguir comprando
               </button>
@@ -362,7 +362,7 @@ export function Checkout() {
                       onClick={() => step1Valid && setStep(2)}
                       disabled={!step1Valid}
                       className={`inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${
-                        step1Valid ? "bg-gray-900 text-white hover:bg-gray-800" : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                        step1Valid ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-gray-100 text-gray-300 cursor-not-allowed"
                       }`}
                     >
                       Continuar
@@ -406,18 +406,16 @@ export function Checkout() {
                               type="button"
                               onClick={() => setSelectedAddrId(addr.id)}
                               className={`w-full text-left rounded-xl border-2 overflow-hidden transition-all ${
-                                isSelected ? "border-gray-900" : "border-gray-100 hover:border-gray-300"
+                                isSelected ? "border-gray-500" : "border-gray-100 hover:border-gray-300"
                               }`}
                             >
                               <div className={`flex items-center gap-2 px-4 py-1.5 border-b ${
-                                isSelected ? "bg-gray-900 border-gray-800" : `${dt.bg} border-gray-100`
+                                isSelected ? "bg-gray-100 border-gray-200" : `${dt.bg} border-gray-100`
                               }`}>
-                                <span className={isSelected ? "text-white" : dt.color}>{dt.icon}</span>
-                                <span className={`text-xs ${isSelected ? "text-gray-300" : dt.color}`}>{dt.label}</span>
+                                <span className={isSelected ? "text-gray-700" : dt.color}>{dt.icon}</span>
+                                <span className={`text-xs ${isSelected ? "text-gray-600" : dt.color}`}>{dt.label}</span>
                                 {addr.isDefault && (
-                                  <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full border ${
-                                    isSelected ? "text-gray-400 bg-gray-800 border-gray-700" : "text-gray-500 bg-white border-gray-200"
-                                  }`}>
+                                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded-full border text-gray-500 bg-white border-gray-200">
                                     Predeterminada
                                   </span>
                                 )}
@@ -425,7 +423,7 @@ export function Checkout() {
                               <div className={`px-4 py-3 flex items-start justify-between gap-4 ${isSelected ? "bg-gray-50" : "bg-white"}`}>
                                 <div className="flex items-start gap-3 min-w-0">
                                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                    isSelected ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500"
+                                    isSelected ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-500"
                                   }`}>
                                     {labelIcon(addr.label)}
                                   </div>
@@ -447,7 +445,7 @@ export function Checkout() {
                                   </div>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                                  isSelected ? "border-gray-900 bg-gray-900" : "border-gray-200"
+                                  isSelected ? "border-gray-500 bg-gray-500" : "border-gray-200"
                                 }`}>
                                   {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                                 </div>
@@ -470,7 +468,7 @@ export function Checkout() {
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          selectedAddrId === "new" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-400"
+                          selectedAddrId === "new" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-400"
                         }`}>
                           <Plus className="w-4 h-4" strokeWidth={1.5} />
                         </div>
@@ -479,7 +477,7 @@ export function Checkout() {
                           <p className="text-xs text-gray-400">Domicilio, tienda NEXA o punto de entrega</p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                          selectedAddrId === "new" ? "border-gray-900 bg-gray-900" : "border-gray-200"
+                          selectedAddrId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
                         }`}>
                           {selectedAddrId === "new" && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                         </div>
@@ -705,7 +703,7 @@ export function Checkout() {
                       onClick={() => step2Valid && setStep(3)}
                       disabled={!step2Valid}
                       className={`inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${
-                        step2Valid ? "bg-gray-900 text-white hover:bg-gray-800" : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                        step2Valid ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-gray-100 text-gray-300 cursor-not-allowed"
                       }`}
                     >
                       Continuar
@@ -743,7 +741,7 @@ export function Checkout() {
                         {user.paymentMethods.map((pm) => {
                           const isSelected = selectedPmId === pm.id;
                           const accentMap: Record<string, { border: string; strip: string; stripTxt: string }> = {
-                            card:   { border: "border-gray-900",   strip: isSelected ? "bg-gray-900"    : "bg-gray-50",     stripTxt: isSelected ? "text-white" : "text-gray-500"   },
+                            card:   { border: "border-gray-500",   strip: isSelected ? "bg-gray-500"    : "bg-gray-50",     stripTxt: isSelected ? "text-white" : "text-gray-500"   },
                             paypal: { border: "border-[#179BD7]",  strip: isSelected ? "bg-[#179BD7]"   : "bg-sky-50",      stripTxt: isSelected ? "text-white" : "text-[#179BD7]" },
                             usdt:   { border: "border-[#26A17B]",  strip: isSelected ? "bg-[#26A17B]"   : "bg-emerald-50",  stripTxt: isSelected ? "text-white" : "text-[#26A17B]" },
                             btc:    { border: "border-[#F7931A]",  strip: isSelected ? "bg-[#F7931A]"   : "bg-orange-50",   stripTxt: isSelected ? "text-white" : "text-[#F7931A]" },
@@ -785,7 +783,7 @@ export function Checkout() {
                                   <p className="text-xs text-gray-400 mt-0.5">{detail}</p>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                                  isSelected ? `${ac.border} bg-gray-900` : "border-gray-200"
+                                  isSelected ? `${ac.border} bg-gray-500` : "border-gray-200"
                                 }`}>
                                   {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                                 </div>
@@ -818,7 +816,7 @@ export function Checkout() {
 
                     {/* ── Use a different method ── */}
                     <div className={`rounded-xl border-2 overflow-hidden transition-all ${
-                      selectedPmId === "new" ? "border-gray-900" : "border-dashed border-gray-200 hover:border-gray-300"
+                      selectedPmId === "new" ? "border-gray-500" : "border-dashed border-gray-200 hover:border-gray-300"
                     }`}>
                       <button
                         type="button"
@@ -828,7 +826,7 @@ export function Checkout() {
                         }`}
                       >
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          selectedPmId === "new" ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-400"
+                          selectedPmId === "new" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-400"
                         }`}>
                           <Plus className="w-4 h-4" strokeWidth={1.5} />
                         </div>
@@ -837,7 +835,7 @@ export function Checkout() {
                           <p className="text-xs text-gray-400">Tarjeta nueva, PayPal, USDT o Bitcoin</p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                          selectedPmId === "new" ? "border-gray-900 bg-gray-900" : "border-gray-200"
+                          selectedPmId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
                         }`}>
                           {selectedPmId === "new" && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                         </div>
@@ -858,13 +856,13 @@ export function Checkout() {
                                 type="button"
                                 onClick={() => setPayMethod(id)}
                                 className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 transition-all ${
-                                  payMethod === id ? "border-gray-900 bg-white" : "border-gray-200 bg-white hover:border-gray-300"
+                                  payMethod === id ? "border-gray-500 bg-white" : "border-gray-200 bg-white hover:border-gray-300"
                                 }`}
                               >
                                 <div className="h-6 flex items-center">{logo}</div>
                                 <span className="text-[11px] text-gray-500">{label}</span>
                                 {payMethod === id && (
-                                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-gray-900 flex items-center justify-center">
+                                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-gray-500 flex items-center justify-center">
                                     <Check className="w-2 h-2 text-white" strokeWidth={3} />
                                   </span>
                                 )}
@@ -1122,7 +1120,7 @@ export function Checkout() {
                       : activeType === "paypal" ? "bg-[#179BD7] text-white hover:bg-[#1589be]"
                       : activeType === "usdt"   ? "bg-[#26A17B] text-white hover:bg-[#1e8a69]"
                       : activeType === "btc"    ? "bg-[#F7931A] text-white hover:bg-[#e07f0a]"
-                      : "bg-gray-900 text-white hover:bg-gray-800";
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300";
                     const btnLabel = activePm
                       ? activePm.type === "paypal" ? `Pagar con PayPal · $${total.toFixed(2)}`
                         : activePm.type === "usdt" ? `Confirmar pago · ${total.toFixed(2)} USDT`
@@ -1175,7 +1173,7 @@ export function Checkout() {
                         alt={item.name}
                         className="w-12 h-12 object-cover rounded-lg border border-gray-100"
                       />
-                      <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-gray-900 text-white text-[10px] rounded-full flex items-center justify-center leading-none px-1">
+                      <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 bg-gray-500 text-white text-[10px] rounded-full flex items-center justify-center leading-none px-1">
                         {item.quantity}
                       </span>
                     </div>

@@ -37,7 +37,7 @@ const STATUS_META = {
    MOCK EXTRAS
 ═══════════════════════════════════════════════════════════════ */
 const ACTIVITY_FEED = [
-  { time:"19:42", icon: ShoppingBag, color:"bg-gray-900 text-white",       title:"Nueva orden",         body:"#NX-001284 · Laura Gómez · $1,899"      },
+  { time:"19:42", icon: ShoppingBag, color:"bg-gray-500 text-white",       title:"Nueva orden",         body:"#NX-001284 · Laura Gómez · $1,899"      },
   { time:"19:05", icon: CreditCard,  color:"bg-green-100 text-green-700",  title:"Pago confirmado",     body:"#NX-001283 · $349 via tarjeta"           },
   { time:"18:20", icon: RotateCcw,   color:"bg-orange-100 text-orange-600",title:"Devolución solicitada",body:"#NX-001270 · Isabel Herrera · $1,599"  },
   { time:"17:08", icon: Users,       color:"bg-blue-100 text-blue-600",    title:"Nuevo cliente",       body:"Andrés Ruiz se registró"                 },
@@ -55,7 +55,7 @@ const INSIGHTS = [
   { tag:"META",       tagColor:"bg-gray-100 text-gray-600",   icon:Target,     iconBg:"bg-gray-100 text-gray-600",    title:"Meta mensual",        body:"Progreso hacia objetivo de $45,000",       value:"87%",      delta:null,   up:true  },
   { tag:"TICKET",     tagColor:"bg-green-50 text-green-600",  icon:ArrowUpRight,iconBg:"bg-green-100 text-green-600",title:"Ticket promedio",     body:"Subió respecto a la semana anterior",       value:null,       delta:"+$120",up:true  },
   { tag:"ATENCIÓN",   tagColor:"bg-red-50 text-red-600",      icon:AlertTriangle,iconBg:"bg-red-100 text-red-600",   title:"Devoluciones",        body:"Tasa del 6.1% · umbral recomendado: 5%",   value:"6.1%",     delta:"+0.8%",up:false },
-  { tag:"TOP VENTAS", tagColor:"bg-gray-100 text-gray-600",   icon:Headphones, iconBg:"bg-gray-900 text-white",       title:"Sony WH-1000XM5",     body:"Producto más vendido del mes · 203 uds.",  value:"203 uds.", delta:null,   up:true  },
+  { tag:"TOP VENTAS", tagColor:"bg-gray-100 text-gray-600",   icon:Headphones, iconBg:"bg-gray-500 text-white",       title:"Sony WH-1000XM5",     body:"Producto más vendido del mes · 203 uds.",  value:"203 uds.", delta:null,   up:true  },
 ];
 
 const WEEKLY_ORDERS = [
@@ -215,7 +215,7 @@ export function Dashboard() {
       {/* ── KPI Grid ────────────────────────────────────────── */}
       <div id="dash-kpis" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Ingresos hoy (accent) */}
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3">
+        <div className="lg:col-span-2 bg-gray-700 border border-gray-600 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-gray-400">Ingresos hoy</span>
             <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
@@ -582,7 +582,7 @@ export function Dashboard() {
                 to={qa.to}
                 className={`flex flex-col items-center gap-2 py-3 px-2 rounded-xl border transition-colors text-center group ${
                   qa.accent
-                    ? "bg-gray-900 border-gray-800 text-white hover:bg-gray-800"
+                    ? "bg-gray-600 border-gray-600 text-white hover:bg-gray-500"
                     : "border-gray-100 hover:bg-gray-50 hover:border-gray-200"
                 }`}
               >

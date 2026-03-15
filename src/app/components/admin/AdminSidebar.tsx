@@ -113,7 +113,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
           ) : (
             <>
               <Link to="/admin" className="flex items-center gap-2.5" onClick={onClose}>
-                <div className="w-7 h-7 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
+                <div className="w-7 h-7 bg-gray-500 rounded-lg flex items-center justify-center flex-shrink-0">
                   <Store className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
                 </div>
                 <div className="leading-tight">
@@ -175,7 +175,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
                       </span>
                     </div>
                     {active && !isCollapsed && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-gray-900 flex-shrink-0" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-600 flex-shrink-0" />
                     )}
                   </Link>
                 );

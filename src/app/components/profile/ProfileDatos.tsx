@@ -87,7 +87,7 @@ export function ProfileDatos() {
     <div className="space-y-5 flex flex-col h-full">
 
       {/* ── Card: NEXA Rewards ─────────────────────────────────── */}
-      <div className="bg-gray-900 rounded-xl p-5 text-white">
+      <div className="bg-gray-700 rounded-xl p-5 text-white">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs tracking-widest text-gray-400 uppercase">Puntos</span>
           <span className="text-xs text-gray-400">NEXA Rewards</span>
@@ -134,7 +134,7 @@ export function ProfileDatos() {
               </button>
               <button
                 onClick={handleSave}
-                className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors"
+                className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors"
               >
                 <Save className="w-4 h-4" strokeWidth={1.5} />
                 Guardar

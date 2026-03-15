@@ -63,7 +63,7 @@ export function AdminNewsletter() {
           </button>
           <button
             onClick={() => setShowCompose(true)}
-            className="flex items-center gap-2 h-8 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+            className="flex items-center gap-2 h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
           >
             <Send className="w-3.5 h-3.5" /> Nueva campaña
           </button>
@@ -96,7 +96,7 @@ export function AdminNewsletter() {
           <button
             key={s}
             onClick={() => setStatusF(s)}
-            className={`h-7 px-3 text-xs rounded-lg transition-colors ${statusF === s ? "bg-gray-900 text-white" : "border border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+            className={`h-7 px-3 text-xs rounded-lg transition-colors ${statusF === s ? "bg-gray-600 text-white" : "border border-gray-200 text-gray-500 hover:bg-gray-50"}`}
           >
             {s === "all" ? "Todos" : STATUS_META[s].label}
             <span className="ml-1.5 opacity-60">
@@ -197,7 +197,7 @@ export function AdminNewsletter() {
                   setShowCompose(false);
                   setCampaign({ subject: "", body: "" });
                 }}
-                className="flex-1 h-8 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors flex items-center justify-center gap-1.5"
+                className="flex-1 h-8 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" /> Enviar campaña
               </button>

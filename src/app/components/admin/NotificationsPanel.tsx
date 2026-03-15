@@ -45,7 +45,7 @@ export const DEFAULT_NOTIFICATIONS: AppNotification[] = [
 
 /* ── Type metadata ───────────────────────────────────────────── */
 const TYPE_META: Record<NotifType, { label: string; icon: React.ElementType; bg: string; icon_color: string }> = {
-  venta:      { label: "Venta",      icon: ShoppingBag, bg: "bg-gray-900",    icon_color: "text-white"        },
+  venta:      { label: "Venta",      icon: ShoppingBag, bg: "bg-gray-500",    icon_color: "text-white"        },
   alerta:     { label: "Alerta",     icon: AlertTriangle, bg: "bg-amber-100", icon_color: "text-amber-600"    },
   sistema:    { label: "Sistema",    icon: Settings,    bg: "bg-gray-100",    icon_color: "text-gray-500"     },
   cliente:    { label: "Cliente",    icon: Users,       bg: "bg-blue-100",    icon_color: "text-blue-600"     },
@@ -120,7 +120,7 @@ export function NotificationsPanel({
 
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 flex-shrink-0">
-          <div className="w-8 h-8 bg-gray-900 rounded-xl flex items-center justify-center relative">
+          <div className="w-8 h-8 bg-gray-500 rounded-xl flex items-center justify-center relative">
             <Bell className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white flex items-center justify-center font-medium">
@@ -149,7 +149,7 @@ export function NotificationsPanel({
                 key={t.id}
                 onClick={() => { setTab(t.id); setSelected(null); }}
                 className={`flex items-center gap-1.5 h-6 px-2.5 text-[11px] rounded-lg whitespace-nowrap transition-colors flex-shrink-0 ${
-                  tab === t.id ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                  tab === t.id ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                 }`}
               >
                 {t.label}
@@ -215,7 +215,7 @@ export function NotificationsPanel({
                   <Link
                     to={selectedNotif.link}
                     onClick={onClose}
-                    className="flex items-center justify-between h-8 px-3 text-xs bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition-colors"
+                    className="flex items-center justify-between h-8 px-3 text-xs bg-gray-200 text-gray-700 rounded-xl hover:bg-gray-300 transition-colors"
                   >
                     Ver detalle
                     <ExternalLink className="w-3 h-3" strokeWidth={1.5} />

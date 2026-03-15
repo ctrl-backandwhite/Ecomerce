@@ -75,7 +75,7 @@ function FaceVerificationModal({
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gray-900 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-gray-500 flex items-center justify-center">
               <ScanFace className="w-5 h-5 text-white" strokeWidth={1.5} />
             </div>
             <div>
@@ -106,7 +106,7 @@ function FaceVerificationModal({
                   </div>
                 ))}
               </div>
-              <button onClick={startCamera} className="w-full flex items-center justify-center gap-2 bg-gray-900 text-white text-sm rounded-xl py-3 hover:bg-gray-800 transition-colors">
+              <button onClick={startCamera} className="w-full flex items-center justify-center gap-2 bg-gray-200 text-gray-700 text-sm rounded-xl py-3 hover:bg-gray-300 transition-colors">
                 <Camera className="w-4 h-4" strokeWidth={1.5} />
                 Iniciar cámara
               </button>
@@ -139,7 +139,7 @@ function FaceVerificationModal({
                   <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
                     <ScanFace className="w-20 h-20 text-gray-600" strokeWidth={0.8} />
                   </div>
-                  <div className="absolute left-0 right-0 h-0.5 bg-gray-900/40 transition-all duration-200" style={{ top: `${progress}%` }} />
+                  <div className="absolute left-0 right-0 h-0.5 bg-gray-600/40 transition-all duration-200" style={{ top: `${progress}%` }} />
                 </div>
                 <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-gray-900 rounded-tl-sm" />
                 <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-gray-900 rounded-tr-sm" />
@@ -148,7 +148,7 @@ function FaceVerificationModal({
               </div>
               <p className="text-sm text-gray-900 mb-3">Analizando biometría{".".repeat(dots + 1)}</p>
               <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                <div className="h-full bg-gray-900 rounded-full transition-all duration-200" style={{ width: `${progress}%` }} />
+                <div className="h-full bg-gray-600 rounded-full transition-all duration-200" style={{ width: `${progress}%` }} />
               </div>
               <p className="text-xs text-gray-400 mt-2">{Math.round(progress)}%</p>
             </div>
@@ -171,7 +171,7 @@ function FaceVerificationModal({
                   </div>
                 ))}
               </div>
-              <button onClick={handleSuccess} className="w-full bg-gray-900 text-white text-sm rounded-xl py-3 hover:bg-gray-800 transition-colors">
+              <button onClick={handleSuccess} className="w-full bg-gray-200 text-gray-700 text-sm rounded-xl py-3 hover:bg-gray-300 transition-colors">
                 Continuar
               </button>
             </div>
@@ -296,7 +296,7 @@ export function ProfileTienda() {
         <p className="text-xs text-gray-400 max-w-xs leading-relaxed mb-6">
           Activa tu cuenta de vendedor para crear tu tienda, publicar productos y empezar a generar ingresos en NEXA.
         </p>
-        <button className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+        <button className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Store className="w-4 h-4" strokeWidth={1.5} />
           Convertirme en vendedor
         </button>
@@ -319,7 +319,7 @@ export function ProfileTienda() {
           <div>
             <div className="flex items-center gap-2 mb-0.5">
               <h2 className="text-base text-gray-900">Verificación de identidad</h2>
-              <span className="text-[10px] bg-gray-900 text-white px-2 py-0.5 rounded-full tracking-wide">VENDEDOR</span>
+              <span className="text-[10px] bg-gray-600 text-white px-2 py-0.5 rounded-full tracking-wide">VENDEDOR</span>
             </div>
             <p className="text-xs text-gray-400">Reconocimiento facial para cuenta de vendedor</p>
           </div>
@@ -383,7 +383,7 @@ export function ProfileTienda() {
                 <p className="text-xs text-gray-400 mb-4 leading-relaxed">
                   No pudimos confirmar tu identidad. Asegúrate de tener buena iluminación y que tu rostro esté completamente visible.
                 </p>
-                <button onClick={() => setShowFaceModal(true)} className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors">
+                <button onClick={() => setShowFaceModal(true)} className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors">
                   <ScanFace className="w-4 h-4" strokeWidth={1.5} />
                   Intentar de nuevo
                 </button>
@@ -424,7 +424,7 @@ export function ProfileTienda() {
                     Los datos biométricos se procesan localmente y no se almacenan en nuestros servidores. Cumple con la Ley 19.628.
                   </p>
                 </div>
-                <button onClick={() => setShowFaceModal(true)} className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+                <button onClick={() => setShowFaceModal(true)} className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
                   <ScanFace className="w-4 h-4" strokeWidth={1.5} />
                   Verificar identidad
                 </button>
@@ -491,7 +491,7 @@ export function ProfileTienda() {
                 </button>
                 <button
                   onClick={handleSave}
-                  className="inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors"
+                  className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors"
                 >
                   <Save className="w-4 h-4" strokeWidth={1.5} />
                   Guardar
@@ -517,7 +517,7 @@ export function ProfileTienda() {
               </span>
             </div>
             {editing && (
-              <button className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-900 text-white flex items-center justify-center">
+              <button className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gray-500 text-white flex items-center justify-center">
                 <Pencil className="w-2.5 h-2.5" strokeWidth={2} />
               </button>
             )}
@@ -698,7 +698,7 @@ export function ProfileTienda() {
           {user.store.status === "draft" && (
             <button
               onClick={() => { updateProfile({ store: { ...user.store, status: "pending" } }); toast.success("Tienda enviada a revisión"); }}
-              className="text-sm text-white bg-gray-900 rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors flex-shrink-0"
+              className="text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors flex-shrink-0"
             >
               Enviar a revisión
             </button>

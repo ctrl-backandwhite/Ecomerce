@@ -18,7 +18,7 @@ export function CompareBar() {
         >
           <div className="bg-white border border-gray-200 rounded-2xl shadow-xl px-5 py-3.5 flex items-center gap-4">
             {/* Icon */}
-            <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-gray-500 flex items-center justify-center flex-shrink-0">
               <BarChart2 className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
 
@@ -33,7 +33,7 @@ export function CompareBar() {
                   />
                   <button
                     onClick={() => remove(p.id)}
-                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-900 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-gray-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     <X className="w-2.5 h-2.5" />
                   </button>
@@ -59,7 +59,7 @@ export function CompareBar() {
               </button>
               <Link
                 to="/comparar"
-                className="h-8 px-4 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors flex items-center"
+                className="h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors flex items-center"
               >
                 Comparar
               </Link>

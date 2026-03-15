@@ -20,7 +20,7 @@ function MiniProductCard({ product }: { product: Product }) {
       <div className="relative aspect-square overflow-hidden bg-gray-50">
         <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
         {discount ? (
-          <span className="absolute top-2 left-2 text-[10px] tracking-wide px-1.5 py-0.5 bg-gray-900 text-white rounded">-{discount}%</span>
+          <span className="absolute top-2 left-2 text-[10px] tracking-wide px-1.5 py-0.5 bg-gray-600 text-white rounded">-{discount}%</span>
         ) : null}
       </div>
       <div className="p-3">
@@ -47,7 +47,7 @@ function CategoryRow({ category, products }: { category: string; products: Produ
     <div>
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div className="w-1 h-5 bg-gray-900 rounded-full" />
+          <div className="w-1 h-5 bg-gray-600 rounded-full" />
           <h3 className="text-lg tracking-tight text-gray-900">{category}</h3>
           <span className="text-xs text-gray-400">{categoryProducts.length} productos</span>
         </div>

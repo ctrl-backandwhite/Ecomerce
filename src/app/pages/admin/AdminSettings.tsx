@@ -149,7 +149,7 @@ function GeneralTab() {
       </Section>
 
       <div className="flex justify-end">
-        <button onClick={handleSave} className="inline-flex items-center gap-2 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+        <button onClick={handleSave} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar cambios
         </button>
@@ -159,7 +159,7 @@ function GeneralTab() {
 }
 
 /* ── Tab: Notifications ──────────────────────────────── */
-function NotificationsTab() {
+function TabNotificaciones() {
   const [settings, setSettings] = useState({
     newOrder:       true,
     lowStock:       true,
@@ -218,7 +218,7 @@ function NotificationsTab() {
         </Section>
       ))}
       <div className="flex justify-end">
-        <button onClick={() => toast.success("Preferencias de notificaciones guardadas")} className="inline-flex items-center gap-2 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+        <button onClick={() => toast.success("Preferencias de notificaciones guardadas")} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar
         </button>
@@ -294,7 +294,7 @@ function PaymentsTab() {
       </Section>
 
       <div className="flex justify-end">
-        <button onClick={() => toast.success("Configuración de pagos guardada")} className="inline-flex items-center gap-2 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+        <button onClick={() => toast.success("Configuración de pagos guardada")} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar
         </button>
@@ -363,7 +363,7 @@ function ShippingTab() {
       </Section>
 
       <div className="flex justify-end">
-        <button onClick={() => toast.success("Configuración de envíos guardada")} className="inline-flex items-center gap-2 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+        <button onClick={() => toast.success("Configuración de envíos guardada")} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar
         </button>
@@ -430,7 +430,7 @@ function SecurityTab() {
       </Section>
 
       <div className="flex justify-end">
-        <button onClick={() => toast.success("Configuración de seguridad guardada")} className="inline-flex items-center gap-2 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+        <button onClick={() => toast.success("Configuración de seguridad guardada")} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar
         </button>
@@ -445,7 +445,7 @@ export function AdminSettings() {
 
   const tabContent: Record<SettingsTab, React.ReactNode> = {
     general:       <GeneralTab />,
-    notifications: <NotificationsTab />,
+    notifications: <TabNotificaciones />,
     payments:      <PaymentsTab />,
     shipping:      <ShippingTab />,
     security:      <SecurityTab />,

@@ -111,7 +111,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
   }, [next]);
 
   return (
-    <div className="relative w-full overflow-hidden" style={{ height: "580px" }}>
+    <div className="relative w-full overflow-hidden h-64 sm:h-80 md:h-[420px] lg:h-[580px]">
 
       {/* ── All slides stacked – true crossfade ── */}
       {promos.map((promo, i) => (
@@ -151,7 +151,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
 
       {/* ── Content ── */}
       <div
-        className="relative h-full max-w-7xl mx-auto px-8 sm:px-12 lg:px-16 flex items-center"
+        className="relative h-full max-w-7xl mx-auto px-5 sm:px-12 lg:px-16 flex items-center"
         style={{
           zIndex: 10,
           opacity: contentVisible ? 1 : 0,
@@ -170,17 +170,17 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
               </span>
 
               {/* Subtitle */}
-              <p className="text-white/70 text-sm tracking-widest uppercase mb-2">
+              <p className="hidden sm:block text-white/70 text-sm tracking-widest uppercase mb-2">
                 {promo.subtitle}
               </p>
 
               {/* Title */}
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight mb-4">
+              <h1 className="text-2xl sm:text-5xl lg:text-6xl text-white tracking-tight leading-tight mb-3 sm:mb-4">
                 {promo.title}
               </h1>
 
               {/* Description */}
-              <p className="text-white/75 text-base sm:text-lg mb-8 leading-relaxed">
+              <p className="hidden sm:block text-white/75 text-base sm:text-lg mb-8 leading-relaxed">
                 {promo.description}
               </p>
 

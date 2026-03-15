@@ -59,7 +59,7 @@ export function Pagination({ page, totalPages, total, pageSize, onChange, extra 
                 onClick={() => onChange(p as number)}
                 className={`w-7 h-7 flex items-center justify-center rounded-lg text-xs transition-colors ${
                   page === p
-                    ? "bg-gray-900 text-white"
+                    ? "bg-gray-600 text-white"
                     : "text-gray-500 hover:bg-gray-50 border border-transparent hover:border-gray-200"
                 }`}
               >

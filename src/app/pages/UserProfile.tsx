@@ -56,7 +56,7 @@ export function UserProfile() {
 
       {/* ── Page header ─────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-200">
-        <div className="px-6 py-8">
+        <div className="px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center gap-2 text-sm text-gray-400 mb-3">
             <span>Inicio</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -66,7 +66,7 @@ export function UserProfile() {
         </div>
       </div>
 
-      <div className="px-6 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
 
           {/* ── LEFT SIDEBAR ────────────────────────────────────── */}
@@ -75,7 +75,7 @@ export function UserProfile() {
             {/* Profile card */}
             <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
               <div className="flex flex-col items-center text-center mb-6">
-                <div className="w-20 h-20 rounded-full bg-gray-900 flex items-center justify-center mb-4 text-white text-xl tracking-widest">
+                <div className="w-20 h-20 rounded-full bg-gray-500 flex items-center justify-center mb-4 text-white text-xl tracking-widest">
                   {initials}
                 </div>
                 <p className="text-base text-gray-900">{user.firstName} {user.lastName}</p>
@@ -101,7 +101,7 @@ export function UserProfile() {
             </div>
 
             {/* Navigation */}
-            <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+            <div className="hidden lg:block bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
               <nav>
                 {tabs.filter((t) => !t.sellerOnly || user.isSeller).map(({ id, label, icon: Icon }) => (
                   <button

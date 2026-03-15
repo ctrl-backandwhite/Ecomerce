@@ -118,10 +118,10 @@ function IconTooltip({ label, children }: { label: string; children: React.React
       {children}
       {visible && (
         <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
-          <div className="bg-gray-900 text-white text-[11px] leading-tight rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
+          <div className="bg-gray-700 text-white text-[11px] leading-tight rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
             {label}
           </div>
-          <div className="w-2 h-2 bg-gray-900 rotate-45 mx-auto -mt-1 rounded-sm" />
+          <div className="w-2 h-2 bg-gray-700 rotate-45 mx-auto -mt-1 rounded-sm" />
         </div>
       )}
     </div>
@@ -225,7 +225,7 @@ function CategoryModal({
                         onClick={() => setIcon(iName)}
                         className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center transition-all ${
                           selected
-                            ? "border-gray-900 bg-gray-900 text-white"
+                            ? "border-gray-600 bg-gray-600 text-white"
                             : "border-gray-200 text-gray-400 hover:border-gray-400 hover:text-gray-700"
                         }`}
                       >
@@ -279,7 +279,7 @@ function CategoryModal({
               />
               <button
                 onClick={handleAddKeyword}
-                className="flex items-center gap-1.5 text-xs text-white bg-gray-900 rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors whitespace-nowrap"
+                className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors whitespace-nowrap"
               >
                 <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Agregar
@@ -342,7 +342,7 @@ function CategoryModal({
           <button onClick={onClose} className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-white transition-colors">
             Cancelar
           </button>
-          <button onClick={handleSave} className="flex items-center gap-1.5 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+          <button onClick={handleSave} className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
             <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
             {isNew ? "Crear categoría" : "Guardar cambios"}
           </button>
@@ -981,7 +981,7 @@ function BulkImportCategoriesModal({
               />
               <button
                 onClick={handleAddCustomIcon}
-                className="flex items-center gap-1.5 text-xs text-white bg-gray-900 rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors whitespace-nowrap"
+                className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors whitespace-nowrap"
               >
                 <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
                 Agregar ícono
@@ -1056,7 +1056,7 @@ function BulkImportCategoriesModal({
           <button onClick={onClose} className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-white transition-colors">
             Cancelar
           </button>
-          <button onClick={handleImport} className="flex items-center gap-1.5 text-xs text-white bg-gray-900 rounded-xl px-5 py-2.5 hover:bg-gray-800 transition-colors">
+          <button onClick={handleImport} className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
             <Upload className="w-3.5 h-3.5" strokeWidth={1.5} />
             Importar categorías
           </button>
@@ -1373,7 +1373,7 @@ export function AdminCategories() {
           </div>
           <button
             onClick={() => setCatModal("new")}
-            className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+            className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
             title="Nueva categoría"
           >
             <Plus className="w-4 h-4" strokeWidth={1.5} />

@@ -38,7 +38,7 @@ export function NewsletterPopup() {
           >
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden pointer-events-auto">
               {/* Top decoration */}
-              <div className="bg-gray-900 px-6 pt-8 pb-6 text-center relative">
+              <div className="bg-gray-600 px-6 pt-8 pb-6 text-center relative">
                 <button
                   onClick={dismiss}
                   className="absolute top-3 right-3 w-7 h-7 flex items-center justify-center text-gray-400 hover:text-white transition-colors"
@@ -73,7 +73,7 @@ export function NewsletterPopup() {
                           className="w-full h-9 pl-9 pr-3 text-xs text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 placeholder-gray-300"
                         />
                       </div>
-                      <button type="submit" className="w-full h-9 text-xs text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors">
+                      <button type="submit" className="w-full h-9 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">
                         Obtener mi cupón -10%
                       </button>
                     </form>

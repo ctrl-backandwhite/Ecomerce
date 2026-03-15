@@ -163,7 +163,7 @@ export function HomeSidebar({
       <div className="sticky top-4 flex flex-col gap-4">
 
         {/* ── Offer banner ─────────────────────────────────── */}
-        <div className="bg-gray-900 rounded-lg p-4 text-white">
+        <div className="bg-gray-700 rounded-lg p-4 text-white">
           <p className="text-[10px] tracking-widest uppercase text-white/50 mb-1">
             Oferta del día
           </p>
@@ -219,7 +219,7 @@ export function HomeSidebar({
               onClick={() => onCategory("Todos")}
               className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
                 selectedCategory === "Todos"
-                  ? "bg-gray-900 text-white"
+                  ? "bg-gray-600 text-white"
                   : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
               }`}
             >
@@ -246,7 +246,7 @@ export function HomeSidebar({
                   <div
                     className={`flex items-center transition-colors ${
                       isActive
-                        ? "bg-gray-900 text-white"
+                        ? "bg-gray-600 text-white"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
@@ -337,7 +337,7 @@ export function HomeSidebar({
                   >
                     <span className="flex items-center gap-2">
                       <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isActive ? "border-gray-900 bg-gray-900" : "border-gray-300"
+                        isActive ? "border-gray-600 bg-gray-600" : "border-gray-300"
                       }`}>
                         {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
                       </span>
@@ -377,7 +377,7 @@ export function HomeSidebar({
                     >
                       <span className="flex items-center gap-2">
                         <span className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
-                          isActive ? "border-gray-900 bg-gray-900" : "border-gray-300"
+                          isActive ? "border-gray-600 bg-gray-600" : "border-gray-300"
                         }`}>
                           {isActive && <Check className="w-2.5 h-2.5 text-white" strokeWidth={2.5} />}
                         </span>
@@ -409,7 +409,7 @@ export function HomeSidebar({
                 >
                   {range.label}
                   {selectedPriceIdx === idx && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
                   )}
                 </button>
               ))}
@@ -440,7 +440,7 @@ export function HomeSidebar({
                 >
                   {opt.label}
                   {sortBy === opt.value && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
                   )}
                 </button>
               ))}
@@ -473,7 +473,7 @@ export function HomeSidebar({
                   )}
                 </span>
                 {selectedRating === r && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-gray-900" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-gray-600" />
                 )}
               </button>
             ))}

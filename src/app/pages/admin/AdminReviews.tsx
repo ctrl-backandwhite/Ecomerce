@@ -67,7 +67,7 @@ function ReviewDetail({
       <div className="bg-white rounded-2xl border border-gray-100 shadow-xl w-full max-w-lg overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center">
               <Star className="w-3.5 h-3.5 text-white" fill="white" />
             </div>
             <div>
@@ -131,7 +131,7 @@ function ReviewDetail({
             </button>
           )}
           {review.status !== "approved" && (
-            <button onClick={() => { onApprove(); onClose(); }} className="h-7 px-3 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5">
+            <button onClick={() => { onApprove(); onClose(); }} className="h-7 px-3 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-1.5">
               <Check className="w-3 h-3" /> Aprobar
             </button>
           )}

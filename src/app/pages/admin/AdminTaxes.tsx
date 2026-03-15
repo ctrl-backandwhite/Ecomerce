@@ -123,7 +123,7 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center">
               <Percent className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
             </div>
             <h2 className="text-sm text-gray-900">
@@ -265,7 +265,7 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
                       onClick={() => set("rate", r)}
                       className={`h-6 px-2 text-[11px] rounded-lg border transition-colors disabled:opacity-30 ${
                         form.rate === r
-                          ? "bg-gray-900 text-white border-gray-900"
+                          ? "bg-gray-600 text-white border-gray-600"
                           : "border-gray-200 text-gray-500 hover:border-gray-400"
                       }`}
                     >
@@ -303,7 +303,7 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
                     onClick={() => toggleCat(cat)}
                     className={`h-6 px-2 text-[11px] rounded-lg border transition-colors ${
                       selectedCats.includes(cat)
-                        ? "bg-gray-900 text-white border-gray-900"
+                        ? "bg-gray-600 text-white border-gray-600"
                         : "border-gray-200 text-gray-500 hover:border-gray-400"
                     }`}
                   >
@@ -416,7 +416,7 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
           </button>
           <button
             onClick={handleSubmit as any}
-            className="h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+            className="h-7 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
           >
             {isEdit ? "Guardar cambios" : "Crear regla fiscal"}
           </button>
@@ -519,7 +519,7 @@ export function AdminTaxes() {
         </div>
         <button
           onClick={openNew}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
           title="Nueva regla fiscal"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />

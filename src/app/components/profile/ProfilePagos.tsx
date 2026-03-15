@@ -357,7 +357,7 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
               type="button"
               onClick={() => setSetAsDefault(!setAsDefault)}
               className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                setAsDefault ? "bg-gray-900 border-gray-900" : "border-gray-300"
+                setAsDefault ? "bg-gray-500 border-gray-500" : "border-gray-300"
               }`}
             >
               {setAsDefault && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
@@ -375,7 +375,7 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
             <button
               type="button"
               onClick={handleSave}
-              className="text-xs text-white bg-gray-900 rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors"
+              className="text-xs text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors"
             >
               Guardar método
             </button>
@@ -427,7 +427,7 @@ export function ProfilePagos() {
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1.5 text-xs text-white bg-gray-900 rounded-lg px-4 py-2.5 hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-lg px-4 py-2.5 hover:bg-gray-300 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" strokeWidth={2} />
             Agregar método
@@ -450,7 +450,7 @@ export function ProfilePagos() {
           <p className="text-xs text-gray-400 mb-5">Agrega una tarjeta, PayPal, USDT o Bitcoin</p>
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-1.5 text-xs text-white bg-gray-900 rounded-lg px-4 py-2.5 hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-lg px-4 py-2.5 hover:bg-gray-300 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" strokeWidth={2} />
             Agregar primer método

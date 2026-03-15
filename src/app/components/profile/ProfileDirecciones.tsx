@@ -131,7 +131,7 @@ function LocationCard({
       onClick={onSelect}
       className={`w-full text-left p-4 rounded-xl border transition-all ${
         selected
-          ? "border-gray-900 bg-gray-50 ring-1 ring-gray-900"
+          ? "border-gray-500 bg-gray-50 ring-1 ring-gray-500"
           : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
       }`}
     >
@@ -157,7 +157,7 @@ function LocationCard({
           </div>
         </div>
         <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-          selected ? "border-gray-900 bg-gray-900" : "border-gray-200"
+          selected ? "border-gray-500 bg-gray-500" : "border-gray-200"
         }`}>
           {selected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
         </div>
@@ -390,7 +390,7 @@ function AddressForm({
                   onClick={() => setExpandedOperator(expandedOperator === op.id ? null : op.id)}
                   className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors text-left"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-gray-900 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-lg bg-gray-500 flex items-center justify-center flex-shrink-0">
                     <span className="text-xs text-white tracking-wider">{op.logo}</span>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -449,7 +449,7 @@ function AddressForm({
             disabled={!canSave()}
             className={`inline-flex items-center gap-2 text-sm rounded-lg px-4 py-2 transition-colors ${
               canSave()
-                ? "text-white bg-gray-900 hover:bg-gray-800"
+                ? "text-gray-700 bg-gray-200 hover:bg-gray-300"
                 : "text-gray-300 bg-gray-100 cursor-not-allowed"
             }`}
           >
@@ -483,13 +483,13 @@ function AddressCard({
   const dt = deliveryTypes.find((d) => d.id === addr.deliveryType) ?? deliveryTypes[0];
 
   return (
-    <div className={`group border rounded-xl overflow-hidden transition-all ${addr.isDefault ? "border-gray-900" : "border-gray-100 hover:border-gray-200"}`}>
+    <div className={`group border rounded-xl overflow-hidden transition-all ${addr.isDefault ? "border-gray-500" : "border-gray-100 hover:border-gray-200"}`}>
       {/* Delivery type badge bar */}
-      <div className={`flex items-center gap-2 px-4 py-2 border-b ${addr.isDefault ? "border-gray-800 bg-gray-900" : `border-gray-100 ${dt.bg}`}`}>
-        <span className={`${addr.isDefault ? "text-white" : dt.color}`}>{dt.icon}</span>
-        <span className={`text-xs ${addr.isDefault ? "text-gray-300" : dt.color}`}>{dt.label}</span>
+      <div className={`flex items-center gap-2 px-4 py-2 border-b ${addr.isDefault ? "border-gray-200 bg-gray-100" : `border-gray-100 ${dt.bg}`}`}>
+        <span className={`${addr.isDefault ? "text-gray-700" : dt.color}`}>{dt.icon}</span>
+        <span className={`text-xs ${addr.isDefault ? "text-gray-700" : dt.color}`}>{dt.label}</span>
         {addr.isDefault && (
-          <span className="ml-auto text-[10px] text-gray-400 bg-gray-800 border border-gray-700 px-2 py-0.5 rounded-full">
+          <span className="ml-auto text-[10px] text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full">
             Predeterminada
           </span>
         )}
@@ -499,7 +499,7 @@ function AddressCard({
         <div className="flex items-start justify-between gap-4">
           {/* Info */}
           <div className="flex items-start gap-3 min-w-0">
-            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${addr.isDefault ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-500"}`}>
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${addr.isDefault ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-500"}`}>
               {labelIcon(addr.label)}
             </div>
             <div className="min-w-0">
@@ -648,7 +648,7 @@ export function ProfileDirecciones() {
             <p className="text-sm text-gray-500">No tienes direcciones guardadas</p>
             <button
               onClick={() => setShowAdd(true)}
-              className="mt-4 inline-flex items-center gap-2 text-sm text-white bg-gray-900 rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors"
+              className="mt-4 inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors"
             >
               <Plus className="w-4 h-4" strokeWidth={1.5} />
               Añadir primera dirección

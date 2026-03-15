@@ -131,7 +131,7 @@ function VariablePicker({ onInsert }: { onInsert: (v: string) => void }) {
                       key={v.key}
                       type="button"
                       onClick={() => { onInsert(v.key); setOpen(false); }}
-                      className="h-6 px-2 text-[11px] bg-gray-100 hover:bg-gray-900 hover:text-white text-gray-600 rounded-lg transition-colors flex items-center gap-1"
+                      className="h-6 px-2 text-[11px] bg-gray-100 hover:bg-gray-200 hover:text-gray-800 text-gray-600 rounded-lg transition-colors flex items-center gap-1"
                     >
                       <Copy className="w-2.5 h-2.5" />
                       {v.label}
@@ -187,7 +187,7 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center">
               <Mail className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
             </div>
             <h2 className="text-sm text-gray-900">Nueva plantilla de email</h2>
@@ -496,7 +496,7 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
               <button
                 key={t}
                 onClick={() => setActiveTab(t)}
-                className={`w-2 h-2 rounded-full transition-colors ${activeTab === t ? "bg-gray-900" : "bg-gray-200"}`}
+                className={`w-2 h-2 rounded-full transition-colors ${activeTab === t ? "bg-gray-600" : "bg-gray-200"}`}
               />
             ))}
           </div>
@@ -511,9 +511,10 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
             <button
               type="button"
               onClick={handleSubmit}
-              className="flex items-center gap-1.5 h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-1.5 h-7 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
             >
-              <Check className="w-3.5 h-3.5" /> Crear plantilla
+              <Check className="w-3.5 h-3.5" />
+              {isEdit ? "Guardar" : "Crear plantilla"}
             </button>
           </div>
         </div>
@@ -649,9 +650,10 @@ function EditPanel({ template, mode: initMode, onSave, onClose }: EditPanelProps
             {mode === "edit" && (
               <button
                 onClick={() => { onSave(form); toast.success("Plantilla guardada"); onClose(); }}
-                className="flex items-center gap-1.5 h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+                className="flex items-center gap-1.5 h-7 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
               >
-                <Check className="w-3.5 h-3.5" /> Guardar cambios
+                <Save className="w-3.5 h-3.5" />
+                Guardar plantilla
               </button>
             )}
           </div>
@@ -729,7 +731,7 @@ export function AdminEmails() {
         </div>
         <button
           onClick={() => setShowNew(true)}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
           title="Nueva plantilla"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />

@@ -136,7 +136,7 @@ function CouponModal({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center">
               <Gift className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
             </div>
             <div>
@@ -172,7 +172,7 @@ function CouponModal({
                     key={t}
                     onClick={() => set("type", t)}
                     className={`flex-1 flex items-center justify-center gap-1 text-[11px] transition-colors ${
-                      form.type === t ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50"
+                      form.type === t ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50"
                     }`}
                   >
                     {t === "percentage" ? <Percent className="w-3 h-3" /> : <DollarSign className="w-3 h-3" />}
@@ -287,7 +287,7 @@ function CouponModal({
                   key={s}
                   onClick={() => set("status", s)}
                   className={`flex-1 text-[11px] transition-colors ${
-                    form.status === s ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50"
+                    form.status === s ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50"
                   }`}
                 >
                   {s === "active" ? "Activo" : "Inactivo"}
@@ -307,7 +307,7 @@ function CouponModal({
           </button>
           <button
             onClick={handleSave}
-            className="h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+            className="h-7 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-1.5"
           >
             <Check className="w-3 h-3" />
             {isNew ? "Crear cupón" : "Guardar cambios"}
@@ -418,7 +418,7 @@ export function AdminCoupons() {
         </div>
         <button
           onClick={() => setModal({ open: true, coupon: EMPTY_FORM })}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
           title="Nuevo cupón"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />

@@ -21,7 +21,7 @@ export function Footer() {
                 { icon: Youtube, label: "YouTube" },
               ].map(({ icon: Icon, label }) => (
                 <a key={label} href="#" aria-label={label}
-                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-colors">
+                  className="w-8 h-8 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-600 hover:text-white hover:border-gray-600 transition-colors">
                   <Icon className="w-3.5 h-3.5" />
                 </a>
               ))}

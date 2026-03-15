@@ -134,8 +134,8 @@ function StepBar({ step }: { step: Step }) {
         <div key={s.n} className="flex items-center">
           <div className="flex flex-col items-center gap-1">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${
-              step > s.n ? "bg-gray-900 text-white" :
-              step === s.n ? "bg-gray-900 text-white ring-4 ring-gray-200" :
+              step > s.n ? "bg-gray-600 text-white" :
+              step === s.n ? "bg-gray-600 text-white ring-4 ring-gray-200" :
               "bg-gray-100 text-gray-400"
             }`}>
               {step > s.n ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : s.n}
@@ -145,7 +145,7 @@ function StepBar({ step }: { step: Step }) {
             </p>
           </div>
           {i < steps.length - 1 && (
-            <div className={`w-16 sm:w-24 h-px mb-4 mx-1 ${step > s.n ? "bg-gray-900" : "bg-gray-200"}`} />
+            <div className={`w-16 sm:w-24 h-px mb-4 mx-1 ${step > s.n ? "bg-gray-600" : "bg-gray-200"}`} />
           )}
         </div>
       ))}
@@ -285,7 +285,7 @@ export function GiftCardPurchase() {
                       onClick={() => { set("amount", a); set("customAmount", ""); }}
                       className={`h-11 rounded-xl text-sm border transition-all ${
                         form.amount === a && !form.customAmount
-                          ? "bg-gray-900 text-white border-gray-900"
+                          ? "bg-gray-600 text-white border-gray-600"
                           : "bg-white text-gray-700 border-gray-200 hover:border-gray-500"
                       }`}
                     >
@@ -313,7 +313,7 @@ export function GiftCardPurchase() {
               <button
                 disabled={effectiveAmount < 5}
                 onClick={() => setStep(2)}
-                className="flex items-center justify-center gap-2 w-full h-11 text-sm text-white bg-gray-900 rounded-xl hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="flex items-center justify-center gap-2 w-full h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Continuar — {effectiveAmount > 0 ? `${effectiveAmount}€` : "Elige un importe"}
                 <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
@@ -464,7 +464,7 @@ export function GiftCardPurchase() {
                 <button
                   disabled={!step2Valid}
                   onClick={() => setStep(3)}
-                  className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-white bg-gray-900 rounded-xl hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   Continuar al pago
                   <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
@@ -620,7 +620,7 @@ export function GiftCardPurchase() {
                 <button
                   disabled={!step3Valid}
                   onClick={handlePay}
-                  className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-white bg-gray-900 rounded-xl hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Lock className="w-4 h-4" strokeWidth={1.5} />
                   Pagar {effectiveAmount}€
@@ -724,7 +724,7 @@ export function GiftCardPurchase() {
               </button>
               <Link
                 to="/"
-                className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors"
+                className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
               >
                 Ir a la tienda
                 <ArrowRight className="w-4 h-4" strokeWidth={1.5} />

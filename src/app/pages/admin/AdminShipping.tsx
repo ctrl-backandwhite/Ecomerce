@@ -104,7 +104,7 @@ function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center">
               <Truck className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
             </div>
             <h2 className="text-sm text-gray-900">
@@ -121,7 +121,7 @@ function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
 
           {/* Preview */}
           <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
-            <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center text-white text-xs flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-gray-500 flex items-center justify-center text-white text-xs flex-shrink-0">
               {form.logo || "??"}
             </div>
             <div>
@@ -295,7 +295,7 @@ function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
           </button>
           <button
             onClick={handleSubmit as any}
-            className="h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+            className="h-7 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
           >
             {isEdit ? "Guardar cambios" : "Crear transportista"}
           </button>
@@ -335,7 +335,7 @@ function RuleModal({ initial, carriers, onSave, onClose }: RuleModalProps) {
 
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gray-900 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center">
               <MapPin className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
             </div>
             <h2 className="text-sm text-gray-900">{isEdit ? "Editar regla" : "Nueva regla de tarifa"}</h2>
@@ -404,7 +404,7 @@ function RuleModal({ initial, carriers, onSave, onClose }: RuleModalProps) {
           <button type="button" onClick={onClose} className="h-7 px-4 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
             Cancelar
           </button>
-          <button onClick={handleSubmit as any} className="h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors">
+          <button onClick={handleSubmit as any} className="h-7 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
             {isEdit ? "Guardar cambios" : "Crear regla"}
           </button>
         </div>
@@ -524,7 +524,7 @@ export function AdminShipping() {
         {tab === "carriers" && (
           <button
             onClick={openNewCarrier}
-            className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+            className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
             title="Nuevo transportista"
           >
             <Plus className="w-4 h-4" strokeWidth={1.5} />
@@ -533,7 +533,7 @@ export function AdminShipping() {
         {tab === "rules" && (
           <button
             onClick={openNewRule}
-            className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+            className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
             title="Nueva regla"
           >
             <Plus className="w-4 h-4" strokeWidth={1.5} />
@@ -605,7 +605,7 @@ export function AdminShipping() {
             >
               {/* Name + logo */}
               <div className="flex items-center gap-2.5 w-full lg:w-auto">
-                <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center text-[10px] text-white flex-shrink-0">
+                <div className="w-8 h-8 rounded-lg bg-gray-500 flex items-center justify-center text-[10px] text-white flex-shrink-0">
                   {c.logo}
                 </div>
                 <div>
@@ -694,7 +694,7 @@ export function AdminShipping() {
             >
               <p className="text-xs text-gray-900">{r.zone}</p>
               <div className="flex items-center gap-1.5">
-                <div className="w-5 h-5 rounded-md bg-gray-900 flex items-center justify-center text-[9px] text-white flex-shrink-0">
+                <div className="w-5 h-5 rounded-md bg-gray-500 flex items-center justify-center text-[9px] text-white flex-shrink-0">
                   {carriers.find(c => c.name === r.carrier)?.logo ?? "??"}
                 </div>
                 <p className="text-xs text-gray-500">{r.carrier}</p>

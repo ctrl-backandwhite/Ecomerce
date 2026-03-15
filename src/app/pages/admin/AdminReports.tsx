@@ -346,7 +346,7 @@ export function AdminReports() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowFilters(v => !v)}
-            className={`flex items-center gap-1.5 h-7 px-3 text-xs border rounded-lg transition-colors ${showFilters ? "bg-gray-900 text-white border-gray-900" : "text-gray-600 border-gray-200 hover:bg-gray-50"}`}
+            className={`flex items-center gap-1.5 h-7 px-3 text-xs border rounded-lg transition-colors ${showFilters ? "bg-gray-600 text-white border-gray-600" : "text-gray-600 border-gray-200 hover:bg-gray-50"}`}
           >
             <Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
             Filtros
@@ -366,7 +366,7 @@ export function AdminReports() {
             key={p}
             onClick={() => setPeriod(p)}
             className={`flex items-center gap-1.5 h-7 px-3.5 text-xs rounded-lg transition-colors ${
-              period === p ? "bg-gray-900 text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+              period === p ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
             }`}
           >
             {p === "custom" && <Calendar className="w-3 h-3" strokeWidth={1.5} />}
@@ -412,7 +412,7 @@ export function AdminReports() {
                 onClick={() => handleStatusFilter(opt.v)}
                 className={`h-6 px-2.5 text-[11px] rounded-full border transition-colors ${
                   statusFilter === opt.v
-                    ? "bg-gray-900 text-white border-gray-900"
+                    ? "bg-gray-600 text-white border-gray-600"
                     : "text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700"
                 }`}
               >
@@ -441,7 +441,7 @@ export function AdminReports() {
                 onClick={() => handleTypeFilter(opt.v)}
                 className={`h-6 px-2.5 text-[11px] rounded-full border transition-colors flex items-center gap-1.5 ${
                   typeFilter === opt.v
-                    ? "bg-gray-900 text-white border-gray-900"
+                    ? "bg-gray-600 text-white border-gray-600"
                     : "text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700"
                 }`}
               >
@@ -456,7 +456,7 @@ export function AdminReports() {
       {/* ── Accounting summary ───────────────────────────────── */}
       <div id="rpt-kpis" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {/* Ingresos brutos */}
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3">
+        <div className="lg:col-span-2 bg-gray-700 border border-gray-600 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-gray-400">Ingresos brutos</span>
             <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
@@ -534,7 +534,7 @@ export function AdminReports() {
             </p>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-gray-400">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-gray-900 rounded inline-block" />Ingresos</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-gray-600 rounded inline-block" />Ingresos</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-orange-400 rounded inline-block" />Devoluciones</span>
             <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-red-400 rounded inline-block" />Canceladas</span>
           </div>
@@ -576,7 +576,8 @@ export function AdminReports() {
                   <div className="min-w-0">
                     <p className="text-xs text-gray-900 truncate">{p.name}</p>
                     <div className="h-1 bg-gray-100 rounded-full overflow-hidden w-24 mt-1">
-                      <div className="h-full bg-gray-900 rounded-full" style={{ width: `${(p.sales/210)*100}%` }} />
+                      <div className={`h-full rounded-full ${p.stock <= 3 ? "bg-red-400" : "bg-amber-400"}`}
+                        style={{ width: `${(p.sales/210)*100}%` }} />
                     </div>
                   </div>
                 </div>
@@ -722,7 +723,7 @@ export function AdminReports() {
                   key={n}
                   onClick={() => setTxPage(n)}
                   className={`w-6 h-6 rounded-lg text-[11px] transition-colors ${
-                    txPage === n ? "bg-gray-900 text-white" : "text-gray-400 hover:bg-gray-100"
+                    txPage === n ? "bg-gray-600 text-white" : "text-gray-400 hover:bg-gray-100"
                   }`}
                 >
                   {n}

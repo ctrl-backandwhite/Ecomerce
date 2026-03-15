@@ -214,7 +214,7 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
                   {DURATION_PRESETS.map(v => (
                     <button key={v} type="button"
                       onClick={() => set("durationMonths", v)}
-                      className={`h-6 px-2.5 text-[11px] rounded-lg border transition-colors ${form.durationMonths === v ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
+                      className={`h-6 px-2.5 text-[11px] rounded-lg border transition-colors ${form.durationMonths === v ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
                     >
                       {durationLabel(v)}
                     </button>
@@ -231,7 +231,7 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
                     <button
                       type="button"
                       onClick={() => set("repairLimit", null)}
-                      className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${form.repairLimit === null ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
+                      className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-colors ${form.repairLimit === null ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
                     >
                       Sin límite
                     </button>
@@ -435,7 +435,7 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
           <div className="flex gap-1">
             {["general", "cobertura", "contacto"].map((t, idx) => (
               <button key={t} onClick={() => setTab(t as any)}
-                className={`w-2 h-2 rounded-full transition-colors ${tab === t ? "bg-gray-900" : "bg-gray-200"}`}
+                className={`w-2 h-2 rounded-full transition-colors ${tab === t ? "bg-gray-600" : "bg-gray-200"}`}
               />
             ))}
           </div>
@@ -443,7 +443,7 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
             <button onClick={onClose} className="h-7 px-4 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">
               Cancelar
             </button>
-            <button onClick={handleSubmit} className="flex items-center gap-1.5 h-7 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors">
+            <button onClick={handleSubmit} className="flex items-center gap-1.5 h-7 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
               <Check className="w-3.5 h-3.5" />
               {isEdit ? "Guardar" : "Crear garantía"}
             </button>
@@ -511,7 +511,7 @@ export function AdminWarranties() {
         </div>
         <button
           onClick={() => setPanelData({ mode: "new", data: { ...emptyWarranty } })}
-          className="w-9 h-9 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
+          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
           title="Nueva garantía"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />

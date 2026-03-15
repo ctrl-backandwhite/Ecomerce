@@ -115,13 +115,13 @@ export function InvoiceDocument({
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 h-8 px-4 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 transition-colors"
+              className="flex items-center gap-2 h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
             >
               <Printer className="w-3.5 h-3.5" /> Imprimir
             </button>
             <button
               onClick={handlePrint}
-              className="flex items-center gap-2 h-8 px-4 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+              className="flex items-center gap-2 h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
             >
               <Download className="w-3.5 h-3.5" /> Descargar PDF
             </button>
@@ -147,7 +147,7 @@ export function InvoiceDocument({
               {/* Brand */}
               <div>
                 <div className="flex items-center gap-2.5 mb-1">
-                  <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center">
                     <span className="text-white text-xs tracking-widest">N</span>
                   </div>
                   <span className="text-xl text-gray-900 tracking-widest">NEXA</span>

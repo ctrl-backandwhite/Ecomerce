@@ -83,7 +83,7 @@ function ActivateModal({ onClose, onActivate }: {
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gray-900 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-gray-500 flex items-center justify-center">
               <Gift className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
             <h3 className="text-sm text-gray-900">Activar tarjeta regalo</h3>
@@ -132,7 +132,7 @@ function ActivateModal({ onClose, onActivate }: {
           <button
             onClick={handleActivate}
             disabled={!code.trim()}
-            className="flex-1 h-9 text-xs text-white bg-gray-900 rounded-lg hover:bg-gray-700 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
+            className="flex-1 h-9 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
           >
             <Check className="w-3.5 h-3.5" />
             Activar tarjeta
@@ -382,7 +382,7 @@ export function ProfileGiftCards() {
         </button>
         <Link
           to="/tarjetas-regalo"
-          className="flex items-center justify-center gap-2 h-11 text-sm text-white bg-gray-900 rounded-xl hover:bg-gray-700 transition-colors"
+          className="flex items-center justify-center gap-2 h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
         >
           <Plus className="w-4 h-4" strokeWidth={1.5} />
           Comprar y enviar

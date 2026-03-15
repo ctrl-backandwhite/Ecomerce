@@ -1,9 +1,5 @@
 import { useState, useRef, useCallback } from "react";
 import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
-import {
-  X, QrCode, Download, Copy, Printer, Check,
-  ExternalLink, Package, Tag, Layers,
-} from "lucide-react";
 import type { Product } from "../../data/products";
 import { toast } from "sonner";
 
@@ -16,7 +12,7 @@ type URLMode  = "store" | "sku" | "barcode" | "custom";
 interface ColorScheme { fg: string; bg: string; label: string; preview: string }
 
 const COLOR_SCHEMES: Record<QRStyle, ColorScheme> = {
-  dark:     { fg: "#111827", bg: "#FFFFFF", label: "Oscuro",      preview: "bg-gray-900 border-gray-200" },
+  dark:     { fg: "#111827", bg: "#FFFFFF", label: "Oscuro",      preview: "bg-gray-700 border-gray-200" },
   light:    { fg: "#374151", bg: "#F9FAFB", label: "Gris suave",  preview: "bg-gray-100 border-gray-200" },
   inverted: { fg: "#FFFFFF", bg: "#111827", label: "Invertido",   preview: "bg-white border-gray-800 ring-1 ring-gray-800" },
   brand:    { fg: "#1D4ED8", bg: "#EFF6FF", label: "Azul NEXA",   preview: "bg-blue-50 border-blue-200" },
@@ -239,7 +235,7 @@ export function ProductQRModal({
                   onClick={() => setQrSize(value)}
                   className={`w-8 h-7 text-xs rounded-lg border transition-all ${
                     qrSize === value
-                      ? "border-gray-900 bg-gray-900 text-white"
+                      ? "border-gray-600 bg-gray-600 text-white"
                       : "border-gray-200 text-gray-500 hover:border-gray-400"
                   }`}
                 >
@@ -267,7 +263,7 @@ export function ProductQRModal({
                     <div
                       onClick={() => setUrlMode(value)}
                       className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        urlMode === value ? "border-gray-900 bg-gray-900" : "border-gray-300 group-hover:border-gray-500"
+                        urlMode === value ? "border-gray-600 bg-gray-600" : "border-gray-300 group-hover:border-gray-500"
                       }`}
                     >
                       {urlMode === value && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
@@ -321,7 +317,7 @@ export function ProductQRModal({
                     title={hint}
                     className={`flex-1 h-7 text-xs rounded-lg border transition-all ${
                       qrLevel === value
-                        ? "border-gray-900 bg-gray-900 text-white"
+                        ? "border-gray-600 bg-gray-600 text-white"
                         : "border-gray-200 text-gray-500 hover:border-gray-400"
                     }`}
                   >
@@ -343,7 +339,7 @@ export function ProductQRModal({
                   <span className="text-xs text-gray-700">Superponer imagen del producto</span>
                   <div
                     onClick={() => setLogoOn((v) => !v)}
-                    className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${logoOn ? "bg-gray-900" : "bg-gray-200"}`}
+                    className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${logoOn ? "bg-gray-500" : "bg-gray-200"}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${logoOn ? "left-4" : "left-0.5"}`} />
                   </div>
@@ -353,7 +349,7 @@ export function ProductQRModal({
                   <span className="text-xs text-gray-700">Incluir margen alrededor</span>
                   <div
                     onClick={() => setMargin((v) => !v)}
-                    className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${margin ? "bg-gray-900" : "bg-gray-200"}`}
+                    className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${margin ? "bg-gray-500" : "bg-gray-200"}`}
                   >
                     <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-sm transition-all ${margin ? "left-4" : "left-0.5"}`} />
                   </div>

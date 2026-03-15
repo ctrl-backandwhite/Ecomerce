@@ -44,7 +44,7 @@ function CustomerDrawer({
         <div className="flex-1 px-6 py-5 space-y-6">
           {/* Avatar + name */}
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gray-900 rounded-full flex items-center justify-center text-white text-lg tracking-widest flex-shrink-0">
+            <div className="w-14 h-14 bg-gray-500 rounded-full flex items-center justify-center text-white text-lg tracking-widest flex-shrink-0">
               {customer.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
             </div>
             <div>
@@ -204,7 +204,7 @@ export function AdminCustomers() {
               key={s}
               onClick={() => setStatusF(s)}
               className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                statusFilter === s ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"
+                statusFilter === s ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"
               }`}
             >
               {s === "all" ? "Todos" : s === "active" ? "Activos" : "Inactivos"}
@@ -238,7 +238,7 @@ export function AdminCustomers() {
                 <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-900 rounded-full flex items-center justify-center text-white text-[11px] tracking-widest flex-shrink-0">
+                      <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white text-[11px] tracking-widest flex-shrink-0">
                         {c.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                       </div>
                       <div>
