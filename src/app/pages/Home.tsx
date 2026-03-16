@@ -1,4 +1,5 @@
 import { Loader2, Search, SlidersHorizontal, X, ChevronRight, Gift, AlertTriangle, RefreshCw } from "lucide-react";
+import { FlashDeals } from "../components/FlashDeals";
 import { useSearchParams } from "react-router";
 import { Link } from "react-router";
 import { ProductCard } from "../components/ProductCard";
@@ -34,6 +35,7 @@ export function Home() {
   const [visibleCount,     setVisibleCount]     = useState(PAGE_SIZE);
   const [isLoading,        setIsLoading]        = useState(false);
   const [mobileOpen,       setMobileOpen]       = useState(false);
+  const [filterKey,        setFilterKey]        = useState(0);
 
   const [promoClickKey, setPromoClickKey] = useState(0);
 
@@ -92,8 +94,19 @@ export function Home() {
   /* ── Reset visibleCount when filters change ─────────────────── */
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
+    setFilterKey((k) => k + 1);
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
       selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas]);
+
+  /* ── Scroll to products when category/subcategory changes from URL ── */
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    scrollToProducts();
+  }, [selectedCategory, selectedSubcat]);
 
   /* ── Scroll to products when promo CTA is clicked ───────────── */
   useEffect(() => {
@@ -285,6 +298,17 @@ export function Home() {
           </div>
         </div>
       </div>
+
+      {/* Flash Deals */}
+      <FlashDeals
+        onVerOfertas={() => {
+          setSearchParams({ ofertas: "true" }, { preventScrollReset: true });
+          setSelectedPriceIdx(0);
+          setSelectedRating(0);
+          setSortBy("featured");
+          setPromoClickKey((k) => k + 1);
+        }}
+      />
 
       {/* ── Products + Sidebar ── */}
       <section className="py-12 bg-white border-t border-gray-200" id="productos">
@@ -503,7 +527,7 @@ export function Home() {
               {/* Grid */}
               {!productsLoading || products.length > 0 ? (
                 filtered.length > 0 ? (
-                  <>
+                  <div key={filterKey} className="nexa-grid-enter">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                       {visible.map((product) => (
                         <ProductCard key={product.id} product={product} />
@@ -524,7 +548,7 @@ export function Home() {
                         </p>
                       )}
                     </div>
-                  </>
+                  </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-28 text-center">
                     <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">

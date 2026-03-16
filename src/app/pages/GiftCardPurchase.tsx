@@ -225,6 +225,19 @@ export function GiftCardPurchase() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Back link — top left */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-2.5">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors"
+          >
+            <ChevronLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
+            Seguir comprando
+          </Link>
+        </div>
+      </div>
+
       {/* Hero */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 text-center">

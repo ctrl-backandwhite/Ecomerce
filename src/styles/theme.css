@@ -81,6 +81,21 @@
   --sidebar-ring: #4b5563;
 }
 
+@keyframes nexa-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.nexa-grid-enter {
+  animation: nexa-fade-in 0.8s ease-out both;
+}
+
 /* ── Icon color blink: gray ↔ black ── */
 @keyframes icon-blink {
   0%, 100% { color: #9ca3af; }

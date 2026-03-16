@@ -116,12 +116,6 @@ export function CategoryBar() {
   };
 
   /* ── Navigation helpers ──────────────────────────────────────── */
-  const scrollToProducts = () =>
-    setTimeout(
-      () => document.getElementById("productos")?.scrollIntoView({ behavior: "smooth", block: "start" }),
-      80,
-    );
-
   const goToCategory = (category: string) => {
     setOpenCategory(null);
     navigate(`/?category=${encodeURIComponent(category)}`, { preventScrollReset: true });
