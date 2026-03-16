@@ -204,7 +204,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 className="w-full px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
               >
                 <ShoppingCart className="w-4 h-4" />
-                Agregar al carrito
+                <span className="hidden sm:inline">Agregar al carrito</span>
               </button>
             </div>
           </div>

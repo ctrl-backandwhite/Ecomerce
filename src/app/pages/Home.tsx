@@ -586,9 +586,25 @@ export function Home() {
       </section>
 
       {/* Features strip */}
-      <section className="py-14 bg-gray-50 border-y border-gray-200">
+      <section className="py-4 sm:py-14 bg-gray-50 border-y border-gray-200">
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+
+          {/* Mobile: solo iconos centrados */}
+          <div className="flex sm:hidden items-center justify-around">
+            {[
+              { icon: "🚚" },
+              { icon: "🔒" },
+              { icon: "💳" },
+              { icon: "🎧" },
+            ].map(({ icon }, i) => (
+              <div key={i} className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-lg">
+                {icon}
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop: icono + texto */}
+          <div className="hidden sm:grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
               { icon: "🚚", title: "Envío Gratis",  sub: "En compras sobre $100" },
               { icon: "🔒", title: "Compra Segura", sub: "Protección garantizada" },
@@ -606,6 +622,7 @@ export function Home() {
               </div>
             ))}
           </div>
+
         </div>
       </section>
 
