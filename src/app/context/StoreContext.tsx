@@ -49,10 +49,17 @@ function isNetworkError(err: unknown): boolean {
   const msg = err instanceof Error ? err.message : String(err);
   return (
     msg === "Failed to fetch" ||
+    msg === "Load failed" ||           // Safari / iOS / Railway
+    msg === "Network Error" ||         // Axios-style
     msg.includes("NetworkError") ||
     msg.includes("CORS") ||
     msg.includes("Network request failed") ||
-    msg.includes("net::")
+    msg.includes("net::") ||
+    msg.includes("ERR_") ||            // Chrome net errors
+    msg.includes("fetch") ||           // any fetch-related message
+    msg.includes("Failed") ||          // generic failure
+    msg.includes("timeout") ||
+    msg.includes("abort")
   );
 }
 

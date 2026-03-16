@@ -188,7 +188,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
               <button
                 type="button"
                 onClick={() => onCtaClick(promo.filterParams)}
-                className="inline-flex items-center gap-2.5 px-7 py-3.5 bg-white text-gray-900 rounded-lg hover:bg-gray-100 active:scale-95 transition-all text-sm tracking-wide"
+                className="inline-flex items-center gap-2.5 px-4 py-2 sm:px-7 sm:py-3.5 bg-white text-gray-900 rounded-lg hover:bg-gray-100 active:scale-95 transition-all text-xs sm:text-sm tracking-wide"
               >
                 {promo.buttonText}
                 <ArrowRight className="w-4 h-4" />
