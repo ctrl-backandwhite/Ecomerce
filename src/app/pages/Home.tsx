@@ -22,7 +22,7 @@ import { priceRanges } from "../data/products";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../data/filters";
 import { useStore } from "../context/StoreContext";
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 20;
 
 function scrollToProducts() {
   const el = document.getElementById("productos");

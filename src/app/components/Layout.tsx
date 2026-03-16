@@ -6,10 +6,12 @@ import { NewsletterPopup } from "./NewsletterPopup";
 
 export function Layout() {
   return (
-    <div className="flex flex-col min-h-screen">
+    /* Mobile: viewport fijo, sin scroll de página — el scroll ocurre dentro de <main>
+       Desktop (sm+): layout normal min-h-screen con scroll de ventana            */
+    <div className="flex flex-col h-dvh overflow-hidden sm:h-auto sm:min-h-screen sm:overflow-visible">
       <ScrollRestoration />
       <Header />
-      <main className="flex-1">
+      <main className="flex-1 overflow-y-auto sm:overflow-visible">
         <Outlet />
       </main>
       <Footer />
