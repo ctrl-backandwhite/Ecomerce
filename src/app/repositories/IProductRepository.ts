@@ -3,7 +3,7 @@
  *
  * Any class that fulfils this interface can be used as the product
  * data source; the rest of the app never depends on the concrete
- * implementation (CJ API, REST backend, mock, etc.).
+ * implementation (supplier API, REST backend, mock, etc.).
  */
 
 import type { Product } from "../data/products";

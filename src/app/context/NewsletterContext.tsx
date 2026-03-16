@@ -6,7 +6,10 @@ interface NewsletterContextType {
   subscribe: (email: string) => void;
 }
 
-const Ctx = createContext<NewsletterContextType | undefined>(undefined);
+declare global { var __NEXA_NewsletterCtx: ReturnType<typeof createContext<NewsletterContextType | undefined>> | undefined; }
+const Ctx =
+  globalThis.__NEXA_NewsletterCtx ??
+  (globalThis.__NEXA_NewsletterCtx = createContext<NewsletterContextType | undefined>(undefined));
 
 export function NewsletterProvider({ children }: { children: ReactNode }) {
   const [showPopup, setShowPopup] = useState(false);

@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router";
-import { reviews as allReviews, type Review } from "../data/reviews";
+import { type Review } from "../data/reviews";
+import { getProductReviews, getReviewStats } from "../data/reviewSynthesizer";
 import { useCart } from "../context/CartContext";
 import { useStore } from "../context/StoreContext";
 import {
@@ -139,10 +140,16 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
 
 // ── Reviews section ───────────────────────────────────────────
 function ReviewsSection({
-  productId, baseRating, baseCount,
-}: { productId: string; baseRating: number; baseCount: number }) {
+  productId, baseRating, baseCount, productName, productCategory,
+}: {
+  productId: string;
+  baseRating: number;
+  baseCount: number;
+  productName?: string;
+  productCategory?: string;
+}) {
   const [localReviews, setLocalReviews] = useState<Review[]>(
-    allReviews.filter((r) => r.productId === productId)
+    getProductReviews(productId, productName ?? "", productCategory ?? "")
   );
   const [filter, setFilter] = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
   const [sort, setSort] = useState<"recent" | "helpful" | "rating_high" | "rating_low">("recent");
@@ -164,6 +171,12 @@ function ReviewsSection({
     star: s,
     count: localReviews.filter((r) => r.rating === s).length,
   }));
+
+  const featuredReview = useMemo(() => {
+    return [...localReviews]
+      .filter(r => r.rating >= 4)
+      .sort((a, b) => b.helpful - a.helpful)[0] ?? null;
+  }, [localReviews]);
 
   const filtered = localReviews
     .filter((r) => filter === "all" || r.rating === parseInt(filter))
@@ -319,6 +332,45 @@ function ReviewsSection({
           </div>
         </div>
 
+        {/* Featured pull-quote */}
+        {featuredReview && filter === "all" && (
+          <div className="mx-6 my-5 flex items-start gap-4 bg-gray-50 rounded-2xl px-5 py-4 border border-gray-100">
+            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs ${featuredReview.avatarColor}`}>
+                {featuredReview.avatar}
+              </div>
+              <div className="flex gap-0.5">
+                {[1,2,3,4,5].map(i => (
+                  <Star key={i} className={`w-2.5 h-2.5 ${i <= featuredReview.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} strokeWidth={1} />
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <span className="text-xs text-gray-700">{featuredReview.author}</span>
+                {featuredReview.verified && (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-green-700 bg-green-50 px-1.5 py-0.5 rounded-full">
+                    <Check className="w-2.5 h-2.5" strokeWidth={2.5} /> Verificado
+                  </span>
+                )}
+                <span className="text-[11px] text-gray-700 ml-1">{featuredReview.title}</span>
+                <span className="text-[10px] text-gray-300 ml-auto flex-shrink-0">
+                  {new Date(featuredReview.date).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 leading-relaxed">
+                <span className="text-gray-300 text-base mr-0.5 leading-none">"</span>
+                {featuredReview.body.slice(0, 180)}{featuredReview.body.length > 180 ? "…" : ""}
+                <span className="text-gray-300 text-base ml-0.5 leading-none">"</span>
+              </p>
+              <p className="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+                <ThumbsUp className="w-3 h-3" strokeWidth={1.5} />
+                {featuredReview.helpful} personas encontraron útil esta reseña
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Filters + sort */}
         {total > 0 && (
           <div className="flex flex-wrap items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50">
@@ -396,6 +448,25 @@ function ReviewsSection({
 
 // ── Color resolver ─────────────────────────────────────────────
 const COLOR_MAP: Record<string, string> = {
+  // ── English (CJ Dropshipping products) ───────────────────────
+  "Black": "#111827", "White": "#F9FAFB", "Grey": "#9CA3AF", "Gray": "#9CA3AF",
+  "Dark Grey": "#4B5563", "Dark Gray": "#4B5563", "Light Grey": "#E5E7EB", "Light Gray": "#E5E7EB",
+  "Navy Blue": "#1E3A5F", "Navy": "#1E3A5F",
+  "Blue": "#3B82F6", "Dark Blue": "#1E40AF", "Light Blue": "#93C5FD", "Sky Blue": "#7DD3FC",
+  "Red": "#EF4444", "Dark Red": "#991B1B", "Brick Red": "#B91C1C",
+  "Green": "#22C55E", "Dark Green": "#15803D", "Light Green": "#86EFAC", "Army Green": "#4D6B2F",
+  "Yellow": "#EAB308", "Gold": "#D97706", "Golden": "#D97706",
+  "Orange": "#F97316", "Dark Orange": "#EA580C",
+  "Pink": "#F472B6", "Light Pink": "#FBCFE8", "Hot Pink": "#EC4899", "Rose": "#FB7185",
+  "Purple": "#A855F7", "Violet": "#8B5CF6", "Lilac": "#C4B5FD",
+  "Khaki": "#C3B091", "Beige": "#D2B48C", "Cream": "#FFF8E7", "Ivory": "#FFFFF0",
+  "Brown": "#78350F", "Coffee": "#6B3A2A", "Camel": "#C19A6B",
+  "Camouflage": "#6B7B5A", "Camo": "#6B7B5A",
+  "Wine": "#722F37", "Burgundy": "#800020", "Maroon": "#800000",
+  "Cyan": "#06B6D4", "Teal": "#0D9488", "Turquoise": "#2DD4BF",
+  "Silver": "#CBD5E1", "Bronze": "#CD7F32", "Copper": "#B87333",
+  "Multicolor": "linear-gradient(135deg,#f43f5e,#f97316,#eab308,#22c55e,#3b82f6,#a855f7)",
+  // ── Spanish (legacy / mock products) ─────────────────────────
   "Titanio Negro": "#2C2C2E", "Titanio Blanco": "#F0EDE6", "Titanio Natural": "#C4A882",
   "Negro": "#111827", "Blanco": "#F9FAFB", "Gris": "#9CA3AF", "Gris Oscuro": "#4B5563",
   "Gris Claro": "#D1D5DB", "Plateado": "#CBD5E1", "Plata": "#C0C0C0",
@@ -407,19 +478,16 @@ const COLOR_MAP: Record<string, string> = {
   "Naranja": "#F97316", "Naranja Oscuro": "#EA580C",
   "Rosa": "#EC4899", "Rosa Claro": "#FBCFE8", "Fucsia": "#D946EF",
   "Morado": "#A855F7", "Violeta": "#8B5CF6", "Lila": "#C4B5FD",
-  "Marrón": "#78350F", "Café": "#92400E", "Beige": "#D2B48C", "Crema": "#FFF8E7",
+  "Marrón": "#78350F", "Café": "#92400E", "Crema": "#FFF8E7",
   "Bronce": "#CD7F32", "Cobre": "#B87333",
 };
 
 function resolveColor(name: string): string {
-  // Exact match
   if (COLOR_MAP[name]) return COLOR_MAP[name];
-  // Partial match
   const key = Object.keys(COLOR_MAP).find(
     (k) => name.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(name.toLowerCase())
   );
   if (key) return COLOR_MAP[key];
-  // Deterministic HSL from string hash
   let hash = 0;
   for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
   return `hsl(${Math.abs(hash) % 360}, 55%, 55%)`;
@@ -428,23 +496,19 @@ function resolveColor(name: string): string {
 // ── Main component ────────────────────────────────────────────
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
-  const { products, getProductById, productsLoading } = useStore();
+  const { products, getProductById } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
 
-  // ── Async product load ─────────────────────────────────────
-  // undefined = loading, null = not found, Product = loaded
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [detailLoading, setDetailLoading] = useState(true);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
     if (!id) { setProduct(null); setDetailLoading(false); return; }
-
     setDetailLoading(true);
     setProduct(undefined);
-
     getProductById(id)
       .then((p) => setProduct(p))
       .catch(() => setProduct(null))
@@ -460,7 +524,6 @@ export function ProductDetail() {
   const [showSpecsModal, setShowSpecsModal] = useState(false);
   const [specsViewed, setSpecsViewed] = useState(false);
 
-  // Mide la columna de imagen para aplicar el mismo maxHeight a la ficha técnica
   const imageColRef = useRef<HTMLDivElement>(null);
   const [imageColHeight, setImageColHeight] = useState<number>(0);
   useEffect(() => {
@@ -472,7 +535,6 @@ export function ProductDetail() {
     return () => ro.disconnect();
   }, [activeImage]);
 
-  // Detecta breakpoint lg para condicionar maxHeight de la ficha técnica
   const [isLg, setIsLg] = useState(() => window.innerWidth >= 1024);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
@@ -496,12 +558,58 @@ export function ProductDetail() {
     ) ?? null;
   }, [product, variantAttrNames, selectedAttrs]);
 
+  const variantOptions = useMemo(() => {
+    if (!product) return {} as Record<string, string[]>;
+    const map: Record<string, string[]> = {};
+    variantAttrNames.forEach((key) => {
+      map[key] = [...new Set(product.variants.map((v) => v.attributes[key]).filter(Boolean))];
+    });
+    return map;
+  }, [product, variantAttrNames]);
+
   const displayPrice = selectedVariant ? selectedVariant.price : product?.price ?? 0;
   const displayStock = selectedVariant ? selectedVariant.stock_quantity : product?.stock ?? 0;
   const images = product?.images?.length
     ? product.images
     : product ? [{ url: product.image, alt: product.name, position: 1 }] : [];
 
+  const discount = product?.originalPrice
+    ? Math.round(((product.originalPrice - displayPrice) / product.originalPrice) * 100)
+    : 0;
+
+  const handleAddToCart = () => {
+    if (!product) return;
+    // Guard: if product has variants, require a full selection before adding
+    if (variantAttrNames.length > 0 && !selectedVariant) {
+      toast.error("Por favor selecciona todas las opciones (color, talla…)");
+      return;
+    }
+    const options = selectedVariant
+      ? { quantity, variantId: selectedVariant.id, selectedAttrs: { ...selectedAttrs } }
+      : { quantity };
+    addToCart({ ...product, price: displayPrice, stock: displayStock }, options);
+    const attrLabel = Object.entries(selectedAttrs)
+      .filter(([, v]) => v)
+      .map(([, v]) => v)
+      .join(" · ");
+    toast.success(
+      `${quantity} × ${product.name}${attrLabel ? ` — ${attrLabel}` : ""} agregado al carrito`
+    );
+  };
+
+  const relatedProducts = product
+    ? products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4)
+    : [];
+
+  const hasSpecs = (product?.attributes?.length ?? 0) > 0;
+
+  // Compute review stats from synthesized/static reviews (for the header rating display)
+  const reviewStats = useMemo(() => {
+    if (!product) return { avgRating: 0, count: 0 };
+    return getReviewStats(product.id, product.name, product.category);
+  }, [product]);
+
+  // ── Loading state ─────────────────────────────────────────
   if (detailLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -517,6 +625,7 @@ export function ProductDetail() {
     );
   }
 
+  // ── Not found state ───────────────────────────────────────
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -531,31 +640,6 @@ export function ProductDetail() {
       </div>
     );
   }
-
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - displayPrice) / product.originalPrice) * 100)
-    : 0;
-
-  const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addToCart({ ...product, price: displayPrice, stock: displayStock });
-    }
-    toast.success(`${quantity} × ${product.name} agregado al carrito`);
-  };
-
-  const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
-
-  const variantOptions = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    variantAttrNames.forEach((key) => {
-      map[key] = [...new Set(product.variants.map((v) => v.attributes[key]).filter(Boolean))];
-    });
-    return map;
-  }, [product, variantAttrNames]);
-
-  const hasSpecs = product.attributes?.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -584,9 +668,7 @@ export function ProductDetail() {
           Volver
         </button>
 
-        {/* ═══════════════════════════════════════════════════
-            TITLE BLOCK — full width above grid
-        ════════════════════════════════════════════════════ */}
+        {/* Title block */}
         <div className="mb-4">
           <h1 className="text-2xl sm:text-3xl text-gray-900 tracking-tight leading-tight mb-2">
             {product.name}
@@ -601,21 +683,17 @@ export function ProductDetail() {
             )}
           </div>
           <div className="flex items-center gap-2.5">
-            <span className="text-sm text-gray-900">{product.rating}</span>
-            <Stars value={product.rating} size="md" />
-            <span className="text-sm text-gray-400">({product.reviews} reseñas)</span>
+            <span className="text-sm text-gray-900">{reviewStats.avgRating}</span>
+            <Stars value={reviewStats.avgRating} size="md" />
+            <span className="text-sm text-gray-400">({reviewStats.count} reseñas)</span>
           </div>
         </div>
 
-        {/* ════════════════════════════════════════════════════
-            MAIN GRID: Left = image + price | Right = ficha técnica
-        ════════════════════════════════════════════════════ */}
+        {/* Main grid */}
         <div className="grid lg:grid-cols-[3fr_2fr] gap-4 mb-6">
 
-          {/* ── LEFT COLUMN: image + price card + trust ── */}
+          {/* Left column */}
           <div className="flex flex-col gap-3">
-
-            {/* Image + Price card side by side */}
             <div className="flex flex-col sm:flex-row gap-3 items-stretch">
 
               {/* Image column */}
@@ -623,7 +701,6 @@ export function ProductDetail() {
 
                 {/* Main image */}
                 <div className="relative bg-white rounded-2xl border border-gray-100 shadow-sm w-full max-w-full flex-shrink-0">
-                  {/* Badges — outside overflow-hidden so no corner clipping */}
                   <div className="absolute top-3 left-3 flex flex-row gap-1.5 z-10">
                     {discount > 0 && (
                       <div className="relative group">
@@ -652,13 +729,11 @@ export function ProductDetail() {
                       alt={images[activeImage]?.alt ?? product.name}
                       className="w-full h-full object-cover transition-all duration-300"
                     />
-                    {/* Counter */}
                     {images.length > 1 && (
                       <div className="absolute bottom-4 right-4 bg-black/40 text-white text-xs px-2.5 py-1 rounded-lg backdrop-blur-sm">
                         {activeImage + 1}/{images.length}
                       </div>
                     )}
-                    {/* Prev / Next arrows */}
                     {images.length > 1 && (
                       <>
                         <button
@@ -697,7 +772,7 @@ export function ProductDetail() {
                   </div>
                 )}
 
-                {/* ── Trust badges row (below carousel) ── */}
+                {/* Trust badges */}
                 <div className="grid grid-cols-2 gap-2 mt-2">
                   {TRUST_BADGES.map(({ icon: Icon, title, sub }) => (
                     <div
@@ -717,11 +792,10 @@ export function ProductDetail() {
 
               </div>{/* /image column */}
 
-              {/* ── Price card (moved from right column) ── */}
+              {/* Price card */}
               <div className="flex-1 min-w-0">
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3 h-full">
 
-                  {/* Price */}
                   <div className="flex items-baseline gap-2.5">
                     <span className="text-3xl text-gray-900 tracking-tight">${displayPrice.toLocaleString()}</span>
                     {product.originalPrice && product.originalPrice > displayPrice && (
@@ -736,7 +810,6 @@ export function ProductDetail() {
                     <p className="text-xs text-gray-500 leading-relaxed">{product.shortDescription}</p>
                   )}
 
-                  {/* Stock */}
                   <div className="flex items-center gap-1.5">
                     {displayStock > 0 ? (
                       <>
@@ -785,7 +858,7 @@ export function ProductDetail() {
                                       ? "border-gray-900 scale-110 shadow-md"
                                       : "border-gray-200 hover:border-gray-400 hover:scale-105"
                                   } ${!hasStock ? "opacity-40" : ""}`}
-                                  style={{ backgroundColor: bg }}
+                                  style={{ background: bg }}
                                 />
                                 <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30">
                                   <div className="bg-gray-700 text-white text-[11px] px-2 py-1 rounded-lg whitespace-nowrap shadow-md opacity-0 group-hover:opacity-100 transition-opacity">
@@ -897,14 +970,11 @@ export function ProductDetail() {
               </div>{/* /price card */}
 
             </div>{/* /image + price row */}
-
           </div>{/* /left column */}
 
-          {/* ── RIGHT COLUMN: Ficha técnica ── */}
+          {/* Right column: Ficha técnica */}
           {hasSpecs && (
             <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col" style={{ maxHeight: isLg && imageColHeight ? `${imageColHeight}px` : undefined }}>
-
-              {/* Header */}
               <div className="px-3 py-2.5 border-b border-gray-100 flex items-center justify-between bg-gray-50/80">
                 <div className="flex items-center gap-2">
                   <div className="w-1 h-3.5 bg-gray-300 rounded-full" />
@@ -913,13 +983,12 @@ export function ProductDetail() {
                 <button
                   onClick={() => { setShowSpecsModal(true); setSpecsViewed(true); }}
                   title="Ver ficha técnica completa"
-                  className={`w-5 h-5 flex items-center justify-center transition-colors rounded ${!specsViewed ? "animate-icon-blink text-gray-500" : "text-gray-300 hover:text-gray-600"}`}
+                  className={`w-5 h-5 flex items-center justify-center transition-colors rounded ${!specsViewed ? "text-gray-500" : "text-gray-300 hover:text-gray-600"}`}
                 >
                   <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
                 </button>
               </div>
 
-              {/* Rows */}
               <div
                 className="overflow-y-auto flex-1 divide-y divide-gray-50"
                 style={{ scrollbarWidth: "thin", scrollbarColor: "#e5e7eb transparent" }}
@@ -941,7 +1010,6 @@ export function ProductDetail() {
                 ))}
               </div>
 
-              {/* Footer */}
               <div className="px-3 py-2 border-t border-gray-100 bg-gray-50/80 flex items-center justify-between">
                 <span className="text-[9px] text-gray-400 uppercase tracking-widest">{product.attributes.length} specs</span>
                 <button
@@ -951,13 +1019,12 @@ export function ProductDetail() {
                   Ver todo <ChevronRight className="w-2.5 h-2.5" strokeWidth={2} />
                 </button>
               </div>
-
             </div>
           )}
 
         </div>{/* /main grid */}
 
-        {/* Description — full width */}
+        {/* Description */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-10">
           <h2 className="text-sm text-gray-900 mb-3 tracking-tight">Descripción</h2>
           <p className="text-sm text-gray-600 leading-relaxed">{product.description}</p>
@@ -987,25 +1054,23 @@ export function ProductDetail() {
           productId={product.id}
           baseRating={product.rating}
           baseCount={product.reviews}
+          productName={product.name}
+          productCategory={product.category}
         />
 
       </div>
 
-      {/* ── Specs modal ── */}
+      {/* Specs modal */}
       {showSpecsModal && hasSpecs && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           onClick={() => setShowSpecsModal(false)}
         >
-          {/* Backdrop */}
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-
-          {/* Panel */}
           <div
             className="relative bg-white rounded-2xl border border-gray-100 shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header */}
             <div className="bg-gray-50/80 border-b border-gray-100 rounded-t-2xl px-6 py-4 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-1 h-5 bg-gray-300 rounded-full" />
@@ -1029,7 +1094,6 @@ export function ProductDetail() {
               </div>
             </div>
 
-            {/* Attributes grid — scrollable */}
             <div
               className="overflow-y-auto flex-1"
               style={{ scrollbarWidth: "thin", scrollbarColor: "#e5e7eb transparent" }}
@@ -1048,18 +1112,16 @@ export function ProductDetail() {
                       <p className="text-xs text-gray-800 leading-snug">{attr.value}</p>
                     </div>
                     <div className="flex items-start pt-3 pr-3">
-                      <span className="text-[9px] text-gray-300 tabular-nums">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="text-[9px] text-gray-300 tabular-nums">{String(i + 1).padStart(2, "00")}</span>
                     </div>
                   </div>
                 ))}
-                {/* Fill odd gap if attributes count is odd */}
                 {product.attributes.length % 2 !== 0 && (
                   <div className="bg-gray-50/40" />
                 )}
               </div>
             </div>
 
-            {/* Footer */}
             <div className="px-6 py-3 border-t border-gray-100 bg-gray-50/80 rounded-b-2xl flex items-center justify-between flex-shrink-0">
               <span className="text-[10px] text-gray-400">
                 Mostrando {product.attributes.length} de {product.attributes.length} especificaciones

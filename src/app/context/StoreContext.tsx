@@ -10,19 +10,21 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 
-import {
+import React, {
   createContext,
   useContext,
   useState,
   useEffect,
   useCallback,
   useRef,
+  useMemo,
   type ReactNode,
 } from "react";
 
-import { productRepository }  from "../repositories/CJProductRepository";
-import { categoryRepository } from "../repositories/CJCategoryRepository";
+import { productRepository, CJProductRepository }  from "../repositories/CJProductRepository";
+import { categoryRepository, CJCategoryRepository } from "../repositories/CJCategoryRepository";
 import { toAppError }         from "../lib/AppError";
+import { getMockDetail }      from "../data/productDetailsMock";
 import { brands as initialBrands }         from "../data/brands";
 import { attributes as initialAttributes } from "../data/attributes";
 
@@ -91,12 +93,24 @@ interface StoreContextType {
 // Context & provider
 // ─────────────────────────────────────────────────────────────────────────────
 
-const StoreContext = createContext<StoreContextType | undefined>(undefined);
+// Persist the context object on globalThis so Vite's Fast Refresh / HMR does
+// not recreate it on every hot-reload.  Without this, StoreContext.tsx being
+// refreshed would call createContext() again, producing a new object that the
+// already-mounted <StoreProvider> (rendered with the OLD object) doesn't
+// provide — causing every useStore() call to see `undefined`.
+declare global {
+  // eslint-disable-next-line no-var
+  var __NEXA_StoreContext: ReturnType<typeof createContext<StoreContextType | undefined>> | undefined;
+}
+
+const StoreContext: React.Context<StoreContextType | undefined> =
+  globalThis.__NEXA_StoreContext ??
+  (globalThis.__NEXA_StoreContext = createContext<StoreContextType | undefined>(undefined));
 
 export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ── Product state ─────────────────────────────────────────────────────────
-  const [products,        setProducts]        = useState<Product[]>([]);
+  const [rawProducts,     setRawProducts]     = useState<Product[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError,   setProductsError]   = useState<string | null>(null);
   const [productsTotal,   setProductsTotal]   = useState(0);
@@ -120,6 +134,30 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     loadCategoriesInternal();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Enrich products: resolve categoryId UUID → human-readable name ────────
+  //
+  // The CJ list API returns only `categoryId` (a UUID) for each product.
+  // The category name is available in the `categories` array loaded separately.
+  // We cross-reference both to replace every UUID with its display name so
+  // components like HomeSidebar and CategoryBar receive readable strings.
+  //
+  // If categories haven't loaded yet the raw UUID is kept as a fallback
+  // (it will be re-resolved once categories arrive).
+  const products = useMemo<Product[]>(() => {
+    if (categories.length === 0) return rawProducts;
+
+    // Build a fast id → name lookup from ALL category levels (leaf IDs are level 3)
+    const catById = new Map<string, string>(
+      categories.map((c) => [c.id, c.name]),
+    );
+
+    return rawProducts.map((p) => {
+      const resolved = catById.get(p.category);
+      if (!resolved) return p;           // already a name, or unknown id
+      return { ...p, category: resolved };
+    });
+  }, [rawProducts, categories]);
+
   // ── Product actions ───────────────────────────────────────────────────────
 
   const refreshProducts = useCallback(async (query: ProductQuery = {}) => {
@@ -130,13 +168,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     currentQuery.current = query;
 
     try {
-      // ── Attempt live CJ API ──────────────────────────────────────────────
+      // ── Attempt live supplier API ─────────────────────────────────────────
       const page = await productRepository.findMany({
         ...query,
         page:  1,
         limit: INITIAL_PAGE_SIZE,
       });
-      setProducts(page.items);
+      setRawProducts(page.items);
       setProductsTotal(page.total);
       hasMore.current = page.hasMore;
       setDataSource("api");
@@ -144,36 +182,29 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const appErr = toAppError(err);
 
       if (isNetworkError(err)) {
-        // ── CORS / offline → graceful fallback to mock data ──────────────
+        // ── CORS / offline → graceful fallback to mock snapshot ────────────
         console.info(
-          "[StoreContext] CJ API unreachable (CORS / network). Falling back to mock data.",
+          "[StoreContext] Supplier API unreachable (CORS / network). Falling back to mock snapshot.",
         );
-        try {
-          const { products: mockProducts } = await import("../data/products");
-          let result = [...mockProducts];
-          // Apply basic client-side filters so the UX still makes sense
-          if (query.search) {
-            const q = query.search.toLowerCase();
-            result = result.filter(
-              (p) =>
-                p.name.toLowerCase().includes(q) ||
-                p.category.toLowerCase().includes(q),
-            );
-          }
-          setProducts(result);
-          setProductsTotal(result.length);
-          hasMore.current = false;
-          setDataSource("mock");
-          setProductsError(null);
-        } catch {
-          setProducts([]);
-          setProductsError("No se pudo cargar el catálogo.");
-          setDataSource("mock");
+        let result = CJProductRepository.getMockProducts();
+        // Apply basic client-side filters so the UX still makes sense
+        if (query.search) {
+          const q = query.search.toLowerCase();
+          result = result.filter(
+            (p) =>
+              p.name.toLowerCase().includes(q) ||
+              p.category.toLowerCase().includes(q),
+          );
         }
+        setRawProducts(result);
+        setProductsTotal(result.length);
+        hasMore.current = false;
+        setDataSource("mock");
+        setProductsError(null);
       } else {
         // ── Other API errors (auth, 5xx, etc.) ───────────────────────────
         setProductsError(appErr.message);
-        setProducts([]);
+        setRawProducts([]);
         setDataSource("mock");
       }
     } finally {
@@ -193,7 +224,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         page:  nextPage,
         limit: INITIAL_PAGE_SIZE,
       });
-      setProducts((prev) => {
+      setRawProducts((prev) => {
         const existingIds = new Set(prev.map((p) => p.id));
         const fresh = page.items.filter((p) => !existingIds.has(p.id));
         return [...prev, ...fresh];
@@ -209,32 +240,39 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const getProductById = useCallback(
     async (id: string): Promise<Product | null> => {
+      // Helper: prefer rich detail (batch data), then synthesized, then thin catalog
+      const richFallback = (): Product | null => {
+        const catalogProd = products.find((p) => p.id === id || p.slug === id) ?? null;
+        return getMockDetail(id, catalogProd);
+      };
+
       try {
         if (dataSource === "api") {
           return await productRepository.findById(id);
         }
-        // Fallback: return from in-memory list
-        return products.find((p) => p.id === id || p.slug === id) ?? null;
+        // Mock mode: return full detail (images + variants) when available,
+        // or synthesize plausible variants from the catalog entry
+        return richFallback();
       } catch (err) {
         if (isNetworkError(err)) {
-          return products.find((p) => p.id === id || p.slug === id) ?? null;
+          return richFallback();
         }
         console.warn("[StoreContext] getProductById:", toAppError(err).message);
-        return products.find((p) => p.id === id || p.slug === id) ?? null;
+        return richFallback();
       }
     },
     [products, dataSource],
   );
 
   function saveProduct(p: Product) {
-    setProducts((prev) => {
+    setRawProducts((prev) => {
       const exists = prev.find((x) => x.id === p.id);
       return exists ? prev.map((x) => (x.id === p.id ? p : x)) : [...prev, p];
     });
   }
 
   function deleteProduct(id: string) {
-    setProducts((prev) => prev.filter((p) => p.id !== id));
+    setRawProducts((prev) => prev.filter((p) => p.id !== id));
   }
 
   // ── Category actions ──────────────────────────────────────────────────────
@@ -247,16 +285,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setCategories(cats);
     } catch (err) {
       if (isNetworkError(err)) {
-        // ── CORS / offline → graceful fallback ───────────────────────────
+        // ── CORS / offline → fallback con el snapshot real de la API de CJ ──
         console.info(
-          "[StoreContext] CJ categories unreachable. Falling back to mock categories.",
+          "[StoreContext] CJ categories unreachable. Falling back to CJ mock snapshot.",
         );
-        try {
-          const { categories: mockCats } = await import("../data/adminData");
-          setCategories(mockCats);
-        } catch {
-          // leave empty — not critical
-        }
+        setCategories(CJCategoryRepository.getMockCategories());
       } else {
         console.warn("[StoreContext] loadCategories:", toAppError(err).message);
       }
@@ -307,6 +340,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   return (
     <StoreContext.Provider
       value={{
+        // `products` is the ENRICHED version (category UUIDs → names)
         products, productsLoading, productsError, productsTotal, dataSource,
         refreshProducts, loadMoreProducts, getProductById,
         saveProduct, deleteProduct,

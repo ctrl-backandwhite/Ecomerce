@@ -13,6 +13,18 @@ import {
   Layers,
   ArrowUpDown,
   DollarSign,
+  Shirt,
+  Snowflake,
+  Sparkles,
+  Baby,
+  Heart,
+  Wind,
+  Zap,
+  Scissors,
+  Cpu,
+  Watch,
+  Sofa,
+  type LucideIcon,
 } from "lucide-react";
 import { priceRanges } from "../data/products";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../data/filters";
@@ -77,6 +89,43 @@ function TopRated() {
   );
 }
 
+/* ── Category icon resolver (matches CategoryBar logic) ──────────────────────── */
+
+const ICON_RULES: [RegExp, LucideIcon][] = [
+  // ── CJ top-level categories (matched first for precision) ─────────────────
+  [/consumer electronics/i,                 Cpu],
+  [/jewelry.*watch|watch.*jewelry/i,        Watch],
+  [/home.*garden|home.*furniture|garden/i,  Sofa],
+  [/health.*beauty|beauty.*hair/i,          Sparkles],
+  [/pet supplies|^pet\b/i,                  Heart],
+  [/bags.*shoes|shoes.*bags/i,              ShoppingBag],
+  [/sports.*outdoor|outdoor.*sport/i,       Zap],
+  [/toys.*kid|kid.*bab|babies/i,            Baby],
+  // ── Generic keyword rules ─────────────────────────────────────────────────
+  [/hoodie|sweatshirt/i,                    Shirt],
+  [/women|mujer|lady|ladies|female/i,       Heart],
+  [/men'?s|hombre|male\b/i,                 Shirt],
+  [/kid|child|children|boy|girl|junior|baby/i, Baby],
+  [/suit|set\b|tracksuit|sportswear/i,      Layers],
+  [/accessori|hat\b|cap\b|scarf|glove|sock/i, Tag],
+  [/sport|active|gym|fitness/i,             Zap],
+  [/winter|jacket|coat|down\b|thermal/i,    Snowflake],
+  [/dress|skirt|romper|jumpsuit/i,          Sparkles],
+  [/shirt|blouse|top\b|tee\b/i,             Shirt],
+  [/pant|jean|short\b|legging|bottom/i,     Scissors],
+  [/sweater|knit/i,                         Wind],
+  [/watch|jewelry|jewel|ring|necklace/i,    Watch],
+  [/electronic|gadget|device|tech/i,        Cpu],
+  [/home|garden|furniture|kitchen/i,        Sofa],
+];
+
+function getCategoryIcon(name: string): LucideIcon {
+  for (const [re, icon] of ICON_RULES) {
+    if (re.test(name)) return icon;
+  }
+  return ShoppingBag;
+}
+
 /* ── Main export ─────────────────────────────────────────────── */
 export function HomeSidebar({
   selectedCategory,
@@ -123,10 +172,13 @@ export function HomeSidebar({
       if (!catMap.has(p.category)) catMap.set(p.category, new Set());
       if (p.subcategory) catMap.get(p.category)!.add(p.subcategory);
     });
-    return Array.from(catMap.entries()).map(([name, subs]) => ({
-      name,
-      subcategories: Array.from(subs).sort(),
-    }));
+    return Array.from(catMap.entries())
+      .map(([name, subs]) => ({
+        name,
+        count: products.filter((p) => p.category === name).length,
+        subcategories: Array.from(subs).sort(),
+      }))
+      .sort((a, b) => b.count - a.count);
   }, [products]);
 
   /* ── Brands in scope ─────────────────────────────────────────── */
@@ -170,11 +222,11 @@ export function HomeSidebar({
     !!selectedAttr;
 
   return (
-    <aside className="w-56 flex-shrink-0 hidden lg:block">
-      <div className="sticky top-4 flex flex-col gap-4">
+    <aside className="w-64 flex-shrink-0 hidden lg:block">
+      <div className="sticky top-4 flex flex-col gap-3">
 
-        {/* ── Offer banner ─────────────────────────────────── */}
-        <div className="bg-gray-700 rounded-lg p-4 text-white">
+        {/* ── Catalog banner ───────────────────────────────────── */}
+        <div className="bg-gray-700 rounded-xl p-4 text-white">
           <p className="text-[10px] tracking-widest uppercase text-white/50 mb-1">
             Catálogo activo
           </p>
@@ -192,8 +244,8 @@ export function HomeSidebar({
           </button>
         </div>
 
-        {/* ── Filters panel ────────────────────────────────── */}
-        <div className="border border-gray-200 rounded-lg overflow-hidden">
+        {/* ── Filters panel ────────────────────────────────────── */}
+        <div className="border border-gray-200 rounded-xl overflow-hidden">
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
@@ -221,7 +273,7 @@ export function HomeSidebar({
             </span>
           </div>
 
-          {/* ── Categorías ── */}
+          {/* ── Categorías ─────────────────────────────────────── */}
           <div className="border-b border-gray-100">
             <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
               <Tag className="w-3 h-3" /> Categorías
@@ -248,11 +300,11 @@ export function HomeSidebar({
               </span>
             </button>
 
-            {/* Dynamic categories */}
+            {/* Dynamic categories with icons */}
             {dynamicCategoryTree.map((cat) => {
               const isActive = selectedCategory === cat.name;
               const isOpen   = openCats.includes(cat.name);
-              const count    = products.filter((p) => p.category === cat.name).length;
+              const CatIcon  = getCategoryIcon(cat.name);
 
               return (
                 <div key={cat.name}>
@@ -270,13 +322,13 @@ export function HomeSidebar({
                       }}
                       className="flex-1 flex items-center gap-2.5 px-4 py-2.5 text-sm text-left"
                     >
-                      <Layers
+                      <CatIcon
                         className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`}
                         strokeWidth={1.5}
                       />
                       <span className="truncate">{cat.name}</span>
                       <span className={`ml-auto text-[10px] flex-shrink-0 ${isActive ? "text-white/50" : "text-gray-400"}`}>
-                        {count}
+                        {cat.count}
                       </span>
                     </button>
                     {cat.subcategories.length > 0 && (
@@ -303,7 +355,7 @@ export function HomeSidebar({
                           <button
                             key={sub}
                             onClick={() => onSubcategory(cat.name, sub)}
-                            className={`w-full flex items-center justify-between pl-10 pr-4 py-2 text-[13px] transition-colors ${
+                            className={`w-full flex items-center justify-between pl-11 pr-4 py-2 text-[13px] transition-colors ${
                               isSubActive
                                 ? "text-gray-900 bg-gray-100"
                                 : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
@@ -365,9 +417,9 @@ export function HomeSidebar({
                 const opts = group.options.filter((o) => (attrCounts[o] ?? 0) > 0);
                 if (opts.length === 0) return null;
                 return (
-                  <div key={group.label} className="pt-3 pb-2 px-4">
+                  <div key={group.groupLabel} className="pt-3 pb-2 px-4">
                     <p className="text-[10px] tracking-widest uppercase text-gray-400 mb-2 flex items-center gap-1">
-                      <Layers className="w-3 h-3" /> {group.label}
+                      <Layers className="w-3 h-3" /> {group.groupLabel}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {opts.map((opt) => {

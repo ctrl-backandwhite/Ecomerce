@@ -52,7 +52,10 @@ interface CJContextValue {
 // Contexto
 // ─────────────────────────────────────────────────────────────────────────────
 
-const CJContext = createContext<CJContextValue | null>(null);
+declare global { var __NEXA_CJContext: ReturnType<typeof createContext<CJContextValue | null>> | undefined; }
+const CJContext =
+  globalThis.__NEXA_CJContext ??
+  (globalThis.__NEXA_CJContext = createContext<CJContextValue | null>(null));
 
 export function CJProvider({ children }: { children: ReactNode }) {
   /* ── Categorías ─────────────────────────────────────────────── */

@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { Link } from "react-router";
 import { orders } from "../../data/orders";
-import { products } from "../../data/products";
 import { customers } from "../../data/customers";
 import { dashboardStats } from "../../data/adminData";
+import { useStore } from "../../context/StoreContext";
 import { downloadCsv } from "../../utils/exportCsv";
 import { exportToPdf } from "../../utils/exportPdf";
 import { ExportMenu } from "../../components/admin/ExportMenu";
@@ -101,6 +101,9 @@ function CustomTooltip({ active, payload, label }: any) {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 export function Dashboard() {
+  // ── Live products from store (same source as /home) ──────
+  const { products } = useStore();
+
   // ── Computed values ──────────────────────────────────────
   const totalRevenue   = orders.reduce((s, o) => s + o.total, 0);
   const totalOrders    = orders.length;

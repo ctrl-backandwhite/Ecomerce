@@ -49,7 +49,7 @@ export function Cart() {
                 <div className="flex gap-4">
                   {/* Image */}
                   <Link
-                    to={`/producto/${item.id}`}
+                    to={`/producto/${item.productId ?? item.id}`}
                     className="flex-shrink-0"
                   >
                     <img
@@ -63,7 +63,7 @@ export function Cart() {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1 min-w-0 pr-4">
-                        <Link to={`/producto/${item.id}`}>
+                        <Link to={`/producto/${item.productId ?? item.id}`}>
                           <h3 className="text-sm text-gray-900 hover:text-gray-600 transition-colors line-clamp-2">
                             {item.name}
                           </h3>
@@ -71,6 +71,16 @@ export function Cart() {
                         <Badge variant="secondary" className="mt-1">
                           {item.category}
                         </Badge>
+                        {/* Variant attributes selected */}
+                        {item.selectedAttrs && Object.keys(item.selectedAttrs).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {Object.entries(item.selectedAttrs).map(([k, v]) => (
+                              <span key={k} className="text-[11px] text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                                {k}: {v}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <Button
                         variant="ghost"

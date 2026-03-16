@@ -79,18 +79,6 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <button
-              onClick={handleProductos}
-              className="text-gray-700 hover:text-gray-900 transition-colors"
-            >
-              Productos
-            </button>
-            <Link
-              to="/?ofertas=true"
-              className="text-gray-700 hover:text-gray-900 transition-colors"
-            >
-              Ofertas
-            </Link>
             <Link to="/cuenta?tab=favoritos" className="p-2 text-gray-700 hover:text-gray-900 transition-colors">
               <Heart className="w-5 h-5" />
             </Link>
@@ -228,19 +216,6 @@ export function Header() {
             </form>
 
             <nav className="flex flex-col gap-1">
-              <button
-                onClick={handleProductos}
-                className="px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Productos
-              </button>
-              <Link
-                to="/?ofertas=true"
-                onClick={() => setIsMenuOpen(false)}
-                className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Ofertas
-              </Link>
               <Link
                 to="/cuenta?tab=favoritos"
                 onClick={() => setIsMenuOpen(false)}

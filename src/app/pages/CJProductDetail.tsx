@@ -23,9 +23,9 @@ function cjDetailToProduct(
     name:             p.productNameEn,
     slug:             p.pid,
     sku:              variant?.variantSku ?? p.productSku ?? `CJ-${p.pid.slice(0, 8).toUpperCase()}`,
-    brand:            "CJ Dropshipping",
+    brand:            "NEXA",
     description:      p.description ?? "",
-    shortDescription: p.categoryName ?? "CJ Dropshipping",
+    shortDescription: p.categoryName ?? "",
     price,
     taxClass:         "standard",
     category:         p.categoryName ?? "Dropshipping",
@@ -209,9 +209,6 @@ export function CJProductDetail() {
             {p.categoryName && (
               <span className="text-[11px] text-gray-400">{p.categoryName}</span>
             )}
-            <span className="text-[10px] bg-blue-50 text-blue-600 border border-blue-100 rounded-md px-1.5 py-0.5">
-              CJ Dropshipping
-            </span>
           </div>
 
           {/* Nombre */}
@@ -307,23 +304,23 @@ export function CJProductDetail() {
             Añadir al carrito
           </button>
 
-          {/* Ver en CJ */}
+          {/* Ver producto */}
           <a
-            href={`https://cjdropshipping.com/product/${p.pid}.html`}
+            href={`https://app.nexastore.com/producto/${p.pid}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-2 h-9 text-xs text-gray-500 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Ver en CJ Dropshipping
+            Ver ficha completa
           </a>
 
           {/* Trust badges */}
           <div className="grid grid-cols-3 gap-2 mt-6 pt-5 border-t border-gray-100">
             {[
-              { icon: Truck,    text: "Envío directo", sub: "desde almacén CJ" },
-              { icon: Shield,   text: "Garantía",      sub: "protección CJ" },
-              { icon: RefreshCw, text: "Devoluciones", sub: "según política CJ" },
+              { icon: Truck,    text: "Envío directo",  sub: "desde almacén" },
+              { icon: Shield,   text: "Garantía",       sub: "compra segura" },
+              { icon: RefreshCw, text: "Devoluciones",  sub: "política NEXA" },
             ].map(({ icon: Icon, text, sub }) => (
               <div key={text} className="flex flex-col items-center text-center gap-1">
                 <Icon className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
@@ -430,7 +427,7 @@ export function CJProductDetail() {
           className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
-          Volver al catálogo CJ
+          Volver al catálogo
         </Link>
       </div>
     </div>

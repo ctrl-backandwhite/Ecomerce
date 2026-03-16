@@ -2,10 +2,11 @@ import { useState, useMemo } from "react";
 import {
   Search, X, Star, Check, Trash2, Eye, MessageSquare,
   ThumbsUp, ShieldCheck, Clock, XCircle, CheckCircle2,
-  AlertTriangle, Filter,
+  AlertTriangle,
 } from "lucide-react";
-import { reviews as initialReviews, type Review } from "../../data/reviews";
-import { products } from "../../data/products";
+import { type Review } from "../../data/reviews";
+import { getProductReviews } from "../../data/reviewSynthesizer";
+import { useStore } from "../../context/StoreContext";
 import { toast } from "sonner";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -24,15 +25,6 @@ const STATUS_SEED: ReviewStatus[] = [
   "approved","approved","pending","approved","approved",
   "rejected","approved","pending","approved",
 ];
-
-const INITIAL: ManagedReview[] = initialReviews.map((r, i) => {
-  const product = products.find(p => p.id === r.productId);
-  return {
-    ...r,
-    status: STATUS_SEED[i % STATUS_SEED.length] as ReviewStatus,
-    productName: product?.name ?? r.productId,
-  };
-});
 
 /* ── Status meta ───────────────────────────────────────────── */
 const STATUS_META: Record<ReviewStatus, { label: string; bg: string; text: string; dot: string; icon: typeof Check }> = {
@@ -81,7 +73,6 @@ function ReviewDetail({
         </div>
 
         <div className="p-6 space-y-4">
-          {/* Author + meta */}
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${review.avatarColor}`}>
@@ -105,18 +96,15 @@ function ReviewDetail({
             </span>
           </div>
 
-          {/* Rating + title */}
           <div>
             <Stars rating={review.rating} />
             <p className="text-sm text-gray-900 mt-2">{review.title}</p>
           </div>
 
-          {/* Body */}
           <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 rounded-xl px-4 py-3">
             {review.body}
           </p>
 
-          {/* Helpful */}
           <div className="flex items-center gap-1.5 text-xs text-gray-400">
             <ThumbsUp className="w-3.5 h-3.5" />
             {review.helpful} personas encontraron útil esta reseña
@@ -143,12 +131,44 @@ function ReviewDetail({
 
 /* ── Main ──────────────────────────────────────────────────── */
 export function AdminReviews() {
-  const [reviews, setReviews]     = useState<ManagedReview[]>(INITIAL);
-  const [search,  setSearch]      = useState("");
-  const [statusF, setStatusF]     = useState<"all" | ReviewStatus>("all");
-  const [ratingF, setRatingF]     = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
-  const [detail,  setDetail]      = useState<ManagedReview | null>(null);
-  const [deleteId, setDeleteId]   = useState<string | null>(null);
+  // Live products from the same source as /home
+  const { products } = useStore();
+
+  // Build all reviews: static + synthesized for every loaded product
+  const allReviews = useMemo<Review[]>(() => {
+    const seen = new Set<string>();
+    const out: Review[] = [];
+    products.forEach((p) => {
+      getProductReviews(p.id, p.name, p.category).forEach((r) => {
+        if (!seen.has(r.id)) { seen.add(r.id); out.push(r); }
+      });
+    });
+    return out;
+  }, [products]);
+
+  // Status overrides: map of review id → status
+  const [statusMap, setStatusMap] = useState<Record<string, ReviewStatus>>({});
+
+  // Deleted review IDs
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+
+  // Merge reviews with live product names and status overrides
+  const reviews = useMemo<ManagedReview[]>(() => {
+    const productMap = new Map(products.map(p => [p.id, p.name]));
+    return allReviews
+      .filter(r => !deletedIds.has(r.id))
+      .map((r, i) => ({
+        ...r,
+        status: statusMap[r.id] ?? STATUS_SEED[i % STATUS_SEED.length],
+        productName: productMap.get(r.productId) ?? r.productId,
+      }));
+  }, [products, allReviews, statusMap, deletedIds]);
+
+  const [search,   setSearch]   = useState("");
+  const [statusF,  setStatusF]  = useState<"all" | ReviewStatus>("all");
+  const [ratingF,  setRatingF]  = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
+  const [detail,   setDetail]   = useState<ManagedReview | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -163,20 +183,24 @@ export function AdminReviews() {
   }, [reviews, search, statusF, ratingF]);
 
   const stats = useMemo(() => ({
-    total:    reviews.length,
-    pending:  reviews.filter(r => r.status === "pending").length,
-    approved: reviews.filter(r => r.status === "approved").length,
-    avgRating: (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1),
+    total:     reviews.length,
+    pending:   reviews.filter(r => r.status === "pending").length,
+    approved:  reviews.filter(r => r.status === "approved").length,
+    avgRating: reviews.length
+      ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
+      : "0.0",
   }), [reviews]);
 
   function setStatus(id: string, status: ReviewStatus) {
-    setReviews(prev => prev.map(r => r.id === id ? { ...r, status } : r));
-    const labels = { approved: "Reseña aprobada", rejected: "Reseña rechazada", pending: "Reseña marcada como pendiente" };
+    setStatusMap(prev => ({ ...prev, [id]: status }));
+    const labels = { approved: "Reseña aprobada", rejected: "Reseña rechazada", pending: "Pendiente" };
     toast.success(labels[status]);
+    // Update detail if open
+    if (detail?.id === id) setDetail(prev => prev ? { ...prev, status } : null);
   }
 
   function handleDelete(id: string) {
-    setReviews(prev => prev.filter(r => r.id !== id));
+    setDeletedIds(prev => new Set([...prev, id]));
     toast.success("Reseña eliminada");
     setDeleteId(null);
   }
@@ -201,10 +225,10 @@ export function AdminReviews() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total reseñas",  value: stats.total,    color: "text-gray-700",   icon: MessageSquare },
-          { label: "Pendientes",     value: stats.pending,  color: "text-amber-600",  icon: Clock        },
-          { label: "Aprobadas",      value: stats.approved, color: "text-green-600",  icon: CheckCircle2 },
-          { label: "Valoración media", value: stats.avgRating, color: "text-amber-500", icon: Star       },
+          { label: "Total reseñas",     value: stats.total,     color: "text-gray-700",  icon: MessageSquare },
+          { label: "Pendientes",        value: stats.pending,   color: "text-amber-600", icon: Clock         },
+          { label: "Aprobadas",         value: stats.approved,  color: "text-green-600", icon: CheckCircle2  },
+          { label: "Valoración media",  value: stats.avgRating, color: "text-amber-500", icon: Star          },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
@@ -275,7 +299,6 @@ export function AdminReviews() {
               <div key={r.id}
                 className={`grid grid-cols-[2fr_1.5fr_0.8fr_0.8fr_0.8fr_0.8fr_96px] gap-3 px-4 py-3 items-center hover:bg-gray-50/60 transition-colors ${i !== filtered.length - 1 ? "border-b border-gray-50" : ""}`}
               >
-                {/* Reseña: autor + título */}
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${r.avatarColor}`}>{r.avatar}</div>
@@ -285,24 +308,18 @@ export function AdminReviews() {
                     </div>
                   </div>
                 </div>
-                {/* Producto */}
                 <p className="text-xs text-gray-500 truncate text-left">{r.productName}</p>
-                {/* Valoración */}
                 <div className="flex justify-center"><Stars rating={r.rating} /></div>
-                {/* Fecha */}
                 <p className="text-xs text-gray-400 text-center tabular-nums">
                   {new Date(r.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
                 </p>
-                {/* Útil */}
                 <p className="text-xs text-gray-400 text-right tabular-nums">{r.helpful}</p>
-                {/* Estado */}
                 <div className="flex items-center">
                   <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
                     {sm.label}
                   </span>
                 </div>
-                {/* Acciones */}
                 <div className="flex items-center justify-end gap-1">
                   <button onClick={() => setDetail(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Ver detalle">
                     <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />

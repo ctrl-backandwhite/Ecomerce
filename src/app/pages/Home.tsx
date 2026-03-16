@@ -138,7 +138,7 @@ export function Home() {
     const next = new URLSearchParams();
     if (cat !== "Todos") next.set("category", cat);
     // clear subcategory, brand, attr when category changes
-    setSearchParams(next);
+    setSearchParams(next, { preventScrollReset: true });
   };
 
   const handleSubcategory = (cat: string, sub: string) => {
@@ -147,28 +147,28 @@ export function Home() {
     if (sub === selectedSubcat) next.delete("subcategory");
     else next.set("subcategory", sub);
     next.delete("attr"); // reset attr filter on subcategory change
-    setSearchParams(next);
+    setSearchParams(next, { preventScrollReset: true });
   };
 
   const handleBrand = (brand: string) => {
     const next = new URLSearchParams(searchParams.toString());
     if (!brand) next.delete("brand");
     else next.set("brand", brand);
-    setSearchParams(next);
+    setSearchParams(next, { preventScrollReset: true });
   };
 
   const handleAttr = (attr: string) => {
     const next = new URLSearchParams(searchParams.toString());
     if (!attr) next.delete("attr");
     else next.set("attr", attr);
-    setSearchParams(next);
+    setSearchParams(next, { preventScrollReset: true });
   };
 
   const handleReset = () => {
     setSelectedPriceIdx(0);
     setSelectedRating(0);
     setSortBy("featured");
-    setSearchParams({});
+    setSearchParams({}, { preventScrollReset: true });
   };
 
   /* ── Subcategory quick-chips (derived from loaded products) ── */
@@ -194,11 +194,11 @@ export function Home() {
   const pills = [
     soloOfertas && selectedCategory !== "Todos" && {
       label: `Ofertas · ${selectedCategory}`,
-      clear: () => setSearchParams({}),
+      clear: () => setSearchParams({}, { preventScrollReset: true }),
     },
     soloOfertas && selectedCategory === "Todos" && {
       label: "Ofertas",
-      clear: () => { const p = new URLSearchParams(searchParams.toString()); p.delete("ofertas"); setSearchParams(p); },
+      clear: () => { const p = new URLSearchParams(searchParams.toString()); p.delete("ofertas"); setSearchParams(p, { preventScrollReset: true }); },
     },
     !soloOfertas && selectedCategory !== "Todos" && {
       label: selectedCategory,
@@ -206,7 +206,7 @@ export function Home() {
     },
     selectedSubcat && {
       label: selectedSubcat,
-      clear: () => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); setSearchParams(p); },
+      clear: () => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); setSearchParams(p, { preventScrollReset: true }); },
     },
     selectedBrand && {
       label: selectedBrand,
@@ -226,7 +226,7 @@ export function Home() {
     },
     searchQuery && {
       label: `"${searchQuery}"`,
-      clear: () => setSearchParams({}),
+      clear: () => setSearchParams({}, { preventScrollReset: true }),
     },
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
@@ -376,7 +376,7 @@ export function Home() {
                 <div className="mb-5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
-                      onClick={() => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); p.delete("attr"); setSearchParams(p); }}
+                      onClick={() => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); p.delete("attr"); setSearchParams(p, { preventScrollReset: true }); }}
                       className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${
                         !selectedSubcat
                           ? "border-gray-600 bg-gray-600 text-white"
@@ -454,13 +454,13 @@ export function Home() {
               {dataSource === "api" && (
                 <div className="flex items-center gap-1.5 mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-[11px] text-gray-400">Catálogo CJ Dropshipping en vivo</span>
+                  <span className="text-[11px] text-gray-400">Catálogo en vivo</span>
                 </div>
               )}
               {dataSource === "mock" && (
                 <div className="flex items-center gap-1.5 mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  <span className="text-[11px] text-gray-400">Modo demo — conecta con CJ API para datos reales</span>
+                  <span className="text-[11px] text-gray-400">Modo demo — datos de muestra</span>
                 </div>
               )}
 
@@ -482,8 +482,8 @@ export function Home() {
 
               {/* ── Initial loading skeleton ── */}
               {productsLoading && products.length === 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
-                  {Array.from({ length: 10 }).map((_, i) => (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                  {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="border border-gray-100 rounded-2xl overflow-hidden animate-pulse">
                       <div className="aspect-square bg-gray-100" />
                       <div className="p-3.5 space-y-2">
@@ -504,7 +504,7 @@ export function Home() {
               {!productsLoading || products.length > 0 ? (
                 filtered.length > 0 ? (
                   <>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                       {visible.map((product) => (
                         <ProductCard key={product.id} product={product} />
                       ))}

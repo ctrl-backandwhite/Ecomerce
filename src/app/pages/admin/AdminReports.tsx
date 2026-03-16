@@ -4,6 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
+import React from "react";
 import {
   TrendingUp, TrendingDown, DollarSign, ShoppingBag, RotateCcw,
   XCircle, Download, ChevronDown, Calendar, Filter,
@@ -11,7 +12,7 @@ import {
   CreditCard, Banknote, Wallet, Package,
   AlertTriangle,
 } from "lucide-react";
-import { products } from "../../data/products";
+import { useStore } from "../../context/StoreContext";
 import { downloadCsv } from "../../utils/exportCsv";
 import { exportToPdf } from "../../utils/exportPdf";
 import { ExportMenu } from "../../components/admin/ExportMenu";
@@ -147,10 +148,6 @@ const TOP_PRODUCTS = [
   { name: "Canon EOS R10",           sales: 89,  revenue: 80011,  growth: 15  },
 ];
 
-// ── Stock alerts ─────────────────────────────────────────────
-const LOW_STOCK    = products.filter(p => p.stock <= 10 && p.stockStatus !== "out_of_stock").slice(0, 5);
-const OUT_OF_STOCK = products.filter(p => p.stockStatus === "out_of_stock").slice(0, 4);
-
 /* ══════════════════════════════════════════════════════════════
    CONSTANTS
 ═══════════════════════════════════════════════════════════════ */
@@ -223,6 +220,11 @@ export function AdminReports() {
   const [txPage, setTxPage]             = useState(1);
   const [exporting, setExporting]       = useState(false);
   const TX_PER_PAGE = 8;
+
+  // ── Live products (same source as /home) ─────────────────
+  const { products } = useStore();
+  const LOW_STOCK    = products.filter(p => p.stock <= 10 && p.stockStatus !== "out_of_stock").slice(0, 5);
+  const OUT_OF_STOCK = products.filter(p => p.stockStatus === "out_of_stock").slice(0, 4);
 
   // ── Chart data by period ────────────────────────────────
   const chartData = useMemo(() => {

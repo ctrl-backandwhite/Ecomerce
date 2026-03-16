@@ -186,82 +186,96 @@ const defaultUser: UserProfile = {
   },
 };
 
-const UserContext = createContext<UserContextType | undefined>(undefined);
+declare global { var __NEXA_UserContext: ReturnType<typeof createContext<UserContextType | undefined>> | undefined; }
+const UserContext =
+  globalThis.__NEXA_UserContext ??
+  (globalThis.__NEXA_UserContext = createContext<UserContextType | undefined>(undefined));
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile>(defaultUser);
 
-  const updateProfile = (data: Partial<UserProfile>) =>
+  const updateProfile = (data: Partial<UserProfile>) => {
     setUser((prev) => ({ ...prev, ...data }));
+  };
 
   const addAddress = (address: Omit<Address, "id">) => {
-    const newAddr: Address = { ...address, id: `addr-${Date.now()}` };
     setUser((prev) => ({
       ...prev,
-      addresses: address.isDefault
-        ? [...prev.addresses.map((a) => ({ ...a, isDefault: false })), newAddr]
-        : [...prev.addresses, newAddr],
+      addresses: [
+        ...prev.addresses,
+        { ...address, id: `addr-${prev.addresses.length + 1}` },
+      ],
     }));
   };
 
   const updateAddress = (id: string, data: Partial<Address>) => {
     setUser((prev) => ({
       ...prev,
-      addresses: prev.addresses.map((a) => {
-        if (data.isDefault && a.id !== id) return { ...a, isDefault: false };
-        return a.id === id ? { ...a, ...data } : a;
-      }),
+      addresses: prev.addresses.map((addr) =>
+        addr.id === id ? { ...addr, ...data } : addr
+      ),
     }));
   };
 
-  const removeAddress = (id: string) =>
+  const removeAddress = (id: string) => {
     setUser((prev) => ({
       ...prev,
-      addresses: prev.addresses.filter((a) => a.id !== id),
-    }));
-
-  const addPaymentMethod = (pm: Omit<PaymentMethod, "id">) => {
-    const newPm: PaymentMethod = { ...pm, id: `pm-${Date.now()}` };
-    setUser((prev) => ({
-      ...prev,
-      paymentMethods: pm.isDefault
-        ? [...prev.paymentMethods.map((p) => ({ ...p, isDefault: false })), newPm]
-        : [...prev.paymentMethods, newPm],
+      addresses: prev.addresses.filter((addr) => addr.id !== id),
     }));
   };
 
-  const removePaymentMethod = (id: string) =>
-    setUser((prev) => ({
-      ...prev,
-      paymentMethods: prev.paymentMethods.filter((p) => p.id !== id),
-    }));
-
-  const setDefaultPaymentMethod = (id: string) =>
-    setUser((prev) => ({
-      ...prev,
-      paymentMethods: prev.paymentMethods.map((p) => ({
-        ...p,
-        isDefault: p.id === id,
-      })),
-    }));
-
-  const toggleFavorite = (productId: string) =>
+  const toggleFavorite = (productId: string) => {
     setUser((prev) => ({
       ...prev,
       favoriteIds: prev.favoriteIds.includes(productId)
         ? prev.favoriteIds.filter((id) => id !== productId)
         : [...prev.favoriteIds, productId],
     }));
+  };
 
-  const isFavorite = (productId: string) => user.favoriteIds.includes(productId);
+  const isFavorite = (productId: string) => {
+    return user.favoriteIds.includes(productId);
+  };
+
+  const addPaymentMethod = (pm: Omit<PaymentMethod, "id">) => {
+    setUser((prev) => ({
+      ...prev,
+      paymentMethods: [
+        ...prev.paymentMethods,
+        { ...pm, id: `pm-${prev.paymentMethods.length + 1}` },
+      ],
+    }));
+  };
+
+  const removePaymentMethod = (id: string) => {
+    setUser((prev) => ({
+      ...prev,
+      paymentMethods: prev.paymentMethods.filter((pm) => pm.id !== id),
+    }));
+  };
+
+  const setDefaultPaymentMethod = (id: string) => {
+    setUser((prev) => ({
+      ...prev,
+      paymentMethods: prev.paymentMethods.map((pm) =>
+        pm.id === id ? { ...pm, isDefault: true } : { ...pm, isDefault: false }
+      ),
+    }));
+  };
 
   return (
     <UserContext.Provider
       value={{
-        user, updateProfile,
-        addAddress, updateAddress, removeAddress,
-        addPaymentMethod, removePaymentMethod, setDefaultPaymentMethod,
-        toggleFavorite, isFavorite,
+        user,
+        updateProfile,
+        addAddress,
+        updateAddress,
+        removeAddress,
+        toggleFavorite,
+        isFavorite,
+        addPaymentMethod,
+        removePaymentMethod,
+        setDefaultPaymentMethod,
       }}
     >
       {children}
@@ -270,7 +284,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
 }
 
 export function useUser() {
-  const ctx = useContext(UserContext);
-  if (!ctx) throw new Error("useUser must be used within UserProvider");
-  return ctx;
+  const context = useContext(UserContext);
+  if (context === undefined) {
+    throw new Error("useUser must be used within a UserProvider");
+  }
+  return context;
 }

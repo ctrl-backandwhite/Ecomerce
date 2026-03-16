@@ -7,8 +7,8 @@ import {
   ToggleLeft, Star, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
-import { products as allProducts } from "../../data/products";
 import { categories as allCategories } from "../../data/adminData";
+import { useStore } from "../../context/StoreContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type CampaignType =
@@ -175,6 +175,9 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
   const [section, setSection] = useState<"basics" | "discount" | "scope" | "dates" | "display">("basics");
   const [productSearch, setProductSearch] = useState("");
   const isEdit = Boolean(initial.id);
+
+  // Live products from the same source as /home
+  const { products: allProducts } = useStore();
 
   const set = (field: keyof typeof form, value: any) =>
     setForm(prev => ({ ...prev, [field]: value }));

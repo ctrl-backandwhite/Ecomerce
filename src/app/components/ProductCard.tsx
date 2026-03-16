@@ -1,10 +1,11 @@
-import { Star, ShoppingCart, Heart, BarChart2, Eye, Check } from "lucide-react";
+import { Star, ShoppingCart, Heart, BarChart2, Eye, Check, Quote } from "lucide-react";
 import { Link } from "react-router";
 import { Product } from "../data/products";
+import { getBestReview, getReviewStats } from "../data/reviewSynthesizer";
 import { useCart } from "../context/CartContext";
 import { useCompare } from "../context/CompareContext";
 import { toast } from "sonner";
-import { useRef, useState } from "react";
+import { useRef, useState, useMemo } from "react";
 import { QuickViewModal } from "./QuickViewModal";
 
 interface ProductCardProps {
@@ -18,6 +19,15 @@ export function ProductCard({ product }: ProductCardProps) {
   const [transform, setTransform] = useState("perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)");
   const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
   const [quickView, setQuickView] = useState(false);
+
+  // Best review for this product (most helpful with 5 stars, fallback to any)
+  const featuredReview = useMemo(() => {
+    return getBestReview(product.id, product.name, product.category);
+  }, [product.id, product.name, product.category]);
+
+  const reviewStats = useMemo(() => {
+    return getReviewStats(product.id, product.name, product.category);
+  }, [product.id, product.name, product.category]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = imgRef.current;
@@ -153,7 +163,7 @@ export function ProductCard({ product }: ProductCardProps) {
 
           {/* Content */}
           <div className="p-4 flex-1 flex flex-col">
-            <div className="text-xs text-gray-500 uppercase tracking-wider mb-1">
+            <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1 truncate">
               {product.category}
             </div>
             <h3 className="text-base mb-2 line-clamp-2 group-hover:text-gray-600 transition-colors">
@@ -161,11 +171,22 @@ export function ProductCard({ product }: ProductCardProps) {
             </h3>
 
             {/* Rating */}
-            <div className="flex items-center gap-1 text-sm mb-3">
+            <div className="flex items-center gap-1 text-sm mb-2">
               <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span className="text-gray-900">{product.rating}</span>
-              <span className="text-gray-500">({product.reviews})</span>
+              <span className="text-gray-900">{reviewStats.avgRating}</span>
+              <span className="text-gray-500">({reviewStats.count})</span>
             </div>
+
+            {/* Featured review snippet */}
+            {featuredReview && (
+              <div className="mb-3 flex items-start gap-1.5 min-h-[32px]">
+                <Quote className="w-3 h-3 text-gray-200 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                <p className="text-[11px] text-gray-400 leading-snug line-clamp-2 italic">
+                  {featuredReview.body.slice(0, 90)}{featuredReview.body.length > 90 ? "…" : ""}
+                </p>
+              </div>
+            )}
+            {!featuredReview && <div className="mb-3 min-h-[32px]" />}
 
             {/* Price */}
             <div className="mt-auto">

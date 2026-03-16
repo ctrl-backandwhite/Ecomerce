@@ -1,5 +1,6 @@
 import {
-  Cpu, Shirt, Gamepad2, Sofa, Headphones, Watch, Camera, Package,
+  Cpu, Shirt, Sofa, Watch, Package,
+  Heart, Baby, ShoppingBag, Sparkles, Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -1052,14 +1053,17 @@ export interface CategoryNode {
 }
 
 export const categoryTree: CategoryNode[] = [
-  { name: "Electrónica",  icon: Cpu,        subcategories: ["Smartphones", "Laptops", "Tablets", "Accesorios Electrónica"] },
-  { name: "Audio",        icon: Headphones, subcategories: ["Auriculares", "Altavoces"] },
-  { name: "Wearables",    icon: Watch,      subcategories: ["Smartwatches", "Fitness Trackers"] },
-  { name: "Gaming",       icon: Gamepad2,   subcategories: ["Consolas", "Periféricos Gaming", "Videojuegos"] },
-  { name: "Moda",         icon: Shirt,      subcategories: ["Calzado", "Ropa Mujer", "Ropa Hombre"] },
-  { name: "Hogar",        icon: Sofa,       subcategories: ["Decoración", "Cocina"] },
-  { name: "Fotografía",   icon: Camera,     subcategories: ["Cámaras", "Objetivos"] },
-  { name: "Accesorios",   icon: Package,    subcategories: ["Ratones", "Teclados", "Mochilas", "Gafas"] },
+  { name: "Women's Clothing",       icon: Heart,       subcategories: ["Accessories", "Tops & Sets", "Bottoms", "Outerwear & Jackets", "Weddings & Events", "Couple & Parent-Child Clothing"] },
+  { name: "Men's Clothing",         icon: Shirt,       subcategories: ["T-Shirts", "Outerwear & Jackets", "Bottoms", "Underwear & Loungewear", "Accessories", "Hats & Caps"] },
+  { name: "Consumer Electronics",   icon: Cpu,         subcategories: ["Smart Electronics", "Camera & Photo", "Home Audio & Video", "Accessories & Parts"] },
+  { name: "Bags & Shoes",           icon: ShoppingBag, subcategories: ["Women's Shoes", "Men's Shoes", "Women's Luggage & Bags", "Men's Luggage & Bags"] },
+  { name: "Sports & Outdoors",      icon: Zap,         subcategories: ["Sneakers", "Sportswear", "Swimming", "Cycling", "Fishing", "Other Sports Equipment"] },
+  { name: "Toys, Kids & Babies",    icon: Baby,        subcategories: ["Toys & Hobbies", "Girls Clothing", "Boys Clothing", "Baby Clothing", "Baby & Mother", "Shoes & Bags"] },
+  { name: "Health, Beauty & Hair",  icon: Sparkles,    subcategories: ["Makeup", "Skin Care", "Beauty Tools", "Nail Art & Tools", "Wigs & Extensions", "Hair Weaves", "Hair & Accessories"] },
+  { name: "Jewelry & Watches",      icon: Watch,       subcategories: ["Fashion Jewelry", "Fine Jewelry", "Men's Watches", "Women's Watches", "Wedding & Engagement"] },
+  { name: "Home, Garden & Furniture", icon: Sofa,      subcategories: ["Home Textiles", "Kitchen, Dining & Bar", "Home Storage", "Arts, Crafts & Sewing", "Festive & Party Supplies"] },
+  { name: "Pet Supplies",           icon: Heart,       subcategories: ["Pet Toys", "Pet Apparels", "Pet Collars, Harnesses & Accessories", "Pet Furnitures", "Pet Bedding", "Pet Groomings"] },
+  { name: "Other",                  icon: Package,     subcategories: [] },
 ];
 
 export const priceRanges = [

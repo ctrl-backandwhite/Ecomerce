@@ -137,7 +137,7 @@ export function CJCatalog() {
               </div>
               <div>
                 <h1 className="text-sm text-gray-900 leading-none">Dropshipping</h1>
-                <p className="text-[11px] text-gray-400 mt-0.5">Catálogo CJ</p>
+                <p className="text-[11px] text-gray-400 mt-0.5">Catálogo de proveedores</p>
               </div>
             </div>
 
@@ -148,7 +148,7 @@ export function CJCatalog() {
                 <input
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  placeholder="Buscar en catálogo CJ..."
+                  placeholder="Buscar en catálogo..."
                   className="w-full h-8 pl-8 pr-3 text-xs text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 bg-white"
                 />
                 {searchInput && (
@@ -260,7 +260,7 @@ export function CJCatalog() {
             {productsError && (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <AlertTriangle className="w-10 h-10 text-gray-200 mb-3" strokeWidth={1.5} />
-                <p className="text-sm text-gray-500 mb-1">Error al conectar con CJ Dropshipping</p>
+                <p className="text-sm text-gray-500 mb-1">Error al cargar el catálogo</p>
                 <p className="text-xs text-gray-400 mb-4 max-w-sm">{productsError}</p>
                 <button
                   onClick={() => doFetch(page)}

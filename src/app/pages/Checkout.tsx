@@ -1180,6 +1180,16 @@ export function Checkout() {
                     <div className="flex-1 min-w-0">
                       <p className="text-xs text-gray-900 line-clamp-2 leading-tight">{item.name}</p>
                       <p className="text-[11px] text-gray-400 mt-0.5">{item.category}</p>
+                      {/* Variant attributes selected */}
+                      {(item as any).selectedAttrs && Object.keys((item as any).selectedAttrs).length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {Object.entries((item as any).selectedAttrs as Record<string,string>).map(([k, v]) => (
+                            <span key={k} className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-px rounded">
+                              {k}: {v}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <p className="text-xs text-gray-900 flex-shrink-0">${(item.price * item.quantity).toFixed(2)}</p>
                   </div>

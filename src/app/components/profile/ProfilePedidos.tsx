@@ -298,17 +298,13 @@ function OrderModal({
     order.items.forEach((orderItem) => {
       const product = products.find((p) => p.id === orderItem.id);
       if (product) {
-        // Check if already in cart
-        const inCart = cartItems.find((c) => c.id === product.id);
+        // Check if already in cart (match by productId for variant-aware items, or id for legacy)
+        const inCart = cartItems.find((c) => (c.productId ?? c.id) === product.id && !c.variantId);
         if (inCart) {
-          updateQuantity(product.id, inCart.quantity + orderItem.quantity);
+          updateQuantity(inCart.id, inCart.quantity + orderItem.quantity);
         } else {
-          // Add once then update quantity
-          addToCart(product);
-          if (orderItem.quantity > 1) {
-            // addToCart adds 1, so we need to update to the right qty
-            updateQuantity(product.id, orderItem.quantity);
-          }
+          // Add with the correct quantity in one call
+          addToCart(product, { quantity: orderItem.quantity });
         }
         added++;
       }

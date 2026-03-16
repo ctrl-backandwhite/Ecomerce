@@ -1,9 +1,10 @@
 /**
  * ╔══════════════════════════════════════════════════════════════╗
- * ║  cjMapper — CJ Dropshipping API → NEXA domain models        ║
+ * ║  supplierMapper — Supplier API → NEXA domain models          ║
  * ║                                                              ║
- * ║  Single responsibility: convert raw CJ API shapes into the  ║
- * ║  canonical Product / Category types used throughout the app. ║
+ * ║  Single responsibility: convert raw supplier API shapes into ║
+ * ║  the canonical Product / Category types used throughout the  ║
+ * ║  app.                                                        ║
  * ║                                                              ║
  * ║  Rules:                                                      ║
  * ║  • Never throws — all fields have safe defaults.             ║
@@ -24,7 +25,9 @@ import type {
   CJProductDetail,
   CJProductVariant,
   CJCategory,
+  CJProductListItem,
 } from "../services/cjApi";
+import { getCategoryById, getCategoryByName } from "../data/categoryLookup";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Private helpers
@@ -38,6 +41,24 @@ function slugify(str: string): string {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
+}
+
+/**
+ * Parses a CJ sell-price string into a numeric value (USD).
+ *
+ * The API returns prices as strings in two formats:
+ *   • Single value : "3.69"
+ *   • Range        : "4.36 -- 6.14"  →  we take the minimum (lowest dropship cost)
+ *
+ * Returns 0 on any parse failure so callers never receive NaN.
+ */
+function parseCJPrice(raw: string | null | undefined): number {
+  if (!raw) return 0;
+  const parts = raw
+    .split("--")
+    .map((s) => parseFloat(s.trim()))
+    .filter((n) => !isNaN(n));
+  return parts.length > 0 ? Math.min(...parts) : 0;
 }
 
 /**
@@ -88,42 +109,54 @@ function parseVariantAttributes(v: CJProductVariant): Record<string, string> {
 
 export const cjMapper = {
   /**
-   * Maps a lightweight `CJProduct` (returned by `/product/listV2`) to the
+   * Maps a lightweight `CJProductListItem` (returned by `/product/listV2`) to the
    * internal `Product` type. Suitable for catalog cards — variants and full
    * description are intentionally omitted to keep memory usage low.
+   *
+   * Key field differences vs. `/product/query`:
+   *   id        → was pid
+   *   nameEn    → was productNameEn
+   *   bigImage  → was productImage
+   *   sellPrice → string ("3.69" or "4.36 -- 6.14"), not a number
+   *   sku       → provided directly
+   *   warehouseInventoryNum → total warehouse stock
    */
-  productListItem(cj: CJProduct): Product {
+  productListItem(cj: CJProductListItem): Product {
+    const price = parseCJPrice(cj.sellPrice);
+    const stock = cj.warehouseInventoryNum ?? 999;
+    // Resolve category hierarchy: categoryFirstName → category, categorySecondName → subcategory
+    const catInfo = getCategoryById(cj.categoryId);
     return {
-      id:               cj.pid,
-      name:             cj.productNameEn,
-      slug:             cj.pid,
-      sku:              `CJ-${cj.pid.slice(0, 8).toUpperCase()}`,
-      brand:            "CJ Dropshipping",
+      id:               cj.id,
+      name:             cj.nameEn,
+      slug:             cj.id,
+      sku:              cj.sku ?? `CJ-${cj.id.slice(0, 8).toUpperCase()}`,
+      brand:            "NEXA",
       description:      "",
-      shortDescription: cj.categoryName ?? "CJ Dropshipping",
-      price:            cj.sellPrice ?? 0,
+      shortDescription: "",
+      price,
       taxClass:         "standard",
-      category:         cj.categoryName ?? "Dropshipping",
-      subcategory:      "",
+      category:         catInfo.category,
+      subcategory:      catInfo.subcategory,
       keywords:         [],
-      image:            cj.productImage ?? "",
-      images:           cj.productImage
-        ? [{ url: cj.productImage, alt: cj.productNameEn, position: 0 }]
+      image:            cj.bigImage ?? "",
+      images:           cj.bigImage
+        ? [{ url: cj.bigImage, alt: cj.nameEn, position: 0 }]
         : [],
       rating:           0,
       reviews:          0,
-      stock:            999,
+      stock,
       barcode:          "",
-      stockStatus:      "in_stock",
+      stockStatus:      stock > 0 ? "in_stock" : "out_of_stock",
       manageStock:      false,
       allowBackorder:   true,
       attributes:       [],
       variants:         [],
-      weight:           cj.productWeight ?? 0,
+      weight:           0,
       dimensions:       { length: 0, width: 0, height: 0 },
       shippingClass:    "standard",
-      metaTitle:        cj.productNameEn,
-      metaDescription:  cj.categoryName ?? "",
+      metaTitle:        cj.nameEn,
+      metaDescription:  "",
       status:           "active",
       visibility:       "public",
       featured:         false,
@@ -193,13 +226,22 @@ export const cjMapper = {
       name:             cj.productNameEn,
       slug:             cj.pid,
       sku:              cj.productSku ?? `CJ-${cj.pid.slice(0, 8).toUpperCase()}`,
-      brand:            "CJ Dropshipping",
+      brand:            "NEXA",
       description:      cj.description ?? "",
-      shortDescription: cj.categoryName ?? "CJ Dropshipping",
-      price:            cj.sellPrice ?? 0,
+      shortDescription: cj.categoryName ?? "",
+      price:            parseCJPrice(cj.sellPrice),
       taxClass:         "standard",
-      category:         cj.categoryName ?? "Dropshipping",
-      subcategory:      "",
+      // Prefer ID lookup (more accurate), fall back to name lookup
+      category:         (() => {
+        const byId   = getCategoryById(cj.categoryId);
+        if (byId.category !== "Other") return byId.category;
+        return getCategoryByName(cj.categoryName).category;
+      })(),
+      subcategory:      (() => {
+        const byId   = getCategoryById(cj.categoryId);
+        if (byId.category !== "Other") return byId.subcategory;
+        return getCategoryByName(cj.categoryName).subcategory;
+      })(),
       keywords:         [],
       image:            cj.productImage ?? "",
       images,
@@ -228,8 +270,15 @@ export const cjMapper = {
   },
 
   /**
-   * Maps a `CJCategory` to the internal `Category` type.
-   * @param order Zero-based index used as display order.
+   * Maps a `CJCategory` (already flattened by `flattenCJCategories`) to the
+   * internal `Category` type used across admin and storefront.
+   *
+   * Level mapping:
+   *   1 → root parent (parent_id = null)
+   *   2 → second-level group (parent_id = categoryFirstId)
+   *   3 → leaf / product category (parent_id = categorySecondId)
+   *
+   * @param order Zero-based index for display ordering.
    */
   category(cj: CJCategory, order: number): Category {
     return {
@@ -239,7 +288,7 @@ export const cjMapper = {
       description:  "",
       keywords:     [],
       parent_id:    cj.parentId ?? null,
-      productCount: cj.productCount ?? 0,
+      productCount: 0,
       status:       "active",
       published:    true,
       order,

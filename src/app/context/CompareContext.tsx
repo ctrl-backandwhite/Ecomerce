@@ -12,7 +12,10 @@ interface CompareContextType {
   has: (id: string) => boolean;
 }
 
-const CompareContext = createContext<CompareContextType | undefined>(undefined);
+declare global { var __NEXA_CompareContext: ReturnType<typeof createContext<CompareContextType | undefined>> | undefined; }
+const CompareContext =
+  globalThis.__NEXA_CompareContext ??
+  (globalThis.__NEXA_CompareContext = createContext<CompareContextType | undefined>(undefined));
 
 export function CompareProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Product[]>([]);
