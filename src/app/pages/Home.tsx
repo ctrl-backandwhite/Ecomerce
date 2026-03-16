@@ -315,8 +315,8 @@ export function Home() {
         <div className="w-full">
           <div className="flex gap-6 items-start">
 
-            {/* LEFT — Sidebar (desktop) */}
-            <div className="pl-4 sm:pl-6 lg:pl-8">
+            {/* LEFT — Sidebar (desktop only) */}
+            <div className="pl-4 sm:pl-6 lg:pl-8 hidden lg:block flex-shrink-0">
               <HomeSidebar
                 selectedCategory={selectedCategory}
                 selectedSubcat={selectedSubcat}
@@ -338,7 +338,7 @@ export function Home() {
             </div>
 
             {/* RIGHT — Product grid */}
-            <div className="flex-1 min-w-0 px-4 sm:px-6 lg:px-0 lg:pr-8">
+            <div className="flex-1 min-w-0 w-full px-4 sm:px-6 lg:px-0 lg:pr-8">
 
               {/* Top bar */}
               <div className="flex items-center justify-between gap-4 mb-5 pb-5 border-b border-gray-100">
