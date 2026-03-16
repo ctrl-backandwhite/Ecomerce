@@ -1,4 +1,4 @@
-import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LayoutDashboard, ChevronDown } from "lucide-react";
+import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LayoutDashboard, ChevronDown, Gift } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
@@ -57,10 +57,10 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-500 rounded flex items-center justify-center">
+            <div className="w-8 h-8 bg-gray-500 rounded flex items-center justify-center sm:flex hidden">
               <ShoppingCart className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl tracking-tight hidden sm:block">NEXA</span>
+            <span className="text-xl tracking-tight">NEXA</span>
           </Link>
 
           {/* Desktop Search */}
@@ -180,7 +180,11 @@ export function Header() {
           </div>
 
           {/* Mobile menu button */}
-          <div className="flex items-center gap-2 md:hidden">
+          <div className="flex items-center gap-1 md:hidden">
+            {/* Gift card icon — mobile only */}
+            <Link to="/tarjetas-regalo" className="p-2 text-gray-500 hover:text-gray-900 transition-colors">
+              <Gift className="w-5 h-5" strokeWidth={1.5} />
+            </Link>
             <Link to="/carrito" className="relative p-2">
               <ShoppingCart className="w-5 h-5" />
               {getTotalItems() > 0 && (

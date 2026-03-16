@@ -151,7 +151,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
 
       {/* ── Content ── */}
       <div
-        className="relative h-full max-w-7xl mx-auto px-5 sm:px-12 lg:px-16 flex items-center"
+        className="relative h-full max-w-7xl mx-auto px-14 sm:px-12 lg:px-16 flex items-center"
         style={{
           zIndex: 10,
           opacity: contentVisible ? 1 : 0,
@@ -163,9 +163,9 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
           const promo = promos[current];
           const isRight = promo.align === "right";
           return (
-            <div className={`max-w-xl ${isRight ? "ml-auto text-right" : "text-left"}`}>
-              {/* Badge */}
-              <span className={`inline-block px-3 py-1 mb-4 text-xs tracking-widest uppercase backdrop-blur-sm border rounded-full ${promo.badgeColor}`}>
+            <div className={`max-w-xl w-full mx-auto sm:mx-0 text-center sm:text-left ${isRight ? "sm:ml-auto sm:text-right" : ""}`}>
+              {/* Badge — hidden on mobile to avoid overlapping counter */}
+              <span className={`hidden sm:inline-block px-3 py-1 mb-4 text-xs tracking-widest uppercase backdrop-blur-sm border rounded-full ${promo.badgeColor}`}>
                 {promo.badge}
               </span>
 
@@ -184,7 +184,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
                 {promo.description}
               </p>
 
-              {/* CTA — fires callback, stays on Home */}
+              {/* CTA */}
               <button
                 type="button"
                 onClick={() => onCtaClick(promo.filterParams)}
@@ -194,8 +194,8 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
                 <ArrowRight className="w-4 h-4" />
               </button>
 
-              {/* Filter preview chips */}
-              <div className={`mt-4 flex items-center gap-2 flex-wrap ${isRight ? "justify-end" : ""}`}>
+              {/* Filter preview chips — hidden on mobile to avoid overlapping dots */}
+              <div className={`hidden sm:flex mt-4 items-center gap-2 flex-wrap justify-center ${isRight ? "sm:justify-end" : "sm:justify-start"}`}>
                 {Object.entries(promo.filterParams).map(([key, val]) => (
                   <span
                     key={key}
@@ -247,9 +247,9 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
         ))}
       </div>
 
-      {/* ── Counter ── */}
+      {/* ── Counter — hidden on mobile to avoid overlapping badge ── */}
       <div
-        className="absolute top-6 right-6 text-white/60 text-xs tracking-widest"
+        className="hidden sm:block absolute top-6 right-6 text-white/60 text-xs tracking-widest"
         style={{ zIndex: 20 }}
       >
         {String(current + 1).padStart(2, "0")} /{" "}

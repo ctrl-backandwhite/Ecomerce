@@ -1,15 +1,25 @@
-import { Loader2, Search, SlidersHorizontal, X, ChevronRight, Gift, AlertTriangle, RefreshCw } from "lucide-react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useSearchParams, Link } from "react-router";
+import {
+  Gift,
+  ChevronRight,
+  SlidersHorizontal,
+  AlertTriangle,
+  RefreshCw,
+  Loader2,
+  Search,
+  X,
+} from "lucide-react";
+
 import { FlashDeals } from "../components/FlashDeals";
-import { useSearchParams } from "react-router";
-import { Link } from "react-router";
 import { ProductCard } from "../components/ProductCard";
 import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
 import { HomeSidebar } from "../components/HomeSidebar";
+import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { priceRanges } from "../data/products";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../data/filters";
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useStore } from "../context/StoreContext";
 
 const PAGE_SIZE = 8;
@@ -20,7 +30,14 @@ function scrollToProducts() {
 }
 
 export function Home() {
-  const { products, productsLoading, productsError, productsTotal, refreshProducts, loadMoreProducts, dataSource } = useStore();
+  const {
+    products,
+    productsLoading,
+    productsError,
+    refreshProducts,
+    dataSource,
+  } = useStore();
+
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedCategory = searchParams.get("category")    || "Todos";
   const searchQuery      = searchParams.get("search")      || "";
@@ -36,8 +53,7 @@ export function Home() {
   const [isLoading,        setIsLoading]        = useState(false);
   const [mobileOpen,       setMobileOpen]       = useState(false);
   const [filterKey,        setFilterKey]        = useState(0);
-
-  const [promoClickKey, setPromoClickKey] = useState(0);
+  const [promoClickKey,    setPromoClickKey]    = useState(0);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -101,10 +117,7 @@ export function Home() {
   /* ── Scroll to products when category/subcategory changes from URL ── */
   const isFirstRender = useRef(true);
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    }
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
     scrollToProducts();
   }, [selectedCategory, selectedSubcat]);
 
@@ -146,11 +159,10 @@ export function Home() {
     setPromoClickKey((k) => k + 1);
   }, [setSearchParams]);
 
-  /* ── Other handlers ─────────────────────────────────────────── */
+  /* ── Filter handlers ─────────────────────────────────────────── */
   const handleCategory = (cat: string) => {
     const next = new URLSearchParams();
     if (cat !== "Todos") next.set("category", cat);
-    // clear subcategory, brand, attr when category changes
     setSearchParams(next, { preventScrollReset: true });
   };
 
@@ -159,7 +171,7 @@ export function Home() {
     next.set("category", cat);
     if (sub === selectedSubcat) next.delete("subcategory");
     else next.set("subcategory", sub);
-    next.delete("attr"); // reset attr filter on subcategory change
+    next.delete("attr");
     setSearchParams(next, { preventScrollReset: true });
   };
 
@@ -184,7 +196,7 @@ export function Home() {
     setSearchParams({}, { preventScrollReset: true });
   };
 
-  /* ── Subcategory quick-chips (derived from loaded products) ── */
+  /* ── Subcategory quick-chips ─────────────────────────────────── */
   const currentCatSubcategories = useMemo(() => {
     if (selectedCategory === "Todos") return [];
     return [...new Set(
@@ -200,10 +212,10 @@ export function Home() {
     );
   }, [currentCatSubcategories, selectedCategory, products]);
 
-  /* ── Category-specific quick-attr chips ─────────────────────── */
+  /* ── Category-specific attr chips ───────────────────────────── */
   const categoryAttrGroups = CATEGORY_ATTR_FILTERS[selectedCategory] ?? [];
 
-  /* ── Active filter pills ───────────────────────────────────── */
+  /* ── Active filter pills ──────────────────────────────────────── */
   const pills = [
     soloOfertas && selectedCategory !== "Todos" && {
       label: `Ofertas · ${selectedCategory}`,
@@ -245,7 +257,7 @@ export function Home() {
 
   const hasFilters = pills.length > 0;
 
-  /* ── Heading label ──────────────────────────────────────────── */
+  /* ── Section title ───────────────────────────────────────────── */
   const sectionTitle = (() => {
     if (searchQuery) return `Resultados para "${searchQuery}"`;
     if (soloOfertas && selectedCategory !== "Todos") return `Ofertas · ${selectedCategory}`;
@@ -271,7 +283,7 @@ export function Home() {
       <InfoBanner />
 
       {/* Gift Card Banner */}
-      <div className="bg-gray-700 text-white">
+      <div className="hidden sm:block bg-gray-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center flex-shrink-0">
@@ -284,7 +296,7 @@ export function Home() {
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="hidden sm:flex items-center gap-2 text-xs text-white/50">
-              {["25€", "50€", "100€", "200€"].map(a => (
+              {["25€", "50€", "100€", "200€"].map((a) => (
                 <span key={a} className="bg-white/10 border border-white/20 rounded-full px-2.5 py-0.5">{a}</span>
               ))}
             </div>
@@ -353,8 +365,8 @@ export function Home() {
                     Filtros
                   </button>
 
-                  {/* Title */}
-                  <div>
+                  {/* Title — desktop only */}
+                  <div className="hidden lg:block">
                     <h2 className="text-xl tracking-tight text-gray-900">
                       {sectionTitle}
                     </h2>
@@ -400,7 +412,12 @@ export function Home() {
                 <div className="mb-5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
-                      onClick={() => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); p.delete("attr"); setSearchParams(p, { preventScrollReset: true }); }}
+                      onClick={() => {
+                        const p = new URLSearchParams(searchParams.toString());
+                        p.delete("subcategory");
+                        p.delete("attr");
+                        setSearchParams(p, { preventScrollReset: true });
+                      }}
                       className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${
                         !selectedSubcat
                           ? "border-gray-600 bg-gray-600 text-white"
@@ -431,7 +448,6 @@ export function Home() {
                         </button>
                       );
                     })}
-                    {/* Attr quick-chips per group */}
                     {categoryAttrGroups.length > 0 && (
                       <span className="w-px h-4 bg-gray-200 mx-1" />
                     )}
@@ -440,9 +456,7 @@ export function Home() {
                         .filter((opt) => {
                           const matchFn = ATTR_MATCH[selectedCategory]?.[opt];
                           return matchFn
-                            ? products.some(
-                                (p) => p.category === selectedCategory && matchFn(p)
-                              )
+                            ? products.some((p) => p.category === selectedCategory && matchFn(p))
                             : false;
                         })
                         .map((opt) => {
@@ -463,7 +477,6 @@ export function Home() {
                           );
                         })
                     )}
-                    {/* Divider */}
                     {selectedCategory !== "Todos" && (
                       <span className="ml-auto text-xs text-gray-400 flex items-center gap-1">
                         <ChevronRight className="w-3 h-3" />
@@ -474,7 +487,7 @@ export function Home() {
                 </div>
               )}
 
-              {/* ── Data source badge (visible when API is live) ── */}
+              {/* ── Data source badge ── */}
               {dataSource === "api" && (
                 <div className="flex items-center gap-1.5 mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
@@ -524,7 +537,7 @@ export function Home() {
                 </div>
               )}
 
-              {/* Grid */}
+              {/* ── Product grid ── */}
               {!productsLoading || products.length > 0 ? (
                 filtered.length > 0 ? (
                   <div key={filterKey} className="nexa-grid-enter">
@@ -577,10 +590,10 @@ export function Home() {
         <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: "🚚", title: "Envío Gratis",   sub: "En compras sobre $100" },
-              { icon: "🔒", title: "Compra Segura",  sub: "Protección garantizada" },
-              { icon: "💳", title: "Pago Fácil",     sub: "Múltiples métodos" },
-              { icon: "🎧", title: "Soporte 24/7",   sub: "Siempre disponible" },
+              { icon: "🚚", title: "Envío Gratis",  sub: "En compras sobre $100" },
+              { icon: "🔒", title: "Compra Segura", sub: "Protección garantizada" },
+              { icon: "💳", title: "Pago Fácil",    sub: "Múltiples métodos" },
+              { icon: "🎧", title: "Soporte 24/7",  sub: "Siempre disponible" },
             ].map(({ icon, title, sub }) => (
               <div key={title} className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center flex-shrink-0 text-lg">
@@ -596,38 +609,27 @@ export function Home() {
         </div>
       </section>
 
-      {/* Mobile sidebar overlay */}
-      {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
-          <div className="relative w-72 bg-white h-full overflow-y-auto shadow-2xl">
-            <div className="flex items-center justify-between px-4 py-3.5 border-b border-gray-100">
-              <span className="text-sm tracking-wide text-gray-900">Filtros</span>
-              <button onClick={() => setMobileOpen(false)}>
-                <X className="w-5 h-5 text-gray-400 hover:text-gray-700 transition-colors" />
-              </button>
-            </div>
-            <HomeSidebar
-              selectedCategory={selectedCategory}
-              selectedSubcat={selectedSubcat}
-              selectedBrand={selectedBrand}
-              selectedAttr={selectedAttr}
-              selectedPriceIdx={selectedPriceIdx}
-              selectedRating={selectedRating}
-              sortBy={sortBy}
-              total={filtered.length}
-              onCategory={(cat) => { handleCategory(cat); setMobileOpen(false); }}
-              onSubcategory={(cat, sub) => { handleSubcategory(cat, sub); setMobileOpen(false); }}
-              onBrand={handleBrand}
-              onAttr={handleAttr}
-              onPrice={setSelectedPriceIdx}
-              onRating={setSelectedRating}
-              onSort={setSortBy}
-              onReset={() => { handleReset(); setMobileOpen(false); }}
-            />
-          </div>
-        </div>
-      )}
+      {/* Mobile filter drawer */}
+      <MobileFilterDrawer
+        open={mobileOpen}
+        onClose={() => setMobileOpen(false)}
+        selectedCategory={selectedCategory}
+        selectedSubcat={selectedSubcat}
+        selectedBrand={selectedBrand}
+        selectedAttr={selectedAttr}
+        selectedPriceIdx={selectedPriceIdx}
+        selectedRating={selectedRating}
+        sortBy={sortBy}
+        total={filtered.length}
+        onCategory={(cat) => { handleCategory(cat); setMobileOpen(false); }}
+        onSubcategory={(cat, sub) => { handleSubcategory(cat, sub); setMobileOpen(false); }}
+        onBrand={handleBrand}
+        onAttr={handleAttr}
+        onPrice={setSelectedPriceIdx}
+        onRating={setSelectedRating}
+        onSort={setSortBy}
+        onReset={() => { handleReset(); setMobileOpen(false); }}
+      />
     </div>
   );
 }
