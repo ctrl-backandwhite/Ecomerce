@@ -1,1497 +1,1053 @@
-import { useState } from "react";
-import { DndProvider, useDrag, useDrop } from "react-dnd";
-import { HTML5Backend } from "react-dnd-html5-backend";
+import { useState, useMemo } from "react";
 import {
-  Plus, Pencil, Trash2, X, Check, GripVertical,
-  Tag, AlertTriangle, Search, ToggleLeft, ToggleRight,
-  ChevronDown, ChevronRight, Upload, Download, FileText,
-  Eye, EyeOff, Send, Filter, LayoutGrid, CheckCircle2, Layers,
-  /* ── icon palette ── */
-  Cpu, Shirt, Sofa, Headphones, Gamepad2, Camera, Watch,
-  Package, ShoppingBag, Smartphone, Laptop, Tablet,
-  Music, Mic, Speaker, Tv, Monitor, Printer,
-  Bike, Car, Plane, Home, Utensils, BookOpen,
-  /* ── additional icons ── */
-  Zap, Heart, Star, Award, Target, TrendingUp, Sparkles,
-  Coffee, Gift, Briefcase, Palette, Code, Database, Lock,
-  Mail, MessageCircle, Bell, Calendar, Clock, Map,
-  Puzzle, Rocket, Shield, Truck, Wrench, Hammer,
-  type LucideIcon,
+  Search, Tag, Filter, ChevronDown,
+  ToggleLeft, ToggleRight, RefreshCw, AlertTriangle,
+  Loader2, X, Copy, Eye, Plus, Pencil, Trash2, TriangleAlert, FileSpreadsheet,
 } from "lucide-react";
-import { type Category } from "../../data/adminData";
 import { toast } from "sonner";
-import { useStore } from "../../context/StoreContext";
+import { usePagedCategories } from "../../services/usePagedCategories";
+import { useLanguage } from "../../context/LanguageContext";
+import { Pagination } from "../../components/admin/Pagination";
+import { CategoryDetailDrawer } from "../../components/admin/CategoryDetailDrawer";
+import { CategoryFormModal } from "../../components/admin/CategoryFormModal";
+import { BulkCategoryUploadModal } from "../../components/admin/BulkCategoryUploadModal";
+import { nexaCategoryPagedRepository, type PagedCategory } from "../../repositories/NexaCategoryPagedRepository";
 
-/* ── Icon registry ────────────────────────────────────── */
-const INITIAL_ICON_MAP: Record<string, LucideIcon> = {
-  Cpu, Shirt, Sofa, Headphones, Gamepad2, Camera, Watch,
-  Package, ShoppingBag, Smartphone, Laptop, Tablet,
-  Music, Mic, Speaker, Tv, Monitor, Printer,
-  Bike, Car, Plane, Home, Utensils, BookOpen,
-  Zap, Heart, Star, Award, Target, TrendingUp, Sparkles,
-  Coffee, Gift, Briefcase, Palette, Code, Database, Lock,
-  Mail, MessageCircle, Bell, Calendar, Clock, Map,
-  Puzzle, Rocket, Shield, Truck, Wrench, Hammer,
-};
+/* ── Translations ──────────────────────────────────────── */
+const tr = {
+  es: {
+    title: "Categorías",
+    subtitle: (n: number) => `${n} categoría${n !== 1 ? "s" : ""} en total`,
+    search: "Buscar categoría...",
+    filters: "Filtros",
+    all: "Todos",
+    published: "Publicado",
+    draft: "Borrador",
+    active: "Activo",
+    inactive: "Inactivo",
+    status: "Estado",
+    visibility: "Visibilidad",
+    level: "Nivel",
+    anyLevel: "Todos",
+    noResults: "No se encontraron categorías",
+    noResultsHint: "Intenta con otros filtros o busca por otro nombre",
+    errorTitle: "Error al cargar categorías",
+    retry: "Reintentar",
+    loading: "Cargando categorías...",
+    subcategories: "subcategorías",
+    createdAt: "Creado",
+    updatedAt: "Actualizado",
+    translations: "Traducciones",
+    clearFilters: "Limpiar filtros",
+    perPage: "por página",
+    sortBy: "Ordenar por",
+    sortName: "Nombre",
+    sortCreated: "Fecha creación",
+    sortUpdated: "Última actualización",
+    ascending: "Ascendente",
+    descending: "Descendente",
+    sync: "Sincronizar",
+    syncing: "Sincronizando...",
+    syncSuccess: (c: number, u: number, t: number) => `Sincronizado: ${c} creadas, ${u} actualizadas, ${t} total`,
+    detail: "Ver detalle",
+    newCategory: "Nueva categoría",
+    bulkUpload: "Carga masiva",
+    edit: "Editar",
+    delete: "Eliminar",
+    addSub: "Agregar subcategoría",
+    deleteConfirm: "¿Eliminar esta categoría?",
+    deleteConfirmDesc: "Esta acción no se puede deshacer. Se eliminarán también todas las subcategorías asociadas.",
+    deleteSuccess: "Categoría eliminada",
+    deleting: "Eliminando...",
+    deleteBtn: "Sí, eliminar",
+    cancelBtn: "Cancelar",
+  },
+  en: {
+    title: "Categories",
+    subtitle: (n: number) => `${n} categor${n !== 1 ? "ies" : "y"} total`,
+    search: "Search category...",
+    filters: "Filters",
+    all: "All",
+    published: "Published",
+    draft: "Draft",
+    active: "Active",
+    inactive: "Inactive",
+    status: "Status",
+    visibility: "Visibility",
+    level: "Level",
+    anyLevel: "All",
+    noResults: "No categories found",
+    noResultsHint: "Try different filters or search for another name",
+    errorTitle: "Failed to load categories",
+    retry: "Retry",
+    loading: "Loading categories...",
+    subcategories: "subcategories",
+    createdAt: "Created",
+    updatedAt: "Updated",
+    translations: "Translations",
+    clearFilters: "Clear filters",
+    perPage: "per page",
+    sortBy: "Sort by",
+    sortName: "Name",
+    sortCreated: "Created date",
+    sortUpdated: "Last updated",
+    ascending: "Ascending",
+    descending: "Descending",
+    sync: "Sync",
+    syncing: "Syncing...",
+    syncSuccess: (c: number, u: number, t: number) => `Synced: ${c} created, ${u} updated, ${t} total`,
+    detail: "View detail",
+    newCategory: "New category",
+    bulkUpload: "Bulk upload",
+    edit: "Edit",
+    delete: "Delete",
+    addSub: "Add subcategory",
+    deleteConfirm: "Delete this category?",
+    deleteConfirmDesc: "This action cannot be undone. All associated subcategories will also be deleted.",
+    deleteSuccess: "Category deleted",
+    deleting: "Deleting...",
+    deleteBtn: "Yes, delete",
+    cancelBtn: "Cancel",
+  },
+  pt: {
+    title: "Categorias",
+    subtitle: (n: number) => `${n} categoria${n !== 1 ? "s" : ""} no total`,
+    search: "Buscar categoria...",
+    filters: "Filtros",
+    all: "Todos",
+    published: "Publicado",
+    draft: "Rascunho",
+    active: "Ativo",
+    inactive: "Inativo",
+    status: "Estado",
+    visibility: "Visibilidade",
+    level: "Nível",
+    anyLevel: "Todos",
+    noResults: "Nenhuma categoria encontrada",
+    noResultsHint: "Tente filtros diferentes ou busque outro nome",
+    errorTitle: "Erro ao carregar categorias",
+    retry: "Tentar novamente",
+    loading: "Carregando categorias...",
+    subcategories: "subcategorias",
+    createdAt: "Criado",
+    updatedAt: "Atualizado",
+    translations: "Traduções",
+    clearFilters: "Limpar filtros",
+    perPage: "por página",
+    sortBy: "Ordenar por",
+    sortName: "Nome",
+    sortCreated: "Data de criação",
+    sortUpdated: "Última atualização",
+    ascending: "Ascendente",
+    descending: "Descendente",
+    sync: "Sincronizar",
+    syncing: "Sincronizando...",
+    syncSuccess: (c: number, u: number, t: number) => `Sincronizado: ${c} criadas, ${u} atualizadas, ${t} total`,
+    detail: "Ver detalhe",
+    newCategory: "Nova categoria",
+    bulkUpload: "Carga em massa",
+    edit: "Editar",
+    delete: "Excluir",
+    addSub: "Adicionar subcategoria",
+    deleteConfirm: "Excluir esta categoria?",
+    deleteConfirmDesc: "Esta ação não pode ser desfeita. Todas as subcategorias associadas também serão excluídas.",
+    deleteSuccess: "Categoria excluída",
+    deleting: "Excluindo...",
+    deleteBtn: "Sim, excluir",
+    cancelBtn: "Cancelar",
+  },
+} as const;
 
-const INITIAL_ICON_LABELS: Record<string, string> = {
-  Cpu:         "Electrónica / CPU",
-  Shirt:       "Ropa / Moda",
-  Sofa:        "Hogar / Muebles",
-  Headphones:  "Audio / Auriculares",
-  Gamepad2:    "Gaming / Videojuegos",
-  Camera:      "Fotografía / Cámara",
-  Watch:       "Relojes / Wearables",
-  Package:     "Paquete / General",
-  ShoppingBag: "Tienda / Compras",
-  Smartphone:  "Smartphone / Móvil",
-  Laptop:      "Laptop / Portátil",
-  Tablet:      "Tablet",
-  Music:       "Música",
-  Mic:         "Micrófono",
-  Speaker:     "Altavoz",
-  Tv:          "Televisión",
-  Monitor:     "Monitor / Pantalla",
-  Printer:     "Impresora",
-  Bike:        "Bicicleta / Deporte",
-  Car:         "Automóvil / Motor",
-  Plane:       "Viajes / Avión",
-  Home:        "Casa / Inmobiliaria",
-  Utensils:    "Cocina / Alimentación",
-  BookOpen:    "Libros / Educación",
-  Zap:         "Energía / Rápido",
-  Heart:       "Favoritos / Salud",
-  Star:        "Destacados / Premium",
-  Award:       "Premios / Logros",
-  Target:      "Objetivos / Metas",
-  TrendingUp:  "Tendencias / Crecimiento",
-  Sparkles:    "Nuevo / Especial",
-  Coffee:      "Café / Bebidas",
-  Gift:        "Regalos / Promociones",
-  Briefcase:   "Negocios / Profesional",
-  Palette:     "Arte / Diseño",
-  Code:        "Programación / Tech",
-  Database:    "Datos / Almacenamiento",
-  Lock:        "Seguridad / Privado",
-  Mail:        "Correo / Comunicación",
-  MessageCircle: "Mensajes / Chat",
-  Bell:        "Notificaciones / Alertas",
-  Calendar:    "Calendario / Eventos",
-  Clock:       "Tiempo / Horarios",
-  Map:         "Mapas / Ubicación",
-  Puzzle:      "Juegos / Entretenimiento",
-  Rocket:      "Innovación / Lanzamiento",
-  Shield:      "Protección / Garantía",
-  Truck:       "Envíos / Logística",
-  Wrench:      "Herramientas / Mantenimiento",
-  Hammer:      "Construcción / DIY",
-};
+type Labels = typeof tr.es;
 
-const ICON_MAP: Record<string, LucideIcon> = { ...INITIAL_ICON_MAP };
-const ICON_LABELS: Record<string, string> = { ...INITIAL_ICON_LABELS };
-
-const ICON_OPTIONS: { name: string; Icon: LucideIcon; label: string }[] = Object.entries(ICON_MAP).map(
-  ([name, Icon]) => ({ name, Icon, label: ICON_LABELS[name] ?? name })
-);
-
-/* Resolve an icon name to a component */
-function resolveIcon(name: string | undefined): LucideIcon {
-  if (!name) return Package;
-  return ICON_MAP[name] ?? Package;
-}
-
-/* Renders a Lucide icon by name */
-function CatIcon({ name, className }: { name?: string; className?: string }) {
-  const Icon = resolveIcon(name);
-  return <Icon className={className ?? "w-4 h-4"} strokeWidth={1.5} />;
-}
-
-/* ── Tooltip wrapper ─────────────────────────────────── */
-function IconTooltip({ label, children }: { label: string; children: React.ReactNode }) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <div
-      className="relative"
-      onMouseEnter={() => setVisible(true)}
-      onMouseLeave={() => setVisible(false)}
-    >
-      {children}
-      {visible && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
-          <div className="bg-gray-700 text-white text-[11px] leading-tight rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
-            {label}
-          </div>
-          <div className="w-2 h-2 bg-gray-700 rotate-45 mx-auto -mt-1 rounded-sm" />
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ── Drag & Drop Types ──────────────────────────────── */
-const DND_TYPE_CATEGORY = "category";
-const DND_TYPE_SUBCATEGORY = "subcategory";
-
-/* ── Category modal ──────────────────────────────────── */
-function CategoryModal({
-  category, onSave, onClose,
+/* ── Status badge helper ──────────────────────────────── */
+function StatusBadge({
+  status,
+  labels,
+  onClick,
+  loading: toggling,
 }: {
-  category?: Category;
-  onSave: (c: Category) => void;
-  onClose: () => void;
+  status: string;
+  labels: Labels;
+  onClick?: () => void;
+  loading?: boolean;
 }) {
-  const isNew = !category;
-  const isParent = !category || !category.parent_id;
-  
-  const [name, setName] = useState(category?.name ?? "");
-  const [icon, setIcon] = useState(category?.icon ?? "Package");
-  const [desc, setDesc] = useState(category?.description ?? "");
-  const [slug, setSlug] = useState(category?.slug ?? "");
-  const [keywords, setKeywords] = useState<string[]>(category?.keywords ?? []);
-  const [newKeyword, setNewKeyword] = useState("");
-  const [published, setPublished] = useState(category?.published ?? false);
-
-  function autoSlug(n: string) {
-    return n
-      .toLowerCase()
-      .replace(/[áàä]/g, "a").replace(/[éèë]/g, "e").replace(/[íìï]/g, "i")
-      .replace(/[óòö]/g, "o").replace(/[úùü]/g, "u").replace(/ñ/g, "n")
-      .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  }
-
-  function handleNameChange(n: string) {
-    setName(n);
-    if (!category) setSlug(autoSlug(n));
-  }
-
-  function handleAddKeyword() {
-    if (!newKeyword.trim()) return;
-    if (keywords.includes(newKeyword.trim().toLowerCase())) {
-      toast.error("Esta keyword ya existe");
-      return;
-    }
-    setKeywords((prev) => [...prev, newKeyword.trim().toLowerCase()]);
-    setNewKeyword("");
-  }
-
-  function handleRemoveKeyword(kw: string) {
-    setKeywords((prev) => prev.filter((k) => k !== kw));
-  }
-
-  function handleSave() {
-    if (!name.trim()) { toast.error("El nombre es obligatorio"); return; }
-    onSave({
-      id:           category?.id ?? `${Date.now()}`,
-      name:         name.trim(),
-      slug:         slug || autoSlug(name),
-      icon:         isParent ? icon : undefined,
-      description:  desc,
-      keywords,
-      parent_id:    category?.parent_id ?? null,
-      productCount: category?.productCount ?? 0,
-      status:       category?.status ?? "active",
-      order:        category?.order ?? 999,
-      published,
-    });
-  }
-
-  const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300";
-  const lbl   = "block text-xs text-gray-400 mb-1.5";
-
+  const isPublished = status === "PUBLISHED";
+  const clickable = !!onClick;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-          <h2 className="text-sm text-gray-900">{isNew ? "Nueva categoría" : `Editar: ${category.name}`}</h2>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
-            <X className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-        </div>
-
-        {/* Scrollable content */}
-        <div className="px-6 py-5 space-y-5 overflow-y-auto flex-1">
-          {/* Icon picker - only for parent categories */}
-          {isParent && (
-            <div>
-              <label className={lbl}>Ícono</label>
-              <div className="flex flex-wrap gap-2">
-                {ICON_OPTIONS.map(({ name: iName, Icon, label }) => {
-                  const selected = icon === iName;
-                  return (
-                    <IconTooltip key={iName} label={label}>
-                      <button
-                        type="button"
-                        onClick={() => setIcon(iName)}
-                        className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center transition-all ${
-                          selected
-                            ? "border-gray-600 bg-gray-600 text-white"
-                            : "border-gray-200 text-gray-400 hover:border-gray-400 hover:text-gray-700"
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" strokeWidth={1.5} />
-                      </button>
-                    </IconTooltip>
-                  );
-                })}
-              </div>
-              <div className="flex items-center gap-2 mt-2.5">
-                <div className="w-8 h-8 bg-gray-50 border border-gray-200 rounded-xl flex items-center justify-center">
-                  <CatIcon name={icon} className="w-4 h-4 text-gray-600" />
-                </div>
-                <span className="text-xs text-gray-400">
-                  Seleccionado: <span className="text-gray-700">{ICON_LABELS[icon] ?? icon}</span>
-                </span>
-              </div>
-            </div>
-          )}
-
-          <div>
-            <label className={lbl}>Nombre *</label>
-            <input value={name} onChange={(e) => handleNameChange(e.target.value)} className={field} placeholder="Ej: Electrónica" />
-          </div>
-
-          <div>
-            <label className={lbl}>Slug (URL)</label>
-            <input value={slug} onChange={(e) => setSlug(e.target.value)} className={field} placeholder="electronica" />
-          </div>
-
-          <div>
-            <label className={lbl}>Descripción</label>
-            <textarea value={desc} onChange={(e) => setDesc(e.target.value)} className={`${field} h-16 resize-none`} placeholder="Descripción breve..." />
-          </div>
-
-          {/* Keywords section */}
-          <div className="border-t border-gray-100 pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-xs text-gray-400 uppercase tracking-wider">
-                Keywords ({keywords.length})
-              </label>
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              <input
-                value={newKeyword}
-                onChange={(e) => setNewKeyword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddKeyword()}
-                className={field}
-                placeholder="Agregar keyword..."
-              />
-              <button
-                onClick={handleAddKeyword}
-                className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors whitespace-nowrap"
-              >
-                <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Agregar
-              </button>
-            </div>
-
-            {/* Keywords list */}
-            <div className="flex flex-wrap gap-2">
-              {keywords.length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-4 bg-gray-50 rounded-xl w-full">
-                  No hay keywords aún
-                </p>
-              )}
-
-              {keywords.map((kw) => (
-                <div
-                  key={kw}
-                  className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-xs rounded-lg px-3 py-1.5"
-                >
-                  <span>{kw}</span>
-                  <button
-                    onClick={() => handleRemoveKeyword(kw)}
-                    className="text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <X className="w-3 h-3" strokeWidth={1.5} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Published toggle */}
-          <div className="border-t border-gray-100 pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-xs text-gray-400 uppercase tracking-wider">
-                Publicado
-              </label>
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              <button
-                onClick={() => setPublished(!published)}
-                className={`flex items-center gap-1.5 text-xs rounded-xl px-4 py-2.5 transition-colors whitespace-nowrap ${
-                  published ? "text-white bg-green-500 hover:bg-green-600" : "text-gray-500 bg-gray-200 hover:bg-gray-300"
-                }`}
-              >
-                {published ? (
-                  <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
-                ) : (
-                  <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
-                )}
-                {published ? "Publicado" : "No publicado"}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50 flex-shrink-0">
-          <button onClick={onClose} className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-white transition-colors">
-            Cancelar
-          </button>
-          <button onClick={handleSave} className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
-            <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
-            {isNew ? "Crear categoría" : "Guardar cambios"}
-          </button>
-        </div>
-      </div>
-    </div>
+    <button
+      type="button"
+      disabled={toggling}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
+      className={`inline-flex items-center justify-center text-[10px] leading-none min-w-[62px] px-2 py-1 rounded-full font-medium transition-all duration-200 ${isPublished
+        ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
+        : "bg-amber-50 text-amber-700 ring-1 ring-amber-200"
+        } ${clickable ? "cursor-pointer hover:ring-2 hover:shadow-sm" : "cursor-default"} ${toggling ? "opacity-50" : ""
+        }`}
+    >
+      {toggling ? (
+        <Loader2 className="w-3 h-3 animate-spin mr-1" strokeWidth={1.5} />
+      ) : null}
+      {isPublished ? labels.published : labels.draft}
+    </button>
   );
 }
 
-/* ── Draggable Category Row ──────────────────────────── */
-interface DraggableCategoryRowProps {
-  category: Category;
-  subcategories: Category[];
-  index: number;
-  moveCategory: (dragIndex: number, hoverIndex: number) => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleStatus: () => void;
-  onTogglePublished: () => void;
-  onExpand: () => void;
-  isExpanded: boolean;
-  onAddSubcategory: () => void;
-  onEditSubcategory: (sub: Category) => void;
-  onDeleteSubcategory: (subId: string) => void;
-  onToggleSubStatus: (subId: string) => void;
-  moveSubcategory: (subIndex: number, hoverIndex: number) => void;
+function ActiveBadge({
+  active,
+  labels,
+  onClick,
+  loading: toggling,
+}: {
+  active: boolean;
+  labels: Labels;
+  onClick?: () => void;
+  loading?: boolean;
+}) {
+  const clickable = !!onClick;
+  return (
+    <button
+      type="button"
+      disabled={toggling}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick?.();
+      }}
+      className={`inline-flex items-center justify-center text-[10px] leading-none min-w-[56px] px-2 py-1 rounded-full font-medium transition-all duration-200 ${active
+        ? "bg-blue-50 text-blue-700 ring-1 ring-blue-200"
+        : "bg-gray-100 text-gray-500 ring-1 ring-gray-200"
+        } ${clickable ? "cursor-pointer hover:ring-2 hover:shadow-sm" : "cursor-default"} ${toggling ? "opacity-50" : ""
+        }`}
+    >
+      {toggling ? (
+        <Loader2 className="w-3 h-3 animate-spin mr-1" strokeWidth={1.5} />
+      ) : null}
+      {active ? labels.active : labels.inactive}
+    </button>
+  );
 }
 
-function DraggableCategoryRow({
-  category, subcategories, index, moveCategory, onEdit, onDelete, onToggleStatus, onTogglePublished, onExpand, isExpanded,
-  onAddSubcategory, onEditSubcategory, onDeleteSubcategory, onToggleSubStatus, moveSubcategory,
-}: DraggableCategoryRowProps) {
-  const [{ isDragging }, drag, preview] = useDrag({
-    type: DND_TYPE_CATEGORY,
-    item: { index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
+function LevelBadge({ level }: { level: number }) {
+  const colors = [
+    "bg-violet-50 text-violet-700 ring-violet-200",
+    "bg-sky-50 text-sky-700 ring-sky-200",
+    "bg-teal-50 text-teal-700 ring-teal-200",
+  ];
+  const color = colors[Math.min(level - 1, colors.length - 1)] ?? colors[0];
+  return (
+    <span
+      className={`inline-flex items-center text-[10px] leading-none px-2 py-1 rounded-full font-medium ring-1 ${color}`}
+    >
+      Nv. {level}
+    </span>
+  );
+}
 
-  const [, drop] = useDrop({
-    accept: DND_TYPE_CATEGORY,
-    hover: (item: { index: number }) => {
-      if (item.index !== index) {
-        moveCategory(item.index, index);
-        item.index = index;
-      }
-    },
-  });
+/* ── Date formatter ───────────────────────────────────── */
+function fmtDate(iso: string | null, locale: string): string {
+  if (!iso) return "—";
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(new Date(iso));
+  } catch {
+    return iso;
+  }
+}
+
+/* ── Category Row ─────────────────────────────────────── */
+interface CategoryRowProps {
+  category: import("../../repositories/NexaCategoryPagedRepository").PagedCategory;
+  labels: Labels;
+  locale: string;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onTogglePublish: (id: string) => void;
+  onToggleActive: (id: string, active: boolean) => void;
+  togglingId: string | null;
+  togglingActiveId: string | null;
+  onViewDetail: (id: string) => void;
+  onEdit: (category: import("../../repositories/NexaCategoryPagedRepository").PagedCategory) => void;
+  onAddSubcategory: (parentId: string) => void;
+  onDelete: (id: string) => void;
+  deletingId: string | null;
+}
+
+function CategoryRow({
+  category, labels, locale, isExpanded, onToggleExpand,
+  onTogglePublish, onToggleActive, togglingId, togglingActiveId,
+  onViewDetail, onEdit, onAddSubcategory, onDelete, deletingId,
+}: CategoryRowProps) {
+  const isToggling = togglingId === category.id;
+  const isTogglingActive = togglingActiveId === category.id;
+  const isDeleting = deletingId === category.id;
+  const hasTranslations = category.translations.length > 0;
+  const hasSubs = category.subCategories.length > 0;
 
   return (
     <div
-      ref={(node) => preview(drop(node))}
-      className={`bg-white border rounded-xl overflow-hidden transition-all ${
-        category.status === "inactive" ? "border-gray-100 opacity-60" : "border-gray-100"
-      } ${isDragging ? "opacity-50" : ""}`}
+      className="bg-white border border-gray-100 rounded-xl overflow-hidden transition-all hover:border-gray-200 hover:shadow-sm"
     >
-      {/* Category row */}
+      {/* Main row */}
       <div className="flex items-center gap-3 px-4 py-3">
-        {/* Drag handle */}
-        <div ref={drag} className="cursor-move text-gray-300 hover:text-gray-500">
-          <GripVertical className="w-4 h-4" strokeWidth={1.5} />
-        </div>
-
-        {/* Order number */}
-        <div className="w-8 h-8 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-          <span className="text-xs text-gray-400">{category.order}</span>
-        </div>
-
-        {/* Icon */}
-        {category.icon && (
-          <div className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-            <CatIcon name={category.icon} className="w-4 h-4 text-gray-500" />
-          </div>
-        )}
+        {/* Level indicator */}
+        <div
+          className={`w-1 self-stretch rounded-full flex-shrink-0 ${category.level === 1
+            ? "bg-violet-400"
+            : category.level === 2
+              ? "bg-sky-400"
+              : "bg-teal-400"
+            }`}
+        />
 
         {/* Info */}
         <button
-          onClick={onExpand}
-          className="flex-1 min-w-0 text-left"
+          onClick={onToggleExpand}
+          className="flex-1 min-w-0 text-left group"
         >
           <div className="flex items-center gap-2 flex-wrap">
-            <p className="text-sm text-gray-900">{category.name}</p>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-full ${
-                category.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-400"
-              }`}
-            >
-              {category.status === "active" ? "Activa" : "Inactiva"}
-            </span>
-            <span
-              className={`text-[10px] px-2 py-0.5 rounded-full ${
-                category.published ? "bg-blue-50 text-blue-700" : "bg-orange-50 text-orange-700"
-              }`}
-            >
-              {category.published ? "Publicado" : "Borrador"}
-            </span>
+            <p className="text-sm text-gray-900 group-hover:text-gray-700 transition-colors flex items-center gap-1">
+              {category.name}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(category.name);
+                  toast.success("Nombre copiado");
+                }}
+                className="inline-flex items-center justify-center w-4 h-4 text-gray-300 hover:text-gray-600 transition-colors rounded"
+                title="Copiar nombre"
+              >
+                <Copy className="w-3 h-3" strokeWidth={1.5} />
+              </button>
+            </p>
+            <LevelBadge level={category.level} />
+            <StatusBadge status={category.status} labels={labels} />
+            <ActiveBadge active={category.active} labels={labels} />
           </div>
-          <p className="text-[11px] text-gray-400 mt-0.5 truncate">
-            /{category.slug} · {subcategories.length} subcategorías · {category.productCount} productos
+          <p className="text-[11px] text-gray-400 mt-0.5 truncate flex items-center gap-1">
+            ID: {category.id}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(category.id);
+                toast.success("ID copiado");
+              }}
+              className="inline-flex items-center justify-center w-4 h-4 text-gray-300 hover:text-gray-600 transition-colors rounded"
+              title="Copiar ID"
+            >
+              <Copy className="w-3 h-3" strokeWidth={1.5} />
+            </button>
+            {category.parentId && category.parentId !== "root-id" && (
+              <>
+                {" · Parent: "}{category.parentId}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(category.parentId!);
+                    toast.success("Parent ID copiado");
+                  }}
+                  className="inline-flex items-center justify-center w-4 h-4 text-gray-300 hover:text-gray-600 transition-colors rounded"
+                  title="Copiar Parent ID"
+                >
+                  <Copy className="w-3 h-3" strokeWidth={1.5} />
+                </button>
+              </>
+            )}
+            {hasSubs && (
+              <> · {category.subCategories.length} {labels.subcategories}</>
+            )}
           </p>
         </button>
 
-        {/* Expand button */}
+        {/* View detail */}
         <button
-          onClick={onExpand}
-          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-xl transition-colors"
+          onClick={(e) => { e.stopPropagation(); onViewDetail(category.id); }}
+          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors flex-shrink-0"
+          title={labels.detail || "Detalle"}
+        >
+          <Eye className="w-4 h-4" strokeWidth={1.5} />
+        </button>
+
+        {/* Edit */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit(category); }}
+          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-xl transition-colors flex-shrink-0"
+          title={labels.edit}
+        >
+          <Pencil className="w-4 h-4" strokeWidth={1.5} />
+        </button>
+
+        {/* Add subcategory */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onAddSubcategory(category.id); }}
+          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-colors flex-shrink-0"
+          title={labels.addSub}
+        >
+          <Plus className="w-4 h-4" strokeWidth={1.5} />
+        </button>
+
+        {/* Delete */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onDelete(category.id); }}
+          disabled={isDeleting}
+          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0 disabled:opacity-50"
+          title={labels.delete}
+        >
+          {isDeleting
+            ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+            : <Trash2 className="w-4 h-4" strokeWidth={1.5} />
+          }
+        </button>
+
+        {/* Expand/collapse */}
+        <button
+          onClick={onToggleExpand}
+          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:bg-gray-100 rounded-xl transition-colors flex-shrink-0"
         >
           <ChevronDown
             className={`w-4 h-4 transition-transform ${isExpanded ? "rotate-180" : ""}`}
             strokeWidth={1.5}
           />
         </button>
-
-        {/* Actions */}
-        <div className="flex items-center gap-1 flex-shrink-0">
-          <button
-            onClick={onToggleStatus}
-            title={category.status === "active" ? "Desactivar" : "Activar"}
-            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
-          >
-            {category.status === "active"
-              ? <ToggleRight className="w-4 h-4 text-green-500" strokeWidth={1.5} />
-              : <ToggleLeft  className="w-4 h-4"               strokeWidth={1.5} />
-            }
-          </button>
-          <button
-            onClick={onTogglePublished}
-            title={category.published ? "Despublicar" : "Publicar"}
-            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
-          >
-            {category.published
-              ? <Eye className="w-4 h-4 text-blue-500" strokeWidth={1.5} />
-              : <EyeOff  className="w-4 h-4"               strokeWidth={1.5} />
-            }
-          </button>
-          <button
-            onClick={onEdit}
-            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
-          >
-            <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </button>
-          <button
-            onClick={onDelete}
-            className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </button>
-        </div>
       </div>
 
-      {/* Subcategories panel */}
+      {/* Expanded detail */}
       {isExpanded && (
-        <div className="border-t border-gray-100 bg-gray-50/50 px-4 py-4">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-xs text-gray-400 uppercase tracking-wider">
-              Subcategorías ({subcategories.length})
-            </p>
-            <button
-              onClick={onAddSubcategory}
-              className="inline-flex items-center gap-1 text-xs text-gray-600 border border-gray-200 rounded-xl px-3 py-1.5 bg-white hover:border-gray-400 hover:text-gray-900 transition-colors"
-            >
-              <Plus className="w-3 h-3" strokeWidth={1.5} />
-              Agregar subcategoría
-            </button>
+        <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-4 space-y-4">
+          {/* Metadata grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="flex flex-col items-center text-center">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">{labels.createdAt}</p>
+              <p className="text-xs text-gray-700">{fmtDate(category.createdAt, locale)}</p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">{labels.updatedAt}</p>
+              <p className="text-xs text-gray-700">{fmtDate(category.updatedAt, locale)}</p>
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">{labels.status}</p>
+              <StatusBadge
+                status={category.status}
+                labels={labels}
+                onClick={() => onTogglePublish(category.id)}
+                loading={isToggling}
+              />
+            </div>
+            <div className="flex flex-col items-center text-center">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">{labels.visibility}</p>
+              <ActiveBadge
+                active={category.active}
+                labels={labels}
+                onClick={() => onToggleActive(category.id, !category.active)}
+                loading={isTogglingActive}
+              />
+            </div>
           </div>
 
-          {subcategories.length === 0 && (
-            <p className="text-xs text-gray-400 text-center py-4">Sin subcategorías aún</p>
+          {/* Translations */}
+          {hasTranslations && (
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">{labels.translations}</p>
+              <div className="flex flex-wrap gap-2">
+                {category.translations.map((t) => (
+                  <div
+                    key={t.locale}
+                    className="inline-flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-2.5 py-1.5"
+                  >
+                    <span className="text-[10px] text-gray-400 uppercase font-mono">{t.locale}</span>
+                    <span className="text-xs text-gray-700">{t.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
 
-          <div className="space-y-2">
-            {subcategories.map((sub, subIndex) => (
-              <DraggableSubcategoryRow
-                key={sub.id}
-                subcategory={sub}
-                index={subIndex}
-                moveSubcategory={moveSubcategory}
-                onEdit={() => onEditSubcategory(sub)}
-                onDelete={() => onDeleteSubcategory(sub.id)}
-                onToggleStatus={() => onToggleSubStatus(sub.id)}
-              />
-            ))}
-          </div>
+          {/* Subcategories count */}
+          {hasSubs && (
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">
+                {labels.subcategories} ({category.subCategories.length})
+              </p>
+              <button
+                onClick={() => onViewDetail(category.id)}
+                className="text-xs text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+              >
+                {labels.detail}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-/* ── Draggable Subcategory Row ───────────────────────── */
-interface DraggableSubcategoryRowProps {
-  subcategory: Category;
-  index: number;
-  moveSubcategory: (dragIndex: number, hoverIndex: number) => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  onToggleStatus: () => void;
-}
-
-function DraggableSubcategoryRow({
-  subcategory, index, moveSubcategory, onEdit, onDelete, onToggleStatus,
-}: DraggableSubcategoryRowProps) {
-  const [{ isDragging }, drag, preview] = useDrag({
-    type: DND_TYPE_SUBCATEGORY,
-    item: { index },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
-
-  const [, drop] = useDrop({
-    accept: DND_TYPE_SUBCATEGORY,
-    hover: (item: { index: number }) => {
-      if (item.index !== index) {
-        moveSubcategory(item.index, index);
-        item.index = index;
-      }
-    },
-  });
-
+/* ── Filter pill ──────────────────────────────────────── */
+function FilterPill({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
-    <div
-      ref={(node) => preview(drop(node))}
-      className={`flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-2.5 ${
-        isDragging ? "opacity-50" : ""
-      }`}
-    >
-      {/* Drag handle */}
-      <div ref={drag} className="cursor-move text-gray-300 hover:text-gray-500">
-        <GripVertical className="w-3.5 h-3.5" strokeWidth={1.5} />
-      </div>
-
-      {/* Order number */}
-      <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-        <span className="text-[11px] text-gray-400">{subcategory.order}</span>
-      </div>
-
-      <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
-
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-700">{subcategory.name}</p>
-        <p className="text-[11px] text-gray-400">/{subcategory.slug} · {subcategory.productCount} productos</p>
-      </div>
-
-      <span
-        className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 ${
-          subcategory.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-400"
+    <button
+      onClick={onClick}
+      className={`text-[11px] px-3 py-1.5 rounded-full transition-all ${active
+        ? "bg-gray-700 text-white shadow-sm"
+        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
         }`}
-      >
-        {subcategory.status === "active" ? "Activa" : "Inactiva"}
-      </span>
-
-      <div className="flex items-center gap-0.5 flex-shrink-0">
-        <button
-          onClick={onToggleStatus}
-          className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          {subcategory.status === "active"
-            ? <ToggleRight className="w-3.5 h-3.5 text-green-500" strokeWidth={1.5} />
-            : <ToggleLeft  className="w-3.5 h-3.5"               strokeWidth={1.5} />
-          }
-        </button>
-        <button
-          onClick={onEdit}
-          className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-        >
-          <Pencil className="w-3 h-3" strokeWidth={1.5} />
-        </button>
-        <button
-          onClick={onDelete}
-          className="w-7 h-7 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-        >
-          <Trash2 className="w-3 h-3" strokeWidth={1.5} />
-        </button>
-      </div>
-    </div>
+    >
+      {label}
+    </button>
   );
 }
 
-/* ── Bulk Import Modal ───────────────────────────────── */
-function BulkImportCategoriesModal({ 
-  onImport, 
-  onClose 
-}: { 
-  onImport: (categories: Category[]) => void; 
-  onClose: () => void;
-}) {
-  const [jsonText, setJsonText] = useState("");
-  const [error, setError] = useState("");
-  const [showIcons, setShowIcons] = useState(false);
-  const [newIconName, setNewIconName] = useState("");
-  const [newIconLabel, setNewIconLabel] = useState("");
-  const [customIcons, setCustomIcons] = useState<Array<{ name: string; label: string }>>([]);
+/* ── Main page ────────────────────────────────────────── */
+export function AdminCategories() {
+  const { locale } = useLanguage();
+  const labels = tr[locale] ?? tr.es;
 
-  const exampleJSON = `[
-  {
-    "name": "Deportes",
-    "slug": "deportes",
-    "icon": "Bike",
-    "description": "Artículos deportivos, fitness y outdoor",
-    "keywords": ["deportes", "fitness", "gimnasio", "running", "outdoor"],
-    "published": false,
-    "subcategories": [
-      {
-        "name": "Equipamiento Fitness",
-        "slug": "equipamiento-fitness",
-        "description": "Máquinas, pesas y accesorios de gimnasio",
-        "keywords": ["fitness", "gimnasio", "pesas", "mancuernas", "equipamiento"]
-      },
-      {
-        "name": "Ropa Deportiva",
-        "slug": "ropa-deportiva",
-        "description": "Indumentaria deportiva y activewear",
-        "keywords": ["ropa deportiva", "activewear", "leggings", "tops", "running"]
-      },
-      {
-        "name": "Calzado Deportivo",
-        "slug": "calzado-deportivo",
-        "description": "Zapatillas para running, training y deportes",
-        "keywords": ["zapatillas", "sneakers", "running shoes", "deportivo"]
-      }
-    ]
-  },
-  {
-    "name": "Libros y Educación",
-    "slug": "libros-educacion",
-    "icon": "BookOpen",
-    "description": "Libros físicos, ebooks y material educativo",
-    "keywords": ["libros", "lectura", "literatura", "educación", "ebooks"],
-    "published": true,
-    "subcategories": [
-      {
-        "name": "Ficción",
-        "slug": "ficcion",
-        "description": "Novelas, cuentos y relatos de ficción",
-        "keywords": ["ficción", "novelas", "narrativa", "cuentos", "literatura"]
-      },
-      {
-        "name": "No Ficción",
-        "slug": "no-ficcion",
-        "description": "Ensayos, biografías, historia y divulgación",
-        "keywords": ["no ficción", "ensayos", "biografías", "historia", "divulgación"]
-      },
-      {
-        "name": "Material Educativo",
-        "slug": "material-educativo",
-        "description": "Libros de texto, guías de estudio y cursos",
-        "keywords": ["educación", "libros de texto", "estudio", "cursos", "aprendizaje"]
-      }
-    ]
-  },
-  {
-    "name": "Mascotas",
-    "slug": "mascotas",
-    "icon": "Heart",
-    "description": "Productos y accesorios para mascotas",
-    "keywords": ["mascotas", "perros", "gatos", "animales", "pets"],
-    "published": false,
-    "subcategories": [
-      {
-        "name": "Alimentación",
-        "slug": "alimentacion-mascotas",
-        "description": "Comida y snacks para mascotas",
-        "keywords": ["comida", "alimento", "snacks", "golosinas", "nutrición"]
-      },
-      {
-        "name": "Accesorios",
-        "slug": "accesorios-mascotas",
-        "description": "Collares, correas, juguetes y más",
-        "keywords": ["collares", "correas", "juguetes", "accesorios", "pets"]
-      }
-    ]
-  },
-  {
-    "name": "Belleza y Cuidado Personal",
-    "slug": "belleza-cuidado",
-    "icon": "Sparkles",
-    "description": "Productos de belleza, skincare y cuidado personal",
-    "keywords": ["belleza", "cosmética", "skincare", "maquillaje", "cuidado"],
-    "published": true,
-    "subcategories": [
-      {
-        "name": "Skincare",
-        "slug": "skincare",
-        "description": "Cuidado de la piel, cremas y tratamientos",
-        "keywords": ["skincare", "cremas", "tratamientos", "facial", "piel"]
-      },
-      {
-        "name": "Maquillaje",
-        "slug": "maquillaje",
-        "description": "Cosméticos y productos de maquillaje",
-        "keywords": ["maquillaje", "cosmética", "labial", "base", "sombras"]
-      },
-      {
-        "name": "Cuidado del Cabello",
-        "slug": "cuidado-cabello",
-        "description": "Shampoo, acondicionador y tratamientos capilares",
-        "keywords": ["cabello", "shampoo", "acondicionador", "tratamientos", "pelo"]
-      }
-    ]
+  // ── Filters ───────────────────────────────
+  const [searchInput, setSearchInput] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"" | "DRAFT" | "PUBLISHED">("");
+  const [activeFilter, setActiveFilter] = useState<"" | "true" | "false">("");
+  const [levelFilter, setLevelFilter] = useState<"" | "1" | "2" | "3">("");
+  const [sortBy, setSortBy] = useState("");
+  const [ascending, setAscending] = useState(true);
+  const [showFilters, setShowFilters] = useState(false);
+  const [pageSize, setPageSize] = useState(20);
+
+  // Debounce search: only apply after 400ms idle
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchTimerId, setSearchTimerId] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleSearchChange(value: string) {
+    setSearchInput(value);
+    if (searchTimerId) clearTimeout(searchTimerId);
+    setSearchTimerId(setTimeout(() => setDebouncedSearch(value), 400));
   }
-]`;
 
-  function handleImport() {
-    setError("");
+  // Build query from filters
+  const query = useMemo(() => {
+    const q: Record<string, unknown> = {
+      size: pageSize,
+      ascending,
+    };
+    if (debouncedSearch.trim()) q.name = debouncedSearch.trim();
+    if (statusFilter) q.status = statusFilter;
+    if (activeFilter) q.active = activeFilter === "true";
+    if (levelFilter) q.level = Number(levelFilter);
+    if (sortBy) q.sortBy = sortBy;
+    return q;
+  }, [debouncedSearch, statusFilter, activeFilter, levelFilter, sortBy, ascending, pageSize]);
+
+  const {
+    categories,
+    loading,
+    error,
+    page,
+    totalElements,
+    totalPages,
+    setPage,
+    refetch,
+  } = usePagedCategories(query);
+
+  // ── Expand state ──────────────────────────
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+
+
+  // ── Toggle publish state ──────────────────
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  async function handleTogglePublish(categoryId: string) {
+    if (togglingId) return; // prevent double-clicks
+    setTogglingId(categoryId);
     try {
-      const parsed = JSON.parse(jsonText);
-      if (!Array.isArray(parsed)) {
-        setError("El JSON debe ser un array de categorías");
-        return;
+      await nexaCategoryPagedRepository.togglePublish(categoryId);
+      toast.success(locale === "en" ? "Status updated" : locale === "pt" ? "Estado atualizado" : "Estado actualizado");
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error";
+      toast.error(msg);
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
+  // ── Toggle active state ───────────────────
+  const [togglingActiveId, setTogglingActiveId] = useState<string | null>(null);
+
+  async function handleToggleActive(categoryId: string, active: boolean) {
+    if (togglingActiveId) return;
+    setTogglingActiveId(categoryId);
+    try {
+      await nexaCategoryPagedRepository.toggleActive(categoryId, active);
+      toast.success(locale === "en" ? "Visibility updated" : locale === "pt" ? "Visibilidade atualizada" : "Visibilidad actualizada");
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error";
+      toast.error(msg);
+    } finally {
+      setTogglingActiveId(null);
+    }
+  }
+
+  // ── Active filters count ──────────────────
+  const activeFiltersCount = [statusFilter, activeFilter, levelFilter, sortBy].filter(Boolean).length;
+
+  // ── Sync state ─────────────────────────
+  const [syncing, setSyncing] = useState(false);
+
+  // ── Bulk upload modal state ───────────────
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+
+  // ── Detail drawer state ───────────────────
+  const [detailCategoryId, setDetailCategoryId] = useState<string | null>(null);
+
+  // ── Create / Edit form modal state ────────
+  const [formModalOpen, setFormModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<PagedCategory | null>(null);
+  const [defaultParentId, setDefaultParentId] = useState<string | null>(null);
+
+  function handleOpenCreate() {
+    setEditingCategory(null);
+    setDefaultParentId(null);
+    setFormModalOpen(true);
+  }
+
+  function handleOpenEdit(category: PagedCategory) {
+    setEditingCategory(category);
+    setDefaultParentId(null);
+    setFormModalOpen(true);
+  }
+
+  function handleOpenCreateSubcategory(parentId: string) {
+    setEditingCategory(null);
+    setDefaultParentId(parentId);
+    setFormModalOpen(true);
+  }
+
+  function handleFormSaved() {
+    setFormModalOpen(false);
+    setEditingCategory(null);
+    setDefaultParentId(null);
+    refetch();
+  }
+
+  // ── Delete state ──────────────────────────
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const confirmDeleteName = confirmDeleteId
+    ? categories.find((c) => c.id === confirmDeleteId)?.name ?? confirmDeleteId
+    : "";
+
+  function handleDelete(categoryId: string) {
+    setConfirmDeleteId(categoryId);
+  }
+
+  async function executeDelete() {
+    if (!confirmDeleteId || deletingId) return;
+    setDeletingId(confirmDeleteId);
+    try {
+      await nexaCategoryPagedRepository.deleteCategory(confirmDeleteId);
+      toast.success(labels.deleteSuccess);
+      setConfirmDeleteId(null);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error";
+      toast.error(msg, { duration: 5000 });
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleSync() {
+    if (syncing) return;
+    setSyncing(true);
+    try {
+      const result = await nexaCategoryPagedRepository.syncCategories();
+      toast.success(labels.syncSuccess(result.created, result.updated, result.total));
+      refetch();
+    } catch (err) {
+      if (err instanceof Error) {
+        toast.error(err.message, {
+          duration: 6000,
+          description: err.cause instanceof Error ? err.cause.message : undefined,
+        });
+      } else {
+        toast.error("Error", { duration: 6000 });
       }
-
-      const categories: Category[] = [];
-      
-      parsed.forEach((item, idx) => {
-        // Validate required fields for parent category
-        if (!item.name || typeof item.name !== "string") {
-          throw new Error(`Categoría ${idx + 1}: nombre es obligatorio`);
-        }
-
-        const parentId = `cat-import-${Date.now()}-${idx}`;
-        const slug = item.slug || item.name.toLowerCase()
-          .replace(/[áàä]/g, "a").replace(/[éèë]/g, "e").replace(/[íìï]/g, "i")
-          .replace(/[óòö]/g, "o").replace(/[úùü]/g, "u").replace(/ñ/g, "n")
-          .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
-        // Validate icon exists if provided
-        if (item.icon && !ICON_MAP[item.icon]) {
-          throw new Error(
-            `Categoría ${idx + 1}: ícono "${item.icon}" no válido. Iconos disponibles: ${Object.keys(ICON_MAP).join(", ")}`
-          );
-        }
-
-        // Create parent category
-        const parentCategory: Category = {
-          id: parentId,
-          name: item.name,
-          slug,
-          icon: item.icon || "Package",
-          description: item.description || "",
-          keywords: Array.isArray(item.keywords) ? item.keywords : [],
-          parent_id: null,
-          productCount: 0,
-          status: "active",
-          order: 999,
-          published: item.published ?? false,
-        };
-
-        categories.push(parentCategory);
-
-        // Create subcategories if provided
-        if (Array.isArray(item.subcategories)) {
-          item.subcategories.forEach((sub: any, subIdx: number) => {
-            if (!sub.name || typeof sub.name !== "string") {
-              throw new Error(`Categoría ${idx + 1}, Subcategoría ${subIdx + 1}: nombre es obligatorio`);
-            }
-
-            const subSlug = sub.slug || sub.name.toLowerCase()
-              .replace(/[áàä]/g, "a").replace(/[éèë]/g, "e").replace(/[íìï]/g, "i")
-              .replace(/[óòö]/g, "o").replace(/[úùü]/g, "u").replace(/ñ/g, "n")
-              .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-
-            const subcategory: Category = {
-              id: `sub-import-${Date.now()}-${idx}-${subIdx}`,
-              name: sub.name,
-              slug: subSlug,
-              icon: undefined,
-              description: sub.description || "",
-              keywords: Array.isArray(sub.keywords) ? sub.keywords : [],
-              parent_id: parentId,
-              productCount: 0,
-              status: "active",
-              order: subIdx + 1,
-            };
-
-            categories.push(subcategory);
-          });
-        }
-      });
-
-      onImport(categories);
-      const parentCount = categories.filter(c => !c.parent_id).length;
-      const subCount = categories.filter(c => c.parent_id).length;
-      toast.success(`${parentCount} categorías y ${subCount} subcategorías importadas`);
-    } catch (err: any) {
-      setError(err.message || "Error al procesar JSON");
-      toast.error("Error en la importación");
+    } finally {
+      setSyncing(false);
     }
   }
 
-  function handleDownloadTemplate() {
-    const blob = new Blob([exampleJSON], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "plantilla-categorias.json";
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success("Plantilla descargada");
+  function clearFilters() {
+    setStatusFilter("");
+    setActiveFilter("");
+    setLevelFilter("");
+    setSortBy("");
+    setAscending(true);
   }
-
-  function handleAddCustomIcon() {
-    if (!newIconName || !newIconLabel) {
-      toast.error("Nombre y etiqueta del ícono son obligatorios");
-      return;
-    }
-
-    if (ICON_MAP[newIconName]) {
-      toast.error(`El ícono \"${newIconName}\" ya existe`);
-      return;
-    }
-
-    // Add to custom icons
-    setCustomIcons((prev) => [...prev, { name: newIconName, label: newIconLabel }]);
-
-    // Add to global icon map
-    ICON_MAP[newIconName] = Package; // Placeholder icon
-    ICON_LABELS[newIconName] = newIconLabel;
-
-    // Update icon options
-    const newOptions = Object.entries(ICON_MAP).map(
-      ([name, Icon]) => ({ name, Icon, label: ICON_LABELS[name] ?? name })
-    );
-    ICON_OPTIONS.length = 0; // Clear existing options
-    ICON_OPTIONS.push(...newOptions);
-
-    toast.success(`Ícono \"${newIconName}\" agregado`);
-    setNewIconName("");
-    setNewIconLabel("");
-  }
-
-  const availableIcons = Object.keys(ICON_MAP).join(", ");
-  const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 overflow-y-auto">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg w-full max-w-3xl overflow-hidden">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div className="flex-1 text-center">
-            <h2 className="text-sm text-gray-900">Importación masiva de categorías</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Pega un JSON con categorías y subcategorías</p>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors">
-            <X className="w-4 h-4" strokeWidth={1.5} />
+    <div className="h-full flex flex-col">
+
+      {/* ── Detail drawer ───────────────────── */}
+      {detailCategoryId && (
+        <CategoryDetailDrawer
+          categoryId={detailCategoryId}
+          locale={locale}
+          onClose={() => setDetailCategoryId(null)}
+          onChanged={refetch}
+        />
+      )}
+
+      {/* ── Header ──────────────────────────── */}
+      <div className="flex items-center justify-between mb-5">
+        <div>
+          <h1 className="text-xl text-gray-900 tracking-tight">{labels.title}</h1>
+          <p className="text-xs text-gray-400 mt-1">
+            {labels.subtitle(totalElements)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleSync}
+            disabled={syncing}
+            className={`flex items-center gap-1.5 text-xs border rounded-full px-4 py-2 transition-all flex-shrink-0 ${syncing
+              ? "border-blue-300 text-blue-400 bg-blue-50 cursor-not-allowed"
+              : "border-gray-200 text-gray-600 bg-white hover:bg-gray-50 hover:border-gray-300"
+              }`}
+            title={labels.sync}
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} strokeWidth={1.5} />
+            {syncing ? labels.syncing : labels.sync}
+          </button>
+          <button
+            onClick={() => setBulkModalOpen(true)}
+            className="flex items-center gap-1.5 text-xs border border-violet-200 text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-full px-4 py-2 transition-all flex-shrink-0"
+            title={labels.bulkUpload}
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" strokeWidth={1.5} />
+            {labels.bulkUpload}
+          </button>
+          <button
+            onClick={handleOpenCreate}
+            className="flex items-center justify-center w-8 h-8 text-white bg-gray-500 hover:bg-gray-600 rounded-full transition-all flex-shrink-0"
+            title={labels.newCategory}
+          >
+            <Plus className="w-4 h-4" strokeWidth={2} />
           </button>
         </div>
+      </div>
 
-        {/* Body */}
-        <div className="px-6 py-5 space-y-4 max-h-[70vh] overflow-y-auto">
-          {/* Instructions */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-            <div className="flex items-start gap-2">
-              <FileText className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={1.5} />
-              <div>
-                <p className="text-xs text-blue-900 font-medium mb-2">📋 Formato del JSON</p>
-                <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside">
-                  <li>Debe ser un array de objetos (categorías padre)</li>
-                  <li><strong>Campo obligatorio:</strong> name</li>
-                  <li><strong>Campos opcionales:</strong> slug, icon, description, keywords, published, subcategories</li>
-                  <li><strong>published:</strong> true = publicada inmediatamente, false = guardar como borrador (por defecto: false)</li>
-                  <li><strong>slug:</strong> se genera automáticamente si no se especifica</li>
-                  <li><strong>Subcategorías:</strong> array con objetos que tienen name, slug (opcional), description, keywords</li>
-                  <li><strong>Íconos disponibles:</strong> {availableIcons.substring(0, 100)}... (ver lista completa abajo)</li>
-                </ul>
+      {/* ── Search + Filter toggle row ──────── */}
+      <div className="flex items-center gap-3 mb-3">
+        {/* Search */}
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" strokeWidth={1.5} />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder={labels.search}
+            className="w-full text-xs text-gray-900 border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300"
+          />
+          {searchInput && (
+            <button
+              onClick={() => { setSearchInput(""); setDebouncedSearch(""); }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500"
+            >
+              <X className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          )}
+        </div>
+
+        {/* Filter toggle */}
+        <button
+          onClick={() => setShowFilters((v) => !v)}
+          className={`flex items-center gap-1.5 text-xs border rounded-xl px-4 py-2.5 transition-colors flex-shrink-0 ${showFilters || activeFiltersCount > 0
+            ? "border-gray-400 text-gray-700 bg-gray-50"
+            : "border-gray-200 text-gray-500 hover:border-gray-300"
+            }`}
+        >
+          <Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
+          {labels.filters}
+          {activeFiltersCount > 0 && (
+            <span className="w-5 h-5 bg-gray-700 text-white text-[10px] rounded-full flex items-center justify-center">
+              {activeFiltersCount}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ── Filter panel ────────────────────── */}
+      {showFilters && (
+        <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-4 space-y-4">
+          {/* Row 1: Status + Active + Level */}
+          <div className="flex flex-wrap gap-6">
+            {/* Status filter */}
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">{labels.status}</p>
+              <div className="flex gap-1.5">
+                <FilterPill label={labels.all} active={statusFilter === ""} onClick={() => setStatusFilter("")} />
+                <FilterPill label={labels.published} active={statusFilter === "PUBLISHED"} onClick={() => setStatusFilter("PUBLISHED")} />
+                <FilterPill label={labels.draft} active={statusFilter === "DRAFT"} onClick={() => setStatusFilter("DRAFT")} />
+              </div>
+            </div>
+
+            {/* Active filter */}
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">{labels.visibility}</p>
+              <div className="flex gap-1.5">
+                <FilterPill label={labels.all} active={activeFilter === ""} onClick={() => setActiveFilter("")} />
+                <FilterPill label={labels.active} active={activeFilter === "true"} onClick={() => setActiveFilter("true")} />
+                <FilterPill label={labels.inactive} active={activeFilter === "false"} onClick={() => setActiveFilter("false")} />
+              </div>
+            </div>
+
+            {/* Level filter */}
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">{labels.level}</p>
+              <div className="flex gap-1.5">
+                <FilterPill label={labels.anyLevel} active={levelFilter === ""} onClick={() => setLevelFilter("")} />
+                <FilterPill label="1" active={levelFilter === "1"} onClick={() => setLevelFilter("1")} />
+                <FilterPill label="2" active={levelFilter === "2"} onClick={() => setLevelFilter("2")} />
+                <FilterPill label="3" active={levelFilter === "3"} onClick={() => setLevelFilter("3")} />
               </div>
             </div>
           </div>
 
-          {/* Download template button */}
-          <button
-            onClick={handleDownloadTemplate}
-            className="flex items-center gap-2 text-xs text-gray-600 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-50 transition-colors w-full justify-center"
-          >
-            <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Descargar plantilla de ejemplo
-          </button>
-
-          {/* Show icons button */}
-          <button
-            onClick={() => setShowIcons(!showIcons)}
-            className="flex items-center gap-2 text-xs text-gray-600 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-50 transition-colors w-full justify-center"
-          >
-            <Tag className="w-3.5 h-3.5" strokeWidth={1.5} />
-            {showIcons ? "Ocultar" : "Ver"} iconos disponibles ({ICON_OPTIONS.length})
-          </button>
-
-          {/* Icons gallery - expandable */}
-          {showIcons && (
-            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-              <p className="text-xs text-gray-600 mb-3">
-                Haz clic en un ícono para copiar su nombre al portapapeles
-              </p>
-              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-64 overflow-y-auto">
-                {ICON_OPTIONS.map(({ name, Icon, label }) => (
-                  <button
-                    key={name}
-                    onClick={() => {
-                      navigator.clipboard.writeText(name);
-                      toast.success(`"${name}" copiado`);
-                    }}
-                    className="flex flex-col items-center gap-1.5 p-3 bg-white border border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all group"
-                    title={label}
-                  >
-                    <Icon className="w-5 h-5 text-gray-500 group-hover:text-gray-900 transition-colors" strokeWidth={1.5} />
-                    <span className="text-[10px] text-gray-400 group-hover:text-gray-700 text-center leading-tight font-mono">
-                      {name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Add custom icon section */}
-          <div className="border-t border-gray-100 pt-5">
-            <div className="flex items-center justify-between mb-3">
-              <label className="text-xs text-gray-400 uppercase tracking-wider">
-                Agregar ícono personalizado
-              </label>
-            </div>
-
-            <div className="flex gap-2 mb-3">
-              <input
-                value={newIconName}
-                onChange={(e) => setNewIconName(e.target.value)}
-                className={field}
-                placeholder="Nombre del ícono"
-              />
-              <input
-                value={newIconLabel}
-                onChange={(e) => setNewIconLabel(e.target.value)}
-                className={field}
-                placeholder="Etiqueta del ícono"
-              />
-              <button
-                onClick={handleAddCustomIcon}
-                className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors whitespace-nowrap"
+          {/* Row 2: Sort + Per page + Clear */}
+          <div className="flex flex-wrap items-end gap-6 border-t border-gray-200 pt-4">
+            {/* Sort by */}
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">{labels.sortBy}</p>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="text-xs text-gray-700 border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:border-gray-400"
               >
-                <Plus className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Agregar ícono
+                <option value="">—</option>
+                <option value="name">{labels.sortName}</option>
+                <option value="createdAt">{labels.sortCreated}</option>
+                <option value="updatedAt">{labels.sortUpdated}</option>
+              </select>
+            </div>
+
+            {/* Ascending/Descending */}
+            <div>
+              <button
+                onClick={() => setAscending((v) => !v)}
+                className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white hover:border-gray-300 transition-colors"
+              >
+                {ascending
+                  ? <><ToggleRight className="w-3.5 h-3.5 text-green-500" strokeWidth={1.5} /> {labels.ascending}</>
+                  : <><ToggleLeft className="w-3.5 h-3.5" strokeWidth={1.5} /> {labels.descending}</>
+                }
               </button>
             </div>
 
-            {/* Custom icons list */}
-            <div className="flex flex-wrap gap-2">
-              {customIcons.length === 0 && (
-                <p className="text-xs text-gray-400 text-center py-4 bg-gray-50 rounded-xl w-full">
-                  No hay íconos personalizados aún
-                </p>
-              )}
-
-              {customIcons.map((icon) => (
-                <div
-                  key={icon.name}
-                  className="inline-flex items-center gap-2 bg-gray-100 text-gray-700 text-xs rounded-lg px-3 py-1.5"
-                >
-                  <span>{icon.label}</span>
-                  <button
-                    onClick={() => {
-                      // Remove from custom icons
-                      setCustomIcons((prev) => prev.filter((i) => i.name !== icon.name));
-
-                      // Remove from global icon map
-                      delete ICON_MAP[icon.name];
-                      delete ICON_LABELS[icon.name];
-
-                      // Update icon options
-                      const newOptions = Object.entries(ICON_MAP).map(
-                        ([name, Icon]) => ({ name, Icon, label: ICON_LABELS[name] ?? name })
-                      );
-                      ICON_OPTIONS.length = 0; // Clear existing options
-                      ICON_OPTIONS.push(...newOptions);
-
-                      toast.success(`Ícono "${icon.name}" eliminado`);
-                    }}
-                    className="text-gray-400 hover:text-red-500 transition-colors"
-                  >
-                    <X className="w-3 h-3" strokeWidth={1.5} />
-                  </button>
-                </div>
-              ))}
+            {/* Per page */}
+            <div>
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">{labels.perPage}</p>
+              <select
+                value={pageSize}
+                onChange={(e) => setPageSize(Number(e.target.value))}
+                className="text-xs text-gray-700 border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none focus:border-gray-400"
+              >
+                <option value={10}>10</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
             </div>
-          </div>
 
-          {/* JSON textarea */}
-          <div>
-            <label className="block text-xs text-gray-400 mb-1.5">JSON de categorías</label>
-            <textarea
-              value={jsonText}
-              onChange={(e) => setJsonText(e.target.value)}
-              className="w-full h-64 text-xs text-gray-900 border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white font-mono resize-none"
-              placeholder={exampleJSON}
-            />
-          </div>
-
-          {/* Error message */}
-          {error && (
-            <div className="bg-red-50 border border-red-100 rounded-xl p-3">
-              <div className="flex items-start gap-2">
-                <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" strokeWidth={1.5} />
-                <p className="text-xs text-red-700">{error}</p>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50">
-          <button onClick={onClose} className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-white transition-colors">
-            Cancelar
-          </button>
-          <button onClick={handleImport} className="flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
-            <Upload className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Importar categorías
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Preview Modal ───────────────────────────────────── */
-function PreviewPublishModal({
-  categories,
-  onConfirm,
-  onClose,
-}: {
-  categories: Category[];
-  onConfirm: () => void;
-  onClose: () => void;
-}) {
-  const draftParents = categories.filter((c) => !c.parent_id && !c.published);
-  const getSubcategories = (parentId: string) =>
-    categories.filter((c) => c.parent_id === parentId).sort((a, b) => a.order - b.order);
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-lg w-full max-w-4xl overflow-hidden max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-          <div>
-            <h2 className="text-sm text-gray-900">Vista previa de publicación</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              {draftParents.length} categoría{draftParents.length > 1 ? "s" : ""} lista{draftParents.length > 1 ? "s" : ""} para publicar
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
-          >
-            <X className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-        </div>
-
-        {/* Info banner */}
-        <div className="px-6 pt-5 pb-0 flex-shrink-0">
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-            <div className="flex items-start gap-2">
-              <Eye className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" strokeWidth={1.5} />
-              <div>
-                <p className="text-xs text-blue-900 mb-1">
-                  Las siguientes categorías cambiarán de estado "Borrador" a "Publicado"
-                </p>
-                <p className="text-xs text-blue-700">
-                  Las categorías publicadas serán visibles en el sitio web para todos los usuarios.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Scrollable content */}
-        <div className="px-6 py-5 overflow-y-auto flex-1">
-          <div className="space-y-4">
-            {draftParents.map((parent) => {
-              const subs = getSubcategories(parent.id);
-              return (
-                <div key={parent.id} className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden">
-                  {/* Parent category */}
-                  <div className="flex items-center gap-3 px-4 py-3.5 bg-white border-b border-gray-200">
-                    {/* Icon */}
-                    {parent.icon && (
-                      <div className="w-10 h-10 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <CatIcon name={parent.icon} className="w-4 h-4 text-gray-500" />
-                      </div>
-                    )}
-
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm text-gray-900 font-medium">{parent.name}</p>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 line-through">
-                          Borrador
-                        </span>
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
-                          → Publicado
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
-                        /{parent.slug} · {subs.length} subcategoría{subs.length !== 1 ? "s" : ""}
-                      </p>
-                      {parent.description && (
-                        <p className="text-xs text-gray-500 mt-1.5">{parent.description}</p>
-                      )}
-                      {parent.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 mt-2">
-                          {parent.keywords.map((kw) => (
-                            <span
-                              key={kw}
-                              className="text-[10px] bg-gray-100 text-gray-600 rounded-md px-2 py-0.5"
-                            >
-                              {kw}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Subcategories */}
-                  {subs.length > 0 && (
-                    <div className="px-4 py-3 space-y-2">
-                      <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">
-                        Subcategorías ({subs.length})
-                      </p>
-                      {subs.map((sub) => (
-                        <div
-                          key={sub.id}
-                          className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-2.5"
-                        >
-                          <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-gray-700">{sub.name}</p>
-                            <p className="text-[11px] text-gray-400">/{sub.slug}</p>
-                            {sub.keywords.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-1.5">
-                                {sub.keywords.map((kw) => (
-                                  <span
-                                    key={kw}
-                                    className="text-[10px] bg-gray-50 text-gray-500 rounded px-1.5 py-0.5"
-                                  >
-                                    {kw}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {draftParents.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <EyeOff className="w-8 h-8 text-gray-200 mb-3" strokeWidth={1.5} />
-                <p className="text-sm text-gray-400">No hay categorías en borrador</p>
-              </div>
+            {/* Clear all */}
+            {activeFiltersCount > 0 && (
+              <button
+                onClick={clearFilters}
+                className="text-xs text-red-500 hover:text-red-700 transition-colors"
+              >
+                {labels.clearFilters}
+              </button>
             )}
           </div>
         </div>
+      )}
 
-        {/* Footer */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-gray-100 bg-gray-50 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-white transition-colors"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={draftParents.length === 0}
-            className="flex items-center gap-1.5 text-xs text-white bg-blue-500 rounded-xl px-5 py-2.5 hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Confirmar y publicar {draftParents.length > 0 && `(${draftParents.length})`}
-          </button>
-        </div>
+      {/* ── Content area ────────────────────── */}
+      <div className="flex-1 overflow-auto space-y-2 pr-1 relative">
+        {/* Loading state */}
+        {loading && categories.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <Loader2 className="w-6 h-6 text-gray-300 animate-spin mb-3" strokeWidth={1.5} />
+            <p className="text-sm text-gray-400">{labels.loading}</p>
+          </div>
+        )}
+
+        {/* Error state */}
+        {error && !loading && (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-3">
+              <AlertTriangle className="w-5 h-5 text-red-400" strokeWidth={1.5} />
+            </div>
+            <p className="text-sm text-gray-700 mb-1">{labels.errorTitle}</p>
+            <p className="text-xs text-gray-400 mb-4 max-w-sm">{error}</p>
+            <button
+              onClick={refetch}
+              className="text-xs text-gray-600 border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition-colors"
+            >
+              {labels.retry}
+            </button>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loading && !error && categories.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 bg-white border border-gray-100 rounded-xl text-center">
+            <Tag className="w-8 h-8 text-gray-200 mb-3" strokeWidth={1.5} />
+            <p className="text-sm text-gray-400">{labels.noResults}</p>
+            <p className="text-xs text-gray-300 mt-1">{labels.noResultsHint}</p>
+          </div>
+        )}
+
+        {/* Loading overlay for page transitions */}
+        {loading && categories.length > 0 && (
+          <div className="sticky top-0 z-10 flex items-center gap-2 px-3 py-1.5 bg-blue-50/90 border border-blue-100 rounded-xl backdrop-blur-sm">
+            <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" strokeWidth={1.5} />
+            <span className="text-xs text-blue-600">{labels.loading}</span>
+          </div>
+        )}
+
+        {/* Category rows */}
+        {categories.map((cat) => (
+          <CategoryRow
+            key={cat.id}
+            category={cat}
+            labels={labels}
+            locale={locale}
+            isExpanded={expandedId === cat.id}
+            onToggleExpand={() => setExpandedId(expandedId === cat.id ? null : cat.id)}
+            onTogglePublish={handleTogglePublish}
+            onToggleActive={handleToggleActive}
+            togglingId={togglingId}
+            togglingActiveId={togglingActiveId}
+            onViewDetail={setDetailCategoryId}
+            onEdit={handleOpenEdit}
+            onAddSubcategory={handleOpenCreateSubcategory}
+            onDelete={handleDelete}
+            deletingId={deletingId}
+          />
+        ))}
       </div>
+
+      {/* ── Pagination ──────────────────────── */}
+      {totalPages > 0 && (
+        <div className="mt-3">
+          <Pagination
+            page={page + 1}
+            totalPages={totalPages}
+            total={totalElements}
+            pageSize={pageSize}
+            onChange={(p) => setPage(p - 1)}
+          />
+        </div>
+      )}
+
+      {/* ── Create / Edit modal ─────────────── */}
+      {formModalOpen && (
+        <CategoryFormModal
+          editCategory={editingCategory}
+          defaultParentId={defaultParentId}
+          locale={locale}
+          onClose={() => { setFormModalOpen(false); setEditingCategory(null); setDefaultParentId(null); }}
+          onSaved={handleFormSaved}
+        />
+      )}
+
+      {/* ── Bulk upload modal ───────────────── */}
+      <BulkCategoryUploadModal
+        open={bulkModalOpen}
+        onClose={() => setBulkModalOpen(false)}
+        onUploaded={() => { refetch(); }}
+        locale={locale}
+      />
+
+      {/* ── Delete confirmation modal ───────── */}
+      {confirmDeleteId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => !deletingId && setConfirmDeleteId(null)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 animate-in fade-in zoom-in-95 duration-200">
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
+                <TriangleAlert className="w-6 h-6 text-red-500" strokeWidth={1.5} />
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-base font-medium text-gray-900 text-center mb-1">
+              {labels.deleteConfirm}
+            </h3>
+
+            {/* Category name */}
+            <p className="text-sm text-gray-800 text-center font-medium mb-1">
+              &ldquo;{confirmDeleteName}&rdquo;
+            </p>
+
+            {/* Description */}
+            <p className="text-xs text-gray-400 text-center mb-6">
+              {labels.deleteConfirmDesc}
+            </p>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteId(null)}
+                disabled={!!deletingId}
+                className="flex-1 text-xs text-gray-600 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                {labels.cancelBtn}
+              </button>
+              <button
+                type="button"
+                onClick={executeDelete}
+                disabled={!!deletingId}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded-xl px-4 py-2.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {deletingId ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
+                    {labels.deleting}
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    {labels.deleteBtn}
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
-}
-
-/* ── Main page ───────────────────────────────────────── */
-export function AdminCategories() {
-  const { categories: list, saveCategory, deleteCategory, reorderCategories } = useStore();
-  const [search, setSearch] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [catModal, setCatModal] = useState<null | "new" | { category: Category; parentId?: string }>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [showBulkImport, setShowBulkImport] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
-  const [filterPublished, setFilterPublished] = useState<"all" | "published" | "draft">("all");
-  const [showPreview, setShowPreview] = useState(false);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
-
-  // Separate parent categories and subcategories
-  const parentCategories = list.filter((c) => !c.parent_id).sort((a, b) => a.order - b.order);
-  const getSubcategories = (parentId: string) => 
-    list.filter((c) => c.parent_id === parentId).sort((a, b) => a.order - b.order);
-
-  // Filter logic with keyword search and filters
-  const filtered = parentCategories.filter((c) => {
-    const searchLower = search.toLowerCase();
-    const matchesName = c.name.toLowerCase().includes(searchLower);
-    const matchesKeywords = c.keywords.some((kw) => kw.toLowerCase().includes(searchLower));
-    const matchesSubcategories = getSubcategories(c.id).some((sub) =>
-      sub.name.toLowerCase().includes(searchLower) ||
-      sub.keywords.some((kw) => kw.toLowerCase().includes(searchLower))
-    );
-    const matchesSearch = matchesName || matchesKeywords || matchesSubcategories;
-
-    // Status filter
-    const matchesStatus = 
-      filterStatus === "all" || 
-      (filterStatus === "active" && c.status === "active") ||
-      (filterStatus === "inactive" && c.status === "inactive");
-
-    // Published filter
-    const matchesPublished =
-      filterPublished === "all" ||
-      (filterPublished === "published" && c.published) ||
-      (filterPublished === "draft" && !c.published);
-
-    return matchesSearch && matchesStatus && matchesPublished;
-  });
-  
-  // Pagination calculations
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedCategories = filtered.slice(startIndex, endIndex);
-  
-  // Reset to page 1 when search changes
-  const handleSearchChange = (value: string) => {
-    setSearch(value);
-    setCurrentPage(1);
-  };
-
-  function moveCategory(dragIndex: number, hoverIndex: number) {
-    const draggedCat = filtered[dragIndex];
-    const newFiltered = [...filtered];
-    newFiltered.splice(dragIndex, 1);
-    newFiltered.splice(hoverIndex, 0, draggedCat);
-    const reordered = newFiltered.map((cat, idx) => ({ ...cat, order: idx + 1 }));
-    const unchanged = list.filter((c) => c.parent_id);
-    reorderCategories([...reordered, ...unchanged]);
-  }
-
-  function moveSubcategory(parentId: string, dragIndex: number, hoverIndex: number) {
-    const subs = list.filter((c) => c.parent_id === parentId);
-    const newSubs = [...subs];
-    const draggedSub = newSubs[dragIndex];
-    newSubs.splice(dragIndex, 1);
-    newSubs.splice(hoverIndex, 0, draggedSub);
-    const reordered = newSubs.map((sub, idx) => ({ ...sub, order: idx + 1 }));
-    const others = list.filter((c) => c.parent_id !== parentId);
-    reorderCategories([...others, ...reordered]);
-  }
-
-  function handleSaveCat(cat: Category) {
-    const existing = list.find((c) => c.id === cat.id);
-    if (existing) {
-      saveCategory(cat);
-    } else if (cat.parent_id) {
-      const siblings = list.filter((c) => c.parent_id === cat.parent_id);
-      const maxOrder = Math.max(...siblings.map((c) => c.order), 0);
-      saveCategory({ ...cat, order: maxOrder + 1 });
-    } else {
-      const parents = list.filter((c) => !c.parent_id);
-      const maxOrder = Math.max(...parents.map((c) => c.order), 0);
-      saveCategory({ ...cat, order: maxOrder + 1 });
-    }
-    setCatModal(null);
-    toast.success(catModal === "new" ? "Categoría creada" : "Categoría actualizada");
-  }
-
-  function handleDeleteCat(id: string) {
-    const toDelete = list.filter((c) => c.id === id || c.parent_id === id).map((c) => c.id);
-    toDelete.forEach((cid) => deleteCategory(cid));
-    setDeleteId(null);
-    toast.success("Categoría eliminada");
-  }
-
-  function handleToggleCatStatus(id: string) {
-    const cat = list.find((c) => c.id === id);
-    if (cat) saveCategory({ ...cat, status: cat.status === "active" ? "inactive" : "active" });
-    toast.success("Estado actualizado");
-  }
-
-  function handleBulkImport(cats: Category[]) {
-    cats.forEach((c) => saveCategory(c));
-    setShowBulkImport(false);
-  }
-
-  function handlePublishAllDrafts() {
-    const drafts = parentCategories.filter((c) => !c.published);
-    if (drafts.length === 0) {
-      toast.error("No hay categorías en borrador para publicar");
-      return;
-    }
-    drafts.forEach((c) => saveCategory({ ...c, published: true }));
-    setShowPreview(false);
-    toast.success(`${drafts.length} categoría(s) publicada(s)`);
-  }
-
-  const totalProducts = list.reduce((s, c) => s + c.productCount, 0);
-  const totalSubcategories = list.filter((c) => c.parent_id).length;
-  const draftCount = parentCategories.filter((c) => !c.published).length;
-
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <div className="h-full flex flex-col space-y-5">
-
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl text-gray-900 tracking-tight">Categorías</h1>
-            <p className="text-xs text-gray-400 mt-1">{parentCategories.length} categorías principales</p>
-          </div>
-          <button
-            onClick={() => setCatModal("new")}
-            className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
-            title="Nueva categoría"
-          >
-            <Plus className="w-4 h-4" strokeWidth={1.5} />
-          </button>
-        </div>
-
-        {/* Category list - Scrollable area */}
-        <div className="flex-1 overflow-auto space-y-3 pr-1">
-          {paginatedCategories.map((cat, index) => (
-            <DraggableCategoryRow
-              key={cat.id}
-              category={cat}
-              subcategories={getSubcategories(cat.id)}
-              index={index}
-              moveCategory={moveCategory}
-              onEdit={() => setCatModal({ category: cat })}
-              onDelete={() => setDeleteId(cat.id)}
-              onToggleStatus={() => handleToggleCatStatus(cat.id)}
-              onTogglePublished={() => { const cat2 = list.find((c) => c.id === cat.id); if (cat2) saveCategory({ ...cat2, published: !cat2.published }); }}
-              onExpand={() => setExpanded(expanded === cat.id ? null : cat.id)}
-              isExpanded={expanded === cat.id}
-              onAddSubcategory={() => setCatModal({ category: { ...cat, id: `${Date.now()}`, parent_id: cat.id }, parentId: cat.id })}
-              onEditSubcategory={(sub) => setCatModal({ category: sub })}
-              onDeleteSubcategory={(subId) => {
-                deleteCategory(subId);
-                toast.success("Subcategoría eliminada");
-              }}
-              onToggleSubStatus={(subId) => handleToggleCatStatus(subId)}
-              moveSubcategory={(dragIdx, hoverIdx) => moveSubcategory(cat.id, dragIdx, hoverIdx)}
-            />
-          ))}
-
-          {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 bg-white border border-gray-100 rounded-xl text-center">
-              <Tag className="w-8 h-8 text-gray-200 mb-3" strokeWidth={1.5} />
-              <p className="text-sm text-gray-400">No hay categorías que coincidan</p>
-            </div>
-          )}
-        </div>
-
-        {/* Pagination controls */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-3 pb-8">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={currentPage === 1}
-            >
-              Anterior
-            </button>
-            <span className="text-xs text-gray-400">
-              Página {currentPage} de {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={currentPage === totalPages}
-            >
-              Siguiente
-            </button>
-          </div>
-        )}
-
-        {/* Category modal */}
-        {catModal && (
-          <CategoryModal
-            category={catModal === "new" ? undefined : catModal.category}
-            onSave={handleSaveCat}
-            onClose={() => setCatModal(null)}
-          />
-        )}
-
-        {/* Delete confirm */}
-        {deleteId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 max-w-sm w-full text-center">
-              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertTriangle className="w-5 h-5 text-red-500" strokeWidth={1.5} />
-              </div>
-              <h3 className="text-sm text-gray-900 mb-1">¿Eliminar categoría?</h3>
-              <p className="text-xs text-gray-400 mb-5">
-                Se eliminarán también todas sus subcategorías. Esta acción no se puede deshacer.
-              </p>
-              <div className="flex gap-2 justify-center">
-                <button
-                  onClick={() => setDeleteId(null)}
-                  className="text-xs text-gray-500 border border-gray-200 rounded-xl px-4 py-2 hover:bg-gray-50 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => handleDeleteCat(deleteId)}
-                  className="text-xs text-white bg-red-500 rounded-xl px-4 py-2 hover:bg-red-600 transition-colors"
-                >
-                  Eliminar
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Bulk import modal */}
-        {showBulkImport && (
-          <BulkImportCategoriesModal
-            onImport={handleBulkImport}
-            onClose={() => setShowBulkImport(false)}
-          />
-        )}
-
-        {/* Preview publish modal */}
-        {showPreview && (
-          <PreviewPublishModal
-            categories={list}
-            onConfirm={handlePublishAllDrafts}
-            onClose={() => setShowPreview(false)}
-          />
-        )}
-      </div>
-    </DndProvider>
   );
 }

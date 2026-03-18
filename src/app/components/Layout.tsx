@@ -3,6 +3,7 @@ import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { CompareBar } from "./CompareBar";
 import { NewsletterPopup } from "./NewsletterPopup";
+import { TimezoneSidebar } from "./TimezoneSidebar";
 
 export function Layout() {
   return (
@@ -17,6 +18,7 @@ export function Layout() {
       <Footer />
       <CompareBar />
       <NewsletterPopup />
+      <TimezoneSidebar />
     </div>
   );
 }

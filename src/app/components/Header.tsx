@@ -1,26 +1,35 @@
-import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LayoutDashboard, ChevronDown, Gift } from "lucide-react";
+import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LayoutDashboard, ChevronDown, Gift, Globe, Clock } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
+import { useLanguage, LOCALE_OPTIONS } from "../context/LanguageContext";
+import { useTimezone } from "../context/TimezoneContext";
 import { useState, useRef, useEffect } from "react";
 
 export function Header() {
   const { getTotalItems } = useCart();
   const { user } = useUser();
+  const { locale, setLocale, t, currentOption } = useLanguage();
+  const { selectedCountry, toggleSidebar } = useTimezone();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isLangOpen, setIsLangOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const langRef = useRef<HTMLDivElement>(null);
 
   const initials = `${user.firstName[0]}${user.lastName[0]}`;
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsUserDropdownOpen(false);
+      }
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setIsLangOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -69,7 +78,7 @@ export function Header() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Buscar productos..."
+                placeholder={t("search.placeholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
@@ -79,9 +88,63 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/cuenta?tab=favoritos" className="p-2 text-gray-700 hover:text-gray-900 transition-colors">
+            <Link to="/cuenta?tab=favoritos" className="p-2 text-gray-700 hover:text-gray-900 transition-colors" title={t("nav.favorites")}>
               <Heart className="w-5 h-5" />
             </Link>
+
+            <Link to="/carrito" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
+              <ShoppingCart className="w-5 h-5" />
+              {getTotalItems() > 0 && (
+                <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {getTotalItems()}
+                </span>
+              )}
+            </Link>
+
+            {/* ── Timezone Selector ── */}
+            <button
+              onClick={toggleSidebar}
+              className="flex items-center gap-1.5 px-2 py-1.5 text-gray-700 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50"
+              title={t("tz.tooltip")}
+            >
+              <Clock className="w-4 h-4" strokeWidth={1.5} />
+              <span className="text-base leading-none">{selectedCountry.flag}</span>
+            </button>
+
+            {/* ── Language Selector ── */}
+            <div className="relative" ref={langRef}>
+              <button
+                onClick={() => setIsLangOpen((v) => !v)}
+                className="flex items-center gap-1.5 px-2 py-1.5 text-gray-700 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50"
+                title="Language"
+              >
+                <Globe className="w-4 h-4" strokeWidth={1.5} />
+                <span className="text-xs font-medium uppercase">{locale}</span>
+              </button>
+
+              {isLangOpen && (
+                <div className="absolute right-0 top-full mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
+                  <div className="py-1">
+                    {LOCALE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.code}
+                        onClick={() => { setLocale(opt.code); setIsLangOpen(false); }}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${locale === opt.code
+                          ? "bg-gray-50 text-gray-900 font-medium"
+                          : "text-gray-600 hover:bg-gray-50"
+                          }`}
+                      >
+                        <span className="text-base">{opt.flag}</span>
+                        <span>{opt.label}</span>
+                        {locale === opt.code && (
+                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-gray-900" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* ── User Dropdown ── */}
             <div className="relative" ref={dropdownRef}>
@@ -92,10 +155,6 @@ export function Header() {
                 <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs tracking-widest group-hover:bg-gray-400 transition-colors">
                   {initials}
                 </div>
-                <ChevronDown
-                  className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isUserDropdownOpen ? "rotate-180" : ""}`}
-                  strokeWidth={1.5}
-                />
               </button>
 
               {isUserDropdownOpen && (
@@ -124,8 +183,8 @@ export function Header() {
                         <User className="w-3.5 h-3.5 text-gray-600" strokeWidth={1.5} />
                       </div>
                       <div>
-                        <p className="text-sm text-gray-900">Mi Perfil</p>
-                        <p className="text-xs text-gray-400">Datos, pedidos y favoritos</p>
+                        <p className="text-sm text-gray-900">{t("nav.profile")}</p>
+                        <p className="text-xs text-gray-400">{t("nav.profile.desc")}</p>
                       </div>
                     </Link>
                   </div>
@@ -134,7 +193,7 @@ export function Header() {
                   <div className="px-3 pb-2">
                     <div className="border border-gray-100 rounded-xl overflow-hidden">
                       <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                        <p className="text-xs text-gray-400 tracking-wide uppercase">Tu tienda</p>
+                        <p className="text-xs text-gray-400 tracking-wide uppercase">{t("nav.store")}</p>
                       </div>
                       <Link
                         to="/admin"
@@ -145,11 +204,11 @@ export function Header() {
                           <LayoutDashboard className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900">Panel de Administración</p>
-                          <p className="text-xs text-gray-400">Gestiona productos y órdenes</p>
+                          <p className="text-sm text-gray-900">{t("nav.admin")}</p>
+                          <p className="text-xs text-gray-400">{t("nav.admin.desc")}</p>
                         </div>
                         <span className="text-xs text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                          Activa
+                          {t("nav.store.active")}
                         </span>
                       </Link>
                     </div>
@@ -162,21 +221,12 @@ export function Header() {
                       className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                     >
                       <LogOut className="w-4 h-4" strokeWidth={1.5} />
-                      Cerrar Sesión
+                      {t("nav.logout")}
                     </button>
                   </div>
                 </div>
               )}
             </div>
-
-            <Link to="/carrito" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
-              <ShoppingCart className="w-5 h-5" />
-              {getTotalItems() > 0 && (
-                <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
-                  {getTotalItems()}
-                </span>
-              )}
-            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -206,12 +256,40 @@ export function Header() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-200">
             {/* Mobile Search */}
+            {/* Mobile Language Selector */}
+            <div className="flex items-center gap-2 mb-3">
+              {LOCALE_OPTIONS.map((opt) => (
+                <button
+                  key={opt.code}
+                  onClick={() => setLocale(opt.code)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${locale === opt.code
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                >
+                  <span>{opt.flag}</span>
+                  <span className="uppercase text-xs font-medium">{opt.code}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Mobile Timezone Button */}
+            <button
+              onClick={() => { setIsMenuOpen(false); toggleSidebar(); }}
+              className="flex items-center gap-2 w-full px-3 py-2 mb-3 rounded-lg text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
+            >
+              <Clock className="w-4 h-4" strokeWidth={1.5} />
+              <span>{selectedCountry.flag}</span>
+              <span>{t("tz.tooltip")}</span>
+              <span className="ml-auto text-xs text-gray-400">{selectedCountry.country}</span>
+            </button>
+
             <form onSubmit={handleSearch} className="mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Buscar productos..."
+                  placeholder={t("search.placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
@@ -226,7 +304,7 @@ export function Header() {
                 className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
               >
                 <Heart className="w-4 h-4" strokeWidth={1.5} />
-                Favoritos
+                {t("nav.favorites")}
               </Link>
 
               {/* Mobile user section */}
@@ -246,7 +324,7 @@ export function Header() {
                   className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <User className="w-4 h-4" strokeWidth={1.5} />
-                  Mi Perfil
+                  {t("nav.profile")}
                 </Link>
                 <Link
                   to="/admin"
@@ -254,14 +332,14 @@ export function Header() {
                   className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
-                  Administrar Tienda
+                  {t("nav.admin.short")}
                 </Link>
                 <button
                   onClick={() => { setIsMenuOpen(false); navigate("/"); }}
                   className="w-full px-3 py-2 text-left text-red-400 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
                 >
                   <LogOut className="w-4 h-4" strokeWidth={1.5} />
-                  Cerrar Sesión
+                  {t("nav.logout")}
                 </button>
               </div>
             </nav>

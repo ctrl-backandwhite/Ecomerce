@@ -6,30 +6,33 @@
  * regardless of how the host environment mounts the app.
  */
 import { Outlet } from "react-router";
-import { CartProvider }           from "../context/CartContext";
-import { UserProvider }           from "../context/UserContext";
-import { CompareProvider }        from "../context/CompareContext";
+import { CartProvider } from "../context/CartContext";
+import { UserProvider } from "../context/UserContext";
+import { CompareProvider } from "../context/CompareContext";
 import { RecentlyViewedProvider } from "../context/RecentlyViewedContext";
-import { NewsletterProvider }     from "../context/NewsletterContext";
-import { StoreProvider }          from "../context/StoreContext";
-import { CJProvider }             from "../context/CJContext";
+import { NewsletterProvider } from "../context/NewsletterContext";
+import { StoreProvider } from "../context/StoreContext";
+import { LanguageProvider } from "../context/LanguageContext";
+import { TimezoneProvider } from "../context/TimezoneContext";
 
 export function RootLayout() {
   return (
-    <StoreProvider>
-      <UserProvider>
-        <CartProvider>
-          <CompareProvider>
-            <RecentlyViewedProvider>
-              <NewsletterProvider>
-                <CJProvider>
-                  <Outlet />
-                </CJProvider>
-              </NewsletterProvider>
-            </RecentlyViewedProvider>
-          </CompareProvider>
-        </CartProvider>
-      </UserProvider>
-    </StoreProvider>
+    <LanguageProvider>
+      <TimezoneProvider>
+        <StoreProvider>
+          <UserProvider>
+            <CartProvider>
+              <CompareProvider>
+                <RecentlyViewedProvider>
+                  <NewsletterProvider>
+                    <Outlet />
+                  </NewsletterProvider>
+                </RecentlyViewedProvider>
+              </CompareProvider>
+            </CartProvider>
+          </UserProvider>
+        </StoreProvider>
+      </TimezoneProvider>
+    </LanguageProvider>
   );
 }

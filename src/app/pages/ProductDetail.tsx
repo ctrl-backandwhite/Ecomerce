@@ -16,10 +16,10 @@ import type { Product } from "../data/products";
 
 // ── Trust badges data ──────────────────────────────────────────
 const TRUST_BADGES = [
-  { icon: Truck,     title: "Envío gratis",           sub: "En compras superiores a $100" },
-  { icon: Shield,    title: "Garantía de 1 año",      sub: "Protección total del producto" },
+  { icon: Truck, title: "Envío gratis", sub: "En compras superiores a $100" },
+  { icon: Shield, title: "Garantía de 1 año", sub: "Protección total del producto" },
   { icon: RefreshCw, title: "Devoluciones gratuitas", sub: "30 días para devolver" },
-  { icon: Award,     title: "Producto oficial",       sub: "Distribuidor autorizado" },
+  { icon: Award, title: "Producto oficial", sub: "Distribuidor autorizado" },
 ];
 
 // ── Stars helper ──────────────────────────────────────────────
@@ -30,11 +30,10 @@ function Stars({ value, size = "sm" }: { value: number; size?: "sm" | "md" | "lg
       {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
-          className={`${cls} ${
-            i <= Math.floor(value)
+          className={`${cls} ${i <= Math.floor(value)
               ? "fill-amber-400 text-amber-400"
               : "text-gray-200"
-          }`}
+            }`}
           strokeWidth={1}
         />
       ))}
@@ -92,11 +91,10 @@ function ReviewCard({ review, onHelpful }: { review: Review; onHelpful: (id: str
             <span className="text-xs text-gray-400">¿Te resultó útil?</span>
             <button
               onClick={() => { if (!helped) { setHelped(true); onHelpful(review.id); } }}
-              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                helped
+              className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all ${helped
                   ? "border-gray-300 text-gray-700 bg-gray-100"
                   : "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
-              }`}
+                }`}
             >
               <ThumbsUp className="w-3 h-3" strokeWidth={1.5} />
               Sí · {review.helpful + (helped ? 1 : 0)}
@@ -124,9 +122,8 @@ function StarPicker({ value, onChange }: { value: number; onChange: (v: number) 
           className="transition-transform hover:scale-110 active:scale-95"
         >
           <Star
-            className={`w-7 h-7 transition-colors ${
-              i <= (hover || value) ? "fill-amber-400 text-amber-400" : "text-gray-200"
-            }`}
+            className={`w-7 h-7 transition-colors ${i <= (hover || value) ? "fill-amber-400 text-amber-400" : "text-gray-200"
+              }`}
             strokeWidth={1}
           />
         </button>
@@ -322,9 +319,8 @@ function ReviewsSection({
               <button
                 key={star}
                 onClick={() => setFilter(filter === String(star) as any ? "all" : String(star) as any)}
-                className={`rounded-lg px-2 py-0.5 transition-colors text-left ${
-                  filter === String(star) ? "bg-amber-50" : "hover:bg-gray-50"
-                }`}
+                className={`rounded-lg px-2 py-0.5 transition-colors text-left ${filter === String(star) ? "bg-amber-50" : "hover:bg-gray-50"
+                  }`}
               >
                 <RatingBar star={star} count={count} total={total} />
               </button>
@@ -340,7 +336,7 @@ function ReviewsSection({
                 {featuredReview.avatar}
               </div>
               <div className="flex gap-0.5">
-                {[1,2,3,4,5].map(i => (
+                {[1, 2, 3, 4, 5].map(i => (
                   <Star key={i} className={`w-2.5 h-2.5 ${i <= featuredReview.rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} strokeWidth={1} />
                 ))}
               </div>
@@ -379,11 +375,10 @@ function ReviewsSection({
                 <button
                   key={f}
                   onClick={() => setFilter(f)}
-                  className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${
-                    filter === f
+                  className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${filter === f
                       ? "border-gray-600 bg-gray-600 text-white"
                       : "border-gray-200 text-gray-600 hover:border-gray-300"
-                  }`}
+                    }`}
                 >
                   {f === "all" ? "Todas" : `${f} ★`}
                 </button>
@@ -448,7 +443,7 @@ function ReviewsSection({
 
 // ── Color resolver ─────────────────────────────────────────────
 const COLOR_MAP: Record<string, string> = {
-  // ── English (CJ Dropshipping products) ───────────────────────
+  // ── English ──────────────────────────────────────────────
   "Black": "#111827", "White": "#F9FAFB", "Grey": "#9CA3AF", "Gray": "#9CA3AF",
   "Dark Grey": "#4B5563", "Dark Gray": "#4B5563", "Light Grey": "#E5E7EB", "Light Gray": "#E5E7EB",
   "Navy Blue": "#1E3A5F", "Navy": "#1E3A5F",
@@ -760,11 +755,10 @@ export function ProductDetail() {
                       <button
                         key={i}
                         onClick={() => setActiveImage(i)}
-                        className={`flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden border transition-all bg-gray-50 ${
-                          activeImage === i
+                        className={`flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden border transition-all bg-gray-50 ${activeImage === i
                             ? "border-transparent shadow-[0_0_0_2px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.12)] scale-[1.05]"
                             : "border-gray-100 hover:shadow-md opacity-70 hover:opacity-100"
-                        }`}
+                          }`}
                       >
                         <img src={img.url} alt={img.alt} className="w-full h-full object-contain p-0.5" />
                       </button>
@@ -853,11 +847,10 @@ export function ProductDetail() {
                               <div key={val} className="relative group">
                                 <button
                                   onClick={() => setSelectedAttrs((prev) => ({ ...prev, [attrName]: val }))}
-                                  className={`w-6 h-6 rounded-full border-2 transition-all ${
-                                    isSelected
+                                  className={`w-6 h-6 rounded-full border-2 transition-all ${isSelected
                                       ? "border-gray-900 scale-110 shadow-md"
                                       : "border-gray-200 hover:border-gray-400 hover:scale-105"
-                                  } ${!hasStock ? "opacity-40" : ""}`}
+                                    } ${!hasStock ? "opacity-40" : ""}`}
                                   style={{ background: bg }}
                                 />
                                 <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-30">
@@ -919,11 +912,10 @@ export function ProductDetail() {
                         toast.success(wishlist ? "Eliminado de favoritos" : "Agregado a favoritos");
                       }}
                       title={wishlist ? "Quitar de favoritos" : "Agregar a favoritos"}
-                      className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${
-                        wishlist
+                      className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${wishlist
                           ? "border-red-200 bg-red-50"
                           : "border-gray-200 hover:border-gray-300 bg-white"
-                      }`}
+                        }`}
                     >
                       <Heart
                         className={`w-3.5 h-3.5 ${wishlist ? "fill-red-500 text-red-500" : "text-gray-400"}`}
@@ -1088,7 +1080,7 @@ export function ProductDetail() {
                   className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-200/60 transition-all rounded-lg"
                 >
                   <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                    <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+                    <path d="M1 1l10 10M11 1L1 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                   </svg>
                 </button>
               </div>
@@ -1102,9 +1094,8 @@ export function ProductDetail() {
                 {product.attributes.map((attr, i) => (
                   <div
                     key={i}
-                    className={`group flex items-stretch min-h-[52px] transition-colors hover:bg-gray-50/80 ${
-                      Math.floor(i / 2) % 2 === 0 ? "bg-white" : "bg-gray-50/40"
-                    } ${i < product.attributes.length - 2 ? "border-b border-gray-100" : ""}`}
+                    className={`group flex items-stretch min-h-[52px] transition-colors hover:bg-gray-50/80 ${Math.floor(i / 2) % 2 === 0 ? "bg-white" : "bg-gray-50/40"
+                      } ${i < product.attributes.length - 2 ? "border-b border-gray-100" : ""}`}
                   >
                     <div className="w-[3px] flex-shrink-0 bg-gradient-to-b from-gray-200 to-gray-100 group-hover:from-gray-400 group-hover:to-gray-200 transition-colors" />
                     <div className="flex flex-col justify-center px-4 py-3 flex-1 min-w-0">

@@ -13,7 +13,7 @@ import type { Product } from "../data/products";
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ProductQuery {
-  /** CJ category ID (overrides `category` for API calls). */
+  /** Category ID (overrides `category` for API calls). */
   categoryId?: string;
   /** Free-text keyword search. */
   search?: string;
@@ -54,7 +54,7 @@ export interface IProductRepository {
   findMany(query?: ProductQuery): Promise<ProductPage>;
 
   /**
-   * Returns a single product by its unique ID (CJ PID), including
+   * Returns a single product by its unique ID, including
    * full variant, attribute, and description data.
    * Returns `null` if the product does not exist.
    */

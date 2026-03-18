@@ -24,11 +24,16 @@ import {
   Cpu,
   Watch,
   Sofa,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
   type LucideIcon,
 } from "lucide-react";
 import { priceRanges } from "../data/products";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../data/filters";
 import { useStore } from "../context/StoreContext";
+import { useNexaCategories } from "../services/useNexaCategories";
+import type { NexaCategory } from "../repositories/NexaCategoryRepository";
 
 interface HomeSidebarProps {
   selectedCategory: string;
@@ -92,31 +97,31 @@ function TopRated() {
 /* ── Category icon resolver (matches CategoryBar logic) ──────────────────────── */
 
 const ICON_RULES: [RegExp, LucideIcon][] = [
-  // ── CJ top-level categories (matched first for precision) ─────────────────
-  [/consumer electronics/i,                 Cpu],
-  [/jewelry.*watch|watch.*jewelry/i,        Watch],
-  [/home.*garden|home.*furniture|garden/i,  Sofa],
-  [/health.*beauty|beauty.*hair/i,          Sparkles],
-  [/pet supplies|^pet\b/i,                  Heart],
-  [/bags.*shoes|shoes.*bags/i,              ShoppingBag],
-  [/sports.*outdoor|outdoor.*sport/i,       Zap],
-  [/toys.*kid|kid.*bab|babies/i,            Baby],
+  // ── Top-level categories (matched first for precision) ─────────────────
+  [/consumer electronics/i, Cpu],
+  [/jewelry.*watch|watch.*jewelry/i, Watch],
+  [/home.*garden|home.*furniture|garden/i, Sofa],
+  [/health.*beauty|beauty.*hair/i, Sparkles],
+  [/pet supplies|^pet\b/i, Heart],
+  [/bags.*shoes|shoes.*bags/i, ShoppingBag],
+  [/sports.*outdoor|outdoor.*sport/i, Zap],
+  [/toys.*kid|kid.*bab|babies/i, Baby],
   // ── Generic keyword rules ─────────────────────────────────────────────────
-  [/hoodie|sweatshirt/i,                    Shirt],
-  [/women|mujer|lady|ladies|female/i,       Heart],
-  [/men'?s|hombre|male\b/i,                 Shirt],
+  [/hoodie|sweatshirt/i, Shirt],
+  [/women|mujer|lady|ladies|female/i, Heart],
+  [/men'?s|hombre|male\b/i, Shirt],
   [/kid|child|children|boy|girl|junior|baby/i, Baby],
-  [/suit|set\b|tracksuit|sportswear/i,      Layers],
+  [/suit|set\b|tracksuit|sportswear/i, Layers],
   [/accessori|hat\b|cap\b|scarf|glove|sock/i, Tag],
-  [/sport|active|gym|fitness/i,             Zap],
-  [/winter|jacket|coat|down\b|thermal/i,    Snowflake],
-  [/dress|skirt|romper|jumpsuit/i,          Sparkles],
-  [/shirt|blouse|top\b|tee\b/i,             Shirt],
-  [/pant|jean|short\b|legging|bottom/i,     Scissors],
-  [/sweater|knit/i,                         Wind],
-  [/watch|jewelry|jewel|ring|necklace/i,    Watch],
-  [/electronic|gadget|device|tech/i,        Cpu],
-  [/home|garden|furniture|kitchen/i,        Sofa],
+  [/sport|active|gym|fitness/i, Zap],
+  [/winter|jacket|coat|down\b|thermal/i, Snowflake],
+  [/dress|skirt|romper|jumpsuit/i, Sparkles],
+  [/shirt|blouse|top\b|tee\b/i, Shirt],
+  [/pant|jean|short\b|legging|bottom/i, Scissors],
+  [/sweater|knit/i, Wind],
+  [/watch|jewelry|jewel|ring|necklace/i, Watch],
+  [/electronic|gadget|device|tech/i, Cpu],
+  [/home|garden|furniture|kitchen/i, Sofa],
 ];
 
 function getCategoryIcon(name: string): LucideIcon {
@@ -164,22 +169,8 @@ export function HomeSidebar({
       prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
     );
 
-  /* ── Build category tree dynamically from loaded products ──── */
-  const dynamicCategoryTree = useMemo(() => {
-    const catMap = new Map<string, Set<string>>();
-    products.forEach((p) => {
-      if (!p.category) return;
-      if (!catMap.has(p.category)) catMap.set(p.category, new Set());
-      if (p.subcategory) catMap.get(p.category)!.add(p.subcategory);
-    });
-    return Array.from(catMap.entries())
-      .map(([name, subs]) => ({
-        name,
-        count: products.filter((p) => p.category === name).length,
-        subcategories: Array.from(subs).sort(),
-      }))
-      .sort((a, b) => b.count - a.count);
-  }, [products]);
+  /* ── Categories from NEXA API ──────────────────────────────── */
+  const { categories: apiCategories, loading: catsLoading, error: catsError, refetch: catsRefetch } = useNexaCategories();
 
   /* ── Brands in scope ─────────────────────────────────────────── */
   const brandsInScope = useMemo(() => {
@@ -282,11 +273,10 @@ export function HomeSidebar({
             {/* Todos */}
             <button
               onClick={() => onCategory("Todos")}
-              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
-                selectedCategory === "Todos"
-                  ? "bg-gray-600 text-white"
-                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-              }`}
+              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${selectedCategory === "Todos"
+                ? "bg-gray-600 text-white"
+                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                }`}
             >
               <span className="flex items-center gap-2.5">
                 <ShoppingBag
@@ -300,20 +290,43 @@ export function HomeSidebar({
               </span>
             </button>
 
-            {/* Dynamic categories with icons */}
-            {dynamicCategoryTree.map((cat) => {
+            {/* API Categories — loading state */}
+            {catsLoading && (
+              <div className="flex items-center justify-center gap-2 px-4 py-6">
+                <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                <span className="text-xs text-gray-400">Cargando categorías…</span>
+              </div>
+            )}
+
+            {/* API Categories — error state */}
+            {!catsLoading && catsError && (
+              <div className="px-4 py-4 text-center">
+                <AlertCircle className="w-5 h-5 text-red-400 mx-auto mb-2" />
+                <p className="text-xs text-red-500 mb-2">{catsError}</p>
+                <button
+                  onClick={catsRefetch}
+                  className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Reintentar
+                </button>
+              </div>
+            )}
+
+            {/* API Categories — data */}
+            {!catsLoading && !catsError && apiCategories.map((cat) => {
               const isActive = selectedCategory === cat.name;
-              const isOpen   = openCats.includes(cat.name);
-              const CatIcon  = getCategoryIcon(cat.name);
+              const isOpen = openCats.includes(cat.name);
+              const CatIcon = getCategoryIcon(cat.name);
+              const subCats = cat.subCategories ?? [];
 
               return (
-                <div key={cat.name}>
+                <div key={cat.id}>
                   <div
-                    className={`flex items-center transition-colors ${
-                      isActive
-                        ? "bg-gray-600 text-white"
-                        : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                    className={`flex items-center transition-colors ${isActive
+                      ? "bg-gray-600 text-white"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
                   >
                     <button
                       onClick={() => {
@@ -327,11 +340,13 @@ export function HomeSidebar({
                         strokeWidth={1.5}
                       />
                       <span className="truncate">{cat.name}</span>
-                      <span className={`ml-auto text-[10px] flex-shrink-0 ${isActive ? "text-white/50" : "text-gray-400"}`}>
-                        {cat.count}
-                      </span>
+                      {subCats.length > 0 && (
+                        <span className={`ml-auto text-[10px] flex-shrink-0 ${isActive ? "text-white/50" : "text-gray-400"}`}>
+                          {subCats.length}
+                        </span>
+                      )}
                     </button>
-                    {cat.subcategories.length > 0 && (
+                    {subCats.length > 0 && (
                       <button
                         onClick={() => toggle(cat.name)}
                         className="px-3 py-2.5"
@@ -343,35 +358,25 @@ export function HomeSidebar({
                     )}
                   </div>
 
-                  {isOpen && cat.subcategories.length > 0 && (
+                  {isOpen && subCats.length > 0 && (
                     <div className="bg-gray-50 border-t border-gray-100">
-                      {cat.subcategories.map((sub) => {
-                        const subCount = products.filter(
-                          (p) => p.category === cat.name && p.subcategory === sub
-                        ).length;
-                        if (subCount === 0) return null;
-                        const isSubActive = selectedSubcat === sub;
+                      {subCats.map((sub) => {
+                        const isSubActive = selectedSubcat === sub.name;
                         return (
                           <button
-                            key={sub}
-                            onClick={() => onSubcategory(cat.name, sub)}
-                            className={`w-full flex items-center justify-between pl-11 pr-4 py-2 text-[13px] transition-colors ${
-                              isSubActive
-                                ? "text-gray-900 bg-gray-100"
-                                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                            }`}
+                            key={sub.id}
+                            onClick={() => onSubcategory(cat.name, sub.name)}
+                            className={`w-full flex items-center justify-between pl-11 pr-4 py-2 text-[13px] transition-colors ${isSubActive
+                              ? "text-gray-900 bg-gray-100"
+                              : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                              }`}
                           >
                             <span className="flex items-center gap-2">
                               {isSubActive
                                 ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
                                 : <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />}
-                              <span className="truncate">{sub}</span>
+                              <span className="truncate">{sub.name}</span>
                             </span>
-                            {subCount > 0 && (
-                              <span className="text-[10px] text-gray-400 flex-shrink-0 ml-1">
-                                {subCount}
-                              </span>
-                            )}
                           </button>
                         );
                       })}
@@ -392,11 +397,10 @@ export function HomeSidebar({
                 <button
                   key={brand}
                   onClick={() => onBrand(selectedBrand === brand ? "" : brand)}
-                  className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                    selectedBrand === brand
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50"
-                  }`}
+                  className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${selectedBrand === brand
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50"
+                    }`}
                 >
                   <span className="flex items-center gap-2">
                     {selectedBrand === brand
@@ -428,11 +432,10 @@ export function HomeSidebar({
                           <button
                             key={opt}
                             onClick={() => onAttr(isActive ? "" : opt)}
-                            className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-all ${
-                              isActive
-                                ? "border-gray-600 bg-gray-600 text-white"
-                                : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-300"
-                            }`}
+                            className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-all ${isActive
+                              ? "border-gray-600 bg-gray-600 text-white"
+                              : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-300"
+                              }`}
                           >
                             {opt}
                             {isActive && <X className="w-2.5 h-2.5 ml-0.5" />}
@@ -455,11 +458,10 @@ export function HomeSidebar({
               <button
                 key={range.label}
                 onClick={() => onPrice(i)}
-                className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
-                  selectedPriceIdx === i
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
+                className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${selectedPriceIdx === i
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-50"
+                  }`}
               >
                 <span className="flex items-center gap-2">
                   {selectedPriceIdx === i
@@ -480,11 +482,10 @@ export function HomeSidebar({
               <button
                 key={r}
                 onClick={() => onRating(selectedRating === r ? 0 : r)}
-                className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-                  selectedRating === r
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
+                className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${selectedRating === r
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-50"
+                  }`}
               >
                 {selectedRating === r
                   ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
@@ -509,19 +510,18 @@ export function HomeSidebar({
               <ArrowUpDown className="w-3 h-3" /> Ordenar
             </p>
             {[
-              { val: "featured",   label: "Destacados" },
-              { val: "price-low",  label: "Precio: menor a mayor" },
+              { val: "featured", label: "Destacados" },
+              { val: "price-low", label: "Precio: menor a mayor" },
               { val: "price-high", label: "Precio: mayor a menor" },
-              { val: "name",       label: "Nombre A–Z" },
+              { val: "name", label: "Nombre A–Z" },
             ].map(({ val, label }) => (
               <button
                 key={val}
                 onClick={() => onSort(val)}
-                className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${
-                  sortBy === val
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50"
-                }`}
+                className={`w-full flex items-center gap-2 px-4 py-2 text-sm transition-colors ${sortBy === val
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-50"
+                  }`}
               >
                 {sortBy === val
                   ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />

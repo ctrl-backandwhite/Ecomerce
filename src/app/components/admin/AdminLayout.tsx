@@ -2,7 +2,9 @@ import { useState } from "react";
 import { Outlet, useLocation } from "react-router";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTour } from "./AdminTour";
-import { Menu } from "lucide-react";
+import { TimezoneSidebar } from "../TimezoneSidebar";
+import { useTimezone } from "../../context/TimezoneContext";
+import { Menu, Clock } from "lucide-react";
 import {
   NotificationsPanel,
   DEFAULT_NOTIFICATIONS,
@@ -11,46 +13,47 @@ import {
 import { Bell } from "lucide-react";
 
 const pageTitles: Record<string, string> = {
-  "/admin":               "Dashboard",
-  "/admin/productos":     "Productos",
-  "/admin/categorias":    "Categorías",
-  "/admin/marcas":        "Marcas",
-  "/admin/atributos":     "Atributos",
-  "/admin/medios":        "Galería de Medios",
-  "/admin/slides":        "Slides Home",
-  "/admin/ordenes":       "Órdenes",
-  "/admin/facturas":      "Facturas",
-  "/admin/devoluciones":  "Devoluciones",
-  "/admin/clientes":      "Clientes",
-  "/admin/resenas":       "Reseñas",
-  "/admin/cupones":       "Cupones",
-  "/admin/puntos":        "Programa de Fidelidad",
-  "/admin/regalo":        "Tarjetas Regalo",
-  "/admin/campanas":      "Campañas",
-  "/admin/newsletter":    "Newsletter",
-  "/admin/seo":           "SEO & Meta datos",
-  "/admin/garantias":     "Garantías",
-  "/admin/flujos":        "Flujos de trabajo",
-  "/admin/envios":        "Envíos",
-  "/admin/impuestos":     "Impuestos",
-  "/admin/emails":        "Plantillas de Email",
+  "/admin": "Dashboard",
+  "/admin/productos": "Productos",
+  "/admin/categorias": "Categorías",
+  "/admin/marcas": "Marcas",
+  "/admin/atributos": "Atributos",
+  "/admin/medios": "Galería de Medios",
+  "/admin/slides": "Slides Home",
+  "/admin/ordenes": "Órdenes",
+  "/admin/facturas": "Facturas",
+  "/admin/devoluciones": "Devoluciones",
+  "/admin/clientes": "Clientes",
+  "/admin/resenas": "Reseñas",
+  "/admin/cupones": "Cupones",
+  "/admin/puntos": "Programa de Fidelidad",
+  "/admin/regalo": "Tarjetas Regalo",
+  "/admin/campanas": "Campañas",
+  "/admin/newsletter": "Newsletter",
+  "/admin/seo": "SEO & Meta datos",
+  "/admin/garantias": "Garantías",
+  "/admin/flujos": "Flujos de trabajo",
+  "/admin/envios": "Envíos",
+  "/admin/impuestos": "Impuestos",
+  "/admin/emails": "Plantillas de Email",
   "/admin/configuracion": "Configuración",
-  "/admin/reportes":      "Reportes",
+  "/admin/reportes": "Reportes",
 };
 
 export function AdminLayout() {
-  const [sidebarOpen, setSidebarOpen]           = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [notifOpen, setNotifOpen]               = useState(false);
-  const [notifications, setNotifications]       = useState<AppNotification[]>(DEFAULT_NOTIFICATIONS);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>(DEFAULT_NOTIFICATIONS);
+  const { selectedCountry, toggleSidebar } = useTimezone();
   const location = useLocation();
 
   const pageTitle = pageTitles[location.pathname] ?? "Admin";
 
-  const markRead    = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
-  const markAllRead = ()            => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  const markRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
   const deleteNotif = (id: string) => setNotifications(prev => prev.filter(n => n.id !== id));
-  const clearRead   = ()            => setNotifications(prev => prev.filter(n => !n.read));
+  const clearRead = () => setNotifications(prev => prev.filter(n => !n.read));
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -97,6 +100,16 @@ export function AdminLayout() {
           <div className="flex items-center gap-2 flex-shrink-0">
             <AdminTour />
 
+            {/* Timezone */}
+            <button
+              onClick={toggleSidebar}
+              className="flex items-center gap-1.5 px-2 py-1 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Horario por país"
+            >
+              <Clock className="w-4 h-4" strokeWidth={1.5} />
+              <span className="text-sm leading-none">{selectedCountry.flag}</span>
+            </button>
+
             {/* Notifications */}
             <button
               onClick={() => setNotifOpen(true)}
@@ -129,6 +142,8 @@ export function AdminLayout() {
           </div>
         </main>
       </div>
+
+      <TimezoneSidebar />
     </div>
   );
 }

@@ -2,10 +2,8 @@
  * ╔══════════════════════════════════════════════════════════════════╗
  * ║  NEXA — Capa de servicios centralizada                          ║
  * ║                                                                  ║
- * ║  Las funciones de productos y categorías delegan ahora en la    ║
- * ║  capa de repositorios (CJProductRepository /                    ║
- * ║  CJCategoryRepository), que a su vez llama a la API de CJ       ║
- * ║  Dropshipping con caché TTL.                                     ║
+ * ║  Funciones de producto y categoría usan mocks hasta que         ║
+ * ║  existan endpoints reales en el backend NEXA.                   ║
  * ║                                                                  ║
  * ║  El resto de entidades (órdenes, clientes, reseñas, etc.)       ║
  * ║  permanece en mock hasta que exista un backend propio.           ║
@@ -13,10 +11,6 @@
  */
 
 export const API_BASE = "https://api.tudominio.com/v1";
-
-// Re-export repositories so other modules can import directly from api.ts
-export { productRepository }  from "../repositories/CJProductRepository";
-export { categoryRepository } from "../repositories/CJCategoryRepository";
 
 // Helper for mock mode
 const delay = <T>(data: T): Promise<T> =>
@@ -26,17 +20,17 @@ const delay = <T>(data: T): Promise<T> =>
 // Re-export types (unchanged — keep all imports working)
 // ─────────────────────────────────────────────────────────────────────────────
 export type { Product, ProductImage, ProductAttribute, ProductVariant } from "../data/products";
-export type { Order as AdminOrder }                                      from "../data/orders";
-export type { Customer }                                                 from "../data/customers";
-export type { Category, SellerStore }                                    from "../data/adminData";
-export type { Brand }                                                    from "../data/brands";
-export type { Review }                                                   from "../data/reviews";
-export type { Invoice, InvoiceLine, InvoiceStatus }                      from "../data/invoices";
-export type { Order as UserOrder, OrderItem, OrderStatus }               from "../data/mockOrders";
-export type { Attribute, AttributeValue }                                from "../data/attributes";
+export type { Order as AdminOrder } from "../data/orders";
+export type { Customer } from "../data/customers";
+export type { Category, SellerStore } from "../data/adminData";
+export type { Brand } from "../data/brands";
+export type { Review } from "../data/reviews";
+export type { Invoice, InvoiceLine, InvoiceStatus } from "../data/invoices";
+export type { Order as UserOrder, OrderItem, OrderStatus } from "../data/mockOrders";
+export type { Attribute, AttributeValue } from "../data/attributes";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. PRODUCTOS — delegados al CJProductRepository
+// 1. PRODUCTOS — mock (TODO: conectar con API NEXA)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ProductsParams {
@@ -53,33 +47,22 @@ export interface ProductsParams {
   orderBy?: "PRICE_ASC" | "PRICE_DESC" | "CREATED_AT";
 }
 
-/** GET /products — delegates to CJProductRepository (cached) */
-export async function getProducts(params?: ProductsParams) {
-  const { productRepository: repo } = await import("../repositories/CJProductRepository");
-  const page = await repo.findMany({
-    search:     params?.search,
-    categoryId: params?.categoryId,
-    minPrice:   params?.minPrice,
-    maxPrice:   params?.maxPrice,
-    page:       params?.page,
-    limit:      params?.limit ?? 40,
-    orderBy:    params?.orderBy,
-  });
-  return page.items;
+/** GET /products — TODO: conectar con API NEXA */
+export async function getProducts(_params?: ProductsParams) {
+  return delay([] as import("../data/products").Product[]);
 }
 
-/** GET /products/:id — delegates to CJProductRepository (cached detail) */
-export async function getProductById(id: string) {
-  const { productRepository: repo } = await import("../repositories/CJProductRepository");
-  return repo.findById(id);
+/** GET /products/:id — TODO: conectar con API NEXA */
+export async function getProductById(_id: string) {
+  return delay(null);
 }
 
-/** GET /products/:slug — in CJ the slug IS the pid */
+/** GET /products/:slug */
 export async function getProductBySlug(slug: string) {
   return getProductById(slug);
 }
 
-/** POST /products — optimistic local upsert (no CJ write endpoint) */
+/** POST /products — optimistic local upsert */
 export async function createProduct(data: Partial<import("../data/products").Product>) {
   console.log("POST /products", data);
   return delay({ ...data, id: `p-${Date.now()}` });
@@ -172,12 +155,11 @@ export async function updateCustomerStatus(id: string, status: "active" | "inact
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. CATEGORÍAS — delegadas al CJCategoryRepository
+// 4. CATEGORÍAS — mock (TODO: conectar con API NEXA)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getCategories() {
-  const { categoryRepository: repo } = await import("../repositories/CJCategoryRepository");
-  return repo.findAll();
+  return delay([] as import("../data/adminData").Category[]);
 }
 
 export async function createCategory(data: Partial<import("../data/adminData").Category>) {
@@ -281,25 +263,23 @@ export async function getUserOrderById(id: string) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getDashboardStats() {
-  const { dashboardStats }  = await import("../data/adminData");
-  const { orders }          = await import("../data/orders");
-  const { customers }       = await import("../data/customers");
-  const { productRepository: repo } = await import("../repositories/CJProductRepository");
-  const page = await repo.findMany({ limit: 1 });
+  const { dashboardStats } = await import("../data/adminData");
+  const { orders } = await import("../data/orders");
+  const { customers } = await import("../data/customers");
   return delay({
     ...dashboardStats,
-    totalRevenue:   orders.reduce((s, o) => s + o.total, 0),
-    totalOrders:    orders.length,
+    totalRevenue: orders.reduce((s, o) => s + o.total, 0),
+    totalOrders: orders.length,
     totalCustomers: customers.length,
-    totalProducts:  page.total,
-    lowStockCount:  0,
-    pendingOrders:  orders.filter(o => o.status === "pending").length,
+    totalProducts: 0,
+    lowStockCount: 0,
+    pendingOrders: orders.filter(o => o.status === "pending").length,
   });
 }
 
 export async function getRevenueReport() {
   const MONTHLY = [
-    { month: "Ago", revenue: 18400, orders: 142, returns: 8  },
+    { month: "Ago", revenue: 18400, orders: 142, returns: 8 },
     { month: "Sep", revenue: 22100, orders: 167, returns: 11 },
     { month: "Oct", revenue: 26800, orders: 201, returns: 14 },
     { month: "Nov", revenue: 41200, orders: 318, returns: 22 },
@@ -313,11 +293,11 @@ export async function getRevenueReport() {
 
 export async function getTopProductsReport() {
   const TOP = [
-    { name: "iPhone 15 Pro Max",       sales: 148, revenue: 224252, growth: 12  },
-    { name: "Samsung Galaxy S24 Ultra", sales: 112, revenue: 151088, growth:  8  },
-    { name: "Sony WH-1000XM5",         sales: 203, revenue:  76937, growth: 24  },
-    { name: "Dell XPS 15",             sales:  67, revenue: 127233, growth: -3  },
-    { name: "Canon EOS R10",           sales:  89, revenue:  80011, growth: 15  },
+    { name: "iPhone 15 Pro Max", sales: 148, revenue: 224252, growth: 12 },
+    { name: "Samsung Galaxy S24 Ultra", sales: 112, revenue: 151088, growth: 8 },
+    { name: "Sony WH-1000XM5", sales: 203, revenue: 76937, growth: 24 },
+    { name: "Dell XPS 15", sales: 67, revenue: 127233, growth: -3 },
+    { name: "Canon EOS R10", sales: 89, revenue: 80011, growth: 15 },
   ];
   return delay(TOP);
 }
@@ -338,10 +318,10 @@ export async function getDailyOrdersReport() {
 export async function getCategoryDistributionReport() {
   const DIST = [
     { name: "Electrónica", value: 42, color: "#1f2937" },
-    { name: "Calzado",     value: 18, color: "#6b7280" },
-    { name: "Audio",       value: 20, color: "#9ca3af" },
-    { name: "Fotografía",  value: 11, color: "#d1d5db" },
-    { name: "Accesorios",  value:  9, color: "#e5e7eb" },
+    { name: "Calzado", value: 18, color: "#6b7280" },
+    { name: "Audio", value: 20, color: "#9ca3af" },
+    { name: "Fotografía", value: 11, color: "#d1d5db" },
+    { name: "Accesorios", value: 9, color: "#e5e7eb" },
   ];
   return delay(DIST);
 }
