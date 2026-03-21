@@ -1,5 +1,6 @@
 import { useState, useRef, useMemo, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
+import { slugify, urls } from "../lib/urls";
 import {
   ArrowRight,
   Shirt,
@@ -83,8 +84,8 @@ export function CategoryBar() {
   const [mobileOpen, setMobileOpen] = useState<string | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const activeCategory = searchParams.get("category");
+  const { catSlug } = useParams<{ catSlug?: string }>();
+  const activeCategory = catSlug ?? null;
 
   /* ── Build display tree from API categories ─────────────────── */
   const dynamicTree = useMemo(() => {
@@ -123,26 +124,18 @@ export function CategoryBar() {
   const goToCategory = (category: string, _categoryId?: string) => {
     setOpenCategory(null);
     setMobileOpen(null);
-    const params = new URLSearchParams();
-    params.set("category", category);
-    // L1 categories only expand the sidebar — no API call
-    navigate(`/?${params.toString()}`, { preventScrollReset: true });
+    navigate(urls.category(category), { preventScrollReset: true });
   };
 
   const goToSubcategory = (
     category: string,
     subcategory: string,
-    parentCategoryId?: string,
-    subcategoryId?: string,
+    _parentCategoryId?: string,
+    _subcategoryId?: string,
   ) => {
     setOpenCategory(null);
     setMobileOpen(null);
-    const params = new URLSearchParams();
-    params.set("category", category);
-    if (parentCategoryId) params.set("categoryId", parentCategoryId);
-    params.set("subcategory", subcategory);
-    if (subcategoryId) params.set("subcategoryId", subcategoryId);
-    navigate(`/?${params.toString()}`, { preventScrollReset: true });
+    navigate(urls.subcategory(category, subcategory), { preventScrollReset: true });
   };
 
   /* ── Mobile tap handler ──────────────────────────────────────── */
@@ -167,7 +160,7 @@ export function CategoryBar() {
 
             {dynamicTree.map((cat) => {
               const Icon = getCategoryIcon(cat.name);
-              const isActive = activeCategory === cat.name;
+              const isActive = activeCategory === slugify(cat.name);
               const isOpen = openCategory === cat.name;
               const isMobOpen = mobileOpen === cat.name;
 

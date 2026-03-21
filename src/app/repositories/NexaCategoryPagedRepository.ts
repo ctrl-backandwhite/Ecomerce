@@ -37,10 +37,12 @@ export interface PagedCategory {
 
 export interface CategoryPage {
     content: PagedCategory[];
-    page: number;
-    size: number;
+    currentPage: number;
+    pageSize: number;
     totalElements: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
 }
 
 /** Query parameters accepted by the paged endpoint. */
@@ -192,7 +194,7 @@ class NexaCategoryPagedRepository {
     /**
      * Fetches a single category by ID with its full recursive children tree.
      */
-    async findById(categoryId: string, locale: string = "es"): Promise<CategoryDetail> {
+    async findById(categoryId: string, locale: string = "en"): Promise<CategoryDetail> {
         try {
             const url = `${CATEGORIES_URL}/${categoryId}?locale=${encodeURIComponent(locale)}`;
             const res = await fetch(url);

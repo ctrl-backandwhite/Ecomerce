@@ -73,10 +73,12 @@ interface ApiErrorBody {
 
 export interface PagedVariantResponse {
     content: ProductVariant[];
-    page: number;
-    size: number;
+    currentPage: number;
+    pageSize: number;
     totalElements: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
 }
 
 // ── Repository class ─────────────────────────────────────────────────────────
@@ -92,9 +94,10 @@ class NexaVariantAdminRepository {
         status?: "DRAFT" | "PUBLISHED" | "",
         sortBy?: string,
         ascending?: boolean,
+        locale: string = "en",
     ): Promise<PagedVariantResponse> {
         try {
-            let url = `${BASE_URL}/detail/variants?page=${page}&size=${size}`;
+            let url = `${BASE_URL}/detail/variants?page=${page}&size=${size}&locale=${encodeURIComponent(locale)}`;
             if (search && search.trim()) {
                 url += `&search=${encodeURIComponent(search.trim())}`;
             }
@@ -129,9 +132,9 @@ class NexaVariantAdminRepository {
     /**
      * List all variants of a product by pid.
      */
-    async findByPid(pid: string): Promise<ProductVariant[]> {
+    async findByPid(pid: string, locale: string = "en"): Promise<ProductVariant[]> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/${pid}/variants`);
+            const res = await fetch(`${BASE_URL}/detail/${pid}/variants?locale=${encodeURIComponent(locale)}`);
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -153,9 +156,9 @@ class NexaVariantAdminRepository {
     /**
      * Get a single variant by vid.
      */
-    async findByVid(vid: string): Promise<ProductVariant> {
+    async findByVid(vid: string, locale: string = "en"): Promise<ProductVariant> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants/${vid}`);
+            const res = await fetch(`${BASE_URL}/detail/variants/${vid}?locale=${encodeURIComponent(locale)}`);
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {

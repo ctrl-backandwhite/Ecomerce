@@ -28,12 +28,19 @@ export function StatusBadge({
   const isPublished = status === "PUBLISHED";
   const clickable = !!onClick;
   return (
-    <button
-      type="button"
-      disabled={toggling}
+    <span
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable && !toggling ? 0 : undefined}
+      aria-disabled={toggling || undefined}
       onClick={(e) => {
         e.stopPropagation();
-        onClick?.();
+        if (!toggling) onClick?.();
+      }}
+      onKeyDown={(e) => {
+        if (clickable && !toggling && (e.key === "Enter" || e.key === " ")) {
+          e.preventDefault();
+          onClick?.();
+        }
       }}
       className={`inline-flex items-center justify-center text-[10px] leading-none min-w-[62px] px-2 py-1 rounded-full font-medium transition-all duration-200 ${isPublished
         ? "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200"
@@ -45,6 +52,6 @@ export function StatusBadge({
         <Loader2 className="w-3 h-3 animate-spin mr-1" strokeWidth={1.5} />
       ) : null}
       {isPublished ? "Publicado" : "Borrador"}
-    </button>
+    </span>
   );
 }

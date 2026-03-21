@@ -48,10 +48,12 @@ export function useAdminProducts(query: AdminProductQuery = {}): UseAdminProduct
 
     const [data, setData] = useState<AdminProductPage>({
         content: [],
-        page: 0,
-        size: 20,
+        currentPage: 0,
+        pageSize: 20,
         totalElements: 0,
         totalPages: 0,
+        hasNext: false,
+        hasPrevious: false,
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -98,8 +100,8 @@ export function useAdminProducts(query: AdminProductQuery = {}): UseAdminProduct
         products: data.content,
         loading,
         error,
-        page: data.page,
-        size: data.size,
+        page: data.currentPage,
+        size: data.pageSize,
         totalElements: data.totalElements,
         totalPages: data.totalPages,
         setPage,

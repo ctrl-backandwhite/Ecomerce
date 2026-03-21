@@ -126,10 +126,12 @@ export interface NexaProductDetail {
 
 export interface NexaProductPage {
     content: NexaProduct[];
-    page: number;
-    size: number;
+    currentPage: number;
+    pageSize: number;
     totalElements: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
 }
 
 // ── Query params ─────────────────────────────────────────────────────────────

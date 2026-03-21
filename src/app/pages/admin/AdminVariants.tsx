@@ -663,7 +663,7 @@ export function AdminVariants() {
                 p, pageSize, q, statusFilter || undefined, sortBy || undefined, ascending,
             );
             setVariants(data.content);
-            setPage(data.page);
+            setPage(data.currentPage);
             setTotalElements(data.totalElements);
             setTotalPages(data.totalPages);
         } catch (err: any) {

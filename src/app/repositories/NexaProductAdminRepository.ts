@@ -84,10 +84,12 @@ export interface AdminProduct {
 
 export interface AdminProductPage {
     content: AdminProduct[];
-    page: number;
-    size: number;
+    currentPage: number;
+    pageSize: number;
     totalElements: number;
     totalPages: number;
+    hasNext: boolean;
+    hasPrevious: boolean;
 }
 
 /** Query parameters for the paged endpoint. */
@@ -172,7 +174,7 @@ class NexaProductAdminRepository {
     /**
      * Get a single product by ID.
      */
-    async findById(productId: string, locale: string = "es"): Promise<AdminProduct> {
+    async findById(productId: string, locale: string = "en"): Promise<AdminProduct> {
         try {
             const params = new URLSearchParams({ locale });
             const res = await fetch(`${BASE_URL}/${productId}?${params.toString()}`);

@@ -606,17 +606,26 @@ export function AdminProducts() {
                                     <p className="text-[11px] text-gray-400 mt-0.5 truncate flex items-center gap-1">
                                         {p.sku && <><span className="font-mono">{p.sku}</span> · </>}
                                         ID: {p.id}
-                                        <button
+                                        <span
+                                            role="button"
+                                            tabIndex={0}
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 navigator.clipboard.writeText(p.id);
                                                 toast.success("ID copiado");
                                             }}
-                                            className="inline-flex items-center justify-center w-4 h-4 text-gray-300 hover:text-gray-600 transition-colors rounded"
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter" || e.key === " ") {
+                                                    e.preventDefault();
+                                                    navigator.clipboard.writeText(p.id);
+                                                    toast.success("ID copiado");
+                                                }
+                                            }}
+                                            className="inline-flex items-center justify-center w-4 h-4 text-gray-300 hover:text-gray-600 transition-colors rounded cursor-pointer"
                                             title="Copiar ID"
                                         >
                                             <Copy className="w-3 h-3" strokeWidth={1.5} />
-                                        </button>
+                                        </span>
                                         {p.variants && p.variants.length > 0 && (
                                             <> · {p.variants.length} variante{p.variants.length !== 1 ? "s" : ""}</>
                                         )}

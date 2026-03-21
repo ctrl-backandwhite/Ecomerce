@@ -67,6 +67,12 @@ export const router = createBrowserRouter([
         Component: Layout,
         children: [
           { index: true,              Component: Home },
+          // Tienda con categorías en la ruta (URLs limpias)
+          { path: "tienda",                          Component: Home },
+          { path: "tienda/:catSlug",                 Component: Home },
+          { path: "tienda/:catSlug/:subcatSlug",     Component: Home },
+          // Búsqueda con término en la ruta
+          { path: "buscar/:query",                   Component: Home },
           { path: "producto/:id",     Component: ProductDetail },
           { path: "carrito",          Component: Cart },
           { path: "checkout",         Component: Checkout },

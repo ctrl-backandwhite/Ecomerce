@@ -1,5 +1,6 @@
 import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LayoutDashboard, Gift, Clock } from "lucide-react";
-import { Link, useNavigate, useSearchParams } from "react-router";
+import { Link, useNavigate } from "react-router";
+import { urls } from "../lib/urls";
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -15,7 +16,6 @@ export function Header() {
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
-  const [, setSearchParams] = useSearchParams();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const initials = `${user.firstName[0]}${user.lastName[0]}`;
@@ -34,7 +34,7 @@ export function Header() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/?search=${encodeURIComponent(searchQuery)}`);
+      navigate(urls.search(searchQuery));
       setSearchQuery("");
       setIsMenuOpen(false);
       setTimeout(() => {
@@ -45,7 +45,7 @@ export function Header() {
   };
 
   const handleProductos = () => {
-    setSearchParams({});
+    navigate(urls.store());
     setIsMenuOpen(false);
     setTimeout(() => {
       const el = document.getElementById("productos");

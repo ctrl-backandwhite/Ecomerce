@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useSearchParams, Link } from "react-router";
+import { useSearchParams, useParams, useNavigate, Link } from "react-router";
 import {
   Gift,
   ChevronRight,
@@ -21,6 +21,8 @@ import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { priceRanges } from "../data/products";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../data/filters";
 import { useNexaProducts } from "../services/useNexaProducts";
+import { useNexaFeaturedCategories } from "../services/useNexaFeaturedCategories";
+import { slugify, urls } from "../lib/urls";
 
 const PAGE_SIZE = 24;
 
@@ -30,16 +32,39 @@ function scrollToProducts() {
 }
 
 export function Home() {
-  /* ── Products from NEXA API ────────────────────────────────── */
+  /* ── Path params (clean URLs) ──────────────────────────────── */
+  const { catSlug, subcatSlug, query: routeQuery } = useParams<{
+    catSlug?: string;
+    subcatSlug?: string;
+    query?: string;
+  }>();
+  const navigate = useNavigate();
+
+  /* ── Resolve category/subcategory from slugs ───────────────── */
+  const { categories } = useNexaFeaturedCategories();
+
+  const resolvedCategory = useMemo(() => {
+    if (!catSlug) return null;
+    return categories.find((c) => slugify(c.name) === catSlug) ?? null;
+  }, [catSlug, categories]);
+
+  const resolvedSubcategory = useMemo(() => {
+    if (!subcatSlug || !resolvedCategory) return null;
+    return resolvedCategory.subCategories.find((s) => slugify(s.name) === subcatSlug) ?? null;
+  }, [subcatSlug, resolvedCategory]);
+
+  /* ── Search params (legacy + secondary filters) ────────────── */
   const [searchParams, setSearchParams] = useSearchParams();
-  const selectedCategory = searchParams.get("category") || "Todos";
-  const selectedCategoryId = searchParams.get("categoryId") || undefined;
-  const selectedSubcategoryId = searchParams.get("subcategoryId") || undefined;
-  const searchQuery = searchParams.get("search") || "";
+
+  // Path params take priority; search params kept for backwards compat
+  const selectedCategory = resolvedCategory?.name ?? searchParams.get("category") ?? "Todos";
+  const selectedCategoryId = resolvedCategory?.id ?? searchParams.get("categoryId") ?? undefined;
+  const selectedSubcat = resolvedSubcategory?.name ?? searchParams.get("subcategory") ?? "";
+  const selectedSubcategoryId = resolvedSubcategory?.id ?? searchParams.get("subcategoryId") ?? undefined;
+  const searchQuery = routeQuery ? decodeURIComponent(routeQuery) : (searchParams.get("search") ?? "");
   const soloOfertas = searchParams.get("ofertas") === "true";
-  const selectedSubcat = searchParams.get("subcategory") || "";
-  const selectedBrand = searchParams.get("brand") || "";
-  const selectedAttr = searchParams.get("attr") || "";
+  const selectedBrand = searchParams.get("brand") ?? "";
+  const selectedAttr = searchParams.get("attr") ?? "";
 
   // When a subcategory is selected, use its ID to filter; otherwise use the parent category ID
   const activeCategoryId = selectedSubcategoryId || selectedCategoryId;
@@ -145,39 +170,39 @@ export function Home() {
 
   /* ── Promo CTA handler ──────────────────────────────────────── */
   const handlePromoCta = useCallback((params: PromoFilter) => {
-    const next: Record<string, string> = {};
-    if (params.category) next.category = params.category;
-    if (params.ofertas) next.ofertas = params.ofertas;
-    setSearchParams(next);
     setSelectedPriceIdx(0);
     setSelectedRating(0);
     setSortBy("featured");
     setPromoClickKey((k) => k + 1);
-  }, [setSearchParams]);
+    if (params.category) {
+      const dest = urls.category(params.category);
+      if (params.ofertas) {
+        navigate(dest);
+        setSearchParams({ ofertas: params.ofertas });
+      } else {
+        navigate(dest);
+      }
+    } else if (params.ofertas) {
+      setSearchParams({ ofertas: params.ofertas });
+    }
+  }, [navigate, setSearchParams]);
 
   /* ── Filter handlers ─────────────────────────────────────────── */
   const handleCategory = (cat: string, _catId?: string) => {
-    const next = new URLSearchParams();
-    if (cat !== "Todos") {
-      next.set("category", cat);
-      // L1 categories only expand the sidebar — no API call
+    if (cat === "Todos") {
+      navigate(urls.store(), { preventScrollReset: true });
+    } else {
+      navigate(urls.category(cat), { preventScrollReset: true });
     }
-    setSearchParams(next, { preventScrollReset: true });
   };
 
-  const handleSubcategory = (cat: string, sub: string, catId?: string, subId?: string) => {
-    const next = new URLSearchParams(searchParams.toString());
-    next.set("category", cat);
-    if (catId) next.set("categoryId", catId);
+  const handleSubcategory = (cat: string, sub: string, _catId?: string, _subId?: string) => {
     if (sub === selectedSubcat) {
-      next.delete("subcategory");
-      next.delete("subcategoryId");
+      // Toggle off — go back to parent category
+      navigate(urls.category(cat), { preventScrollReset: true });
     } else {
-      next.set("subcategory", sub);
-      if (subId) next.set("subcategoryId", subId);
+      navigate(urls.subcategory(cat, sub), { preventScrollReset: true });
     }
-    next.delete("attr");
-    setSearchParams(next, { preventScrollReset: true });
   };
 
   const handleBrand = (brand: string) => {
@@ -198,7 +223,7 @@ export function Home() {
     setSelectedPriceIdx(0);
     setSelectedRating(0);
     setSortBy("featured");
-    setSearchParams({}, { preventScrollReset: true });
+    navigate(urls.store(), { preventScrollReset: true });
   };
 
   /* ── Subcategory quick-chips ─────────────────────────────────── */
@@ -224,7 +249,7 @@ export function Home() {
   const pills = [
     soloOfertas && selectedCategory !== "Todos" && {
       label: `Ofertas · ${selectedCategory}`,
-      clear: () => setSearchParams({}, { preventScrollReset: true }),
+      clear: () => navigate(urls.store(), { preventScrollReset: true }),
     },
     soloOfertas && selectedCategory === "Todos" && {
       label: "Ofertas",
@@ -236,7 +261,7 @@ export function Home() {
     },
     selectedSubcat && {
       label: selectedSubcat,
-      clear: () => { const p = new URLSearchParams(searchParams.toString()); p.delete("subcategory"); setSearchParams(p, { preventScrollReset: true }); },
+      clear: () => navigate(urls.category(selectedCategory), { preventScrollReset: true }),
     },
     selectedBrand && {
       label: selectedBrand,
@@ -256,7 +281,7 @@ export function Home() {
     },
     searchQuery && {
       label: `"${searchQuery}"`,
-      clear: () => setSearchParams({}, { preventScrollReset: true }),
+      clear: () => navigate(urls.store(), { preventScrollReset: true }),
     },
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
@@ -319,11 +344,11 @@ export function Home() {
       {/* Flash Deals */}
       <FlashDeals
         onVerOfertas={() => {
-          setSearchParams({ ofertas: "true" }, { preventScrollReset: true });
           setSelectedPriceIdx(0);
           setSelectedRating(0);
           setSortBy("featured");
           setPromoClickKey((k) => k + 1);
+          setSearchParams({ ofertas: "true" }, { preventScrollReset: true });
         }}
       />
 
@@ -417,12 +442,7 @@ export function Home() {
                 <div className="mb-5">
                   <div className="flex items-center gap-2 flex-wrap">
                     <button
-                      onClick={() => {
-                        const p = new URLSearchParams(searchParams.toString());
-                        p.delete("subcategory");
-                        p.delete("attr");
-                        setSearchParams(p, { preventScrollReset: true });
-                      }}
+                      onClick={() => navigate(urls.category(selectedCategory), { preventScrollReset: true })}
                       className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${!selectedSubcat
                         ? "border-gray-600 bg-gray-600 text-white"
                         : "border-gray-200 text-gray-600 hover:border-gray-400"

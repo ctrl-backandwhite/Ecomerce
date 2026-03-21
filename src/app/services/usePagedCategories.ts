@@ -67,10 +67,12 @@ export function usePagedCategories(
 
     const [data, setData] = useState<CategoryPage>({
         content: [],
-        page: 0,
-        size: 20,
+        currentPage: 0,
+        pageSize: 20,
         totalElements: 0,
         totalPages: 0,
+        hasNext: false,
+        hasPrevious: false,
     });
 
     const [loading, setLoading] = useState(true);
@@ -124,8 +126,8 @@ export function usePagedCategories(
         categories: data.content,
         loading,
         error,
-        page: data.page,
-        size: data.size,
+        page: data.currentPage,
+        size: data.pageSize,
         totalElements: data.totalElements,
         totalPages: data.totalPages,
         setPage,

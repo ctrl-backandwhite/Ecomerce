@@ -39,7 +39,7 @@ interface CacheEntry {
 const _cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 5 * 60_000; // 5 minutes
 function cacheKey(categoryId?: string, locale?: string) {
-    return `${categoryId ?? "ALL"}|${locale ?? "es"}`;
+    return `${categoryId ?? "ALL"}|${locale ?? "en"}`;
 }
 
 /** Flatten a NexaCategory tree into a Record<id, name>. */
