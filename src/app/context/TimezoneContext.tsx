@@ -135,6 +135,13 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
         }
     }, [setLocale]);
 
+    // Sync locale with the stored country on first mount
+    useEffect(() => {
+        const country = COUNTRY_TIMEZONES.find((c) => c.code === countryCode);
+        if (country) setLocale(country.locale);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); // only on mount
+
     const toggleSidebar = useCallback(() => setIsSidebarOpen((v) => !v), []);
     const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
 

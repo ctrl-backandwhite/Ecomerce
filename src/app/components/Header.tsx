@@ -1,24 +1,22 @@
-import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LayoutDashboard, ChevronDown, Gift, Globe, Clock } from "lucide-react";
+import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LayoutDashboard, Gift, Clock } from "lucide-react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
-import { useLanguage, LOCALE_OPTIONS } from "../context/LanguageContext";
+import { useLanguage } from "../context/LanguageContext";
 import { useTimezone } from "../context/TimezoneContext";
 import { useState, useRef, useEffect } from "react";
 
 export function Header() {
   const { getTotalItems } = useCart();
   const { user } = useUser();
-  const { locale, setLocale, t, currentOption } = useLanguage();
+  const { t } = useLanguage();
   const { selectedCountry, toggleSidebar } = useTimezone();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [isLangOpen, setIsLangOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const [, setSearchParams] = useSearchParams();
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const langRef = useRef<HTMLDivElement>(null);
 
   const initials = `${user.firstName[0]}${user.lastName[0]}`;
 
@@ -27,9 +25,6 @@ export function Header() {
     const handler = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setIsUserDropdownOpen(false);
-      }
-      if (langRef.current && !langRef.current.contains(e.target as Node)) {
-        setIsLangOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
@@ -105,7 +100,7 @@ export function Header() {
               )}
             </Link>
 
-            {/* ── Timezone Selector ── */}
+            {/* ── Country / Timezone Selector (also sets language) ── */}
             <button
               onClick={toggleSidebar}
               className="flex items-center gap-1.5 px-2 py-1.5 text-gray-700 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50"
@@ -114,41 +109,6 @@ export function Header() {
               <Clock className="w-4 h-4" strokeWidth={1.5} />
               <span className="text-base leading-none">{selectedCountry.flag}</span>
             </button>
-
-            {/* ── Language Selector ── */}
-            <div className="relative" ref={langRef}>
-              <button
-                onClick={() => setIsLangOpen((v) => !v)}
-                className="flex items-center gap-1.5 px-2 py-1.5 text-gray-700 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50"
-                title="Language"
-              >
-                <Globe className="w-4 h-4" strokeWidth={1.5} />
-                <span className="text-xs font-medium uppercase">{locale}</span>
-              </button>
-
-              {isLangOpen && (
-                <div className="absolute right-0 top-full mt-2 w-44 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
-                  <div className="py-1">
-                    {LOCALE_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.code}
-                        onClick={() => { setLocale(opt.code); setIsLangOpen(false); }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${locale === opt.code
-                          ? "bg-gray-50 text-gray-900 font-medium"
-                          : "text-gray-600 hover:bg-gray-50"
-                          }`}
-                      >
-                        <span className="text-base">{opt.flag}</span>
-                        <span>{opt.label}</span>
-                        {locale === opt.code && (
-                          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-gray-900" />
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
 
             {/* ── User Dropdown ── */}
             <div className="relative" ref={dropdownRef}>
@@ -260,24 +220,8 @@ export function Header() {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-200">
             {/* Mobile Search */}
-            {/* Mobile Language Selector */}
-            <div className="flex items-center gap-2 mb-3">
-              {LOCALE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.code}
-                  onClick={() => setLocale(opt.code)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${locale === opt.code
-                    ? "bg-gray-900 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                    }`}
-                >
-                  <span>{opt.flag}</span>
-                  <span className="uppercase text-xs font-medium">{opt.code}</span>
-                </button>
-              ))}
-            </div>
 
-            {/* Mobile Timezone Button */}
+            {/* Mobile Country / Timezone Button (also sets language) */}
             <button
               onClick={() => { setIsMenuOpen(false); toggleSidebar(); }}
               className="flex items-center gap-2 w-full px-3 py-2 mb-3 rounded-lg text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
