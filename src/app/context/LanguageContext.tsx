@@ -4,7 +4,7 @@
  * Supports: es (Español), en (English), pt (Português).
  * Persists the user choice in localStorage.
  */
-import React, { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 export type Locale = "es" | "en" | "pt";
@@ -108,16 +108,7 @@ interface LanguageContextType {
     currentOption: LocaleOption;
 }
 
-// Persist the context ref on globalThis so Vite HMR doesn't recreate it,
-// which would break every useLanguage() consumer on hot-reload.
-declare global {
-    // eslint-disable-next-line no-var
-    var __NEXA_LanguageContext: ReturnType<typeof createContext<LanguageContextType | null>> | undefined;
-}
-
-const LanguageContext: React.Context<LanguageContextType | null> =
-    globalThis.__NEXA_LanguageContext ??
-    (globalThis.__NEXA_LanguageContext = createContext<LanguageContextType | null>(null));
+const LanguageContext = createContext<LanguageContextType | null>(null);
 
 function getInitialLocale(): Locale {
     try {

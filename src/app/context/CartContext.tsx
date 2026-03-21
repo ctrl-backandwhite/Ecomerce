@@ -24,10 +24,7 @@ interface CartContextType {
   getTotalPrice: () => number;
 }
 
-declare global { var __NEXA_CartContext: ReturnType<typeof createContext<CartContextType | undefined>> | undefined; }
-const CartContext =
-  globalThis.__NEXA_CartContext ??
-  (globalThis.__NEXA_CartContext = createContext<CartContextType | undefined>(undefined));
+const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);

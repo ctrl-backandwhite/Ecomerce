@@ -392,7 +392,7 @@ export const reviews: Review[] = [
     author: "Jaume C.", avatar: "JC", avatarColor: "bg-emerald-100 text-emerald-700",
     rating: 5,
     title: "Mejor ratón para diseñadores gráficos",
-    body: "Uso Figma, Illustrator y Photoshop a diario. La precisión del sensor de 8000 DPI y la posibilidad de ajustar la sensibilidad al instante con el botón de cambio de DPI es muy útil. El scroll horizontal con la rueda de pulgar es ideal para navegar por líneas de tiempo de vídeo. Silencioso al hacer clic, lo que se agradece en espacios compartidos.",
+    body: "Uso Nexa, Illustrator y Photoshop a diario. La precisión del sensor de 8000 DPI y la posibilidad de ajustar la sensibilidad al instante con el botón de cambio de DPI es muy útil. El scroll horizontal con la rueda de pulgar es ideal para navegar por líneas de tiempo de vídeo. Silencioso al hacer clic, lo que se agradece en espacios compartidos.",
     date: "2026-02-10", verified: true, helpful: 37,
   },
   {
@@ -478,7 +478,7 @@ export const reviews: Review[] = [
     author: "Oscar P.", avatar: "OP", avatarColor: "bg-purple-100 text-purple-700",
     rating: 5,
     title: "El diseño más atrevido en laptops de 2024",
-    body: "El XPS 13 Plus es la laptop más original que he visto: el teclado sin gap, el touchpad invisible y los bordes sin bisel dan una sensación de producto del futuro. La pantalla OLED 2.8K es absolutamente impresionante para trabajo de diseño — los colores son perfectos y el negro es negro de verdad. El Core i7 maneja sin problemas Premiere, Figma y decenas de pestañas a la vez.",
+    body: "El XPS 13 Plus es la laptop más original que he visto: el teclado sin gap, el touchpad invisible y los bordes sin bisel dan una sensación de producto del futuro. La pantalla OLED 2.8K es absolutamente impresionante para trabajo de diseño — los colores son perfectos y el negro es negro de verdad. El Core i7 maneja sin problemas Premiere, Nexa y decenas de pestañas a la vez.",
     date: "2026-02-22", verified: true, helpful: 61,
   },
   {

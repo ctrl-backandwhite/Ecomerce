@@ -44,14 +44,6 @@ export function Home() {
   // When a subcategory is selected, use its ID to filter; otherwise use the parent category ID
   const activeCategoryId = selectedSubcategoryId || selectedCategoryId;
 
-  console.log('[Home] URL params:', {
-    category: selectedCategory,
-    categoryId: selectedCategoryId,
-    subcategoryId: selectedSubcategoryId,
-    subcategory: selectedSubcat,
-    activeCategoryId,
-  });
-
   const {
     products,
     loading: productsLoading,
@@ -70,7 +62,23 @@ export function Home() {
   const [filterKey, setFilterKey] = useState(0);
   const [promoClickKey, setPromoClickKey] = useState(0);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  /* ── Infinite-scroll refs (callback-ref pattern) ─────────────── */
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef(apiLoadMore);
+  useEffect(() => { loadMoreRef.current = apiLoadMore; });
+
+  const sentinelRef = useCallback((node: HTMLDivElement | null) => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+    if (!node) return;
+    observerRef.current = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMoreRef.current(); },
+      { rootMargin: "400px" },
+    );
+    observerRef.current.observe(node);
+  }, []);
 
   /* ── Filtered list (client-side filters on API-loaded products) ── */
   const filtered = useMemo(() => {
@@ -134,23 +142,6 @@ export function Home() {
   useEffect(() => {
     if (promoClickKey > 0) scrollToProducts();
   }, [promoClickKey]);
-
-  /* ── Infinite scroll via IntersectionObserver (API pagination) ─ */
-  const loadMore = useCallback(() => {
-    if (loadingMore || !hasMore) return;
-    apiLoadMore();
-  }, [loadingMore, hasMore, apiLoadMore]);
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-    const observer = new IntersectionObserver(
-      (entries) => { if (entries[0].isIntersecting) loadMore(); },
-      { rootMargin: "200px" }
-    );
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [loadMore]);
 
   /* ── Promo CTA handler ──────────────────────────────────────── */
   const handlePromoCta = useCallback((params: PromoFilter) => {

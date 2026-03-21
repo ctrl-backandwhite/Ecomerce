@@ -7,14 +7,13 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 
-import React, {
+import {
   createContext,
   useContext,
   useState,
   useEffect,
   useCallback,
   useRef,
-  useMemo,
   type ReactNode,
 } from "react";
 
@@ -64,19 +63,7 @@ interface StoreContextType {
 // Context & provider
 // ─────────────────────────────────────────────────────────────────────────────
 
-// Persist the context object on globalThis so Vite's Fast Refresh / HMR does
-// not recreate it on every hot-reload.  Without this, StoreContext.tsx being
-// refreshed would call createContext() again, producing a new object that the
-// already-mounted <StoreProvider> (rendered with the OLD object) doesn't
-// provide — causing every useStore() call to see `undefined`.
-declare global {
-  // eslint-disable-next-line no-var
-  var __NEXA_StoreContext: ReturnType<typeof createContext<StoreContextType | undefined>> | undefined;
-}
-
-const StoreContext: React.Context<StoreContextType | undefined> =
-  globalThis.__NEXA_StoreContext ??
-  (globalThis.__NEXA_StoreContext = createContext<StoreContextType | undefined>(undefined));
+const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export function StoreProvider({ children }: { children: ReactNode }) {
 
@@ -92,7 +79,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ── Category state ────────────────────────────────────────────────────────
   const [categories, setCategories] = useState<Category[]>([]);
-  const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesLoading] = useState(false);
 
   // ── Local state ───────────────────────────────────────────────────────────
   const [brands, setBrands] = useState<Brand[]>(initialBrands);

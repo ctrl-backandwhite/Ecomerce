@@ -4,7 +4,7 @@
  * Provides a list of countries with their IANA timezones, persists the
  * user choice in localStorage, and exposes a live clock hook.
  */
-import React, {
+import {
     createContext,
     useContext,
     useState,
@@ -98,15 +98,7 @@ interface TimezoneContextType {
     closeSidebar: () => void;
 }
 
-// Persist on globalThis so Vite HMR doesn't recreate the context object.
-declare global {
-    // eslint-disable-next-line no-var
-    var __NEXA_TimezoneContext: ReturnType<typeof createContext<TimezoneContextType | null>> | undefined;
-}
-
-const TimezoneContext: React.Context<TimezoneContextType | null> =
-    globalThis.__NEXA_TimezoneContext ??
-    (globalThis.__NEXA_TimezoneContext = createContext<TimezoneContextType | null>(null));
+const TimezoneContext = createContext<TimezoneContextType | null>(null);
 
 function getInitialCountry(): string {
     try {

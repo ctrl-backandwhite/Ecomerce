@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, Suspense } from "react";
 import { Outlet, ScrollRestoration, useLocation } from "react-router";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
@@ -44,7 +44,9 @@ export function Layout() {
       <ScrollRestoration />
       <Header />
       <main ref={mainRef} className="flex-1 overflow-y-auto sm:overflow-visible">
-        <Outlet />
+        <Suspense fallback={<div className="flex items-center justify-center h-full min-h-48"><div className="w-6 h-6 border-2 border-gray-300 border-t-gray-700 rounded-full animate-spin" /></div>}>
+          <Outlet />
+        </Suspense>
       </main>
       <Footer />
       <CompareBar />

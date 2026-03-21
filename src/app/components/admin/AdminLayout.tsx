@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { Outlet, useLocation } from "react-router";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTour } from "./AdminTour";
@@ -138,7 +138,9 @@ export function AdminLayout() {
         {/* Page content */}
         <main className="flex-1 overflow-auto">
           <div className="p-5 md:p-7 h-full">
-            <Outlet />
+            <Suspense fallback={<div className="flex items-center justify-center h-full min-h-48"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" /></div>}>
+              <Outlet />
+            </Suspense>
           </div>
         </main>
       </div>

@@ -9,10 +9,7 @@ interface RecentlyViewedContextType {
   track: (p: Product) => void;
 }
 
-declare global { var __NEXA_RecentlyViewedCtx: ReturnType<typeof createContext<RecentlyViewedContextType | undefined>> | undefined; }
-const Ctx =
-  globalThis.__NEXA_RecentlyViewedCtx ??
-  (globalThis.__NEXA_RecentlyViewedCtx = createContext<RecentlyViewedContextType | undefined>(undefined));
+const Ctx = createContext<RecentlyViewedContextType | undefined>(undefined);
 
 export function RecentlyViewedProvider({ children }: { children: ReactNode }) {
   const [viewed, setViewed] = useState<Product[]>(() => {

@@ -186,10 +186,7 @@ const defaultUser: UserProfile = {
   },
 };
 
-declare global { var __NEXA_UserContext: ReturnType<typeof createContext<UserContextType | undefined>> | undefined; }
-const UserContext =
-  globalThis.__NEXA_UserContext ??
-  (globalThis.__NEXA_UserContext = createContext<UserContextType | undefined>(undefined));
+const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserProfile>(defaultUser);

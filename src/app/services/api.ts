@@ -10,6 +10,11 @@
  * ╚══════════════════════════════════════════════════════════════════╝
  */
 
+import type { Product } from "../data/products";
+import type { Category } from "../data/adminData";
+import type { Brand } from "../data/brands";
+import type { Attribute } from "../data/attributes";
+
 export const API_BASE = "https://api.tudominio.com/v1";
 
 // Helper for mock mode
@@ -63,20 +68,17 @@ export async function getProductBySlug(slug: string) {
 }
 
 /** POST /products — optimistic local upsert */
-export async function createProduct(data: Partial<import("../data/products").Product>) {
-  console.log("POST /products", data);
+export async function createProduct(data: Partial<Product>) {
   return delay({ ...data, id: `p-${Date.now()}` });
 }
 
 /** PUT /products/:id — optimistic local upsert */
-export async function updateProduct(id: string, data: Partial<import("../data/products").Product>) {
-  console.log(`PUT /products/${id}`, data);
+export async function updateProduct(id: string, data: Partial<Product>) {
   return delay({ id, ...data });
 }
 
 /** DELETE /products/:id — optimistic local remove */
-export async function deleteProduct(id: string) {
-  console.log(`DELETE /products/${id}`);
+export async function deleteProduct(_id: string) {
   return delay({ success: true });
 }
 
@@ -113,7 +115,6 @@ export async function getAdminOrderById(id: string) {
 }
 
 export async function updateOrderStatus(id: string, status: string) {
-  console.log(`PUT /orders/${id}/status`, { status });
   return delay({ id, status });
 }
 
@@ -150,7 +151,6 @@ export async function getCustomerById(id: string) {
 }
 
 export async function updateCustomerStatus(id: string, status: "active" | "inactive") {
-  console.log(`PUT /customers/${id}/status`, { status });
   return delay({ id, status });
 }
 
@@ -159,21 +159,18 @@ export async function updateCustomerStatus(id: string, status: "active" | "inact
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getCategories() {
-  return delay([] as import("../data/adminData").Category[]);
+  return delay([] as Category[]);
 }
 
-export async function createCategory(data: Partial<import("../data/adminData").Category>) {
-  console.log("POST /categories", data);
+export async function createCategory(data: Partial<Category>) {
   return delay({ ...data, id: `cat-${Date.now()}` });
 }
 
-export async function updateCategory(id: string, data: Partial<import("../data/adminData").Category>) {
-  console.log(`PUT /categories/${id}`, data);
+export async function updateCategory(id: string, data: Partial<Category>) {
   return delay({ id, ...data });
 }
 
-export async function deleteCategory(id: string) {
-  console.log(`DELETE /categories/${id}`);
+export async function deleteCategory(_id: string) {
   return delay({ success: true });
 }
 
@@ -186,18 +183,15 @@ export async function getBrands() {
   return delay(brands);
 }
 
-export async function createBrand(data: Partial<import("../data/brands").Brand>) {
-  console.log("POST /brands", data);
+export async function createBrand(data: Partial<Brand>) {
   return delay({ ...data, id: `br-${Date.now()}` });
 }
 
-export async function updateBrand(id: string, data: Partial<import("../data/brands").Brand>) {
-  console.log(`PUT /brands/${id}`, data);
+export async function updateBrand(id: string, data: Partial<Brand>) {
   return delay({ id, ...data });
 }
 
-export async function deleteBrand(id: string) {
-  console.log(`DELETE /brands/${id}`);
+export async function deleteBrand(_id: string) {
   return delay({ success: true });
 }
 
@@ -216,12 +210,10 @@ export async function getAllReviews() {
 }
 
 export async function approveReview(id: string, approved: boolean) {
-  console.log(`PUT /reviews/${id}/approve`, { approved });
   return delay({ id, approved });
 }
 
-export async function deleteReview(id: string) {
-  console.log(`DELETE /reviews/${id}`);
+export async function deleteReview(_id: string) {
   return delay({ success: true });
 }
 
@@ -335,17 +327,14 @@ export async function getAttributes() {
   return delay(attributes);
 }
 
-export async function createAttribute(data: Partial<import("../data/attributes").Attribute>) {
-  console.log("POST /attributes", data);
+export async function createAttribute(data: Partial<Attribute>) {
   return delay({ ...data, id: `attr-${Date.now()}` });
 }
 
-export async function updateAttribute(id: string, data: Partial<import("../data/attributes").Attribute>) {
-  console.log(`PUT /attributes/${id}`, data);
+export async function updateAttribute(id: string, data: Partial<Attribute>) {
   return delay({ id, ...data });
 }
 
-export async function deleteAttribute(id: string) {
-  console.log(`DELETE /attributes/${id}`);
+export async function deleteAttribute(_id: string) {
   return delay({ success: true });
 }

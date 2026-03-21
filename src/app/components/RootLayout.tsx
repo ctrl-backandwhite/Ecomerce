@@ -5,6 +5,7 @@
  * route component rendered by RouterProvider has access to the contexts,
  * regardless of how the host environment mounts the app.
  */
+import type { ReactNode } from "react";
 import { Outlet } from "react-router";
 import { CartProvider } from "../context/CartContext";
 import { UserProvider } from "../context/UserContext";
@@ -15,24 +16,32 @@ import { StoreProvider } from "../context/StoreContext";
 import { LanguageProvider } from "../context/LanguageContext";
 import { TimezoneProvider } from "../context/TimezoneContext";
 
+type Provider = ({ children }: { children: ReactNode }) => ReactNode;
+
+function composeProviders(...providers: Provider[]) {
+  return function Providers({ children }: { children: ReactNode }) {
+    return providers.reduceRight(
+      (acc, Provider) => <Provider>{acc}</Provider>,
+      children,
+    ) as React.ReactElement;
+  };
+}
+
+const AllProviders = composeProviders(
+  LanguageProvider,
+  TimezoneProvider,
+  StoreProvider,
+  UserProvider,
+  CartProvider,
+  CompareProvider,
+  RecentlyViewedProvider,
+  NewsletterProvider,
+);
+
 export function RootLayout() {
   return (
-    <LanguageProvider>
-      <TimezoneProvider>
-        <StoreProvider>
-          <UserProvider>
-            <CartProvider>
-              <CompareProvider>
-                <RecentlyViewedProvider>
-                  <NewsletterProvider>
-                    <Outlet />
-                  </NewsletterProvider>
-                </RecentlyViewedProvider>
-              </CompareProvider>
-            </CartProvider>
-          </UserProvider>
-        </StoreProvider>
-      </TimezoneProvider>
-    </LanguageProvider>
+    <AllProviders>
+      <Outlet />
+    </AllProviders>
   );
 }
