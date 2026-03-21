@@ -21,7 +21,7 @@ import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { priceRanges } from "../data/products";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../data/filters";
 import { useNexaProducts } from "../services/useNexaProducts";
-import { useNexaFeaturedCategories } from "../services/useNexaFeaturedCategories";
+import { useNexaCategories } from "../services/useNexaCategories";
 import { slugify, urls } from "../lib/urls";
 
 const PAGE_SIZE = 24;
@@ -41,7 +41,7 @@ export function Home() {
   const navigate = useNavigate();
 
   /* ── Resolve category/subcategory from slugs ───────────────── */
-  const { categories } = useNexaFeaturedCategories();
+  const { categories } = useNexaCategories();
 
   const resolvedCategory = useMemo(() => {
     if (!catSlug) return null;
