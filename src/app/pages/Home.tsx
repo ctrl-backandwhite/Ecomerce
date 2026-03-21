@@ -20,9 +20,9 @@ import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { priceRanges } from "../data/products";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../data/filters";
-import { useStore } from "../context/StoreContext";
+import { useNexaProducts } from "../services/useNexaProducts";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 24;
 
 function scrollToProducts() {
   const el = document.getElementById("productos");
@@ -30,44 +30,57 @@ function scrollToProducts() {
 }
 
 export function Home() {
+  /* ── Products from NEXA API ────────────────────────────────── */
+  const [searchParams, setSearchParams] = useSearchParams();
+  const selectedCategory = searchParams.get("category") || "Todos";
+  const selectedCategoryId = searchParams.get("categoryId") || undefined;
+  const selectedSubcategoryId = searchParams.get("subcategoryId") || undefined;
+  const searchQuery = searchParams.get("search") || "";
+  const soloOfertas = searchParams.get("ofertas") === "true";
+  const selectedSubcat = searchParams.get("subcategory") || "";
+  const selectedBrand = searchParams.get("brand") || "";
+  const selectedAttr = searchParams.get("attr") || "";
+
+  // When a subcategory is selected, use its ID to filter; otherwise use the parent category ID
+  const activeCategoryId = selectedSubcategoryId || selectedCategoryId;
+
+  console.log('[Home] URL params:', {
+    category: selectedCategory,
+    categoryId: selectedCategoryId,
+    subcategoryId: selectedSubcategoryId,
+    subcategory: selectedSubcat,
+    activeCategoryId,
+  });
+
   const {
     products,
-    productsLoading,
-    productsError,
-    refreshProducts,
+    loading: productsLoading,
+    loadingMore,
+    error: productsError,
+    hasMore,
     dataSource,
-  } = useStore();
-
-  const [searchParams, setSearchParams] = useSearchParams();
-  const selectedCategory = searchParams.get("category")    || "Todos";
-  const searchQuery      = searchParams.get("search")      || "";
-  const soloOfertas      = searchParams.get("ofertas")     === "true";
-  const selectedSubcat   = searchParams.get("subcategory") || "";
-  const selectedBrand    = searchParams.get("brand")       || "";
-  const selectedAttr     = searchParams.get("attr")        || "";
+    loadMore: apiLoadMore,
+    refetch: refreshProducts,
+  } = useNexaProducts(activeCategoryId);
 
   const [selectedPriceIdx, setSelectedPriceIdx] = useState(0);
-  const [selectedRating,   setSelectedRating]   = useState(0);
-  const [sortBy,           setSortBy]           = useState("featured");
-  const [visibleCount,     setVisibleCount]     = useState(PAGE_SIZE);
-  const [isLoading,        setIsLoading]        = useState(false);
-  const [mobileOpen,       setMobileOpen]       = useState(false);
-  const [filterKey,        setFilterKey]        = useState(0);
-  const [promoClickKey,    setPromoClickKey]    = useState(0);
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [sortBy, setSortBy] = useState("featured");
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [filterKey, setFilterKey] = useState(0);
+  const [promoClickKey, setPromoClickKey] = useState(0);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
-  /* ── Filtered list ─────────────────────────────────────────── */
+  /* ── Filtered list (client-side filters on API-loaded products) ── */
   const filtered = useMemo(() => {
     let list = [...products];
 
     if (soloOfertas)
       list = list.filter((p) => p.originalPrice !== undefined);
 
-    if (selectedCategory !== "Todos")
-      list = list.filter((p) => p.category === selectedCategory);
-
-    if (selectedSubcat)
+    // Skip client-side subcategory filter when API already filtered by subcategoryId
+    if (selectedSubcat && !selectedSubcategoryId)
       list = list.filter((p) => p.subcategory === selectedSubcat);
 
     if (selectedBrand)
@@ -94,47 +107,39 @@ export function Home() {
       );
 
     switch (sortBy) {
-      case "price-low":  list.sort((a, b) => a.price - b.price); break;
+      case "price-low": list.sort((a, b) => a.price - b.price); break;
       case "price-high": list.sort((a, b) => b.price - a.price); break;
-      case "rating":     list.sort((a, b) => b.rating - a.rating); break;
-      case "name":       list.sort((a, b) => a.name.localeCompare(b.name)); break;
-      default:           list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+      case "rating": list.sort((a, b) => b.rating - a.rating); break;
+      case "name": list.sort((a, b) => a.name.localeCompare(b.name)); break;
+      default: break;
     }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-      selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products]);
+    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products]);
 
-  const visible = filtered.slice(0, visibleCount);
-  const hasMore = visibleCount < filtered.length;
-
-  /* ── Reset visibleCount when filters change ─────────────────── */
+  /* ── Reset filterKey when local filters change ─────────────── */
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
     setFilterKey((k) => k + 1);
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-      selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas]);
+    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas]);
 
-  /* ── Scroll to products when category/subcategory changes from URL ── */
+  /* ── Scroll to products when category/subcategory/search changes from URL ── */
   const isFirstRender = useRef(true);
   useEffect(() => {
     if (isFirstRender.current) { isFirstRender.current = false; return; }
     scrollToProducts();
-  }, [selectedCategory, selectedSubcat]);
+  }, [selectedCategory, selectedSubcat, searchQuery]);
 
   /* ── Scroll to products when promo CTA is clicked ───────────── */
   useEffect(() => {
     if (promoClickKey > 0) scrollToProducts();
   }, [promoClickKey]);
 
-  /* ── Infinite scroll via IntersectionObserver ──────────────── */
+  /* ── Infinite scroll via IntersectionObserver (API pagination) ─ */
   const loadMore = useCallback(() => {
-    if (isLoading || !hasMore) return;
-    setIsLoading(true);
-    setTimeout(() => {
-      setVisibleCount((c) => c + PAGE_SIZE);
-      setIsLoading(false);
-    }, 600);
-  }, [isLoading, hasMore]);
+    if (loadingMore || !hasMore) return;
+    apiLoadMore();
+  }, [loadingMore, hasMore, apiLoadMore]);
 
   useEffect(() => {
     const el = sentinelRef.current;
@@ -151,7 +156,7 @@ export function Home() {
   const handlePromoCta = useCallback((params: PromoFilter) => {
     const next: Record<string, string> = {};
     if (params.category) next.category = params.category;
-    if (params.ofertas)  next.ofertas  = params.ofertas;
+    if (params.ofertas) next.ofertas = params.ofertas;
     setSearchParams(next);
     setSelectedPriceIdx(0);
     setSelectedRating(0);
@@ -160,17 +165,26 @@ export function Home() {
   }, [setSearchParams]);
 
   /* ── Filter handlers ─────────────────────────────────────────── */
-  const handleCategory = (cat: string) => {
+  const handleCategory = (cat: string, _catId?: string) => {
     const next = new URLSearchParams();
-    if (cat !== "Todos") next.set("category", cat);
+    if (cat !== "Todos") {
+      next.set("category", cat);
+      // L1 categories only expand the sidebar — no API call
+    }
     setSearchParams(next, { preventScrollReset: true });
   };
 
-  const handleSubcategory = (cat: string, sub: string) => {
+  const handleSubcategory = (cat: string, sub: string, catId?: string, subId?: string) => {
     const next = new URLSearchParams(searchParams.toString());
     next.set("category", cat);
-    if (sub === selectedSubcat) next.delete("subcategory");
-    else next.set("subcategory", sub);
+    if (catId) next.set("categoryId", catId);
+    if (sub === selectedSubcat) {
+      next.delete("subcategory");
+      next.delete("subcategoryId");
+    } else {
+      next.set("subcategory", sub);
+      if (subId) next.set("subcategoryId", subId);
+    }
     next.delete("attr");
     setSearchParams(next, { preventScrollReset: true });
   };
@@ -418,11 +432,10 @@ export function Home() {
                         p.delete("attr");
                         setSearchParams(p, { preventScrollReset: true });
                       }}
-                      className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${
-                        !selectedSubcat
-                          ? "border-gray-600 bg-gray-600 text-white"
-                          : "border-gray-200 text-gray-600 hover:border-gray-400"
-                      }`}
+                      className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${!selectedSubcat
+                        ? "border-gray-600 bg-gray-600 text-white"
+                        : "border-gray-200 text-gray-600 hover:border-gray-400"
+                        }`}
                     >
                       Todos
                     </button>
@@ -435,11 +448,10 @@ export function Home() {
                         <button
                           key={sub}
                           onClick={() => handleSubcategory(selectedCategory, sub)}
-                          className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${
-                            isActive
-                              ? "border-gray-600 bg-gray-600 text-white"
-                              : "border-gray-200 text-gray-600 hover:border-gray-400"
-                          }`}
+                          className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${isActive
+                            ? "border-gray-600 bg-gray-600 text-white"
+                            : "border-gray-200 text-gray-600 hover:border-gray-400"
+                            }`}
                         >
                           {sub}
                           <span className={`text-[10px] ${isActive ? "text-white/60" : "text-gray-400"}`}>
@@ -465,11 +477,10 @@ export function Home() {
                             <button
                               key={opt}
                               onClick={() => handleAttr(isActive ? "" : opt)}
-                              className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${
-                                isActive
-                                  ? "border-gray-700 bg-gray-700 text-white"
-                                  : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-300 hover:text-gray-700"
-                              }`}
+                              className={`inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border transition-all ${isActive
+                                ? "border-gray-700 bg-gray-700 text-white"
+                                : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                                }`}
                             >
                               {opt}
                               {isActive && <X className="w-2.5 h-2.5 ml-0.5" />}
@@ -508,7 +519,7 @@ export function Home() {
                   <p className="text-sm text-gray-500 mb-1">Error al cargar productos</p>
                   <p className="text-xs text-gray-400 mb-4 max-w-sm">{productsError}</p>
                   <button
-                    onClick={() => refreshProducts({})}
+                    onClick={() => refreshProducts()}
                     className="flex items-center gap-1.5 h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
                   >
                     <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -542,14 +553,14 @@ export function Home() {
                 filtered.length > 0 ? (
                   <div key={filterKey} className="nexa-grid-enter">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-                      {visible.map((product) => (
+                      {filtered.map((product) => (
                         <ProductCard key={product.id} product={product} />
                       ))}
                     </div>
 
                     {/* Sentinel + loader */}
                     <div ref={sentinelRef} className="mt-12 flex items-center justify-center min-h-[48px]">
-                      {isLoading && (
+                      {loadingMore && (
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Loader2 className="w-4 h-4 animate-spin" />
                           Cargando más productos...
@@ -606,10 +617,10 @@ export function Home() {
           {/* Desktop: icono + texto */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: "🚚", title: "Envío Gratis",  sub: "En compras sobre $100" },
+              { icon: "🚚", title: "Envío Gratis", sub: "En compras sobre $100" },
               { icon: "🔒", title: "Compra Segura", sub: "Protección garantizada" },
-              { icon: "💳", title: "Pago Fácil",    sub: "Múltiples métodos" },
-              { icon: "🎧", title: "Soporte 24/7",  sub: "Siempre disponible" },
+              { icon: "💳", title: "Pago Fácil", sub: "Múltiples métodos" },
+              { icon: "🎧", title: "Soporte 24/7", sub: "Siempre disponible" },
             ].map(({ icon, title, sub }) => (
               <div key={title} className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center flex-shrink-0 text-lg">
@@ -638,8 +649,8 @@ export function Home() {
         selectedRating={selectedRating}
         sortBy={sortBy}
         total={filtered.length}
-        onCategory={(cat) => { handleCategory(cat); setMobileOpen(false); }}
-        onSubcategory={(cat, sub) => { handleSubcategory(cat, sub); setMobileOpen(false); }}
+        onCategory={(cat, catId) => { handleCategory(cat, catId); setMobileOpen(false); }}
+        onSubcategory={(cat, sub, catId, subId) => { handleSubcategory(cat, sub, catId, subId); setMobileOpen(false); }}
         onBrand={handleBrand}
         onAttr={handleAttr}
         onPrice={setSelectedPriceIdx}

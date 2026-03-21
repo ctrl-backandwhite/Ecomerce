@@ -5,7 +5,7 @@ import {
   Image, Presentation, Menu, Bookmark, Sliders,
   Ticket, Star, RotateCcw, BarChart2, FileText,
   Truck, Percent, Search, Mail, Award, Gift, Send,
-  Megaphone, Shield, GitBranch,
+  Megaphone, Shield, GitBranch, Layers,
 } from "lucide-react";
 
 const menuGroups = [
@@ -13,61 +13,62 @@ const menuGroups = [
     label: "Panel",
     tourId: "tour-panel-group",
     items: [
-      { title: "Dashboard",       icon: LayoutDashboard, path: "/admin" },
-      { title: "Reportes",        icon: BarChart2,       path: "/admin/reportes" },
+      { title: "Dashboard", icon: LayoutDashboard, path: "/admin" },
+      { title: "Reportes", icon: BarChart2, path: "/admin/reportes" },
     ],
   },
   {
     label: "Ventas",
     tourId: "tour-ventas-group",
     items: [
-      { title: "Órdenes",         icon: ShoppingCart,    path: "/admin/ordenes" },
-      { title: "Facturas",        icon: FileText,        path: "/admin/facturas" },
-      { title: "Devoluciones",    icon: RotateCcw,       path: "/admin/devoluciones" },
+      { title: "Órdenes", icon: ShoppingCart, path: "/admin/ordenes" },
+      { title: "Facturas", icon: FileText, path: "/admin/facturas" },
+      { title: "Devoluciones", icon: RotateCcw, path: "/admin/devoluciones" },
     ],
   },
   {
     label: "Clientes",
     tourId: "tour-clientes-group",
     items: [
-      { title: "Clientes",        icon: Users,           path: "/admin/clientes" },
-      { title: "Reseñas",         icon: Star,            path: "/admin/resenas" },
-      { title: "Cupones",         icon: Ticket,          path: "/admin/cupones" },
-      { title: "Fidelidad",       icon: Award,           path: "/admin/puntos" },
-      { title: "Tarjetas regalo", icon: Gift,            path: "/admin/regalo" },
+      { title: "Clientes", icon: Users, path: "/admin/clientes" },
+      { title: "Reseñas", icon: Star, path: "/admin/resenas" },
+      { title: "Cupones", icon: Ticket, path: "/admin/cupones" },
+      { title: "Fidelidad", icon: Award, path: "/admin/puntos" },
+      { title: "Tarjetas regalo", icon: Gift, path: "/admin/regalo" },
     ],
   },
   {
     label: "Catálogo",
     tourId: "tour-catalogo-group",
     items: [
-      { title: "Productos",       icon: Package,         path: "/admin/productos" },
-      { title: "Categorías",      icon: Tag,             path: "/admin/categorias" },
-      { title: "Marcas",          icon: Bookmark,        path: "/admin/marcas" },
-      { title: "Atributos",       icon: Sliders,         path: "/admin/atributos" },
-      { title: "Medios",          icon: Image,           path: "/admin/medios" },
-      { title: "Garantías",       icon: Shield,          path: "/admin/garantias" },
+      { title: "Productos", icon: Package, path: "/admin/productos" },
+      { title: "Variantes", icon: Layers, path: "/admin/variantes" },
+      { title: "Categorías", icon: Tag, path: "/admin/categorias" },
+      { title: "Marcas", icon: Bookmark, path: "/admin/marcas" },
+      { title: "Atributos", icon: Sliders, path: "/admin/atributos" },
+      { title: "Medios", icon: Image, path: "/admin/medios" },
+      { title: "Garantías", icon: Shield, path: "/admin/garantias" },
     ],
   },
   {
     label: "Marketing",
     tourId: "tour-marketing-group",
     items: [
-      { title: "Campañas",        icon: Megaphone,       path: "/admin/campanas" },
-      { title: "Newsletter",      icon: Send,            path: "/admin/newsletter" },
-      { title: "SEO",             icon: Search,          path: "/admin/seo" },
-      { title: "Slides Home",     icon: Presentation,    path: "/admin/slides" },
+      { title: "Campañas", icon: Megaphone, path: "/admin/campanas" },
+      { title: "Newsletter", icon: Send, path: "/admin/newsletter" },
+      { title: "SEO", icon: Search, path: "/admin/seo" },
+      { title: "Slides Home", icon: Presentation, path: "/admin/slides" },
     ],
   },
   {
     label: "Sistema",
     tourId: "tour-sistema-group",
     items: [
-      { title: "Flujos",          icon: GitBranch,       path: "/admin/flujos" },
-      { title: "Envíos",          icon: Truck,           path: "/admin/envios" },
-      { title: "Impuestos",       icon: Percent,         path: "/admin/impuestos" },
-      { title: "Emails",          icon: Mail,            path: "/admin/emails" },
-      { title: "Configuración",   icon: Settings,        path: "/admin/configuracion" },
+      { title: "Flujos", icon: GitBranch, path: "/admin/flujos" },
+      { title: "Envíos", icon: Truck, path: "/admin/envios" },
+      { title: "Impuestos", icon: Percent, path: "/admin/impuestos" },
+      { title: "Emails", icon: Mail, path: "/admin/emails" },
+      { title: "Configuración", icon: Settings, path: "/admin/configuracion" },
     ],
   },
 ];
@@ -95,14 +96,12 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
       {/* Sidebar */}
       <aside
         id="tour-sidebar"
-        className={`fixed lg:static inset-y-0 left-0 z-50 bg-white border-r border-gray-100 min-h-screen flex flex-col transform transition-all duration-300 ${
-          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        } ${isCollapsed ? "lg:w-16" : "lg:w-60"} w-60`}
+        className={`fixed lg:static inset-y-0 left-0 z-50 bg-white border-r border-gray-100 min-h-screen flex flex-col transform transition-all duration-300 ${isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          } ${isCollapsed ? "lg:w-16" : "lg:w-60"} w-60`}
       >
         {/* Logo */}
-        <div className={`py-4 border-b border-gray-100 flex items-center transition-all duration-300 ${
-          isCollapsed ? "lg:px-2 justify-center" : "px-5 justify-between"
-        }`}>
+        <div className={`py-4 border-b border-gray-100 flex items-center transition-all duration-300 ${isCollapsed ? "lg:px-2 justify-center" : "px-5 justify-between"
+          }`}>
           {isCollapsed ? (
             <button
               onClick={onToggleCollapse}
@@ -158,19 +157,16 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
                     to={path}
                     onClick={onClose}
                     title={isCollapsed ? title : undefined}
-                    className={`flex items-center mx-2 rounded-xl text-[13px] transition-all group relative ${
-                      isCollapsed ? "justify-center px-0 py-2.5" : "justify-between px-3 py-2.5"
-                    } ${
-                      active
+                    className={`flex items-center mx-2 rounded-xl text-[13px] transition-all group relative ${isCollapsed ? "justify-center px-0 py-2.5" : "justify-between px-3 py-2.5"
+                      } ${active
                         ? "text-gray-900 bg-gray-50"
                         : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                      }`}
                   >
                     <div className={`flex items-center ${isCollapsed ? "gap-0" : "gap-2.5"}`}>
                       <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-                      <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${
-                        isCollapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"
-                      }`}>
+                      <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${isCollapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"
+                        }`}>
                         {title}
                       </span>
                     </div>
@@ -185,33 +181,28 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
         </nav>
 
         {/* Bottom */}
-        <div className={`border-t border-gray-100 space-y-1 transition-all duration-300 ${
-          isCollapsed ? "lg:p-2" : "p-4"
-        }`}>
+        <div className={`border-t border-gray-100 space-y-1 transition-all duration-300 ${isCollapsed ? "lg:p-2" : "p-4"
+          }`}>
           <Link
             to="/"
             title={isCollapsed ? "Ver Tienda" : undefined}
-            className={`w-full flex items-center rounded-xl text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors ${
-              isCollapsed ? "lg:justify-center lg:px-0 lg:py-2.5" : "gap-2.5 px-3 py-2.5"
-            }`}
+            className={`w-full flex items-center rounded-xl text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors ${isCollapsed ? "lg:justify-center lg:px-0 lg:py-2.5" : "gap-2.5 px-3 py-2.5"
+              }`}
           >
             <Store className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-            <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${
-              isCollapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"
-            }`}>
+            <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${isCollapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"
+              }`}>
               Ver Tienda
             </span>
           </Link>
           <button
             title={isCollapsed ? "Cerrar Sesión" : undefined}
-            className={`w-full flex items-center rounded-xl text-sm text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors ${
-              isCollapsed ? "lg:justify-center lg:px-0 lg:py-2.5" : "gap-2.5 px-3 py-2.5"
-            }`}
+            className={`w-full flex items-center rounded-xl text-sm text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors ${isCollapsed ? "lg:justify-center lg:px-0 lg:py-2.5" : "gap-2.5 px-3 py-2.5"
+              }`}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-            <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${
-              isCollapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"
-            }`}>
+            <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${isCollapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"
+              }`}>
               Cerrar Sesión
             </span>
           </button>

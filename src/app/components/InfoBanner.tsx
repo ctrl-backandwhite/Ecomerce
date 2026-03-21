@@ -1,32 +1,39 @@
 import { Truck, Shield, CreditCard } from "lucide-react";
 
+const items = [
+  { icon: Truck, text: "Envío gratis en compras sobre", highlight: "$100" },
+  { icon: Shield, text: "Compra 100% segura" },
+  { icon: CreditCard, text: "Múltiples métodos de pago" },
+];
+
 export function InfoBanner() {
+  /* Duplicate the list so the marquee loops seamlessly */
+  const doubled = [...items, ...items];
+
   return (
-    <div className="hidden sm:block bg-white border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:grid md:grid-cols-3 divide-y divide-gray-100 md:divide-y-0 md:gap-6 py-2 md:py-4">
-          {/* Envío Gratis */}
-          <div className="flex items-center justify-center gap-3 text-sm py-3 md:py-0">
-            <Truck className="w-5 h-5 text-gray-700 flex-shrink-0" />
-            <span className="text-gray-700">
-              <span className="hidden sm:inline">Envío gratis en compras sobre </span>
-              <span className="sm:hidden">Envío gratis +</span>
-              <span className="font-medium">$100</span>
+    <div className="bg-white border-b border-gray-200 overflow-hidden">
+      <div
+        className="flex animate-marquee whitespace-nowrap py-2.5"
+        /* pause on hover */
+        style={{ ["--marquee-speed" as string]: "22s" }}
+        onMouseEnter={(e) => (e.currentTarget.style.animationPlayState = "paused")}
+        onMouseLeave={(e) => (e.currentTarget.style.animationPlayState = "running")}
+      >
+        {doubled.map((item, i) => {
+          const Icon = item.icon;
+          return (
+            <span
+              key={i}
+              className="inline-flex items-center gap-2 text-sm text-gray-700 mx-8 sm:mx-12 flex-shrink-0"
+            >
+              <Icon className="w-4 h-4 text-gray-500 flex-shrink-0" strokeWidth={1.5} />
+              <span>
+                {item.text}
+                {item.highlight && <span className="font-medium ml-1">{item.highlight}</span>}
+              </span>
             </span>
-          </div>
-
-          {/* Compra Segura */}
-          <div className="flex items-center justify-center gap-3 text-sm py-3 md:py-0">
-            <Shield className="w-5 h-5 text-gray-700 flex-shrink-0" />
-            <span className="text-gray-700 font-medium">Compra 100% segura</span>
-          </div>
-
-          {/* Pago Fácil */}
-          <div className="flex items-center justify-center gap-3 text-sm py-3 md:py-0">
-            <CreditCard className="w-5 h-5 text-gray-700 flex-shrink-0" />
-            <span className="text-gray-700 font-medium">Múltiples métodos de pago</span>
-          </div>
-        </div>
+          );
+        })}
       </div>
     </div>
   );

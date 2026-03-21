@@ -137,6 +137,8 @@ interface CategoryFormData {
 export interface CategoryFormModalProps {
     /** If provided, we're editing. If null, we're creating. */
     editCategory: PagedCategory | null;
+    /** Pre-fill form from another category when cloning */
+    cloneData?: PagedCategory | null;
     /** Pre-fill parentId when creating a subcategory */
     defaultParentId?: string | null;
     locale: string;
@@ -147,6 +149,7 @@ export interface CategoryFormModalProps {
 /* ── Component ─────────────────────────────────────────── */
 export function CategoryFormModal({
     editCategory,
+    cloneData,
     defaultParentId,
     locale,
     onClose,
@@ -164,6 +167,15 @@ export function CategoryFormModal({
                 translations: editCategory.translations.length > 0
                     ? editCategory.translations.map((t) => ({ locale: t.locale, name: t.name }))
                     : [{ locale, name: "" }],
+            };
+        }
+        if (cloneData) {
+            return {
+                parentId: cloneData.parentId,
+                level: cloneData.level,
+                translations: cloneData.translations.length > 0
+                    ? cloneData.translations.map((t) => ({ locale: t.locale, name: t.name + " (Copia)" }))
+                    : [{ locale, name: "(Copia)" }],
             };
         }
         return {

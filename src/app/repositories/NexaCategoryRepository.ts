@@ -13,7 +13,8 @@ import { TTLCache } from "../lib/cache";
 import { ApiError, NetworkError } from "../lib/AppError";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
-const NEXA_CATEGORIES_BASE = "http://localhost:6001/api/v1/categories";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
+const NEXA_CATEGORIES_BASE = `${API_BASE}/api/v1/categories`;
 
 const CACHE_TTL_MS = 10 * 60_000; // 10 minutes
 
@@ -86,10 +87,47 @@ class NexaCategoryRepository {
         }
     }
 
+    /**
+     * Fetches only the featured (principal) categories for the given locale.
+     * Results are cached per locale for CACHE_TTL_MS.
+     */
+    async findFeatured(locale: string): Promise<NexaCategory[]> {
+        const cacheKey = `featured_${locale}`;
+        const cached = this.cache.get(cacheKey);
+        if (cached) return cached;
+
+        try {
+            const url = `${NEXA_CATEGORIES_BASE}/featured?locale=${encodeURIComponent(locale)}`;
+            const res = await fetch(url);
+
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody: NexaCategoryError = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch {
+                    /* response body was not JSON */
+                }
+                throw new ApiError(res.status, errorMsg);
+            }
+
+            const data: NexaCategory[] = await res.json();
+            this.cache.set(cacheKey, data, CACHE_TTL_MS);
+            return data;
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo conectar con el servicio de categorías destacadas",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
+
     /** Clears the cache for a specific locale (or all). */
     invalidate(locale?: string): void {
         if (locale) {
             this.cache.delete(`categories_${locale}`);
+            this.cache.delete(`featured_${locale}`);
         } else {
             this.cache.clear();
         }

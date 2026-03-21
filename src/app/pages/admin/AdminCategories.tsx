@@ -1,8 +1,8 @@
 import { useState, useMemo } from "react";
 import {
-  Search, Tag, Filter, ChevronDown,
+  Search, Tag, Filter, ChevronDown, Check,
   ToggleLeft, ToggleRight, RefreshCw, AlertTriangle,
-  Loader2, X, Copy, Eye, Plus, Pencil, Trash2, TriangleAlert, FileSpreadsheet,
+  Loader2, X, Copy, Eye, Plus, Pencil, Trash2, TriangleAlert, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePagedCategories } from "../../services/usePagedCategories";
@@ -275,15 +275,19 @@ interface CategoryRowProps {
   togglingActiveId: string | null;
   onViewDetail: (id: string) => void;
   onEdit: (category: import("../../repositories/NexaCategoryPagedRepository").PagedCategory) => void;
+  onClone: (category: import("../../repositories/NexaCategoryPagedRepository").PagedCategory) => void;
   onAddSubcategory: (parentId: string) => void;
   onDelete: (id: string) => void;
   deletingId: string | null;
+  isSelected: boolean;
+  onToggleSelect: (id: string) => void;
 }
 
 function CategoryRow({
   category, labels, locale, isExpanded, onToggleExpand,
   onTogglePublish, onToggleActive, togglingId, togglingActiveId,
-  onViewDetail, onEdit, onAddSubcategory, onDelete, deletingId,
+  onViewDetail, onEdit, onClone, onAddSubcategory, onDelete, deletingId,
+  isSelected, onToggleSelect,
 }: CategoryRowProps) {
   const isToggling = togglingId === category.id;
   const isTogglingActive = togglingActiveId === category.id;
@@ -297,6 +301,14 @@ function CategoryRow({
     >
       {/* Main row */}
       <div className="flex items-center gap-3 px-4 py-3">
+        {/* Checkbox */}
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={(e) => { e.stopPropagation(); onToggleSelect(category.id); }}
+          className="w-3.5 h-3.5 rounded-[4px] border-gray-300 text-indigo-600 focus:ring-1 focus:ring-indigo-400 focus:ring-offset-0 cursor-pointer accent-indigo-600 flex-shrink-0"
+        />
+
         {/* Level indicator */}
         <div
           className={`w-1 self-stretch rounded-full flex-shrink-0 ${category.level === 1
@@ -382,6 +394,15 @@ function CategoryRow({
           title={labels.edit}
         >
           <Pencil className="w-4 h-4" strokeWidth={1.5} />
+        </button>
+
+        {/* Clone */}
+        <button
+          onClick={(e) => { e.stopPropagation(); onClone(category); }}
+          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-colors flex-shrink-0"
+          title="Clonar"
+        >
+          <Copy className="w-4 h-4" strokeWidth={1.5} />
         </button>
 
         {/* Add subcategory */}
@@ -565,6 +586,54 @@ export function AdminCategories() {
   // ── Expand state ──────────────────────────
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  // ── Bulk selection state ───────────────────
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+  const allSelected = categories.length > 0 && categories.every((c) => selectedIds.has(c.id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(categories.map((c) => c.id)));
+    }
+  }
+
+  async function handleBulkDelete() {
+    try {
+      await nexaCategoryPagedRepository.deleteCategories([...selectedIds]);
+      toast.success(`${selectedIds.size} categoría(s) eliminada(s)`);
+      setSelectedIds(new Set());
+      setShowBulkDeleteConfirm(false);
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error";
+      toast.error(msg);
+    }
+  }
+
+  async function handleBulkStatus(status: "DRAFT" | "PUBLISHED") {
+    try {
+      await nexaCategoryPagedRepository.bulkUpdateStatus([...selectedIds], status);
+      toast.success(`${selectedIds.size} categoría(s) → ${status}`);
+      setSelectedIds(new Set());
+      refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error";
+      toast.error(msg);
+    }
+  }
+
 
 
   // ── Toggle publish state ──────────────────
@@ -619,6 +688,7 @@ export function AdminCategories() {
   const [formModalOpen, setFormModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<PagedCategory | null>(null);
   const [defaultParentId, setDefaultParentId] = useState<string | null>(null);
+  const [cloneSource, setCloneSource] = useState<PagedCategory | null>(null);
 
   function handleOpenCreate() {
     setEditingCategory(null);
@@ -638,10 +708,18 @@ export function AdminCategories() {
     setFormModalOpen(true);
   }
 
+  function handleClone(category: PagedCategory) {
+    setEditingCategory(null);
+    setDefaultParentId(null);
+    setCloneSource(category);
+    setFormModalOpen(true);
+  }
+
   function handleFormSaved() {
     setFormModalOpen(false);
     setEditingCategory(null);
     setDefaultParentId(null);
+    setCloneSource(null);
     refetch();
   }
 
@@ -717,7 +795,10 @@ export function AdminCategories() {
       {/* ── Header ──────────────────────────── */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-xl text-gray-900 tracking-tight">{labels.title}</h1>
+          <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Tag className="w-7 h-7 text-indigo-600" />
+            {labels.title}
+          </h1>
           <p className="text-xs text-gray-400 mt-1">
             {labels.subtitle(totalElements)}
           </p>
@@ -726,29 +807,24 @@ export function AdminCategories() {
           <button
             onClick={handleSync}
             disabled={syncing}
-            className={`flex items-center gap-1.5 text-xs border rounded-full px-4 py-2 transition-all flex-shrink-0 ${syncing
-              ? "border-blue-300 text-blue-400 bg-blue-50 cursor-not-allowed"
-              : "border-gray-200 text-gray-600 bg-white hover:bg-gray-50 hover:border-gray-300"
-              }`}
-            title={labels.sync}
+            className="w-9 h-9 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-gray-50 transition-all flex items-center justify-center flex-shrink-0"
+            title={syncing ? labels.syncing : labels.sync}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${syncing ? "animate-spin" : ""}`} strokeWidth={1.5} />
-            {syncing ? labels.syncing : labels.sync}
+            <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} strokeWidth={1.5} />
           </button>
           <button
             onClick={() => setBulkModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs border border-violet-200 text-violet-600 bg-violet-50 hover:bg-violet-100 rounded-full px-4 py-2 transition-all flex-shrink-0"
+            className="w-9 h-9 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all flex items-center justify-center flex-shrink-0"
             title={labels.bulkUpload}
           >
-            <FileSpreadsheet className="w-3.5 h-3.5" strokeWidth={1.5} />
-            {labels.bulkUpload}
+            <Upload className="w-4 h-4" strokeWidth={1.5} />
           </button>
           <button
             onClick={handleOpenCreate}
-            className="flex items-center justify-center w-8 h-8 text-white bg-gray-500 hover:bg-gray-600 rounded-full transition-all flex-shrink-0"
+            className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
             title={labels.newCategory}
           >
-            <Plus className="w-4 h-4" strokeWidth={2} />
+            <Plus className="w-4 h-4" strokeWidth={1.5} />
           </button>
         </div>
       </div>
@@ -888,6 +964,44 @@ export function AdminCategories() {
         </div>
       )}
 
+      {/* ── Selection toolbar ───────────────── */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-3 mb-3 px-4 py-2.5 bg-indigo-50/60 border border-indigo-100 rounded-xl">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            onChange={toggleSelectAll}
+            className="w-3.5 h-3.5 rounded-[4px] border-gray-300 text-indigo-600 focus:ring-1 focus:ring-indigo-400 focus:ring-offset-0 cursor-pointer accent-indigo-600"
+          />
+          <span className="text-xs text-indigo-700 font-medium">
+            {selectedIds.size} seleccionada(s)
+          </span>
+          <div className="flex items-center gap-1.5 ml-auto">
+            <button
+              onClick={() => handleBulkStatus("PUBLISHED")}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors"
+            >
+              <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Publicar
+            </button>
+            <button
+              onClick={() => handleBulkStatus("DRAFT")}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 transition-colors"
+            >
+              <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Borrador
+            </button>
+            <button
+              onClick={() => setShowBulkDeleteConfirm(true)}
+              className="inline-flex items-center gap-1 text-[11px] font-medium px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Eliminar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Content area ────────────────────── */}
       <div className="flex-1 overflow-auto space-y-2 pr-1 relative">
         {/* Loading state */}
@@ -947,9 +1061,12 @@ export function AdminCategories() {
             togglingActiveId={togglingActiveId}
             onViewDetail={setDetailCategoryId}
             onEdit={handleOpenEdit}
+            onClone={handleClone}
             onAddSubcategory={handleOpenCreateSubcategory}
             onDelete={handleDelete}
             deletingId={deletingId}
+            isSelected={selectedIds.has(cat.id)}
+            onToggleSelect={toggleSelect}
           />
         ))}
       </div>
@@ -971,9 +1088,10 @@ export function AdminCategories() {
       {formModalOpen && (
         <CategoryFormModal
           editCategory={editingCategory}
+          cloneData={cloneSource}
           defaultParentId={defaultParentId}
           locale={locale}
-          onClose={() => { setFormModalOpen(false); setEditingCategory(null); setDefaultParentId(null); }}
+          onClose={() => { setFormModalOpen(false); setEditingCategory(null); setDefaultParentId(null); setCloneSource(null); }}
           onSaved={handleFormSaved}
         />
       )}
@@ -985,6 +1103,46 @@ export function AdminCategories() {
         onUploaded={() => { refetch(); }}
         locale={locale}
       />
+
+      {/* ── Bulk delete confirmation modal ──── */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+            onClick={() => setShowBulkDeleteConfirm(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex justify-center mb-4">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center">
+                <TriangleAlert className="w-6 h-6 text-red-500" strokeWidth={1.5} />
+              </div>
+            </div>
+            <h3 className="text-base font-medium text-gray-900 text-center mb-1">
+              Eliminar {selectedIds.size} categoría(s)
+            </h3>
+            <p className="text-xs text-gray-400 text-center mb-6">
+              Esta acción no se puede deshacer.
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="flex-1 text-xs text-gray-600 border border-gray-200 rounded-xl px-4 py-2.5 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleBulkDelete}
+                className="flex-1 flex items-center justify-center gap-1.5 text-xs text-white bg-red-600 hover:bg-red-700 rounded-xl px-4 py-2.5 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Delete confirmation modal ───────── */}
       {confirmDeleteId && (

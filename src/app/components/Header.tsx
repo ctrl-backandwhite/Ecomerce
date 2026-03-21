@@ -42,6 +42,10 @@ export function Header() {
       navigate(`/?search=${encodeURIComponent(searchQuery)}`);
       setSearchQuery("");
       setIsMenuOpen(false);
+      setTimeout(() => {
+        const el = document.getElementById("productos");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
     }
   };
 

@@ -19,34 +19,35 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useStore } from "../context/StoreContext";
+import { useNexaFeaturedCategories } from "../services/useNexaFeaturedCategories";
+import type { NexaCategory } from "../repositories/NexaCategoryRepository";
 
 // ── Icon resolver by category name ───────────────────────────────────────────
 
 const ICON_RULES: [RegExp, LucideIcon][] = [
-  [/consumer electronics/i,                 Cpu],
-  [/jewelry.*watch|watch.*jewelry/i,        Watch],
-  [/home.*garden|home.*furniture|garden/i,  Sofa],
-  [/health.*beauty|beauty.*hair/i,          Sparkles],
-  [/pet supplies|^pet\b/i,                  Heart],
-  [/bags.*shoes|shoes.*bags/i,              ShoppingBag],
-  [/sports.*outdoor|outdoor.*sport/i,       Zap],
-  [/toys.*kid|kid.*bab|babies/i,            Baby],
-  [/hoodie|sweatshirt/i,                    Shirt],
-  [/women|mujer|lady|ladies|female/i,       Heart],
-  [/men'?s|hombre|male\b/i,                 Shirt],
+  [/consumer electronics/i, Cpu],
+  [/jewelry.*watch|watch.*jewelry/i, Watch],
+  [/home.*garden|home.*furniture|garden/i, Sofa],
+  [/health.*beauty|beauty.*hair/i, Sparkles],
+  [/pet supplies|^pet\b/i, Heart],
+  [/bags.*shoes|shoes.*bags/i, ShoppingBag],
+  [/sports.*outdoor|outdoor.*sport/i, Zap],
+  [/toys.*kid|kid.*bab|babies/i, Baby],
+  [/hoodie|sweatshirt/i, Shirt],
+  [/women|mujer|lady|ladies|female/i, Heart],
+  [/men'?s|hombre|male\b/i, Shirt],
   [/kid|child|children|boy|girl|junior|baby/i, Baby],
-  [/suit|set\b|tracksuit|sportswear/i,      Layers],
+  [/suit|set\b|tracksuit|sportswear/i, Layers],
   [/accessori|hat\b|cap\b|scarf|glove|sock/i, Tag],
-  [/sport|active|gym|fitness/i,             Zap],
-  [/winter|jacket|coat|down\b|thermal/i,    Snowflake],
-  [/dress|skirt|romper|jumpsuit/i,          Sparkles],
-  [/shirt|blouse|top\b|tee\b/i,             Shirt],
-  [/pant|jean|short\b|legging|bottom/i,     Scissors],
-  [/sweater|knit/i,                         Wind],
-  [/watch|jewelry|jewel|ring|necklace/i,    Watch],
-  [/electronic|gadget|device|tech/i,        Cpu],
-  [/home|garden|furniture|kitchen/i,        Sofa],
+  [/sport|active|gym|fitness/i, Zap],
+  [/winter|jacket|coat|down\b|thermal/i, Snowflake],
+  [/dress|skirt|romper|jumpsuit/i, Sparkles],
+  [/shirt|blouse|top\b|tee\b/i, Shirt],
+  [/pant|jean|short\b|legging|bottom/i, Scissors],
+  [/sweater|knit/i, Wind],
+  [/watch|jewelry|jewel|ring|necklace/i, Watch],
+  [/electronic|gadget|device|tech/i, Cpu],
+  [/home|garden|furniture|kitchen/i, Sofa],
 ];
 
 function getCategoryIcon(name: string): LucideIcon {
@@ -57,14 +58,14 @@ function getCategoryIcon(name: string): LucideIcon {
 }
 
 const SUB_ICON_RULES: [RegExp, LucideIcon][] = [
-  [/zip|zipper|cardigan/i,    Scissors],
-  [/pullover|crewneck/i,      Shirt],
-  [/oversized|loose/i,        Wind],
-  [/graphic|print|design/i,   Sparkles],
-  [/sport|active/i,           Zap],
+  [/zip|zipper|cardigan/i, Scissors],
+  [/pullover|crewneck/i, Shirt],
+  [/oversized|loose/i, Wind],
+  [/graphic|print|design/i, Sparkles],
+  [/sport|active/i, Zap],
   [/kids|children|boys|girls/i, Baby],
-  [/suit|set\b/i,             Layers],
-  [/vest|sleeveless/i,        Shirt],
+  [/suit|set\b/i, Layers],
+  [/vest|sleeveless/i, Shirt],
 ];
 
 function getSubIcon(name: string): LucideIcon {
@@ -76,34 +77,26 @@ function getSubIcon(name: string): LucideIcon {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-const MAX_CATS = 8;
-
 export function CategoryBar() {
-  const { products } = useStore();
+  const { categories, loading } = useNexaFeaturedCategories();
   const [openCategory, setOpenCategory] = useState<string | null>(null);
-  const [mobileOpen, setMobileOpen]     = useState<string | null>(null);
+  const [mobileOpen, setMobileOpen] = useState<string | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const navigate      = useNavigate();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const activeCategory  = searchParams.get("category");
+  const activeCategory = searchParams.get("category");
 
-  /* ── Build category tree ────────────────────────────────────── */
+  /* ── Build display tree from API categories ─────────────────── */
   const dynamicTree = useMemo(() => {
-    const catMap = new Map<string, Set<string>>();
-    products.forEach((p) => {
-      if (!p.category) return;
-      if (!catMap.has(p.category)) catMap.set(p.category, new Set());
-      if (p.subcategory) catMap.get(p.category)!.add(p.subcategory);
-    });
-    return Array.from(catMap.entries())
-      .map(([name, subs]) => ({
-        name,
-        count: products.filter((p) => p.category === name).length,
-        subcategories: Array.from(subs).sort(),
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, MAX_CATS);
-  }, [products]);
+    return categories.map((cat: NexaCategory) => ({
+      id: cat.id,
+      name: cat.name,
+      count: cat.subCategories.length,
+      subcategories: cat.subCategories
+        .map((sc) => ({ id: sc.id, name: sc.name }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    }));
+  }, [categories]);
 
   /* ── Close mobile panel on scroll ───────────────────────────── */
   useEffect(() => {
@@ -127,34 +120,44 @@ export function CategoryBar() {
   };
 
   /* ── Navigation helpers ──────────────────────────────────────── */
-  const goToCategory = (category: string) => {
+  const goToCategory = (category: string, _categoryId?: string) => {
     setOpenCategory(null);
     setMobileOpen(null);
-    navigate(`/?category=${encodeURIComponent(category)}`, { preventScrollReset: true });
+    const params = new URLSearchParams();
+    params.set("category", category);
+    // L1 categories only expand the sidebar — no API call
+    navigate(`/?${params.toString()}`, { preventScrollReset: true });
   };
 
-  const goToSubcategory = (category: string, subcategory: string) => {
+  const goToSubcategory = (
+    category: string,
+    subcategory: string,
+    parentCategoryId?: string,
+    subcategoryId?: string,
+  ) => {
     setOpenCategory(null);
     setMobileOpen(null);
-    navigate(
-      `/?category=${encodeURIComponent(category)}&subcategory=${encodeURIComponent(subcategory)}`,
-      { preventScrollReset: true },
-    );
+    const params = new URLSearchParams();
+    params.set("category", category);
+    if (parentCategoryId) params.set("categoryId", parentCategoryId);
+    params.set("subcategory", subcategory);
+    if (subcategoryId) params.set("subcategoryId", subcategoryId);
+    navigate(`/?${params.toString()}`, { preventScrollReset: true });
   };
 
   /* ── Mobile tap handler ──────────────────────────────────────── */
   const handleMobileTap = (cat: (typeof dynamicTree)[0]) => {
     if (cat.subcategories.length === 0) {
-      goToCategory(cat.name);
+      goToCategory(cat.name, cat.id);
     } else {
       setMobileOpen((prev) => (prev === cat.name ? null : cat.name));
     }
   };
 
-  const openCat       = dynamicTree.find((c) => c.name === openCategory);
+  const openCat = dynamicTree.find((c) => c.name === openCategory);
   const mobileOpenCat = dynamicTree.find((c) => c.name === mobileOpen);
 
-  if (dynamicTree.length === 0) return null;
+  if (loading || dynamicTree.length === 0) return null;
 
   return (
     <>
@@ -163,10 +166,10 @@ export function CategoryBar() {
           <div className="flex items-stretch w-full">
 
             {dynamicTree.map((cat) => {
-              const Icon     = getCategoryIcon(cat.name);
+              const Icon = getCategoryIcon(cat.name);
               const isActive = activeCategory === cat.name;
-              const isOpen   = openCategory   === cat.name;
-              const isMobOpen = mobileOpen    === cat.name;
+              const isOpen = openCategory === cat.name;
+              const isMobOpen = mobileOpen === cat.name;
 
               return (
                 <div
@@ -182,7 +185,7 @@ export function CategoryBar() {
                       if (window.innerWidth < 640) {
                         handleMobileTap(cat);
                       } else {
-                        goToCategory(cat.name);
+                        goToCategory(cat.name, cat.id);
                       }
                     }}
                     className={`
@@ -235,14 +238,14 @@ export function CategoryBar() {
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm text-gray-900 leading-snug truncate">{openCat.name}</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">{openCat.count} productos</p>
+                      <p className="text-[11px] text-gray-400 mt-0.5">{openCat.count} subcategorías</p>
                     </div>
                   </div>
 
                   <div className="h-px bg-gray-100" />
 
                   <button
-                    onClick={() => goToCategory(openCat.name)}
+                    onClick={() => goToCategory(openCat.name, openCat.id)}
                     className="inline-flex items-center gap-1.5 text-xs text-gray-700 bg-gray-200 hover:bg-gray-300 transition-colors px-4 py-2 rounded-lg self-start"
                   >
                     Ver todos
@@ -263,26 +266,18 @@ export function CategoryBar() {
                 {openCat.subcategories.length > 0 ? (
                   <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-1.5 content-start">
                     {openCat.subcategories.map((sub) => {
-                      const SubIcon = getSubIcon(sub);
-                      const count   = products.filter(
-                        (p) => p.category === openCat.name && p.subcategory === sub,
-                      ).length;
+                      const SubIcon = getSubIcon(sub.name);
                       return (
                         <button
-                          key={sub}
-                          onClick={() => goToSubcategory(openCat.name, sub)}
+                          key={sub.id}
+                          onClick={() => goToSubcategory(openCat.name, sub.name, openCat.id, sub.id)}
                           className="flex items-center gap-2 text-left py-2 px-2.5 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors group"
                         >
                           <SubIcon
                             className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0"
                             strokeWidth={1.5}
                           />
-                          <span className="truncate flex-1 text-xs">{sub}</span>
-                          {count > 0 && (
-                            <span className="text-[10px] text-gray-300 group-hover:text-gray-400 transition-colors flex-shrink-0">
-                              {count}
-                            </span>
-                          )}
+                          <span className="truncate flex-1 text-xs">{sub.name}</span>
                         </button>
                       );
                     })}
@@ -329,7 +324,7 @@ export function CategoryBar() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-900">{mobileOpenCat.name}</p>
-                  <p className="text-[11px] text-gray-400">{mobileOpenCat.count} productos</p>
+                  <p className="text-[11px] text-gray-400">{mobileOpenCat.count} subcategorías</p>
                 </div>
               </div>
               <button
@@ -343,7 +338,7 @@ export function CategoryBar() {
             {/* "Ver todos" CTA */}
             <div className="px-4 pt-3 pb-2 flex-shrink-0">
               <button
-                onClick={() => goToCategory(mobileOpenCat.name)}
+                onClick={() => goToCategory(mobileOpenCat.name, mobileOpenCat.id)}
                 className="w-full flex items-center justify-center gap-2 text-xs text-gray-700 bg-gray-200 hover:bg-gray-300 active:bg-gray-300 transition-colors px-4 py-2.5 rounded-xl"
               >
                 Ver todos en {mobileOpenCat.name}
@@ -359,24 +354,18 @@ export function CategoryBar() {
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {mobileOpenCat.subcategories.map((sub) => {
-                    const SubIcon = getSubIcon(sub);
-                    const count   = products.filter(
-                      (p) => p.category === mobileOpenCat.name && p.subcategory === sub,
-                    ).length;
+                    const SubIcon = getSubIcon(sub.name);
                     return (
                       <button
-                        key={sub}
-                        onClick={() => goToSubcategory(mobileOpenCat.name, sub)}
+                        key={sub.id}
+                        onClick={() => goToSubcategory(mobileOpenCat.name, sub.name, mobileOpenCat.id, sub.id)}
                         className="flex items-center gap-2 text-left py-2.5 px-3 rounded-xl bg-gray-50 active:bg-gray-100 transition-colors group"
                       >
                         <SubIcon
                           className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"
                           strokeWidth={1.5}
                         />
-                        <span className="truncate flex-1 text-xs text-gray-700">{sub}</span>
-                        {count > 0 && (
-                          <span className="text-[10px] text-gray-400 flex-shrink-0">{count}</span>
-                        )}
+                        <span className="truncate flex-1 text-xs text-gray-700">{sub.name}</span>
                       </button>
                     );
                   })}

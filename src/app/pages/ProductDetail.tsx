@@ -4,11 +4,15 @@ import { type Review } from "../data/reviews";
 import { getProductReviews, getReviewStats } from "../data/reviewSynthesizer";
 import { useCart } from "../context/CartContext";
 import { useStore } from "../context/StoreContext";
+import { useLanguage } from "../context/LanguageContext";
+import { nexaProductRepository } from "../repositories/NexaProductRepository";
+import { mapNexaProductDetail } from "../mappers/NexaProductMapper";
+import DOMPurify from "dompurify";
 import {
   Star, ShoppingCart, Heart, Truck, Shield,
   ArrowLeft, Plus, Minus, ChevronRight, Package,
   RefreshCw, Award, Check, ThumbsUp, ChevronDown,
-  MessageSquare, Pencil, Eye, Loader2,
+  MessageSquare, Pencil, Eye, Loader2, X, Grid,
 } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import { toast } from "sonner";
@@ -31,8 +35,8 @@ function Stars({ value, size = "sm" }: { value: number; size?: "sm" | "md" | "lg
         <Star
           key={i}
           className={`${cls} ${i <= Math.floor(value)
-              ? "fill-amber-400 text-amber-400"
-              : "text-gray-200"
+            ? "fill-amber-400 text-amber-400"
+            : "text-gray-200"
             }`}
           strokeWidth={1}
         />
@@ -92,8 +96,8 @@ function ReviewCard({ review, onHelpful }: { review: Review; onHelpful: (id: str
             <button
               onClick={() => { if (!helped) { setHelped(true); onHelpful(review.id); } }}
               className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all ${helped
-                  ? "border-gray-300 text-gray-700 bg-gray-100"
-                  : "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
+                ? "border-gray-300 text-gray-700 bg-gray-100"
+                : "border-gray-200 text-gray-500 hover:border-gray-300 hover:text-gray-700"
                 }`}
             >
               <ThumbsUp className="w-3 h-3" strokeWidth={1.5} />
@@ -376,8 +380,8 @@ function ReviewsSection({
                   key={f}
                   onClick={() => setFilter(f)}
                   className={`text-xs px-3 py-1.5 rounded-lg border transition-all ${filter === f
-                      ? "border-gray-600 bg-gray-600 text-white"
-                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                    ? "border-gray-600 bg-gray-600 text-white"
+                    : "border-gray-200 text-gray-600 hover:border-gray-300"
                     }`}
                 >
                   {f === "all" ? "Todas" : `${f} ★`}
@@ -491,10 +495,13 @@ function resolveColor(name: string): string {
 // ── Main component ────────────────────────────────────────────
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
-  const { products, getProductById } = useStore();
+  const { products } = useStore();
+  const { locale } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
+
+  const apiLocale = locale === "pt" ? "pt-BR" : locale;
 
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [detailLoading, setDetailLoading] = useState(true);
@@ -504,13 +511,41 @@ export function ProductDetail() {
     if (!id) { setProduct(null); setDetailLoading(false); return; }
     setDetailLoading(true);
     setProduct(undefined);
-    getProductById(id)
-      .then((p) => setProduct(p))
-      .catch(() => setProduct(null))
-      .finally(() => setDetailLoading(false));
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const controller = new AbortController();
+    nexaProductRepository
+      .findDetailByPid(id, apiLocale, controller.signal)
+      .then((raw) => {
+        if (!controller.signal.aborted) {
+          setProduct(mapNexaProductDetail(raw));
+        }
+      })
+      .catch((err) => {
+        if (!controller.signal.aborted) {
+          console.error("[ProductDetail] Error fetching detail:", err);
+          setProduct(null);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setDetailLoading(false);
+        }
+      });
+
+    return () => controller.abort();
+  }, [id, apiLocale]);
 
   const backTo: string = (location.state as any)?.from || "/";
+  /** Use browser history back when the user came from within the app,
+   *  so React Router's ScrollRestoration kicks in and the product cache
+   *  is kept intact.  Fall back to "/" for direct-URL access. */
+  const goBack = () => {
+    if (location.key !== "default") {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
 
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
@@ -518,6 +553,9 @@ export function ProductDetail() {
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
   const [showSpecsModal, setShowSpecsModal] = useState(false);
   const [specsViewed, setSpecsViewed] = useState(false);
+  const [showGallery, setShowGallery] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const MAX_VISIBLE_THUMBS = 6;
 
   const imageColRef = useRef<HTMLDivElement>(null);
   const [imageColHeight, setImageColHeight] = useState<number>(0);
@@ -564,9 +602,54 @@ export function ProductDetail() {
 
   const displayPrice = selectedVariant ? selectedVariant.price : product?.price ?? 0;
   const displayStock = selectedVariant ? selectedVariant.stock_quantity : product?.stock ?? 0;
-  const images = product?.images?.length
-    ? product.images
-    : product ? [{ url: product.image, alt: product.name, position: 1 }] : [];
+
+  // Compute price range from variant prices (or product-level priceMax)
+  const priceRange = useMemo(() => {
+    if (!product) return null;
+    if (selectedVariant) return null; // exact price, no range
+    const variantPrices = product.variants.map(v => v.price).filter(p => p > 0);
+    if (variantPrices.length >= 2) {
+      const mn = Math.min(...variantPrices);
+      const mx = Math.max(...variantPrices);
+      if (mn !== mx) return { min: mn, max: mx };
+    }
+    if (product.priceMax && product.priceMax !== product.price) {
+      return { min: product.price, max: product.priceMax };
+    }
+    return null;
+  }, [product, selectedVariant]);
+
+  // Extract images from description HTML, merge with product images (deduplicated),
+  // and produce a cleaned description without <img> tags.
+  const { images, cleanDescription } = useMemo(() => {
+    const baseImages = product?.images?.length
+      ? [...product.images]
+      : product ? [{ url: product.image, alt: product.name, position: 1 }] : [];
+
+    if (!product?.description) {
+      return { images: baseImages, cleanDescription: product?.description ?? "" };
+    }
+
+    // Parse description to extract <img> src URLs
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(product.description, "text/html");
+    const imgElements = doc.querySelectorAll("img");
+    const seen = new Set(baseImages.map(img => img.url));
+    const descImages: { url: string; alt: string; position: number }[] = [];
+
+    imgElements.forEach((el) => {
+      const src = el.getAttribute("src");
+      if (src && !seen.has(src)) {
+        seen.add(src);
+        descImages.push({ url: src, alt: el.getAttribute("alt") || product.name, position: baseImages.length + descImages.length });
+      }
+      // Remove the <img> from the DOM tree
+      el.remove();
+    });
+
+    const cleaned = doc.body.innerHTML;
+    return { images: [...baseImages, ...descImages], cleanDescription: cleaned };
+  }, [product]);
 
   const discount = product?.originalPrice
     ? Math.round(((product.originalPrice - displayPrice) / product.originalPrice) * 100)
@@ -611,8 +694,8 @@ export function ProductDetail() {
         <div className="text-center">
           <Loader2 className="w-16 h-16 text-gray-200 mx-auto mb-4 animate-spin" strokeWidth={1.5} />
           <h2 className="text-xl text-gray-900 mb-2">Cargando producto...</h2>
-          <p className="text-sm text-gray-400 mb-6">Por favor, espera mientras cargamos los detalles del producto.</p>
-          <button onClick={() => navigate("/")} className="text-sm text-gray-700 bg-gray-200 px-6 py-2.5 rounded-xl hover:bg-gray-300 transition-colors">
+          <p className="text-sm text-gray-400 mb-6">Obteniendo los detalles del producto, esto puede tardar unos segundos.</p>
+          <button onClick={goBack} className="text-sm text-gray-700 bg-gray-200 px-6 py-2.5 rounded-xl hover:bg-gray-300 transition-colors">
             Ver todos los productos
           </button>
         </div>
@@ -628,7 +711,7 @@ export function ProductDetail() {
           <Package className="w-16 h-16 text-gray-200 mx-auto mb-4" strokeWidth={1.5} />
           <h2 className="text-xl text-gray-900 mb-2">Producto no encontrado</h2>
           <p className="text-sm text-gray-400 mb-6">El producto que buscas no existe o fue eliminado.</p>
-          <button onClick={() => navigate("/")} className="text-sm text-gray-700 bg-gray-200 px-6 py-2.5 rounded-xl hover:bg-gray-300 transition-colors">
+          <button onClick={goBack} className="text-sm text-gray-700 bg-gray-200 px-6 py-2.5 rounded-xl hover:bg-gray-300 transition-colors">
             Ver todos los productos
           </button>
         </div>
@@ -656,7 +739,7 @@ export function ProductDetail() {
         </nav>
 
         <button
-          onClick={() => navigate(backTo)}
+          onClick={goBack}
           className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 mb-5 transition-colors"
         >
           <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -718,11 +801,11 @@ export function ProductDetail() {
                       </div>
                     )}
                   </div>
-                  <div className="relative aspect-square overflow-hidden rounded-2xl">
+                  <div className="relative aspect-square overflow-hidden rounded-2xl bg-white">
                     <img
                       src={images[activeImage]?.url ?? product.image}
                       alt={images[activeImage]?.alt ?? product.name}
-                      className="w-full h-full object-cover transition-all duration-300"
+                      className="w-full h-full object-contain p-4 transition-all duration-300"
                     />
                     {images.length > 1 && (
                       <div className="absolute bottom-4 right-4 bg-black/40 text-white text-xs px-2.5 py-1 rounded-lg backdrop-blur-sm">
@@ -748,21 +831,30 @@ export function ProductDetail() {
                   </div>
                 </div>
 
-                {/* Thumbnail carousel */}
+                {/* Thumbnail carousel — max 6 visible, then "+N" opens gallery */}
                 {images.length > 1 && (
                   <div className="flex flex-wrap gap-2">
-                    {images.map((img, i) => (
+                    {images.slice(0, MAX_VISIBLE_THUMBS).map((img, i) => (
                       <button
                         key={i}
                         onClick={() => setActiveImage(i)}
                         className={`flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden border transition-all bg-gray-50 ${activeImage === i
-                            ? "border-transparent shadow-[0_0_0_2px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.12)] scale-[1.05]"
-                            : "border-gray-100 hover:shadow-md opacity-70 hover:opacity-100"
+                          ? "border-transparent shadow-[0_0_0_2px_rgba(0,0,0,0.15),0_4px_12px_rgba(0,0,0,0.12)] scale-[1.05]"
+                          : "border-gray-100 hover:shadow-md opacity-70 hover:opacity-100"
                           }`}
                       >
                         <img src={img.url} alt={img.alt} className="w-full h-full object-contain p-0.5" />
                       </button>
                     ))}
+                    {images.length > MAX_VISIBLE_THUMBS && (
+                      <button
+                        onClick={() => { setGalleryIndex(0); setShowGallery(true); }}
+                        className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-100 hover:bg-gray-200 transition-all flex items-center justify-center"
+                        title="Ver galería completa"
+                      >
+                        <span className="text-[10px] font-semibold text-gray-600">+{images.length - MAX_VISIBLE_THUMBS}</span>
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -790,13 +882,21 @@ export function ProductDetail() {
               <div className="flex-1 min-w-0">
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 flex flex-col gap-3 h-full">
 
-                  <div className="flex items-baseline gap-2.5">
-                    <span className="text-3xl text-gray-900 tracking-tight">${displayPrice.toLocaleString()}</span>
-                    {product.originalPrice && product.originalPrice > displayPrice && (
-                      <span className="text-base text-gray-400 line-through">${product.originalPrice.toLocaleString()}</span>
+                  <div className="flex items-baseline gap-2.5 flex-wrap">
+                    {priceRange ? (
+                      <span className="text-3xl text-gray-900 tracking-tight">
+                        ${priceRange.min.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <span className="text-xl text-gray-400 mx-1">–</span>
+                        ${priceRange.max.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    ) : (
+                      <span className="text-3xl text-gray-900 tracking-tight">${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     )}
-                    {discount > 0 && (
-                      <span className="text-xs text-red-500">Ahorras ${(product.originalPrice! - displayPrice).toLocaleString()}</span>
+                    {!priceRange && product.originalPrice && product.originalPrice > displayPrice && (
+                      <span className="text-base text-gray-400 line-through">${product.originalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    )}
+                    {!priceRange && discount > 0 && (
+                      <span className="text-xs text-red-500">Ahorras ${(product.originalPrice! - displayPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     )}
                   </div>
 
@@ -848,8 +948,8 @@ export function ProductDetail() {
                                 <button
                                   onClick={() => setSelectedAttrs((prev) => ({ ...prev, [attrName]: val }))}
                                   className={`w-6 h-6 rounded-full border-2 transition-all ${isSelected
-                                      ? "border-gray-900 scale-110 shadow-md"
-                                      : "border-gray-200 hover:border-gray-400 hover:scale-105"
+                                    ? "border-gray-900 scale-110 shadow-md"
+                                    : "border-gray-200 hover:border-gray-400 hover:scale-105"
                                     } ${!hasStock ? "opacity-40" : ""}`}
                                   style={{ background: bg }}
                                 />
@@ -913,8 +1013,8 @@ export function ProductDetail() {
                       }}
                       title={wishlist ? "Quitar de favoritos" : "Agregar a favoritos"}
                       className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${wishlist
-                          ? "border-red-200 bg-red-50"
-                          : "border-gray-200 hover:border-gray-300 bg-white"
+                        ? "border-red-200 bg-red-50"
+                        : "border-gray-200 hover:border-gray-300 bg-white"
                         }`}
                     >
                       <Heart
@@ -1019,7 +1119,10 @@ export function ProductDetail() {
         {/* Description */}
         <div className="bg-white rounded-2xl border border-gray-100 p-6 mb-10">
           <h2 className="text-sm text-gray-900 mb-3 tracking-tight">Descripción</h2>
-          <p className="text-sm text-gray-600 leading-relaxed">{product.description}</p>
+          <div
+            className="text-sm text-gray-600 leading-relaxed prose prose-sm max-w-none"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(cleanDescription) }}
+          />
           {product.keywords?.length > 0 && (
             <div className="mt-4 flex flex-wrap gap-1.5">
               {product.keywords.map((kw, i) => (
@@ -1123,6 +1226,65 @@ export function ProductDetail() {
               >
                 Cerrar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Gallery / Lightbox modal ──────────────────────────── */}
+      {showGallery && (
+        <div className="fixed inset-0 z-[60] bg-black/90 flex flex-col" onClick={() => setShowGallery(false)}>
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 flex-shrink-0" onClick={e => e.stopPropagation()}>
+            <span className="text-white/70 text-sm">
+              {galleryIndex + 1} / {images.length}
+            </span>
+            <button
+              onClick={() => setShowGallery(false)}
+              className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors"
+            >
+              <X className="w-5 h-5 text-white" strokeWidth={1.5} />
+            </button>
+          </div>
+
+          {/* Main image */}
+          <div className="flex-1 flex items-center justify-center relative px-4 min-h-0" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setGalleryIndex(i => (i - 1 + images.length) % images.length)}
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            >
+              <ChevronRight className="w-6 h-6 text-white rotate-180" strokeWidth={1.5} />
+            </button>
+
+            <img
+              src={images[galleryIndex]?.url}
+              alt={images[galleryIndex]?.alt}
+              className="max-h-[70vh] max-w-full object-contain rounded-lg select-none"
+            />
+
+            <button
+              onClick={() => setGalleryIndex(i => (i + 1) % images.length)}
+              className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors z-10"
+            >
+              <ChevronRight className="w-6 h-6 text-white" strokeWidth={1.5} />
+            </button>
+          </div>
+
+          {/* Thumbnail strip */}
+          <div className="flex-shrink-0 px-4 py-3 overflow-x-auto" onClick={e => e.stopPropagation()}>
+            <div className="flex gap-2 justify-center">
+              {images.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setGalleryIndex(i)}
+                  className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${galleryIndex === i
+                    ? "border-white shadow-lg scale-105"
+                    : "border-transparent opacity-50 hover:opacity-80"
+                    }`}
+                >
+                  <img src={img.url} alt={img.alt} className="w-full h-full object-contain bg-white/10 p-0.5" />
+                </button>
+              ))}
             </div>
           </div>
         </div>

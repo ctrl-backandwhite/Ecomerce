@@ -11,7 +11,8 @@
 import { ApiError, NetworkError } from "../lib/AppError";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
-const CATEGORIES_URL = "http://localhost:6001/api/v1/categories";
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
+const CATEGORIES_URL = `${API_BASE}/api/v1/categories`;
 const BASE_URL = `${CATEGORIES_URL}/paged`;
 
 // ── API types ────────────────────────────────────────────────────────────────
@@ -366,6 +367,60 @@ class NexaCategoryPagedRepository {
             if (err instanceof ApiError) throw err;
             throw new NetworkError(
                 "No se pudo realizar la carga masiva de categorías",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
+
+    /**
+     * Delete multiple categories by IDs.
+     */
+    async deleteCategories(ids: string[]): Promise<void> {
+        try {
+            const res = await fetch(CATEGORIES_URL, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(ids),
+            });
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody: CategoryApiError = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch { /* not JSON */ }
+                throw new ApiError(res.status, errorMsg);
+            }
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo eliminar las categorías",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
+
+    /**
+     * Bulk update category status (DRAFT / PUBLISHED).
+     */
+    async bulkUpdateStatus(ids: string[], status: "DRAFT" | "PUBLISHED"): Promise<void> {
+        try {
+            const res = await fetch(`${CATEGORIES_URL}/bulk-status`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ids, status }),
+            });
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody: CategoryApiError = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch { /* not JSON */ }
+                throw new ApiError(res.status, errorMsg);
+            }
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo cambiar el estado de las categorías",
                 err instanceof Error ? err : undefined,
             );
         }

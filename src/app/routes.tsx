@@ -23,6 +23,7 @@ import { AdminMedia } from "./pages/admin/AdminMedia";
 import { AdminSlides } from "./pages/admin/AdminSlides";
 import { AdminBrands } from "./pages/admin/AdminBrands";
 import { AdminAttributes } from "./pages/admin/AdminAttributes";
+import { AdminVariants } from "./pages/admin/AdminVariants";
 import { AdminShipping } from "./pages/admin/AdminShipping";
 import { AdminTaxes } from "./pages/admin/AdminTaxes";
 import { AdminSEO } from "./pages/admin/AdminSEO";
@@ -89,6 +90,7 @@ export const router = createBrowserRouter([
           { path: "regalo", Component: AdminGiftCards },
           // Catálogo
           { path: "productos", Component: AdminProducts },
+          { path: "variantes", Component: AdminVariants },
           { path: "categorias", Component: AdminCategories },
           { path: "marcas", Component: AdminBrands },
           { path: "atributos", Component: AdminAttributes },

@@ -79,8 +79,8 @@ interface MobileFilterDrawerProps {
   selectedRating: number;
   sortBy: string;
   total: number;
-  onCategory: (cat: string) => void;
-  onSubcategory: (cat: string, sub: string) => void;
+  onCategory: (cat: string, catId?: string) => void;
+  onSubcategory: (cat: string, sub: string, catId?: string, subId?: string) => void;
   onBrand: (brand: string) => void;
   onAttr: (attr: string) => void;
   onPrice: (idx: number) => void;
@@ -256,8 +256,8 @@ export function MobileFilterDrawer({
             <button
               onClick={() => { onCategory("Todos"); }}
               className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${selectedCategory === "Todos"
-                  ? "bg-gray-600 text-white"
-                  : "text-gray-600 hover:bg-gray-50"
+                ? "bg-gray-600 text-white"
+                : "text-gray-600 hover:bg-gray-50"
                 }`}
             >
               <span className="flex items-center gap-2.5">
@@ -306,13 +306,13 @@ export function MobileFilterDrawer({
                 <div key={cat.id}>
                   <div
                     className={`flex items-center transition-colors ${isActive
-                        ? "bg-gray-600 text-white"
-                        : "text-gray-600 hover:bg-gray-50"
+                      ? "bg-gray-600 text-white"
+                      : "text-gray-600 hover:bg-gray-50"
                       }`}
                   >
                     <button
                       onClick={() => {
-                        onCategory(cat.name);
+                        onCategory(cat.name, cat.id);
                         if (!isOpen) toggleCat(cat.name);
                       }}
                       className="flex-1 flex items-center gap-2.5 px-4 py-2.5 text-sm text-left"
@@ -345,10 +345,10 @@ export function MobileFilterDrawer({
                         return (
                           <button
                             key={sub.id}
-                            onClick={() => onSubcategory(cat.name, sub.name)}
+                            onClick={() => onSubcategory(cat.name, sub.name, cat.id, sub.id)}
                             className={`w-full flex items-center justify-between pl-11 pr-4 py-2 text-[13px] transition-colors ${isSubActive
-                                ? "text-gray-900 bg-gray-100"
-                                : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
+                              ? "text-gray-900 bg-gray-100"
+                              : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                               }`}
                           >
                             <span className="flex items-center gap-2">
@@ -374,8 +374,8 @@ export function MobileFilterDrawer({
                 key={range.label}
                 onClick={() => onPrice(i)}
                 className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${selectedPriceIdx === i
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 <span className="flex items-center gap-2">
@@ -395,8 +395,8 @@ export function MobileFilterDrawer({
                 key={r}
                 onClick={() => onRating(selectedRating === r ? 0 : r)}
                 className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${selectedRating === r
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 {selectedRating === r
@@ -424,8 +424,8 @@ export function MobileFilterDrawer({
                   key={brand}
                   onClick={() => onBrand(selectedBrand === brand ? "" : brand)}
                   className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${selectedBrand === brand
-                      ? "bg-gray-100 text-gray-900"
-                      : "text-gray-600 hover:bg-gray-50"
+                    ? "bg-gray-100 text-gray-900"
+                    : "text-gray-600 hover:bg-gray-50"
                     }`}
                 >
                   <span className="flex items-center gap-2">
@@ -459,8 +459,8 @@ export function MobileFilterDrawer({
                         key={opt}
                         onClick={() => onAttr(isActive ? "" : opt)}
                         className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded-lg border transition-all ${isActive
-                            ? "border-gray-600 bg-gray-600 text-white"
-                            : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-300"
+                          ? "border-gray-600 bg-gray-600 text-white"
+                          : "border-gray-100 bg-gray-50 text-gray-500 hover:border-gray-300"
                           }`}
                       >
                         {opt}
@@ -486,8 +486,8 @@ export function MobileFilterDrawer({
                 key={val}
                 onClick={() => onSort(val)}
                 className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${sortBy === val
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50"
+                  ? "bg-gray-100 text-gray-900"
+                  : "text-gray-600 hover:bg-gray-50"
                   }`}
               >
                 {sortBy === val

@@ -18,7 +18,7 @@ function MiniProductCard({ product }: { product: Product }) {
       className="group flex-shrink-0 w-44 sm:w-48 bg-white border border-gray-100 rounded-lg overflow-hidden hover:border-gray-300 hover:shadow-md transition-all duration-200"
     >
       <div className="relative aspect-square overflow-hidden bg-gray-50">
-        <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+        <img src={product.image} alt={product.name} className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300" />
         {discount ? (
           <span className="absolute top-2 left-2 text-[10px] tracking-wide px-1.5 py-0.5 bg-gray-600 text-white rounded">-{discount}%</span>
         ) : null}

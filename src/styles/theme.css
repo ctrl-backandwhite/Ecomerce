@@ -105,6 +105,15 @@
   animation: icon-blink 1.4s ease-in-out infinite;
 }
 
+/* ── Marquee infinite scroll ── */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee var(--marquee-speed, 20s) linear infinite;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

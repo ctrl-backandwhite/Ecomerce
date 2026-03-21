@@ -1,5 +1,6 @@
 import { X, Star, ShoppingCart, Heart, ExternalLink, Check, BarChart2, Quote } from "lucide-react";
 import { Link } from "react-router";
+import { createPortal } from "react-dom";
 import type { Product } from "../data/products";
 import { useCart } from "../context/CartContext";
 import { useCompare } from "../context/CompareContext";
@@ -15,7 +16,7 @@ interface Props {
 
 export function QuickViewModal({ product: p, onClose }: Props) {
   const { addToCart } = useCart();
-  const { add, has }  = useCompare();
+  const { add, has } = useCompare();
 
   const featuredReview = useMemo(() =>
     p ? getBestReview(p.id, p.name, p.category) : null,
@@ -31,7 +32,7 @@ export function QuickViewModal({ product: p, onClose }: Props) {
     ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
     : 0;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {p && (
         <>
@@ -129,9 +130,8 @@ export function QuickViewModal({ product: p, onClose }: Props) {
                     </button>
                     <button
                       onClick={() => add(p)}
-                      className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${
-                        has(p.id) ? "border-gray-500 bg-gray-500 text-white" : "border-gray-200 text-gray-500 hover:bg-gray-50"
-                      }`}
+                      className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${has(p.id) ? "border-gray-500 bg-gray-500 text-white" : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                        }`}
                     >
                       {has(p.id) ? <Check className="w-4 h-4" /> : <BarChart2 className="w-4 h-4" strokeWidth={1.5} />}
                     </button>
@@ -154,6 +154,7 @@ export function QuickViewModal({ product: p, onClose }: Props) {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }

@@ -126,7 +126,7 @@ function getInitialLocale(): Locale {
     } catch {
         /* SSR / privacy mode */
     }
-    return "es";
+    return "en";
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {

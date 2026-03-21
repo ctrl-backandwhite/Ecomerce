@@ -131,12 +131,12 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
               {/* Image */}
               <Link
                 to={`/producto/${p.id}`}
-                className="block relative h-[130px] bg-gray-50 overflow-hidden"
+                className="block relative aspect-square bg-gray-50 overflow-hidden"
               >
                 <img
                   src={p.image}
                   alt={p.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-500"
                 />
                 {/* Discount badge */}
                 <span className="absolute top-2 left-2 bg-red-500 text-white text-[11px] px-1.5 py-0.5 rounded-md tabular-nums">

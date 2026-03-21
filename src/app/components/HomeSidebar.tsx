@@ -44,8 +44,8 @@ interface HomeSidebarProps {
   selectedRating: number;
   sortBy: string;
   total: number;
-  onCategory: (cat: string) => void;
-  onSubcategory: (cat: string, sub: string) => void;
+  onCategory: (cat: string, catId?: string) => void;
+  onSubcategory: (cat: string, sub: string, catId?: string, subId?: string) => void;
   onBrand: (brand: string) => void;
   onAttr: (attr: string) => void;
   onPrice: (idx: number) => void;
@@ -273,14 +273,14 @@ export function HomeSidebar({
             {/* Todos */}
             <button
               onClick={() => onCategory("Todos")}
-              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${selectedCategory === "Todos"
+              className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors ${selectedCategory === "Todos"
                 ? "bg-gray-600 text-white"
                 : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
             >
-              <span className="flex items-center gap-2.5">
+              <span className="flex items-center gap-2">
                 <ShoppingBag
-                  className={`w-4 h-4 flex-shrink-0 ${selectedCategory === "Todos" ? "text-white" : "text-gray-400"}`}
+                  className={`w-3.5 h-3.5 flex-shrink-0 ${selectedCategory === "Todos" ? "text-white" : "text-gray-400"}`}
                   strokeWidth={1.5}
                 />
                 Todos
@@ -330,13 +330,13 @@ export function HomeSidebar({
                   >
                     <button
                       onClick={() => {
-                        onCategory(cat.name);
+                        onCategory(cat.name, cat.id);
                         if (!isOpen) toggle(cat.name);
                       }}
-                      className="flex-1 flex items-center gap-2.5 px-4 py-2.5 text-sm text-left"
+                      className="flex-1 flex items-center gap-2 px-3 py-2 text-xs text-left"
                     >
                       <CatIcon
-                        className={`w-4 h-4 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`}
+                        className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`}
                         strokeWidth={1.5}
                       />
                       <span className="truncate">{cat.name}</span>
@@ -349,7 +349,7 @@ export function HomeSidebar({
                     {subCats.length > 0 && (
                       <button
                         onClick={() => toggle(cat.name)}
-                        className="px-3 py-2.5"
+                        className="px-2.5 py-2"
                       >
                         {isOpen
                           ? <ChevronDown className="w-3.5 h-3.5 opacity-40" />
@@ -365,8 +365,8 @@ export function HomeSidebar({
                         return (
                           <button
                             key={sub.id}
-                            onClick={() => onSubcategory(cat.name, sub.name)}
-                            className={`w-full flex items-center justify-between pl-11 pr-4 py-2 text-[13px] transition-colors ${isSubActive
+                            onClick={() => onSubcategory(cat.name, sub.name, cat.id, sub.id)}
+                            className={`w-full flex items-center justify-between pl-6 pr-3 py-1.5 text-xs transition-colors ${isSubActive
                               ? "text-gray-900 bg-gray-100"
                               : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                               }`}

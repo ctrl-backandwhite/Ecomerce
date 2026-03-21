@@ -86,7 +86,7 @@ export function ProductCard({ product }: ProductCardProps) {
             onMouseMove={handleMouseMove}
             onMouseLeave={handleMouseLeave}
             style={{ transformStyle: "preserve-3d" }}
-            className="relative h-48 bg-white overflow-hidden cursor-pointer"
+            className="relative aspect-square bg-white overflow-hidden cursor-pointer"
           >
             <div
               style={{
@@ -101,7 +101,7 @@ export function ProductCard({ product }: ProductCardProps) {
               <img
                 src={product.image}
                 alt={product.name}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain p-3"
               />
               {/* Glare */}
               <div
@@ -131,11 +131,10 @@ export function ProductCard({ product }: ProductCardProps) {
                 <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
               <button
-                className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-colors ${
-                  inCompare(product.id)
-                    ? "bg-gray-600 text-white"
-                    : "bg-white/90 hover:bg-white text-gray-600"
-                }`}
+                className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-colors ${inCompare(product.id)
+                  ? "bg-gray-600 text-white"
+                  : "bg-white/90 hover:bg-white text-gray-600"
+                  }`}
                 onClick={handleCompare}
                 title="Comparar"
               >
@@ -191,10 +190,18 @@ export function ProductCard({ product }: ProductCardProps) {
             {/* Price */}
             <div className="mt-auto">
               <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-2xl text-gray-900">${product.price}</span>
+                {product.priceMax && product.priceMax !== product.price ? (
+                  <span className="text-2xl text-gray-900">
+                    ${product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <span className="text-base text-gray-400 mx-0.5">–</span>
+                    ${product.priceMax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                ) : (
+                  <span className="text-2xl text-gray-900">${product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                )}
                 {product.originalPrice && (
                   <span className="text-sm text-gray-500 line-through">
-                    ${product.originalPrice}
+                    ${product.originalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 )}
               </div>

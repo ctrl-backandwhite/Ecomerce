@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import {
-    X, Upload, Download, FileSpreadsheet, AlertTriangle,
+    X, Upload, FileSpreadsheet, FileJson, AlertTriangle,
     Loader2, CheckCircle2, Info,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -27,13 +27,47 @@ const TEMPLATE_ROWS = [
     ["Ropa", "Clothing", "Roupas", "Mujer", "Women", "Mulher", "", "", ""],
 ];
 
+/* ── JSON template ──────────────────────────────────────── */
+
+function generateJSONTemplate(): string {
+    return JSON.stringify([
+        {
+            level1Translations: [
+                { locale: "es", name: "Electrónica" },
+                { locale: "en", name: "Electronics" },
+                { locale: "pt", name: "Eletrônica" },
+            ],
+            level2Translations: [
+                { locale: "es", name: "Teléfonos" },
+                { locale: "en", name: "Phones" },
+                { locale: "pt", name: "Telefones" },
+            ],
+            level3Translations: [
+                { locale: "es", name: "Smartphones" },
+                { locale: "en", name: "Smartphones" },
+                { locale: "pt", name: "Smartphones" },
+            ],
+        },
+        {
+            level1Translations: [
+                { locale: "es", name: "Ropa" },
+                { locale: "en", name: "Clothing" },
+                { locale: "pt", name: "Roupas" },
+            ],
+            level2Translations: null,
+            level3Translations: null,
+        },
+    ], null, 2);
+}
+
 /* ── i18n ───────────────────────────────────────────────── */
 
 const tr = {
     es: {
         title: "Carga masiva de categorías",
-        subtitle: "Sube un archivo CSV para crear categorías con hasta 3 niveles de jerarquía.",
+        subtitle: "Sube un archivo CSV o JSON para crear categorías con hasta 3 niveles de jerarquía.",
         downloadTemplate: "Descargar plantilla CSV",
+        downloadJsonTemplate: "Descargar plantilla JSON",
         dropZone: "Arrastra tu archivo CSV aquí o haz clic para seleccionar",
         dropZoneActive: "Suelta el archivo aquí",
         selectedFile: "Archivo seleccionado",
@@ -61,8 +95,9 @@ const tr = {
     },
     en: {
         title: "Bulk category upload",
-        subtitle: "Upload a CSV file to create categories with up to 3 hierarchy levels.",
+        subtitle: "Upload a CSV or JSON file to create categories with up to 3 hierarchy levels.",
         downloadTemplate: "Download CSV template",
+        downloadJsonTemplate: "Download JSON template",
         dropZone: "Drop your CSV file here or click to select",
         dropZoneActive: "Drop the file here",
         selectedFile: "Selected file",
@@ -90,8 +125,9 @@ const tr = {
     },
     pt: {
         title: "Carga em massa de categorias",
-        subtitle: "Envie um arquivo CSV para criar categorias com até 3 níveis de hierarquia.",
+        subtitle: "Envie um arquivo CSV ou JSON para criar categorias com até 3 níveis de hierarquia.",
         downloadTemplate: "Baixar modelo CSV",
+        downloadJsonTemplate: "Baixar modelo JSON",
         dropZone: "Arraste seu arquivo CSV aqui ou clique para selecionar",
         dropZoneActive: "Solte o arquivo aqui",
         selectedFile: "Arquivo selecionado",
@@ -142,6 +178,7 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
     const labels = tr[locale as keyof typeof tr] ?? tr.es;
 
     const [file, setFile] = useState<File | null>(null);
+    const [fileType, setFileType] = useState<"csv" | "json">("csv");
     const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
     const [uploading, setUploading] = useState(false);
@@ -150,7 +187,7 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     /* ── Download template ──────────────────── */
-    function downloadTemplate() {
+    function downloadCSVTemplate() {
         const bom = "\uFEFF";
         const csvContent = bom + [CSV_HEADERS.join(","), ...TEMPLATE_ROWS.map(r => r.map(c => `"${c}"`).join(","))].join("\n");
         const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -158,6 +195,17 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
         const a = document.createElement("a");
         a.href = url;
         a.download = "categorias_template.csv";
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function downloadJSONTemplate() {
+        const content = generateJSONTemplate();
+        const blob = new Blob([content], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "categorias_template.json";
         a.click();
         URL.revokeObjectURL(url);
     }
@@ -241,17 +289,66 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
         return result;
     }
 
+    /* ── Parse JSON ──────────────────────────── */
+    function parseJSON(text: string): { rows: ParsedRow[]; errors: string[] } {
+        const errs: string[] = [];
+        const parsed = JSON.parse(text);
+        const arr: BulkCategoryRow[] = Array.isArray(parsed) ? parsed : (parsed.rows || []);
+
+        if (arr.length === 0) return { rows: [], errors: [labels.errorEmpty] };
+
+        const rows: ParsedRow[] = [];
+
+        for (let i = 0; i < arr.length; i++) {
+            const item = arr[i];
+            const l1 = item.level1Translations || [];
+            const l2 = item.level2Translations || [];
+            const l3 = item.level3Translations || [];
+
+            const find = (list: { locale: string; name: string }[], loc: string) =>
+                list.find(t => t.locale === loc)?.name ?? "";
+
+            const row: ParsedRow = {
+                level1_es: find(l1, "es"),
+                level1_en: find(l1, "en"),
+                level1_pt: find(l1, "pt"),
+                level2_es: find(l2, "es"),
+                level2_en: find(l2, "en"),
+                level2_pt: find(l2, "pt"),
+                level3_es: find(l3, "es"),
+                level3_en: find(l3, "en"),
+                level3_pt: find(l3, "pt"),
+            };
+
+            if (!row.level1_es) {
+                errs.push(labels.errorNoLevel1(i + 1));
+                continue;
+            }
+
+            rows.push(row);
+        }
+
+        if (rows.length === 0 && errs.length === 0) {
+            errs.push(labels.errorEmpty);
+        }
+
+        return { rows, errors: errs };
+    }
+
     /* ── File handling ──────────────────────── */
     function handleFile(f: File) {
         setResult(null);
         setErrors([]);
         setFile(f);
 
+        const isJSON = f.name.endsWith(".json") || fileType === "json";
+        if (isJSON) setFileType("json"); else setFileType("csv");
+
         const reader = new FileReader();
         reader.onload = (e) => {
             try {
                 const text = e.target?.result as string;
-                const { rows, errors: parseErrors } = parseCSV(text);
+                const { rows, errors: parseErrors } = isJSON ? parseJSON(text) : parseCSV(text);
                 setParsedRows(rows);
                 setErrors(parseErrors);
             } catch {
@@ -266,7 +363,7 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
         e.preventDefault();
         setDragOver(false);
         const f = e.dataTransfer.files?.[0];
-        if (f && (f.name.endsWith(".csv") || f.type === "text/csv")) {
+        if (f && (f.name.endsWith(".csv") || f.type === "text/csv" || f.name.endsWith(".json") || f.type === "application/json")) {
             handleFile(f);
         }
     }
@@ -278,6 +375,7 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
 
     function removeFile() {
         setFile(null);
+        setFileType("csv");
         setParsedRows([]);
         setErrors([]);
         setResult(null);
@@ -349,8 +447,8 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-violet-50 rounded-xl flex items-center justify-center">
-                            <FileSpreadsheet className="w-4.5 h-4.5 text-violet-600" strokeWidth={1.5} />
+                        <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+                            <Upload className="w-5 h-5 text-indigo-600" strokeWidth={1.5} />
                         </div>
                         <div>
                             <h2 className="text-sm font-semibold text-gray-900">{labels.title}</h2>
@@ -385,14 +483,50 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
                         </div>
                     </div>
 
-                    {/* Template download */}
-                    <button
-                        onClick={downloadTemplate}
-                        className="flex items-center gap-2 text-xs text-violet-600 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl px-4 py-2.5 transition-colors"
-                    >
-                        <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
-                        {labels.downloadTemplate}
-                    </button>
+                    {/* Template downloads */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={downloadCSVTemplate}
+                            className="flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors"
+                        >
+                            <FileSpreadsheet className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            {labels.downloadTemplate}
+                        </button>
+                        <button
+                            onClick={downloadJSONTemplate}
+                            className="flex items-center gap-1.5 text-xs font-medium text-blue-600 bg-white border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors"
+                        >
+                            <FileJson className="w-3.5 h-3.5" strokeWidth={1.5} />
+                            {labels.downloadJsonTemplate}
+                        </button>
+                    </div>
+
+                    {/* File type selector */}
+                    <div className="flex items-center gap-3">
+                        <span className="text-xs text-gray-500">Formato:</span>
+                        <div className="flex rounded-lg border border-gray-200 overflow-hidden">
+                            <button
+                                onClick={() => setFileType("csv")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${fileType === "csv"
+                                    ? "bg-gray-800 text-white"
+                                    : "bg-white text-gray-500 hover:bg-gray-50"
+                                    }`}
+                            >
+                                <FileSpreadsheet className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                CSV
+                            </button>
+                            <button
+                                onClick={() => setFileType("json")}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${fileType === "json"
+                                    ? "bg-gray-800 text-white"
+                                    : "bg-white text-gray-500 hover:bg-gray-50"
+                                    }`}
+                            >
+                                <FileJson className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                JSON
+                            </button>
+                        </div>
+                    </div>
 
                     {/* CSV column layout preview */}
                     <div className="grid grid-cols-3 gap-2 text-[10px]">
@@ -418,18 +552,21 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
                             onDrop={handleDrop}
                             onClick={() => fileInputRef.current?.click()}
                             className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${dragOver
-                                    ? "border-violet-400 bg-violet-50/50"
-                                    : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
+                                ? "border-indigo-400 bg-indigo-50/50"
+                                : "border-gray-200 hover:border-gray-300 hover:bg-gray-50/50"
                                 }`}
                         >
-                            <Upload className={`w-8 h-8 mx-auto mb-3 ${dragOver ? "text-violet-400" : "text-gray-300"}`} strokeWidth={1.5} />
-                            <p className={`text-xs ${dragOver ? "text-violet-600" : "text-gray-400"}`}>
+                            <Upload className={`w-8 h-8 mx-auto mb-3 ${dragOver ? "text-indigo-400" : "text-gray-300"}`} strokeWidth={1.5} />
+                            <p className={`text-xs ${dragOver ? "text-indigo-600" : "text-gray-400"}`}>
                                 {dragOver ? labels.dropZoneActive : labels.dropZone}
+                            </p>
+                            <p className="text-[10px] text-gray-300 mt-1">
+                                {fileType === "csv" ? ".csv" : ".json"}
                             </p>
                             <input
                                 ref={fileInputRef}
                                 type="file"
-                                accept=".csv"
+                                accept={fileType === "csv" ? ".csv" : ".json"}
                                 onChange={handleFileInput}
                                 className="hidden"
                             />
@@ -438,7 +575,10 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
                         <div className="border border-gray-200 rounded-xl p-4">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2.5">
-                                    <FileSpreadsheet className="w-4.5 h-4.5 text-violet-500" strokeWidth={1.5} />
+                                    {fileType === "json"
+                                        ? <FileJson className="w-4.5 h-4.5 text-amber-500" strokeWidth={1.5} />
+                                        : <FileSpreadsheet className="w-4.5 h-4.5 text-indigo-500" strokeWidth={1.5} />
+                                    }
                                     <div>
                                         <p className="text-xs font-medium text-gray-700">{file.name}</p>
                                         <p className="text-[10px] text-gray-400">
@@ -533,8 +673,8 @@ export function BulkCategoryUploadModal({ open, onClose, onUploaded, locale = "e
                             onClick={handleUpload}
                             disabled={uploading || parsedRows.length === 0}
                             className={`flex items-center gap-1.5 text-xs text-white rounded-xl px-4 py-2 transition-colors ${uploading || parsedRows.length === 0
-                                    ? "bg-gray-300 cursor-not-allowed"
-                                    : "bg-violet-600 hover:bg-violet-700"
+                                ? "bg-gray-300 cursor-not-allowed"
+                                : "bg-indigo-600 hover:bg-indigo-700"
                                 }`}
                         >
                             {uploading ? (
