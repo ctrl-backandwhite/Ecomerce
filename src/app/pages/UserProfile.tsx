@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useUser } from "../context/UserContext";
+import { useAuth } from "../context/AuthContext";
 import { ProfileOverview } from "../components/profile/ProfileOverview";
 import { ProfileDatos } from "../components/profile/ProfileDatos";
 import { ProfilePedidos } from "../components/profile/ProfilePedidos";
@@ -13,7 +14,6 @@ import {
   User, ShoppingBag, Heart, MapPin, Shield, LogOut,
   ChevronRight, LayoutDashboard, Store, CreditCard, Gift,
 } from "lucide-react";
-import { useNavigate } from "react-router";
 import { useSearchParams } from "react-router";
 
 type Tab = "resumen" | "datos" | "pedidos" | "favoritos" | "direcciones" | "pagos" | "giftcards" | "tienda" | "seguridad";
@@ -35,9 +35,12 @@ export function UserProfile() {
   const initialTab = (searchParams.get("tab") as Tab) || "resumen";
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const { user } = useUser();
-  const navigate = useNavigate();
+  const { user: authUser, logout } = useAuth();
 
-  const initials = `${user.firstName[0]}${user.lastName[0]}`;
+  const displayFirst = authUser?.firstName ?? user.firstName;
+  const displayLast  = authUser?.lastName  ?? user.lastName;
+  const displayEmail = authUser?.email     ?? user.email;
+  const initials = `${displayFirst[0]}${displayLast[0]}`;
 
   const contentMap: Record<Tab, JSX.Element> = {
     resumen:     <ProfileOverview onTabChange={setActiveTab as any} />,
@@ -78,8 +81,8 @@ export function UserProfile() {
                 <div className="w-20 h-20 rounded-full bg-gray-500 flex items-center justify-center mb-4 text-white text-xl tracking-widest">
                   {initials}
                 </div>
-                <p className="text-base text-gray-900">{user.firstName} {user.lastName}</p>
-                <p className="text-xs text-gray-400 mt-1">{user.email}</p>
+                <p className="text-base text-gray-900">{displayFirst} {displayLast}</p>
+                <p className="text-xs text-gray-400 mt-1">{displayEmail}</p>
                 <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-full px-3 py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                   Miembro NX036
@@ -132,7 +135,7 @@ export function UserProfile() {
 
                 <div className="border-t border-gray-100">
                   <button
-                    onClick={() => navigate("/")}
+                    onClick={() => logout()}
                     className="w-full flex items-center gap-3 px-5 py-3.5 text-sm text-left text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors border-l-2 border-transparent"
                   >
                     <LogOut className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />

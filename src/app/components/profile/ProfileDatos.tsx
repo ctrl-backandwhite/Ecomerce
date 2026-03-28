@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useUser } from "../../context/UserContext";
+import { useAuth } from "../../context/AuthContext";
 import { Save, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,12 +13,13 @@ const docTypes = [
 
 export function ProfileDatos() {
   const { user, updateProfile } = useUser();
+  const { user: authUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
-    firstName:      user.firstName,
-    lastName:       user.lastName,
+    firstName:      authUser?.firstName      ?? user.firstName,
+    lastName:       authUser?.lastName       ?? user.lastName,
     username:       user.username,
-    email:          user.email,
+    email:          authUser?.email          ?? user.email,
     phone:          user.phone,
     birthDate:      user.birthDate,
     documentType:   user.documentType,
@@ -36,10 +38,10 @@ export function ProfileDatos() {
 
   const handleCancel = () => {
     setForm({
-      firstName:      user.firstName,
-      lastName:       user.lastName,
+      firstName:      authUser?.firstName      ?? user.firstName,
+      lastName:       authUser?.lastName       ?? user.lastName,
       username:       user.username,
-      email:          user.email,
+      email:          authUser?.email          ?? user.email,
       phone:          user.phone,
       birthDate:      user.birthDate,
       documentType:   user.documentType,
@@ -145,7 +147,7 @@ export function ProfileDatos() {
 
         {/* Name + member since centered */}
         <div className="px-6 py-6 border-b border-gray-100 flex flex-col items-center text-center flex-shrink-0">
-          <p className="text-sm text-gray-900 mb-1">{user.firstName} {user.lastName}</p>
+          <p className="text-sm text-gray-900 mb-1">{authUser?.firstName ?? user.firstName} {authUser?.lastName ?? user.lastName}</p>
           <p className="text-xs text-gray-400">
             Miembro desde{" "}
             {new Date(user.memberSince).toLocaleDateString("es-CL", {
@@ -224,7 +226,7 @@ export function ProfileDatos() {
         <div className="px-6 py-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "ID de cliente",      value: user.id },
+              { label: "ID de cliente",      value: authUser?.id !== undefined ? String(authUser.id) : user.id },
               { label: "Estado",             value: "Activo" },
               { label: "Nivel de membresía", value: "Plata" },
               { label: "Tipo de cuenta",     value: user.isSeller ? "Vendedor" : "Comprador" },
