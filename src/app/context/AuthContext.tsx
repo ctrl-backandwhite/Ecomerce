@@ -220,8 +220,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(false);
         setRoles([]);
         setUser(null);
-        // Redirect to OAuth2 login
-        window.location.href = `${GATEWAY_URL}/login`;
+        // Redirect to ecommerce home
+        window.location.href = "/";
     }, []);
 
     const accessToken = useMemo(() => (isAuthenticated ? getAccessToken() : null), [isAuthenticated]);
