@@ -94,7 +94,7 @@ function ActivateModal({ onClose, onActivate }: {
         </div>
 
         <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-          Introduce el código que encontrarás en el email de tu tarjeta regalo. Formato: <span className="font-mono text-gray-700">NEXA-XXXX-XXXX</span>
+          Introduce el código que encontrarás en el email de tu tarjeta regalo. Formato: <span className="font-mono text-gray-700">NX036-XXXX-XXXX</span>
         </p>
 
         <div className="mb-4">
@@ -104,7 +104,7 @@ function ActivateModal({ onClose, onActivate }: {
             <input
               type={show ? "text" : "password"}
               className="w-full h-10 pl-9 pr-10 text-sm font-mono tracking-widest border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-500 transition-colors placeholder:text-gray-300 placeholder:tracking-normal"
-              placeholder="NEXA-XXXX-XXXX"
+              placeholder="NX036-XXXX-XXXX"
               value={code}
               onChange={e => { setCode(e.target.value.toUpperCase()); setError(""); }}
               onKeyDown={e => e.key === "Enter" && handleActivate()}
@@ -448,7 +448,7 @@ export function ProfileGiftCards() {
         <Sparkles className="w-5 h-5 text-amber-400 flex-shrink-0" strokeWidth={1.5} />
         <div className="flex-1 min-w-0">
           <p className="text-xs text-gray-900">¿Conoces a alguien que merece un regalo especial?</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Envía una tarjeta NEXA directamente a su email</p>
+          <p className="text-[11px] text-gray-400 mt-0.5">Envía una tarjeta NX036 directamente a su email</p>
         </div>
         <Link
           to="/tarjetas-regalo"

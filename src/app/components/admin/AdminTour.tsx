@@ -10,7 +10,7 @@ const TOUR_KEY = "nexa_admin_tour_v1";
 const STEPS: DriveStep[] = [
   {
     popover: {
-      title: "👋 Bienvenido a NEXA Admin",
+      title: "👋 Bienvenido a NX036 Admin",
       description:
         "Este panel te permite gestionar todos los aspectos de tu tienda online. Te haremos un recorrido rápido por las funciones principales.",
     },
@@ -127,7 +127,7 @@ const STEPS: DriveStep[] = [
     popover: {
       title: "✅ ¡Todo listo!",
       description:
-        "Ya conoces el panel de NEXA. Puedes repetir este tour en cualquier momento con el botón <b>?</b> en la barra superior. ¡Éxito con tu tienda!",
+        "Ya conoces el panel de NX036. Puedes repetir este tour en cualquier momento con el botón <b>?</b> en la barra superior. ¡Éxito con tu tienda!",
     },
   },
 ];

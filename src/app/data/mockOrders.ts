@@ -136,7 +136,7 @@ export const mockOrders: Order[] = [
     subtotal: 1899,
     shipping: 0,
     total: 1899,
-    address: "NEXA Oxford Street, 374 Oxford Street, London W1C 1JX",
+    address: "NX036 Oxford Street, 374 Oxford Street, London W1C 1JX",
   },
   {
     id: "ORD-2026-0051",

@@ -125,7 +125,7 @@ export function AdminLayout() {
 
             <div className="flex items-center gap-2.5">
               <div className="text-right hidden md:block">
-                <p className="text-[11px] text-gray-900 font-light">Admin NEXA</p>
+                <p className="text-[11px] text-gray-900 font-light">Admin NX036</p>
                 <p className="text-[9px] text-gray-400">Administrador</p>
               </div>
               <div className="w-7 h-7 bg-gray-500 rounded-full flex items-center justify-center text-white text-[10px] tracking-widest">

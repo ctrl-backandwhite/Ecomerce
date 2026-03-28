@@ -116,7 +116,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
                   <Store className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
                 </div>
                 <div className="leading-tight">
-                  <p className="text-[13px] text-gray-900 tracking-widest font-light whitespace-nowrap">NEXA</p>
+                  <p className="text-[13px] text-gray-900 tracking-widest font-light whitespace-nowrap">NX036</p>
                   <p className="text-[9px] text-gray-400 tracking-wider uppercase mt-0.5 whitespace-nowrap">Admin</p>
                 </div>
               </Link>

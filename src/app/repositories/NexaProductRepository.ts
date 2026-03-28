@@ -2,7 +2,7 @@
  * ╔══════════════════════════════════════════════════════════════╗
  * ║  NexaProductRepository                                       ║
  * ║                                                              ║
- * ║  Fetches products from the NEXA mic-productcategory API.     ║
+ * ║  Fetches products from the NX036 mic-productcategory API.     ║
  * ║  Endpoint: /api/v1/products                                  ║
  * ║  Supports locale, categoryId, page, and size query params.   ║
  * ╚══════════════════════════════════════════════════════════════╝
@@ -12,7 +12,7 @@ import { ApiError, NetworkError } from "../lib/AppError";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
-const NEXA_PRODUCTS_BASE = `${API_BASE}/api/v1/products`;
+const NX036_PRODUCTS_BASE = `${API_BASE}/api/v1/products`;
 
 // ── API response types ───────────────────────────────────────────────────────
 
@@ -160,7 +160,7 @@ class NexaProductRepository {
             params.set("page", String(query.page ?? 0));
             params.set("size", String(query.size ?? 24));
 
-            const url = `${NEXA_PRODUCTS_BASE}?${params.toString()}`;
+            const url = `${NX036_PRODUCTS_BASE}?${params.toString()}`;
             console.log('[NexaProductRepository] fetch URL:', url);
             const res = await fetch(url, { signal });
 
@@ -195,7 +195,7 @@ class NexaProductRepository {
     async findDetailByPid(pid: string, locale: string, signal?: AbortSignal): Promise<NexaProductDetail> {
         try {
             const params = new URLSearchParams({ locale });
-            const url = `${NEXA_PRODUCTS_BASE}/detail/${pid}?${params.toString()}`;
+            const url = `${NX036_PRODUCTS_BASE}/detail/${pid}?${params.toString()}`;
             console.log('[NexaProductRepository] detail URL:', url);
             const res = await fetch(url, { signal });
 

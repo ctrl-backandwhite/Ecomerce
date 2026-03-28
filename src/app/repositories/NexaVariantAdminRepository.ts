@@ -2,7 +2,7 @@
  * ╔══════════════════════════════════════════════════════════════╗
  * ║  NexaVariantAdminRepository                                  ║
  * ║                                                              ║
- * ║  CRUD operations for product-detail variants against NEXA    ║
+ * ║  CRUD operations for product-detail variants against NX036    ║
  * ║  mic-productcategory API:                                    ║
  * ║    GET    /api/v1/products/detail/variants        (paged)    ║
  * ║    GET    /api/v1/products/detail/:pid/variants   (list)     ║

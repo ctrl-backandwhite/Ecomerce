@@ -86,11 +86,11 @@ export function ProfileDatos() {
   return (
     <div className="space-y-5 flex flex-col h-full">
 
-      {/* ── Card: NEXA Rewards ─────────────────────────────────── */}
+      {/* ── Card: NX036 Rewards ─────────────────────────────────── */}
       <div className="bg-gray-700 rounded-xl p-5 text-white">
         <div className="flex items-center justify-between mb-3">
           <span className="text-xs tracking-widest text-gray-400 uppercase">Puntos</span>
-          <span className="text-xs text-gray-400">NEXA Rewards</span>
+          <span className="text-xs text-gray-400">NX036 Rewards</span>
         </div>
         <p className="text-3xl text-white mb-1">{user.loyaltyPoints.toLocaleString()}</p>
         <p className="text-xs text-gray-400">puntos disponibles</p>
@@ -219,7 +219,7 @@ export function ProfileDatos() {
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100">
           <h2 className="text-base text-gray-900">Información de cuenta</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Datos internos de tu cuenta NEXA</p>
+          <p className="text-xs text-gray-400 mt-0.5">Datos internos de tu cuenta NX036</p>
         </div>
         <div className="px-6 py-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

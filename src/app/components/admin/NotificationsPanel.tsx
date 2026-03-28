@@ -35,7 +35,7 @@ export const DEFAULT_NOTIFICATIONS: AppNotification[] = [
   { id:"n10", type:"venta",     title:"Meta diaria alcanzada",         body:"$8,940 recaudados hoy · 100% de la meta",            time:"hace 4 h",     read:true  },
   { id:"n11", type:"cliente",   title:"Pico de registros",             body:"8 nuevos clientes en las últimas 6 horas",           time:"hace 5 h",     read:true,  link:"/admin/clientes" },
   { id:"n12", type:"reseña",    title:"12 reseñas 5 estrellas",        body:"Sony WH-1000XM5 lidera con 98% satisfacción",        time:"hace 6 h",     read:true,  link:"/admin/resenas" },
-  { id:"n13", type:"sistema",   title:"Actualización disponible",      body:"NEXA Admin v2.4.1 · mejoras de rendimiento",         time:"ayer",         read:true  },
+  { id:"n13", type:"sistema",   title:"Actualización disponible",      body:"NX036 Admin v2.4.1 · mejoras de rendimiento",         time:"ayer",         read:true  },
   { id:"n14", type:"devolucion",title:"Devolución aprobada",           body:"#NX-001263 · Marcos Molina · $699 reembolsado",      time:"ayer",         read:true,  link:"/admin/devoluciones" },
   { id:"n15", type:"alerta",    title:"Tasa devolución alta",          body:"Alcanzó 6.1% esta semana · umbral recomendado: 5%",  time:"ayer",         read:true,  link:"/admin/reportes" },
   { id:"n16", type:"sistema",   title:"Nuevo administrador añadido",   body:"admin@nexastore.com tiene acceso desde hoy",         time:"hace 2 días",  read:true  },

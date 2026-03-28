@@ -82,7 +82,7 @@ export function UserProfile() {
                 <p className="text-xs text-gray-400 mt-1">{user.email}</p>
                 <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-full px-3 py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                  Miembro NEXA
+                  Miembro NX036
                 </div>
               </div>
 

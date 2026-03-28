@@ -22,15 +22,15 @@ interface TrackResult {
 
 const MOCK_RESULTS: Record<string, TrackResult> = {
   "ORD-2024-001": {
-    orderNumber: "ORD-2024-001", status: "delivered", carrier: "NEXA Express",
+    orderNumber: "ORD-2024-001", status: "delivered", carrier: "NX036 Express",
     trackingCode: "NEX-2026-A77821", estimatedDelivery: "Entregado el 13 mar 2026",
     product: "Apple iPhone 15 Pro Max · 2 artículos",
     events: [
       { date: "13/03/2026", time: "11:24", description: "Paquete entregado",          location: "350 Fifth Avenue, New York" },
       { date: "13/03/2026", time: "08:10", description: "En reparto con mensajero",   location: "Centro logístico Manhattan" },
       { date: "12/03/2026", time: "22:45", description: "Paquete en centro de reparto", location: "JFK Air Cargo, New York" },
-      { date: "12/03/2026", time: "09:30", description: "Paquete recogido por transportista", location: "Almacén NEXA Madrid" },
-      { date: "11/03/2026", time: "18:02", description: "Pedido preparado y embalado", location: "Almacén NEXA Madrid" },
+      { date: "12/03/2026", time: "09:30", description: "Paquete recogido por transportista", location: "Almacén NX036 Madrid" },
+      { date: "11/03/2026", time: "18:02", description: "Pedido preparado y embalado", location: "Almacén NX036 Madrid" },
       { date: "11/03/2026", time: "14:15", description: "Pago confirmado, en preparación", location: "—" },
     ],
   },
@@ -42,7 +42,7 @@ const MOCK_RESULTS: Record<string, TrackResult> = {
       { date: "13/03/2026", time: "07:30", description: "En tránsito internacional", location: "Hub UPS, Frankfurt" },
       { date: "12/03/2026", time: "23:55", description: "Salida del país de origen",  location: "Aeropuerto Madrid-Barajas" },
       { date: "12/03/2026", time: "15:00", description: "Tramitación aduanera OK",    location: "Aduana Madrid" },
-      { date: "11/03/2026", time: "12:00", description: "Paquete recogido por UPS",   location: "Almacén NEXA Madrid" },
+      { date: "11/03/2026", time: "12:00", description: "Paquete recogido por UPS",   location: "Almacén NX036 Madrid" },
     ],
   },
   "ORD-2024-004": {

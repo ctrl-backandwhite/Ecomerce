@@ -1,6 +1,6 @@
 /**
  * ╔══════════════════════════════════════════════════════════════╗
- * ║  AppError — Typed error hierarchy for NEXA                   ║
+ * ║  AppError — Typed error hierarchy for NX036                   ║
  * ║                                                              ║
  * ║  All errors thrown by the service/repository layer extend    ║
  * ║  AppError so the UI can use `instanceof` for safe handling.  ║

@@ -31,10 +31,10 @@ const deliveryMeta: Record<DeliveryType, { label: string; icon: React.ReactNode;
 
 /* ── Mock store locations ──────────────────────────────────── */
 const storeLocations = [
-  { id: "store-1", name: "NEXA Manhattan – Fifth Ave",   address: "350 Fifth Avenue, New York, NY 10118",  hours: "Mon–Sat 9am–9pm · Sun 11am–7pm",  distance: "0.8 mi" },
-  { id: "store-2", name: "NEXA Brooklyn – Atlantic Ave", address: "530 Atlantic Ave, Brooklyn, NY 11217",  hours: "Mon–Sat 10am–8pm · Sun 12pm–6pm", distance: "3.2 mi" },
-  { id: "store-3", name: "NEXA Queens – Jamaica Center", address: "168-16 Jamaica Ave, Queens, NY 11432",  hours: "Mon–Sun 9am–9pm",                  distance: "7.4 mi" },
-  { id: "store-4", name: "NEXA London – Oxford Street",  address: "374 Oxford Street, London W1C 1JX, UK", hours: "Mon–Sat 9am–8pm · Sun 12pm–6pm",  distance: "—"      },
+  { id: "store-1", name: "NX036 Manhattan – Fifth Ave",   address: "350 Fifth Avenue, New York, NY 10118",  hours: "Mon–Sat 9am–9pm · Sun 11am–7pm",  distance: "0.8 mi" },
+  { id: "store-2", name: "NX036 Brooklyn – Atlantic Ave", address: "530 Atlantic Ave, Brooklyn, NY 11217",  hours: "Mon–Sat 10am–8pm · Sun 12pm–6pm", distance: "3.2 mi" },
+  { id: "store-3", name: "NX036 Queens – Jamaica Center", address: "168-16 Jamaica Ave, Queens, NY 11432",  hours: "Mon–Sun 9am–9pm",                  distance: "7.4 mi" },
+  { id: "store-4", name: "NX036 London – Oxford Street",  address: "374 Oxford Street, London W1C 1JX, UK", hours: "Mon–Sat 9am–8pm · Sun 12pm–6pm",  distance: "—"      },
 ];
 
 /* ── Mock pickup points ──────────────────────────────────── */
@@ -288,7 +288,7 @@ export function Checkout() {
   /* ── New address mode tabs ── */
   const newModeTabs: { id: DeliveryType; label: string; icon: React.ReactNode }[] = [
     { id: "home",   label: "Domicilio",     icon: <Truck    className="w-4 h-4" strokeWidth={1.5} /> },
-    { id: "store",  label: "Tienda NEXA",   icon: <Store    className="w-4 h-4" strokeWidth={1.5} /> },
+    { id: "store",  label: "Tienda NX036",   icon: <Store    className="w-4 h-4" strokeWidth={1.5} /> },
     { id: "pickup", label: "Punto entrega", icon: <Package2 className="w-4 h-4" strokeWidth={1.5} /> },
   ];
 
@@ -474,7 +474,7 @@ export function Checkout() {
                         </div>
                         <div className="flex-1">
                           <p className="text-sm text-gray-700">Usar otra dirección de entrega</p>
-                          <p className="text-xs text-gray-400">Domicilio, tienda NEXA o punto de entrega</p>
+                          <p className="text-xs text-gray-400">Domicilio, tienda NX036 o punto de entrega</p>
                         </div>
                         <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
                           selectedAddrId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
@@ -589,7 +589,7 @@ export function Checkout() {
                           {/* Store pickup list */}
                           {newMode === "store" && (
                             <div className="space-y-2">
-                              <p className="text-xs text-gray-400 mb-1">Selecciona tu tienda NEXA más cercana</p>
+                              <p className="text-xs text-gray-400 mb-1">Selecciona tu tienda NX036 más cercana</p>
                               {storeLocations.map((store) => {
                                 const isSelected = selectedStoreId === store.id;
                                 return (

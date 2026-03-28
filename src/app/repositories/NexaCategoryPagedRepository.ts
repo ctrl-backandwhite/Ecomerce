@@ -2,7 +2,7 @@
  * ╔══════════════════════════════════════════════════════════════╗
  * ║  NexaCategoryPagedRepository                                 ║
  * ║                                                              ║
- * ║  Fetches categories from the NEXA mic-productcategory API   ║
+ * ║  Fetches categories from the NX036 mic-productcategory API   ║
  * ║  using the paginated endpoint:                              ║
  * ║    GET /api/v1/categories/paged                              ║
  * ╚══════════════════════════════════════════════════════════════╝

@@ -2,7 +2,7 @@
  * ╔══════════════════════════════════════════════════════════════╗
  * ║  NexaCategoryRepository                                      ║
  * ║                                                              ║
- * ║  Fetches categories from the NEXA mic-productcategory API.  ║
+ * ║  Fetches categories from the NX036 mic-productcategory API.  ║
  * ║  Endpoint: /api/v1/categories                                ║
  * ║  Supports locale, status, and active query params.           ║
  * ║  Uses TTLCache for 10 minutes by locale key.                ║
@@ -14,7 +14,7 @@ import { ApiError, NetworkError } from "../lib/AppError";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
-const NEXA_CATEGORIES_BASE = `${API_BASE}/api/v1/categories`;
+const NX036_CATEGORIES_BASE = `${API_BASE}/api/v1/categories`;
 
 const CACHE_TTL_MS = 10 * 60_000; // 10 minutes
 
@@ -61,7 +61,7 @@ class NexaCategoryRepository {
         if (cached) return cached;
 
         try {
-            const url = `${NEXA_CATEGORIES_BASE}?locale=${encodeURIComponent(locale)}&status=PUBLISHED&active=true`;
+            const url = `${NX036_CATEGORIES_BASE}?locale=${encodeURIComponent(locale)}&status=PUBLISHED&active=true`;
             const res = await fetch(url);
 
             if (!res.ok) {
@@ -97,7 +97,7 @@ class NexaCategoryRepository {
         if (cached) return cached;
 
         try {
-            const url = `${NEXA_CATEGORIES_BASE}/featured?locale=${encodeURIComponent(locale)}`;
+            const url = `${NX036_CATEGORIES_BASE}/featured?locale=${encodeURIComponent(locale)}`;
             const res = await fetch(url);
 
             if (!res.ok) {

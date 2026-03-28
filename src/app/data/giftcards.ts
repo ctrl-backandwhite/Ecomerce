@@ -103,12 +103,12 @@ export interface SentGiftCard {
 export const mockReceivedCards: ReceivedGiftCard[] = [
   {
     id: "rc1",
-    code: "NEXA-A7B3-CX91",
+    code: "NX036-A7B3-CX91",
     balance: 75,
     originalAmount: 100,
     fromName: "Carlos García",
     fromEmail: "carlos@example.com",
-    message: "¡Feliz cumpleaños! Espero que encuentres algo que te guste mucho en NEXA 🎉",
+    message: "¡Feliz cumpleaños! Espero que encuentres algo que te guste mucho en NX036 🎉",
     receivedDate: "10/02/2026",
     expiryDate: "10/02/2027",
     designId: "birthday",
@@ -117,7 +117,7 @@ export const mockReceivedCards: ReceivedGiftCard[] = [
   },
   {
     id: "rc2",
-    code: "NEXA-B2K5-MT44",
+    code: "NX036-B2K5-MT44",
     balance: 50,
     originalAmount: 50,
     fromName: "Laura Martínez",
@@ -131,10 +131,10 @@ export const mockReceivedCards: ReceivedGiftCard[] = [
   },
   {
     id: "rc3",
-    code: "NEXA-C9P1-DR72",
+    code: "NX036-C9P1-DR72",
     balance: 0,
     originalAmount: 25,
-    fromName: "Equipo NEXA",
+    fromName: "Equipo NX036",
     fromEmail: "gifts@nexa.com",
     message: "Como cliente VIP, te regalamos este bono de bienvenida.",
     receivedDate: "01/01/2026",
@@ -148,7 +148,7 @@ export const mockReceivedCards: ReceivedGiftCard[] = [
 export const mockSentCards: SentGiftCard[] = [
   {
     id: "sc1",
-    code: "NEXA-D4R8-KL29",
+    code: "NX036-D4R8-KL29",
     amount: 50,
     toName: "Ana López",
     toEmail: "ana@example.com",
@@ -159,7 +159,7 @@ export const mockSentCards: SentGiftCard[] = [
   },
   {
     id: "sc2",
-    code: "NEXA-E6W2-NZ83",
+    code: "NX036-E6W2-NZ83",
     amount: 100,
     toName: "Pedro Sánchez",
     toEmail: "pedro@example.com",

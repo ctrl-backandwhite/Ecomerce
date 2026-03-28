@@ -4,7 +4,7 @@ const PAGES: Record<string, { title: string; sections: { heading: string; body: 
   privacidad: {
     title: "Política de Privacidad",
     sections: [
-      { heading: "1. Responsable del tratamiento", body: "NEXA Commerce S.L., con CIF B-12345678, con domicilio en Calle Principal 123, 28001 Madrid. Email de contacto: privacidad@nexa.com." },
+      { heading: "1. Responsable del tratamiento", body: "NX036 Commerce S.L., con CIF B-12345678, con domicilio en Calle Principal 123, 28001 Madrid. Email de contacto: privacidad@nexa.com." },
       { heading: "2. Datos que recopilamos", body: "Nombre y apellidos, dirección de correo electrónico, dirección postal, número de teléfono, datos de pago (procesados por Stripe — no los almacenamos), historial de compras y preferencias de navegación." },
       { heading: "3. Finalidad del tratamiento", body: "Gestión de pedidos y envíos, facturación, atención al cliente, comunicaciones transaccionales, personalización de la experiencia de compra y, con tu consentimiento, envío de newsletters y ofertas." },
       { heading: "4. Base jurídica", body: "Ejecución de contrato para la gestión de pedidos; interés legítimo para prevención de fraude; consentimiento para comunicaciones de marketing." },
@@ -17,13 +17,13 @@ const PAGES: Record<string, { title: string; sections: { heading: string; body: 
   terminos: {
     title: "Términos y Condiciones",
     sections: [
-      { heading: "1. Objeto", body: "Estos Términos y Condiciones regulan el acceso y uso de la plataforma NEXA (www.nexa.com) y la adquisición de productos a través de la misma." },
+      { heading: "1. Objeto", body: "Estos Términos y Condiciones regulan el acceso y uso de la plataforma NX036 (www.nexa.com) y la adquisición de productos a través de la misma." },
       { heading: "2. Usuarios", body: "El acceso está disponible para mayores de 18 años o menores con consentimiento paternal. Al registrarte aceptas estos términos en su totalidad." },
-      { heading: "3. Proceso de compra", body: "El contrato de compraventa se perfecciona cuando recibes la confirmación de pedido por email. NEXA se reserva el derecho de cancelar pedidos por error de precio, falta de stock o sospecha de fraude." },
-      { heading: "4. Precios e impuestos", body: "Los precios mostrados incluyen IVA (21 % en España). NEXA puede modificar precios sin previo aviso. El precio aplicable es el vigente en el momento de confirmar el pedido." },
+      { heading: "3. Proceso de compra", body: "El contrato de compraventa se perfecciona cuando recibes la confirmación de pedido por email. NX036 se reserva el derecho de cancelar pedidos por error de precio, falta de stock o sospecha de fraude." },
+      { heading: "4. Precios e impuestos", body: "Los precios mostrados incluyen IVA (21 % en España). NX036 puede modificar precios sin previo aviso. El precio aplicable es el vigente en el momento de confirmar el pedido." },
       { heading: "5. Disponibilidad", body: "La disponibilidad del producto no está garantizada hasta la confirmación del pedido. En caso de rotura de stock te notificaremos con la mayor celeridad posible." },
-      { heading: "6. Garantías", body: "Los productos tienen la garantía legal mínima de 2 años establecida en la Directiva Europea 1999/44/CE. NEXA ofrece adicionalmente 1 año de garantía propia en productos electrónicos." },
-      { heading: "7. Limitación de responsabilidad", body: "NEXA no será responsable de daños indirectos, pérdidas de datos o lucro cesante. La responsabilidad máxima se limita al importe del pedido en cuestión." },
+      { heading: "6. Garantías", body: "Los productos tienen la garantía legal mínima de 2 años establecida en la Directiva Europea 1999/44/CE. NX036 ofrece adicionalmente 1 año de garantía propia en productos electrónicos." },
+      { heading: "7. Limitación de responsabilidad", body: "NX036 no será responsable de daños indirectos, pérdidas de datos o lucro cesante. La responsabilidad máxima se limita al importe del pedido en cuestión." },
       { heading: "8. Ley aplicable", body: "Este contrato se rige por la legislación española. Para cualquier controversia, las partes se someten a los Juzgados y Tribunales de Madrid." },
     ],
   },

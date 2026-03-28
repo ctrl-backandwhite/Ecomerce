@@ -89,7 +89,7 @@ function drawHeader(
   pdf.setTextColor(255, 255, 255);
   pdf.setFontSize(11);
   pdf.setFont("helvetica", "bold");
-  pdf.text("NEXA", MARGIN + 5, 21.5);
+  pdf.text("NX036", MARGIN + 5, 21.5);
 
   pdf.setFont("helvetica", "normal");
   pdf.setFontSize(9);
@@ -129,7 +129,7 @@ function drawFooters(pdf: jsPDF, dateStr: string): void {
   for (let i = 1; i <= total; i++) {
     pdf.setPage(i);
     pdf.setTextColor(156, 163, 175);
-    pdf.text(`NEXA Admin · Generado el ${dateStr}`, MARGIN, PAGE_H - 7);
+    pdf.text(`NX036 Admin · Generado el ${dateStr}`, MARGIN, PAGE_H - 7);
     const pn = `Pág. ${i} / ${total}`;
     pdf.text(pn, PAGE_W - MARGIN - pdf.getTextWidth(pn), PAGE_H - 7);
     pdf.setDrawColor(229, 231, 235);

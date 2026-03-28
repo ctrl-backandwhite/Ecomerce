@@ -1,5 +1,5 @@
 /**
- * Centralized URL builder for NEXA e-commerce.
+ * Centralized URL builder for NX036 e-commerce.
  * Single source of truth for all route patterns.
  */
 

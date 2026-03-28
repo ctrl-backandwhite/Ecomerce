@@ -1,9 +1,9 @@
 /**
  * ╔══════════════════════════════════════════════════════════════════╗
- * ║  NEXA — Capa de servicios centralizada                          ║
+ * ║  NX036 — Capa de servicios centralizada                          ║
  * ║                                                                  ║
  * ║  Funciones de producto y categoría usan mocks hasta que         ║
- * ║  existan endpoints reales en el backend NEXA.                   ║
+ * ║  existan endpoints reales en el backend NX036.                   ║
  * ║                                                                  ║
  * ║  El resto de entidades (órdenes, clientes, reseñas, etc.)       ║
  * ║  permanece en mock hasta que exista un backend propio.           ║
@@ -35,7 +35,7 @@ export type { Order as UserOrder, OrderItem, OrderStatus } from "../data/mockOrd
 export type { Attribute, AttributeValue } from "../data/attributes";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. PRODUCTOS — mock (TODO: conectar con API NEXA)
+// 1. PRODUCTOS — mock (TODO: conectar con API NX036)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface ProductsParams {
@@ -52,12 +52,12 @@ export interface ProductsParams {
   orderBy?: "PRICE_ASC" | "PRICE_DESC" | "CREATED_AT";
 }
 
-/** GET /products — TODO: conectar con API NEXA */
+/** GET /products — TODO: conectar con API NX036 */
 export async function getProducts(_params?: ProductsParams) {
   return delay([] as import("../data/products").Product[]);
 }
 
-/** GET /products/:id — TODO: conectar con API NEXA */
+/** GET /products/:id — TODO: conectar con API NX036 */
 export async function getProductById(_id: string) {
   return delay(null);
 }
@@ -155,7 +155,7 @@ export async function updateCustomerStatus(id: string, status: "active" | "inact
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. CATEGORÍAS — mock (TODO: conectar con API NEXA)
+// 4. CATEGORÍAS — mock (TODO: conectar con API NX036)
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function getCategories() {

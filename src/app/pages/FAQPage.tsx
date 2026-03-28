@@ -17,7 +17,7 @@ const FAQS = [
     items: [
       { q: "¿Cuál es la política de devoluciones?", a: "Tienes 30 días desde la recepción para devolver cualquier producto en perfecto estado y embalaje original. Las devoluciones son gratuitas para pedidos en España y México." },
       { q: "¿Cómo inicio una devolución?", a: "Ve a Cuenta → Mis Pedidos → Solicitar devolución. Una vez aprobada recibirás la etiqueta de envío prepago por email. El reembolso se procesa en 3–5 días hábiles tras recibir el producto." },
-      { q: "¿El producto tiene garantía?", a: "Todos los productos incluyen la garantía oficial del fabricante (mínimo 2 años en la UE). Adicionalmente, NEXA ofrece garantía extendida de 1 año adicional en productos electrónicos." },
+      { q: "¿El producto tiene garantía?", a: "Todos los productos incluyen la garantía oficial del fabricante (mínimo 2 años en la UE). Adicionalmente, NX036 ofrece garantía extendida de 1 año adicional en productos electrónicos." },
       { q: "¿Qué hago si recibo un producto dañado o incorrecto?", a: "Contacta con nosotros en las primeras 48 h adjuntando fotos. Te enviaremos un reemplazo sin coste o gestionaremos el reembolso completo de forma prioritaria." },
     ],
   },
@@ -33,7 +33,7 @@ const FAQS = [
   {
     category: "Cuenta y fidelidad",
     items: [
-      { q: "¿Cómo funciona el programa de puntos NEXA?", a: "Ganas 1 punto por cada €1 gastado. Con 500 puntos obtienes un descuento de €5. Los puntos no caducan y pueden combinarse con cupones de descuento." },
+      { q: "¿Cómo funciona el programa de puntos NX036?", a: "Ganas 1 punto por cada €1 gastado. Con 500 puntos obtienes un descuento de €5. Los puntos no caducan y pueden combinarse con cupones de descuento." },
       { q: "¿Puedo comprar sin crear una cuenta?", a: "Sí, puedes hacer checkout como invitado. Sin embargo, con cuenta podrás rastrear pedidos, guardar favoritos, acumular puntos y gestionar devoluciones fácilmente." },
       { q: "¿Cómo cambio mi contraseña?", a: "Ve a Cuenta → Configuración → Cambiar contraseña. Si no recuerdas tu contraseña, usa la opción 'Olvidé mi contraseña' en la pantalla de inicio de sesión." },
       { q: "¿Cómo elimino mi cuenta?", a: "Puedes solicitar la eliminación de tu cuenta y datos personales desde Cuenta → Configuración → Eliminar cuenta, de acuerdo con el RGPD." },

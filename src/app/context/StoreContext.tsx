@@ -1,6 +1,6 @@
 /**
  * ╔══════════════════════════════════════════════════════════════╗
- * ║  StoreContext — Fuente única de verdad para NEXA             ║
+ * ║  StoreContext — Fuente única de verdad para NX036             ║
  * ║                                                              ║
  * ║  Products, Categories, Brands y Attributes se gestionan      ║
  * ║  localmente en mock hasta que exista un backend propio.       ║

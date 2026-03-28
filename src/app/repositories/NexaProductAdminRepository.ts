@@ -2,7 +2,7 @@
  * ╔══════════════════════════════════════════════════════════════╗
  * ║  NexaProductAdminRepository                                  ║
  * ║                                                              ║
- * ║  CRUD operations for products against the NEXA               ║
+ * ║  CRUD operations for products against the NX036               ║
  * ║  mic-productcategory API:                                    ║
  * ║    GET    /api/v1/products          (paged list)             ║
  * ║    GET    /api/v1/products/:id      (detail)                 ║

@@ -80,7 +80,7 @@ function FaceVerificationModal({
             </div>
             <div>
               <p className="text-sm text-gray-900">Verificación facial</p>
-              <p className="text-xs text-gray-400">Vendedor NEXA</p>
+              <p className="text-xs text-gray-400">Vendedor NX036</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none">✕</button>
@@ -161,7 +161,7 @@ function FaceVerificationModal({
               </div>
               <p className="text-sm text-gray-900 mb-1">Verificación exitosa</p>
               <p className="text-xs text-gray-400 mb-6 max-w-xs mx-auto leading-relaxed">
-                Tu identidad ha sido confirmada. Ahora tienes acceso completo a las funciones de vendedor NEXA.
+                Tu identidad ha sido confirmada. Ahora tienes acceso completo a las funciones de vendedor NX036.
               </p>
               <div className="bg-green-50 border border-green-100 rounded-xl p-4 mb-6 text-left">
                 {["Publicar productos en el marketplace", "Recibir pagos y gestionar ingresos", "Acceso al panel de vendedor"].map((item, i) => (
@@ -294,7 +294,7 @@ export function ProfileTienda() {
         </div>
         <p className="text-base text-gray-900 mb-2">Aún no eres vendedor</p>
         <p className="text-xs text-gray-400 max-w-xs leading-relaxed mb-6">
-          Activa tu cuenta de vendedor para crear tu tienda, publicar productos y empezar a generar ingresos en NEXA.
+          Activa tu cuenta de vendedor para crear tu tienda, publicar productos y empezar a generar ingresos en NX036.
         </p>
         <button className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Store className="w-4 h-4" strokeWidth={1.5} />
@@ -339,7 +339,7 @@ export function ProfileTienda() {
               <div className="flex-1">
                 <p className="text-sm text-gray-900 mb-1">Identidad confirmada</p>
                 <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                  Tu reconocimiento facial fue completado exitosamente. Tienes acceso a todas las funciones de vendedor NEXA.
+                  Tu reconocimiento facial fue completado exitosamente. Tienes acceso a todas las funciones de vendedor NX036.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                   {["Publicar productos", "Recibir pagos", "Panel vendedor"].map((label) => (
@@ -408,7 +408,7 @@ export function ProfileTienda() {
               <div className="flex-1">
                 <p className="text-sm text-gray-900 mb-2">Habilita tu cuenta de vendedor</p>
                 <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                  Para vender en NEXA necesitas verificar tu identidad mediante reconocimiento facial. Es rápido, seguro y solo toma unos segundos.
+                  Para vender en NX036 necesitas verificar tu identidad mediante reconocimiento facial. Es rápido, seguro y solo toma unos segundos.
                 </p>
                 <div className="space-y-2 mb-4">
                   {["Publicar hasta 500 productos", "Recibir pagos directamente", "Panel de analytics de ventas", "Insignia de Vendedor Verificado"].map((text) => (
@@ -529,7 +529,7 @@ export function ProfileTienda() {
 
           {/* Nombre + Slug + Categoría */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SField label="Nombre de la tienda" icon={Store} name="name" value={form.name} placeholder="Mi tienda NEXA" editing={editing} onChange={handleChange as any} />
+            <SField label="Nombre de la tienda" icon={Store} name="name" value={form.name} placeholder="Mi tienda NX036" editing={editing} onChange={handleChange as any} />
             <SField label="URL de la tienda" icon={Link} name="slug" value={form.slug} placeholder="mi-tienda" editing={editing} onChange={handleChange as any} />
             <div>
               <label className="block text-xs text-gray-400 mb-1 tracking-wide">Categoría principal</label>
@@ -663,7 +663,7 @@ export function ProfileTienda() {
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100">
           <h2 className="text-base text-gray-900">Estado de la tienda</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Visibilidad actual en el marketplace NEXA</p>
+          <p className="text-xs text-gray-400 mt-0.5">Visibilidad actual en el marketplace NX036</p>
         </div>
         <div className="px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm ${status.bg} ${status.color} ${status.border}`}>
@@ -678,7 +678,7 @@ export function ProfileTienda() {
             )}
             {user.store.status === "pending" && (
               <p className="text-xs text-gray-500 leading-relaxed">
-                Tu solicitud está siendo revisada por el equipo de NEXA. Recibirás una notificación en 24–48 horas hábiles.
+                Tu solicitud está siendo revisada por el equipo de NX036. Recibirás una notificación en 24–48 horas hábiles.
               </p>
             )}
             {user.store.status === "draft" && (
@@ -690,7 +690,7 @@ export function ProfileTienda() {
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
                 <p className="text-xs text-red-500 leading-relaxed">
-                  Tu tienda fue suspendida. Contacta a soporte NEXA para conocer los motivos y resolver la situación.
+                  Tu tienda fue suspendida. Contacta a soporte NX036 para conocer los motivos y resolver la situación.
                 </p>
               </div>
             )}

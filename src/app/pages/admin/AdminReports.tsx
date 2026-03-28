@@ -325,7 +325,7 @@ export function AdminReports() {
     await exportToPdf({
       filename: `nexa-reportes-${period}.pdf`,
       title:    "Balance Contable",
-      subtitle: `Histórico de ventas · Período: ${PERIOD_LABELS[period]} · NEXA Store`,
+      subtitle: `Histórico de ventas · Período: ${PERIOD_LABELS[period]} · NX036 Store`,
       sections: [
         { id: "rpt-kpis",     label: "Resumen contable" },
         { id: "rpt-chart",    label: "Evolución de ingresos" },
@@ -343,7 +343,7 @@ export function AdminReports() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-xl tracking-tight text-gray-900">Balance Contable</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Histórico de ventas · NEXA Store</p>
+          <p className="text-xs text-gray-400 mt-0.5">Histórico de ventas · NX036 Store</p>
         </div>
         <div className="flex items-center gap-2">
           <button

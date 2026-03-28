@@ -69,29 +69,29 @@ const DEFAULT_BODY = [
   "",
   "Recibirás otro email cuando tu pedido sea despachado.",
   "",
-  "Gracias por confiar en NEXA.",
+  "Gracias por confiar en NX036.",
   "",
-  "— El equipo de NEXA",
+  "— El equipo de NX036",
 ].join("\n");
 
 // ── Initial data ──────────────────────────────────────────────────────────────
 const initTemplates: EmailTemplate[] = [
-  { id: "e1",  name: "Confirmación de pedido",   category: "transactional", trigger: "Al confirmar pedido",              subject: "✅ Tu pedido #{ORDER_ID} ha sido confirmado — NEXA",       body: DEFAULT_BODY, fromName: "NEXA", fromEmail: "pedidos@nexa.com", replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 4821, openRate: 87 },
-  { id: "e2",  name: "Pedido enviado",            category: "transactional", trigger: "Al despachar pedido",              subject: "📦 Tu pedido está en camino — Sigue tu envío",             body: DEFAULT_BODY, fromName: "NEXA", fromEmail: "pedidos@nexa.com", replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 3942, openRate: 79 },
-  { id: "e3",  name: "Pedido entregado",          category: "transactional", trigger: "Al marcar como entregado",         subject: "🎉 ¡Tu pedido ha llegado! Cuéntanos qué te pareció",       body: DEFAULT_BODY, fromName: "NEXA", fromEmail: "pedidos@nexa.com", replyTo: "",                  active: true,  lastSent: "12/03/2026", sentCount: 3711, openRate: 73 },
-  { id: "e4",  name: "Devolución aprobada",       category: "transactional", trigger: "Al aprobar devolución",            subject: "✅ Devolución #{RET_ID} aprobada — Reembolso en camino",   body: DEFAULT_BODY, fromName: "NEXA", fromEmail: "soporte@nexa.com", replyTo: "soporte@nexa.com", active: true,  lastSent: "10/03/2026", sentCount: 189,  openRate: 91 },
-  { id: "e5",  name: "Factura disponible",        category: "transactional", trigger: "Al generar factura",               subject: "📄 Tu factura #{INV_ID} está disponible — NEXA",           body: DEFAULT_BODY, fromName: "NEXA", fromEmail: "facturas@nexa.com", replyTo: "",                 active: true,  lastSent: "13/03/2026", sentCount: 4812, openRate: 68 },
-  { id: "e6",  name: "Newsletter bienvenida",     category: "marketing",     trigger: "Al suscribirse al newsletter",     subject: "🎁 ¡Bienvenido/a a NEXA! Aquí tienes tu cupón -10%",       body: DEFAULT_BODY, fromName: "NEXA Store", fromEmail: "hola@nexa.com",   replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 2301, openRate: 82 },
-  { id: "e7",  name: "Recuperar carrito",         category: "marketing",     trigger: "1h después de abandono de carrito",subject: "🛒 Olvidaste algo en tu carrito — ¡Aún está disponible!",  body: DEFAULT_BODY, fromName: "NEXA Store", fromEmail: "hola@nexa.com",   replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 1082, openRate: 44 },
-  { id: "e8",  name: "Reseña post-compra",        category: "marketing",     trigger: "3 días tras entrega",              subject: "⭐ ¿Qué tal tu compra? Déjanos tu opinión",                body: DEFAULT_BODY, fromName: "NEXA Store", fromEmail: "hola@nexa.com",   replyTo: "",                  active: true,  lastSent: "11/03/2026", sentCount: 2910, openRate: 38 },
-  { id: "e9",  name: "Recuperación contraseña",   category: "system",        trigger: "Al solicitar reset de contraseña", subject: "🔐 Restablece tu contraseña de NEXA",                      body: DEFAULT_BODY, fromName: "NEXA",       fromEmail: "no-reply@nexa.com",replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 342,  openRate: 95 },
-  { id: "e10", name: "Puntos de fidelidad",       category: "marketing",     trigger: "Al acumular 500 puntos",           subject: "🏆 ¡Tienes suficientes puntos para un descuento!",          body: DEFAULT_BODY, fromName: "NEXA Store", fromEmail: "hola@nexa.com",   replyTo: "",                  active: false, lastSent: undefined,    sentCount: 0,    openRate: 0  },
+  { id: "e1",  name: "Confirmación de pedido",   category: "transactional", trigger: "Al confirmar pedido",              subject: "✅ Tu pedido #{ORDER_ID} ha sido confirmado — NX036",       body: DEFAULT_BODY, fromName: "NX036", fromEmail: "pedidos@nexa.com", replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 4821, openRate: 87 },
+  { id: "e2",  name: "Pedido enviado",            category: "transactional", trigger: "Al despachar pedido",              subject: "📦 Tu pedido está en camino — Sigue tu envío",             body: DEFAULT_BODY, fromName: "NX036", fromEmail: "pedidos@nexa.com", replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 3942, openRate: 79 },
+  { id: "e3",  name: "Pedido entregado",          category: "transactional", trigger: "Al marcar como entregado",         subject: "🎉 ¡Tu pedido ha llegado! Cuéntanos qué te pareció",       body: DEFAULT_BODY, fromName: "NX036", fromEmail: "pedidos@nexa.com", replyTo: "",                  active: true,  lastSent: "12/03/2026", sentCount: 3711, openRate: 73 },
+  { id: "e4",  name: "Devolución aprobada",       category: "transactional", trigger: "Al aprobar devolución",            subject: "✅ Devolución #{RET_ID} aprobada — Reembolso en camino",   body: DEFAULT_BODY, fromName: "NX036", fromEmail: "soporte@nexa.com", replyTo: "soporte@nexa.com", active: true,  lastSent: "10/03/2026", sentCount: 189,  openRate: 91 },
+  { id: "e5",  name: "Factura disponible",        category: "transactional", trigger: "Al generar factura",               subject: "📄 Tu factura #{INV_ID} está disponible — NX036",           body: DEFAULT_BODY, fromName: "NX036", fromEmail: "facturas@nexa.com", replyTo: "",                 active: true,  lastSent: "13/03/2026", sentCount: 4812, openRate: 68 },
+  { id: "e6",  name: "Newsletter bienvenida",     category: "marketing",     trigger: "Al suscribirse al newsletter",     subject: "🎁 ¡Bienvenido/a a NX036! Aquí tienes tu cupón -10%",       body: DEFAULT_BODY, fromName: "NX036 Store", fromEmail: "hola@nexa.com",   replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 2301, openRate: 82 },
+  { id: "e7",  name: "Recuperar carrito",         category: "marketing",     trigger: "1h después de abandono de carrito",subject: "🛒 Olvidaste algo en tu carrito — ¡Aún está disponible!",  body: DEFAULT_BODY, fromName: "NX036 Store", fromEmail: "hola@nexa.com",   replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 1082, openRate: 44 },
+  { id: "e8",  name: "Reseña post-compra",        category: "marketing",     trigger: "3 días tras entrega",              subject: "⭐ ¿Qué tal tu compra? Déjanos tu opinión",                body: DEFAULT_BODY, fromName: "NX036 Store", fromEmail: "hola@nexa.com",   replyTo: "",                  active: true,  lastSent: "11/03/2026", sentCount: 2910, openRate: 38 },
+  { id: "e9",  name: "Recuperación contraseña",   category: "system",        trigger: "Al solicitar reset de contraseña", subject: "🔐 Restablece tu contraseña de NX036",                      body: DEFAULT_BODY, fromName: "NX036",       fromEmail: "no-reply@nexa.com",replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 342,  openRate: 95 },
+  { id: "e10", name: "Puntos de fidelidad",       category: "marketing",     trigger: "Al acumular 500 puntos",           subject: "🏆 ¡Tienes suficientes puntos para un descuento!",          body: DEFAULT_BODY, fromName: "NX036 Store", fromEmail: "hola@nexa.com",   replyTo: "",                  active: false, lastSent: undefined,    sentCount: 0,    openRate: 0  },
 ];
 
 const emptyTemplate: Omit<EmailTemplate, "id" | "lastSent" | "sentCount" | "openRate"> = {
   name: "", category: "transactional", trigger: "", subject: "",
-  body: "Hola {{customer.firstName}},\n\n\n\n— El equipo de NEXA",
-  fromName: "NEXA", fromEmail: "pedidos@nexa.com", replyTo: "", active: true,
+  body: "Hola {{customer.firstName}},\n\n\n\n— El equipo de NX036",
+  fromName: "NX036", fromEmail: "pedidos@nexa.com", replyTo: "", active: true,
 };
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
@@ -287,7 +287,7 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                 </div>
                 <input
                   className={inp}
-                  placeholder="Ej: ✅ Tu pedido {{order.id}} ha sido confirmado — NEXA"
+                  placeholder="Ej: ✅ Tu pedido {{order.id}} ha sido confirmado — NX036"
                   value={form.subject}
                   onChange={e => set("subject", e.target.value)}
                 />
@@ -305,7 +305,7 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                 <textarea
                   rows={14}
                   className="w-full px-2.5 py-2 text-xs border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-400 transition-colors resize-none font-mono leading-relaxed placeholder:text-gray-300"
-                  placeholder={"Hola {{customer.firstName}},\n\n[Escribe el cuerpo del email aquí]\n\n— El equipo de NEXA"}
+                  placeholder={"Hola {{customer.firstName}},\n\n[Escribe el cuerpo del email aquí]\n\n— El equipo de NX036"}
                   value={form.body}
                   onChange={e => set("body", e.target.value)}
                 />
@@ -330,7 +330,7 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                   <label className={lbl}>Nombre del remitente</label>
                   <input
                     className={inp}
-                    placeholder="NEXA"
+                    placeholder="NX036"
                     value={form.fromName}
                     onChange={e => set("fromName", e.target.value)}
                   />
@@ -367,11 +367,11 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                 <p className={lbl}>Remitentes comunes</p>
                 <div className="grid grid-cols-1 gap-2">
                   {[
-                    { label: "Pedidos",     from: "pedidos@nexa.com",   name: "NEXA Pedidos"  },
-                    { label: "Soporte",     from: "soporte@nexa.com",   name: "NEXA Soporte"  },
-                    { label: "Marketing",   from: "hola@nexa.com",      name: "NEXA Store"    },
-                    { label: "Facturación", from: "facturas@nexa.com",  name: "NEXA Facturas" },
-                    { label: "No-reply",    from: "no-reply@nexa.com",  name: "NEXA"          },
+                    { label: "Pedidos",     from: "pedidos@nexa.com",   name: "NX036 Pedidos"  },
+                    { label: "Soporte",     from: "soporte@nexa.com",   name: "NX036 Soporte"  },
+                    { label: "Marketing",   from: "hola@nexa.com",      name: "NX036 Store"    },
+                    { label: "Facturación", from: "facturas@nexa.com",  name: "NX036 Facturas" },
+                    { label: "No-reply",    from: "no-reply@nexa.com",  name: "NX036"          },
                   ].map(s => (
                     <button
                       key={s.from}

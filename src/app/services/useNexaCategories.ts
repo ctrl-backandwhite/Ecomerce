@@ -1,6 +1,6 @@
 /**
  * useNexaCategories — React hook for fetching categories from the
- * NEXA mic-productcategory microservice.
+ * NX036 mic-productcategory microservice.
  *
  * Re-fetches automatically when the locale changes (via LanguageContext).
  */

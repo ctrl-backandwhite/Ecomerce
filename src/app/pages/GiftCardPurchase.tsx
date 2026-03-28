@@ -78,7 +78,7 @@ function GiftCardVisual({
       <div className="flex items-start justify-between relative z-10">
         <div>
           <p className={`${dims.txt} tracking-widest uppercase`} style={{ color: design.accent, opacity: 0.7 }}>
-            NEXA Gift Card
+            NX036 Gift Card
           </p>
           {toName && (
             <p className={`${dims.txt} mt-0.5`} style={{ color: design.accent, opacity: 0.9 }}>
@@ -109,7 +109,7 @@ function GiftCardVisual({
           </p>
         ) : (
           <p className="text-[10px] tracking-widest font-mono" style={{ color: design.accent, opacity: 0.4 }}>
-            NEXA-XXXX-XXXX
+            NX036-XXXX-XXXX
           </p>
         )}
         <p className={`${dims.txt} opacity-60`} style={{ color: design.accent }}>
@@ -210,7 +210,7 @@ export function GiftCardPurchase() {
 
   function handlePay() {
     if (!step3Valid) { toast.error("Completa los datos de pago"); return; }
-    const code = `NEXA-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+    const code = `NX036-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     setGeneratedCode(code);
     setStep(4);
     toast.success("¡Pago completado! Tarjeta enviada correctamente");
@@ -246,7 +246,7 @@ export function GiftCardPurchase() {
             El regalo perfecto para cualquier ocasión
           </div>
           <h1 className="text-3xl sm:text-4xl tracking-tight text-gray-900 mb-3">
-            Tarjetas de regalo NEXA
+            Tarjetas de regalo NX036
           </h1>
           <p className="text-gray-500 text-sm max-w-lg mx-auto">
             Sorprende a alguien especial con una tarjeta regalo enviada directamente a su email. Lista en segundos.
@@ -350,7 +350,7 @@ export function GiftCardPurchase() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-green-500" strokeWidth={2} />
-                  Canjeable en toda la tienda NEXA
+                  Canjeable en toda la tienda NX036
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-green-500" strokeWidth={2} />
@@ -715,7 +715,7 @@ export function GiftCardPurchase() {
               <p className="text-xs text-gray-500 uppercase tracking-wider">¿Qué pasa ahora?</p>
               {[
                 { icon: Mail, text: `${form.toName} recibirá un email con la tarjeta y el código` },
-                { icon: Gift, text: "Podrá activarla en su perfil de NEXA y usarla en cualquier compra" },
+                { icon: Gift, text: "Podrá activarla en su perfil de NX036 y usarla en cualquier compra" },
                 { icon: Clock, text: "La tarjeta es válida durante 12 meses desde hoy" },
               ].map(item => (
                 <div key={item.text} className="flex items-start gap-3">

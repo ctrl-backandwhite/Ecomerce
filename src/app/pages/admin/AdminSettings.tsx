@@ -48,9 +48,9 @@ function Toggle({ value, onChange, label: lbl }: { value: boolean; onChange: (v:
 /* ── Tab: General ──────────────────────────────────────── */
 function GeneralTab() {
   const [form, setForm] = useState({
-    storeName: "NEXA",
+    storeName: "NX036",
     storeEmail: "hola@nexastore.com",
-    phone: "+1 (800) 555-NEXA",
+    phone: "+1 (800) 555-NX036",
     address: "350 Fifth Avenue, New York, NY 10118",
     website: "https://nexastore.com",
     instagram: "@nexastore",
@@ -455,7 +455,7 @@ export function AdminSettings() {
     <div className="space-y-5 max-w-[1000px]">
       <div>
         <h1 className="text-xl text-gray-900 tracking-tight">Configuración</h1>
-        <p className="text-xs text-gray-400 mt-1">Gestiona la configuración global de la plataforma NEXA</p>
+        <p className="text-xs text-gray-400 mt-1">Gestiona la configuración global de la plataforma NX036</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-5 items-start">

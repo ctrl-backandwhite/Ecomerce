@@ -320,7 +320,7 @@ export function Home() {
               <Gift className="w-7 h-7 text-white" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-white tracking-tight text-lg">Tarjetas de regalo NEXA</p>
+              <p className="text-white tracking-tight text-lg">Tarjetas de regalo NX036</p>
               <p className="text-white/60 text-sm mt-0.5">El regalo perfecto — envíalo directo al email de quien quieras</p>
             </div>
           </div>

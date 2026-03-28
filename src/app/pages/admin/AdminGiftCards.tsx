@@ -25,12 +25,12 @@ const STATUS_META: Record<GCStatus, { label: string; bg: string; text: string; d
 };
 
 const initCards: GiftCard[] = [
-  { id: "gc1", code: "NEXA-GFT-4A9K", amount: 50,  balance: 50,  status: "active",  createdAt: "01/03/2026", expiresAt: "01/03/2027", buyer: "María García",  recipient: "info@juan.com",   note: "Regalo cumpleaños" },
-  { id: "gc2", code: "NEXA-GFT-7H2M", amount: 100, balance: 0,   status: "used",    createdAt: "15/02/2026", expiresAt: "15/02/2027", buyer: "Carlos López",  recipient: "laura@email.com" },
-  { id: "gc3", code: "NEXA-GFT-3B8N", amount: 25,  balance: 25,  status: "active",  createdAt: "10/03/2026", expiresAt: "10/03/2027", recipient: "ana@email.com" },
-  { id: "gc4", code: "NEXA-GFT-9L5P", amount: 200, balance: 80,  status: "active",  createdAt: "05/03/2026", expiresAt: "05/03/2027", buyer: "Sofía Torres",  note: "Promo 5 aniversario" },
-  { id: "gc5", code: "NEXA-GFT-2Q1R", amount: 50,  balance: 50,  status: "expired", createdAt: "01/01/2025", expiresAt: "01/01/2026" },
-  { id: "gc6", code: "NEXA-GFT-6T4S", amount: 75,  balance: 75,  status: "void",    createdAt: "20/02/2026", expiresAt: "20/02/2027", note: "Anulada por reclamación" },
+  { id: "gc1", code: "NX036-GFT-4A9K", amount: 50,  balance: 50,  status: "active",  createdAt: "01/03/2026", expiresAt: "01/03/2027", buyer: "María García",  recipient: "info@juan.com",   note: "Regalo cumpleaños" },
+  { id: "gc2", code: "NX036-GFT-7H2M", amount: 100, balance: 0,   status: "used",    createdAt: "15/02/2026", expiresAt: "15/02/2027", buyer: "Carlos López",  recipient: "laura@email.com" },
+  { id: "gc3", code: "NX036-GFT-3B8N", amount: 25,  balance: 25,  status: "active",  createdAt: "10/03/2026", expiresAt: "10/03/2027", recipient: "ana@email.com" },
+  { id: "gc4", code: "NX036-GFT-9L5P", amount: 200, balance: 80,  status: "active",  createdAt: "05/03/2026", expiresAt: "05/03/2027", buyer: "Sofía Torres",  note: "Promo 5 aniversario" },
+  { id: "gc5", code: "NX036-GFT-2Q1R", amount: 50,  balance: 50,  status: "expired", createdAt: "01/01/2025", expiresAt: "01/01/2026" },
+  { id: "gc6", code: "NX036-GFT-6T4S", amount: 75,  balance: 75,  status: "void",    createdAt: "20/02/2026", expiresAt: "20/02/2027", note: "Anulada por reclamación" },
 ];
 
 const AMOUNTS = [25, 50, 100, 150, 200, 500];
@@ -41,7 +41,7 @@ export function AdminGiftCards() {
   const [form, setForm]           = useState({ amount: 50, recipient: "", note: "" });
 
   const handleCreate = () => {
-    const code = `NEXA-GFT-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+    const code = `NX036-GFT-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
     const newCard: GiftCard = {
       id:         `gc${Date.now()}`,
       code,

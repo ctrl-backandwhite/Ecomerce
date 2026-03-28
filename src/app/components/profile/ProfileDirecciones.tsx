@@ -31,7 +31,7 @@ const deliveryTypes: {
   {
     id: "store",
     label: "Recogida en tienda",
-    sublabel: "Retira gratis en cualquier tienda NEXA",
+    sublabel: "Retira gratis en cualquier tienda NX036",
     icon: <Store className="w-5 h-5" strokeWidth={1.5} />,
     color: "text-violet-600",
     bg: "bg-violet-50",
@@ -48,7 +48,7 @@ const deliveryTypes: {
   },
 ];
 
-/* ── Mock NEXA stores ────────────────────────────────────── */
+/* ── Mock NX036 stores ────────────────────────────────────── */
 interface Location {
   id: string;
   name: string;
@@ -60,12 +60,12 @@ interface Location {
 }
 
 const nexaStores: Location[] = [
-  { id: "s1", name: "NEXA Manhattan",       address: "350 Fifth Avenue, Suite 210",    city: "New York, NY",      hours: "Mon–Sat 10:00–20:00, Sun 11:00–18:00", phone: "+1 212 555 0101", badge: "Flagship" },
-  { id: "s2", name: "NEXA Beverly Hills",   address: "9500 Wilshire Blvd",              city: "Los Angeles, CA",   hours: "Mon–Sat 10:00–21:00, Sun 11:00–19:00", phone: "+1 310 555 0182" },
-  { id: "s3", name: "NEXA Chicago Loop",    address: "111 N State Street",              city: "Chicago, IL",       hours: "Mon–Sat 10:00–20:00, Sun 12:00–18:00", phone: "+1 312 555 0143" },
-  { id: "s4", name: "NEXA Oxford Street",   address: "374 Oxford Street",               city: "London, W1C 1JX",   hours: "Mon–Sat 09:30–21:00, Sun 12:00–18:00", phone: "+44 20 7946 0301", badge: "Flagship" },
-  { id: "s5", name: "NEXA Manchester",      address: "18 Market Street",                city: "Manchester, M1 1PT",hours: "Mon–Sat 10:00–20:00, Sun 11:00–17:00", phone: "+44 161 496 0210" },
-  { id: "s6", name: "NEXA Edinburgh",       address: "93 Princes Street",               city: "Edinburgh, EH2 2ER",hours: "Mon–Sat 10:00–19:30, Sun 12:00–17:00", phone: "+44 131 496 0145" },
+  { id: "s1", name: "NX036 Manhattan",       address: "350 Fifth Avenue, Suite 210",    city: "New York, NY",      hours: "Mon–Sat 10:00–20:00, Sun 11:00–18:00", phone: "+1 212 555 0101", badge: "Flagship" },
+  { id: "s2", name: "NX036 Beverly Hills",   address: "9500 Wilshire Blvd",              city: "Los Angeles, CA",   hours: "Mon–Sat 10:00–21:00, Sun 11:00–19:00", phone: "+1 310 555 0182" },
+  { id: "s3", name: "NX036 Chicago Loop",    address: "111 N State Street",              city: "Chicago, IL",       hours: "Mon–Sat 10:00–20:00, Sun 12:00–18:00", phone: "+1 312 555 0143" },
+  { id: "s4", name: "NX036 Oxford Street",   address: "374 Oxford Street",               city: "London, W1C 1JX",   hours: "Mon–Sat 09:30–21:00, Sun 12:00–18:00", phone: "+44 20 7946 0301", badge: "Flagship" },
+  { id: "s5", name: "NX036 Manchester",      address: "18 Market Street",                city: "Manchester, M1 1PT",hours: "Mon–Sat 10:00–20:00, Sun 11:00–17:00", phone: "+44 161 496 0210" },
+  { id: "s6", name: "NX036 Edinburgh",       address: "93 Princes Street",               city: "Edinburgh, EH2 2ER",hours: "Mon–Sat 10:00–19:30, Sun 12:00–17:00", phone: "+44 131 496 0145" },
 ];
 
 /* ── Mock pickup points ──────────────────────────────────── */
@@ -301,7 +301,7 @@ function AddressForm({
       {/* Step 3 – Dirección / Tienda / Punto */}
       <div className="p-5 border-b border-gray-200">
         <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">
-          3. {form.deliveryType === "home" ? "Dirección de envío" : form.deliveryType === "store" ? "Selecciona una tienda NEXA" : "Selecciona un punto de entrega"}
+          3. {form.deliveryType === "home" ? "Dirección de envío" : form.deliveryType === "store" ? "Selecciona una tienda NX036" : "Selecciona un punto de entrega"}
         </p>
 
         {/* ── HOME: address fields ── */}
@@ -328,7 +328,7 @@ function AddressForm({
           </div>
         )}
 
-        {/* ── STORE: NEXA store picker ── */}
+        {/* ── STORE: NX036 store picker ── */}
         {form.deliveryType === "store" && (
           <div className="space-y-3">
             {/* Info banner */}
@@ -378,7 +378,7 @@ function AddressForm({
             <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-100 rounded-lg p-3">
               <Info className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
               <p className="text-xs text-emerald-700">
-                Puntos de entrega oficiales asociados a NEXA. Recoge con tu RUT y código de pedido.
+                Puntos de entrega oficiales asociados a NX036. Recoge con tu RUT y código de pedido.
               </p>
             </div>
 

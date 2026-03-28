@@ -169,7 +169,7 @@ export function HomeSidebar({
       prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
     );
 
-  /* ── Categories from NEXA API ──────────────────────────────── */
+  /* ── Categories from NX036 API ──────────────────────────────── */
   const { categories: apiCategories, loading: catsLoading, error: catsError, refetch: catsRefetch } = useNexaCategories();
 
   /* ── Brands in scope ─────────────────────────────────────────── */

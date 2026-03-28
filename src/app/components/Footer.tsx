@@ -9,7 +9,7 @@ export function Footer() {
 
           {/* Brand */}
           <div className="col-span-2 md:col-span-3 lg:col-span-1">
-            <h3 className="text-lg mb-3">NEXA</h3>
+            <h3 className="text-lg mb-3">NX036</h3>
             <p className="text-sm text-gray-600 mb-5 leading-relaxed">
               Tu marketplace premium con los mejores productos, precios y servicio al cliente.
             </p>
@@ -93,7 +93,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="border-t border-gray-200 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-500">© 2026 NEXA Commerce S.L. Todos los derechos reservados.</p>
+          <p className="text-sm text-gray-500">© 2026 NX036 Commerce S.L. Todos los derechos reservados.</p>
           <div className="flex flex-wrap gap-5 text-sm">
             <Link to="/legal/privacidad" className="text-gray-500 hover:text-gray-900 transition-colors">Privacidad</Link>
             <Link to="/legal/terminos"   className="text-gray-500 hover:text-gray-900 transition-colors">Términos</Link>

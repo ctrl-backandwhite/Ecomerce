@@ -15,7 +15,7 @@ const COLOR_SCHEMES: Record<QRStyle, ColorScheme> = {
   dark:     { fg: "#111827", bg: "#FFFFFF", label: "Oscuro",      preview: "bg-gray-700 border-gray-200" },
   light:    { fg: "#374151", bg: "#F9FAFB", label: "Gris suave",  preview: "bg-gray-100 border-gray-200" },
   inverted: { fg: "#FFFFFF", bg: "#111827", label: "Invertido",   preview: "bg-white border-gray-800 ring-1 ring-gray-800" },
-  brand:    { fg: "#1D4ED8", bg: "#EFF6FF", label: "Azul NEXA",   preview: "bg-blue-50 border-blue-200" },
+  brand:    { fg: "#1D4ED8", bg: "#EFF6FF", label: "Azul NX036",   preview: "bg-blue-50 border-blue-200" },
 };
 
 const SIZES: { label: string; value: QRSize }[] = [

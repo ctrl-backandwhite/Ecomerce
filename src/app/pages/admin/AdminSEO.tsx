@@ -13,14 +13,14 @@ interface SEOEntry {
 }
 
 const initEntries: SEOEntry[] = [
-  { id: "s1", page: "Inicio",         url: "/",                  title: "NEXA — Tecnología y Estilo de Vida Premium",   description: "Compra tecnología, moda y más con los mejores precios y envío rápido a toda Europa.", score: 88, indexed: true  },
-  { id: "s2", page: "Catálogo",       url: "/productos",         title: "Catálogo de Productos | NEXA",                 description: "Explora nuestro catálogo de más de 16 000 productos con filtros avanzados.",          score: 75, indexed: true  },
-  { id: "s3", page: "Sobre Nosotros", url: "/nosotros",          title: "Quiénes Somos | NEXA Commerce",                description: "Conoce la historia y valores de NEXA, el marketplace premium de confianza.",          score: 70, indexed: true  },
-  { id: "s4", page: "Contacto",       url: "/contacto",          title: "Contacto y Atención al Cliente | NEXA",        description: "Contacta con nuestro equipo de soporte disponible 24/7.",                           score: 65, indexed: true  },
-  { id: "s5", page: "FAQ",            url: "/faq",               title: "Preguntas Frecuentes | NEXA",                  description: "Resolvemos todas tus dudas sobre pedidos, envíos, devoluciones y pagos.",            score: 72, indexed: true  },
-  { id: "s6", page: "Envíos",        url: "/envios",            title: "Información de Envíos y Entregas | NEXA",      description: "Conoce nuestras tarifas, plazos y métodos de envío a toda Europa.",                  score: 68, indexed: true  },
-  { id: "s7", page: "Privacidad",     url: "/legal/privacidad",  title: "Política de Privacidad | NEXA",                description: "Consulta cómo tratamos y protegemos tus datos personales.",                         score: 55, indexed: true  },
-  { id: "s8", page: "Términos",      url: "/legal/terminos",    title: "Términos y Condiciones | NEXA",                description: "Lee nuestros términos y condiciones de compra y uso del servicio.",                  score: 55, indexed: false },
+  { id: "s1", page: "Inicio",         url: "/",                  title: "NX036 — Tecnología y Estilo de Vida Premium",   description: "Compra tecnología, moda y más con los mejores precios y envío rápido a toda Europa.", score: 88, indexed: true  },
+  { id: "s2", page: "Catálogo",       url: "/productos",         title: "Catálogo de Productos | NX036",                 description: "Explora nuestro catálogo de más de 16 000 productos con filtros avanzados.",          score: 75, indexed: true  },
+  { id: "s3", page: "Sobre Nosotros", url: "/nosotros",          title: "Quiénes Somos | NX036 Commerce",                description: "Conoce la historia y valores de NX036, el marketplace premium de confianza.",          score: 70, indexed: true  },
+  { id: "s4", page: "Contacto",       url: "/contacto",          title: "Contacto y Atención al Cliente | NX036",        description: "Contacta con nuestro equipo de soporte disponible 24/7.",                           score: 65, indexed: true  },
+  { id: "s5", page: "FAQ",            url: "/faq",               title: "Preguntas Frecuentes | NX036",                  description: "Resolvemos todas tus dudas sobre pedidos, envíos, devoluciones y pagos.",            score: 72, indexed: true  },
+  { id: "s6", page: "Envíos",        url: "/envios",            title: "Información de Envíos y Entregas | NX036",      description: "Conoce nuestras tarifas, plazos y métodos de envío a toda Europa.",                  score: 68, indexed: true  },
+  { id: "s7", page: "Privacidad",     url: "/legal/privacidad",  title: "Política de Privacidad | NX036",                description: "Consulta cómo tratamos y protegemos tus datos personales.",                         score: 55, indexed: true  },
+  { id: "s8", page: "Términos",      url: "/legal/terminos",    title: "Términos y Condiciones | NX036",                description: "Lee nuestros términos y condiciones de compra y uso del servicio.",                  score: 55, indexed: false },
 ];
 
 const scoreColor = (s: number) =>

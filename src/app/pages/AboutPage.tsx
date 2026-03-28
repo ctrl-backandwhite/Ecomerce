@@ -36,7 +36,7 @@ export function AboutPage() {
             Redefiniendo el comercio<br className="hidden sm:block" /> electrónico premium
           </h1>
           <p className="text-base text-gray-500 leading-relaxed mb-8 max-w-xl mx-auto">
-            NEXA nació en 2019 con una misión clara: ofrecer tecnología, moda y estilo de vida
+            NX036 nació en 2019 con una misión clara: ofrecer tecnología, moda y estilo de vida
             de primera categoría con la experiencia de compra más fluida posible.
           </p>
           <Link
@@ -86,7 +86,7 @@ export function AboutPage() {
             <h2 className="text-2xl text-gray-900 tracking-tight mb-4">De startup a referente europeo</h2>
             <div className="space-y-3 text-sm text-gray-500 leading-relaxed">
               <p>Todo comenzó en un pequeño coworking de Madrid en 2019. Elena y Marco decidieron que la industria del retail online merecía un modelo más honesto y transparente.</p>
-              <p>En solo 5 años, NEXA ha pasado de vender 12 productos a un catálogo de más de 16 000 referencias, con almacenes en España, México y Estados Unidos.</p>
+              <p>En solo 5 años, NX036 ha pasado de vender 12 productos a un catálogo de más de 16 000 referencias, con almacenes en España, México y Estados Unidos.</p>
               <p>Hoy somos el marketplace de confianza para quienes buscan calidad garantizada, envíos puntuales y un servicio al cliente que de verdad resuelve problemas.</p>
             </div>
           </div>

@@ -21,7 +21,7 @@ export interface Warranty {
 // ── Type metadata ───────────────────────────────────────────────────────────
 export const WARRANTY_TYPE_META: Record<WarrantyType, { label: string; bg: string; text: string }> = {
   manufacturer: { label: "Fabricante",   bg: "bg-blue-50",   text: "text-blue-700"   },
-  store:        { label: "NEXA",          bg: "bg-violet-50", text: "text-violet-700" },
+  store:        { label: "NX036",          bg: "bg-violet-50", text: "text-violet-700" },
   extended:     { label: "Extendida",     bg: "bg-green-50",  text: "text-green-700"  },
   limited:      { label: "Limitada",      bg: "bg-amber-50",  text: "text-amber-700"  },
 };
@@ -62,11 +62,11 @@ export const initialWarranties: Warranty[] = [
   },
   {
     id: "w3",
-    name: "Garantía NEXA 2 años",
+    name: "Garantía NX036 2 años",
     type: "store",
     durationMonths: 24,
     coverage: "Garantía ampliada de tienda con recogida a domicilio incluida.",
-    conditions: "Garantía gestionada íntegramente por NEXA. Incluye recogida y entrega a domicilio sin coste. Cubre defectos funcionales detectados en uso normal. Tiempo de resolución máximo: 15 días laborables. Se incluye producto sustituto si la reparación supera 5 días.",
+    conditions: "Garantía gestionada íntegramente por NX036. Incluye recogida y entrega a domicilio sin coste. Cubre defectos funcionales detectados en uso normal. Tiempo de resolución máximo: 15 días laborables. Se incluye producto sustituto si la reparación supera 5 días.",
     includesLabor: true,
     includesParts: true,
     includesPickup: true,
@@ -78,7 +78,7 @@ export const initialWarranties: Warranty[] = [
   },
   {
     id: "w4",
-    name: "Garantía extendida NEXA 3 años",
+    name: "Garantía extendida NX036 3 años",
     type: "extended",
     durationMonths: 36,
     coverage: "Cobertura total ampliada: defectos, desgaste prematuro y asistencia prioritaria.",

@@ -1,7 +1,7 @@
 /**
  * ╔══════════════════════════════════════════════════════════════╗
  * ║  useNexaProducts — React hook for fetching products from     ║
- * ║  the NEXA mic-productcategory microservice.                  ║
+ * ║  the NX036 mic-productcategory microservice.                  ║
  * ║                                                              ║
  * ║  Supports:                                                   ║
  * ║  • Optional categoryId filter                                ║

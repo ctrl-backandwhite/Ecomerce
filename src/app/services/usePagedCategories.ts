@@ -1,6 +1,6 @@
 /**
  * usePagedCategories — React hook for fetching paginated categories
- * from the NEXA mic-productcategory microservice.
+ * from the NX036 mic-productcategory microservice.
  *
  * Supports all filter params: locale, status, active, name, level,
  * page, size, sortBy, ascending.

@@ -65,7 +65,7 @@ const promos: Promo[] = [
     title: "Electrónica de Alta Gama",
     subtitle: "Innovación sin límites",
     description:
-      "Los mejores smartphones, laptops y gadgets con descuentos especiales para miembros NEXA.",
+      "Los mejores smartphones, laptops y gadgets con descuentos especiales para miembros NX036.",
     badge: "Exclusivo",
     badgeColor: "bg-amber-500/80 text-white border-amber-400/50",
     buttonText: "Ver Electrónica",

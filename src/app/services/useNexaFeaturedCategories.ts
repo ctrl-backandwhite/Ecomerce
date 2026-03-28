@@ -1,6 +1,6 @@
 /**
  * useNexaFeaturedCategories — React hook for fetching only the
- * featured (principal) categories from the NEXA mic-productcategory
+ * featured (principal) categories from the NX036 mic-productcategory
  * microservice.
  *
  * Re-fetches automatically when the locale changes (via LanguageContext).

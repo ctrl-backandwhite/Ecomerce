@@ -40,7 +40,7 @@ const ZONES = [
 
 // ── Initial mock data ────────────────────────────────────────
 const initCarriers: Carrier[] = [
-  { id: "c1", name: "NEXA Express",  logo: "NE", trackingUrl: "",                                        zones: "España y Portugal",  minDays: 1,  maxDays: 1,  freeAbove: 100,  baseCost: 4.99,  active: true  },
+  { id: "c1", name: "NX036 Express",  logo: "NE", trackingUrl: "",                                        zones: "España y Portugal",  minDays: 1,  maxDays: 1,  freeAbove: 100,  baseCost: 4.99,  active: true  },
   { id: "c2", name: "Standard",      logo: "ST", trackingUrl: "",                                        zones: "España y Portugal",  minDays: 3,  maxDays: 5,  freeAbove: 50,   baseCost: 2.99,  active: true  },
   { id: "c3", name: "UPS Int.",       logo: "UP", trackingUrl: "https://www.ups.com/track?tracknum={code}", zones: "Unión Europea",     minDays: 5,  maxDays: 7,  freeAbove: null, baseCost: 9.99,  active: true  },
   { id: "c4", name: "FedEx Global",  logo: "FX", trackingUrl: "https://www.fedex.com/en-us/tracking.html", zones: "Internacional",     minDays: 7,  maxDays: 14, freeAbove: null, baseCost: 14.99, active: true  },
@@ -48,7 +48,7 @@ const initCarriers: Carrier[] = [
 ];
 
 const initRules: ShippingRule[] = [
-  { id: "r1", zone: "España",          carrier: "NEXA Express", weightFrom: 0, weightTo: 30, price: 4.99  },
+  { id: "r1", zone: "España",          carrier: "NX036 Express", weightFrom: 0, weightTo: 30, price: 4.99  },
   { id: "r2", zone: "España",          carrier: "Standard",     weightFrom: 0, weightTo: 30, price: 2.99  },
   { id: "r3", zone: "Portugal",        carrier: "Standard",     weightFrom: 0, weightTo: 20, price: 5.99  },
   { id: "r4", zone: "Unión Europea",   carrier: "UPS Int.",      weightFrom: 0, weightTo: 20, price: 9.99  },
