@@ -2,7 +2,6 @@ import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LogIn, LayoutDashbo
 import { Link, useNavigate, useLocation } from "react-router";
 import { urls } from "../lib/urls";
 import { useCart } from "../context/CartContext";
-import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTimezone } from "../context/TimezoneContext";
@@ -10,8 +9,7 @@ import { useState, useRef, useEffect } from "react";
 
 export function Header() {
   const { getTotalItems } = useCart();
-  const { user } = useUser();
-  const { isAuthenticated, login, logout } = useAuth();
+  const { isAuthenticated, login, logout, user: authUser } = useAuth();
   const { t } = useLanguage();
   const { selectedCountry, toggleSidebar } = useTimezone();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -21,7 +19,9 @@ export function Header() {
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const initials = isAuthenticated ? `${user.firstName[0]}${user.lastName[0]}` : "";
+  const initials = isAuthenticated && authUser
+    ? `${authUser.firstName.charAt(0)}${authUser.lastName.charAt(0)}`.toUpperCase()
+    : "";
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -130,75 +130,75 @@ export function Header() {
                     </div>
                   </button>
 
-              {isUserDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
-                  {/* Header del dropdown */}
-                  <div className="px-4 py-5 border-b border-gray-100 bg-gray-50 flex flex-col items-center text-center">
-                    <div className="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center text-white text-sm tracking-widest mb-3">
-                      {initials}
-                    </div>
-                    <p className="text-sm text-gray-900">{user.firstName} {user.lastName}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>
-                    <div className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-gray-500">
-                      <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      Miembro NX036 · {user.loyaltyPoints.toLocaleString()} pts
-                    </div>
-                  </div>
-
-                  {/* Opciones principales */}
-                  <div className="py-1.5">
-                    <Link
-                      to="/cuenta"
-                      onClick={() => setIsUserDropdownOpen(false)}
-                      className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
-                        <User className="w-3.5 h-3.5 text-gray-600" strokeWidth={1.5} />
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-900">{t("nav.profile")}</p>
-                        <p className="text-xs text-gray-400">{t("nav.profile.desc")}</p>
-                      </div>
-                    </Link>
-                  </div>
-
-                  {/* Administrar tienda */}
-                  <div className="px-3 pb-2">
-                    <div className="border border-gray-100 rounded-xl overflow-hidden">
-                      <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                        <p className="text-xs text-gray-400 tracking-wide uppercase">{t("nav.store")}</p>
-                      </div>
-                      <Link
-                        to="/admin"
-                        onClick={() => setIsUserDropdownOpen(false)}
-                        className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 transition-colors"
-                      >
-                        <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center flex-shrink-0">
-                          <LayoutDashboard className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
+                  {isUserDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
+                      {/* Header del dropdown */}
+                      <div className="px-4 py-5 border-b border-gray-100 bg-gray-50 flex flex-col items-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-gray-500 flex items-center justify-center text-white text-sm tracking-widest mb-3">
+                          {initials}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-gray-900">{t("nav.admin")}</p>
-                          <p className="text-xs text-gray-400">{t("nav.admin.desc")}</p>
+                        <p className="text-sm text-gray-900">{authUser?.firstName} {authUser?.lastName}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{authUser?.email}</p>
+                        <div className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-gray-500">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                          NX036
                         </div>
-                        <span className="text-xs text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                          {t("nav.store.active")}
-                        </span>
-                      </Link>
-                    </div>
-                  </div>
+                      </div>
 
-                  {/* Cerrar sesión */}
-                  <div className="border-t border-gray-100 py-1.5">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4" strokeWidth={1.5} />
-                      {t("nav.logout")}
-                    </button>
-                  </div>
-                </div>
-              )}
+                      {/* Opciones principales */}
+                      <div className="py-1.5">
+                        <Link
+                          to="/cuenta"
+                          onClick={() => setIsUserDropdownOpen(false)}
+                          className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <User className="w-3.5 h-3.5 text-gray-600" strokeWidth={1.5} />
+                          </div>
+                          <div>
+                            <p className="text-sm text-gray-900">{t("nav.profile")}</p>
+                            <p className="text-xs text-gray-400">{t("nav.profile.desc")}</p>
+                          </div>
+                        </Link>
+                      </div>
+
+                      {/* Administrar tienda */}
+                      <div className="px-3 pb-2">
+                        <div className="border border-gray-100 rounded-xl overflow-hidden">
+                          <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                            <p className="text-xs text-gray-400 tracking-wide uppercase">{t("nav.store")}</p>
+                          </div>
+                          <Link
+                            to="/admin"
+                            onClick={() => setIsUserDropdownOpen(false)}
+                            className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center flex-shrink-0">
+                              <LayoutDashboard className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900">{t("nav.admin")}</p>
+                              <p className="text-xs text-gray-400">{t("nav.admin.desc")}</p>
+                            </div>
+                            <span className="text-xs text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                              {t("nav.store.active")}
+                            </span>
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* Cerrar sesión */}
+                      <div className="border-t border-gray-100 py-1.5">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                        >
+                          <LogOut className="w-4 h-4" strokeWidth={1.5} />
+                          {t("nav.logout")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </>
               ) : (
                 <button
@@ -283,8 +283,8 @@ export function Header() {
                         {initials}
                       </div>
                       <div>
-                        <p className="text-sm text-gray-900">{user.firstName} {user.lastName}</p>
-                        <p className="text-xs text-gray-400">{user.email}</p>
+                        <p className="text-sm text-gray-900">{authUser?.firstName} {authUser?.lastName}</p>
+                        <p className="text-xs text-gray-400">{authUser?.email}</p>
                       </div>
                     </div>
                     <Link
