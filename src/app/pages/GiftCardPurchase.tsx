@@ -133,11 +133,10 @@ function StepBar({ step }: { step: Step }) {
       {steps.map((s, i) => (
         <div key={s.n} className="flex items-center">
           <div className="flex flex-col items-center gap-1">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${
-              step > s.n ? "bg-gray-600 text-white" :
-              step === s.n ? "bg-gray-600 text-white ring-4 ring-gray-200" :
-              "bg-gray-100 text-gray-400"
-            }`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${step > s.n ? "bg-gray-600 text-white" :
+                step === s.n ? "bg-gray-600 text-white ring-4 ring-gray-200" :
+                  "bg-gray-100 text-gray-400"
+              }`}>
               {step > s.n ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : s.n}
             </div>
             <p className={`text-[10px] whitespace-nowrap ${step === s.n ? "text-gray-900" : "text-gray-400"}`}>
@@ -217,7 +216,7 @@ export function GiftCardPurchase() {
   }
 
   function copyCode() {
-    navigator.clipboard.writeText(generatedCode).catch(() => {});
+    navigator.clipboard.writeText(generatedCode).catch(() => { });
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
     toast.success("Código copiado");
@@ -269,11 +268,10 @@ export function GiftCardPurchase() {
                     <button
                       key={d.id}
                       onClick={() => set("design", d)}
-                      className={`relative rounded-xl overflow-hidden aspect-[3/2] transition-all ${
-                        form.design.id === d.id
+                      className={`relative rounded-xl overflow-hidden aspect-[3/2] transition-all ${form.design.id === d.id
                           ? "ring-2 ring-gray-900 ring-offset-2 scale-[1.02]"
                           : "ring-1 ring-gray-200 hover:ring-gray-400"
-                      }`}
+                        }`}
                     >
                       <div
                         className="w-full h-full flex items-center justify-center"
@@ -296,11 +294,10 @@ export function GiftCardPurchase() {
                     <button
                       key={a}
                       onClick={() => { set("amount", a); set("customAmount", ""); }}
-                      className={`h-11 rounded-xl text-sm border transition-all ${
-                        form.amount === a && !form.customAmount
+                      className={`h-11 rounded-xl text-sm border transition-all ${form.amount === a && !form.customAmount
                           ? "bg-gray-600 text-white border-gray-600"
                           : "bg-white text-gray-700 border-gray-200 hover:border-gray-500"
-                      }`}
+                        }`}
                     >
                       {a}€
                     </button>
@@ -435,9 +432,8 @@ export function GiftCardPurchase() {
                   <button
                     type="button"
                     onClick={() => set("sendNow", true)}
-                    className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border text-sm transition-all ${
-                      form.sendNow ? "border-gray-900 bg-gray-50 text-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"
-                    }`}
+                    className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border text-sm transition-all ${form.sendNow ? "border-gray-900 bg-gray-50 text-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"
+                      }`}
                   >
                     <Send className={`w-4 h-4 ${form.sendNow ? "" : "text-gray-300"}`} strokeWidth={1.5} />
                     Ahora mismo
@@ -445,9 +441,8 @@ export function GiftCardPurchase() {
                   <button
                     type="button"
                     onClick={() => set("sendNow", false)}
-                    className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border text-sm transition-all ${
-                      !form.sendNow ? "border-gray-900 bg-gray-50 text-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"
-                    }`}
+                    className={`flex-1 flex items-center gap-2 px-4 py-3 rounded-xl border text-sm transition-all ${!form.sendNow ? "border-gray-900 bg-gray-50 text-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"
+                      }`}
                   >
                     <Calendar className={`w-4 h-4 ${!form.sendNow ? "" : "text-gray-300"}`} strokeWidth={1.5} />
                     Programar
@@ -753,8 +748,8 @@ export function GiftCardPurchase() {
           <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8 grid sm:grid-cols-3 gap-6">
             {[
               { icon: Sparkles, title: "6 diseños exclusivos", desc: "Elige el que mejor encaje con la ocasión" },
-              { icon: Send,     title: "Envío instantáneo",   desc: "El destinatario lo recibe en su email al instante" },
-              { icon: Gift,     title: "Validez 12 meses",    desc: "Sin prisas, tiempo de sobra para disfrutarla" },
+              { icon: Send, title: "Envío instantáneo", desc: "El destinatario lo recibe en su email al instante" },
+              { icon: Gift, title: "Validez 12 meses", desc: "Sin prisas, tiempo de sobra para disfrutarla" },
             ].map(f => (
               <div key={f.title} className="flex items-start gap-3">
                 <div className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0">

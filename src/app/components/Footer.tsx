@@ -96,8 +96,8 @@ export function Footer() {
           <p className="text-sm text-gray-500">© 2026 NX036 Commerce S.L. Todos los derechos reservados.</p>
           <div className="flex flex-wrap gap-5 text-sm">
             <Link to="/legal/privacidad" className="text-gray-500 hover:text-gray-900 transition-colors">Privacidad</Link>
-            <Link to="/legal/terminos"   className="text-gray-500 hover:text-gray-900 transition-colors">Términos</Link>
-            <Link to="/legal/cookies"    className="text-gray-500 hover:text-gray-900 transition-colors">Cookies</Link>
+            <Link to="/legal/terminos" className="text-gray-500 hover:text-gray-900 transition-colors">Términos</Link>
+            <Link to="/legal/cookies" className="text-gray-500 hover:text-gray-900 transition-colors">Cookies</Link>
           </div>
         </div>
       </div>

@@ -3,10 +3,10 @@ import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, MessageSquare, Headphon
 import { toast } from "sonner";
 
 const channels = [
-  { icon: MessageSquare, title: "Chat en vivo",    desc: "Respuesta en menos de 2 min",  action: "Iniciar chat",  color: "text-blue-600",   bg: "bg-blue-50"   },
-  { icon: Mail,          title: "Email",            desc: "Respuesta en menos de 24 h",   action: "Enviar email",  color: "text-violet-600", bg: "bg-violet-50" },
-  { icon: Headphones,    title: "Teléfono",         desc: "Lun–Vie 9:00–18:00 CET",       action: "Llamar ahora", color: "text-emerald-600",bg: "bg-emerald-50"},
-  { icon: FileText,      title: "Centro de ayuda",  desc: "Más de 200 artículos",          action: "Ver artículos", color: "text-amber-600",  bg: "bg-amber-50"  },
+  { icon: MessageSquare, title: "Chat en vivo", desc: "Respuesta en menos de 2 min", action: "Iniciar chat", color: "text-blue-600", bg: "bg-blue-50" },
+  { icon: Mail, title: "Email", desc: "Respuesta en menos de 24 h", action: "Enviar email", color: "text-violet-600", bg: "bg-violet-50" },
+  { icon: Headphones, title: "Teléfono", desc: "Lun–Vie 9:00–18:00 CET", action: "Llamar ahora", color: "text-emerald-600", bg: "bg-emerald-50" },
+  { icon: FileText, title: "Centro de ayuda", desc: "Más de 200 artículos", action: "Ver artículos", color: "text-amber-600", bg: "bg-amber-50" },
 ];
 
 export function ContactPage() {
@@ -122,10 +122,10 @@ export function ContactPage() {
               <h2 className="text-lg text-gray-900 tracking-tight mb-5">Información de contacto</h2>
               <div className="space-y-4">
                 {[
-                  { icon: MapPin, title: "Dirección",     value: "Calle Principal 123, Madrid 28001, España" },
-                  { icon: Phone,  title: "Teléfono",      value: "+34 91 234 56 78" },
-                  { icon: Mail,   title: "Email",         value: "info@nx036.com" },
-                  { icon: Clock,  title: "Horario",       value: "Lun–Vie 9:00–18:00 CET · Sab 10:00–14:00" },
+                  { icon: MapPin, title: "Dirección", value: "Calle Principal 123, Madrid 28001, España" },
+                  { icon: Phone, title: "Teléfono", value: "+34 91 234 56 78" },
+                  { icon: Mail, title: "Email", value: "info@nx036.com" },
+                  { icon: Clock, title: "Horario", value: "Lun–Vie 9:00–18:00 CET · Sab 10:00–14:00" },
                 ].map(i => (
                   <div key={i.title} className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">

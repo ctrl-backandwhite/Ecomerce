@@ -4,39 +4,39 @@ import type { Product } from "../../data/products";
 import { toast } from "sonner";
 
 /* ── Types ─────────────────────────────────────────────────── */
-type QRSize   = 128 | 192 | 256 | 320;
-type QRLevel  = "L" | "M" | "Q" | "H";
-type QRStyle  = "dark" | "light" | "inverted" | "brand";
-type URLMode  = "store" | "sku" | "barcode" | "custom";
+type QRSize = 128 | 192 | 256 | 320;
+type QRLevel = "L" | "M" | "Q" | "H";
+type QRStyle = "dark" | "light" | "inverted" | "brand";
+type URLMode = "store" | "sku" | "barcode" | "custom";
 
 interface ColorScheme { fg: string; bg: string; label: string; preview: string }
 
 const COLOR_SCHEMES: Record<QRStyle, ColorScheme> = {
-  dark:     { fg: "#111827", bg: "#FFFFFF", label: "Oscuro",      preview: "bg-gray-700 border-gray-200" },
-  light:    { fg: "#374151", bg: "#F9FAFB", label: "Gris suave",  preview: "bg-gray-100 border-gray-200" },
-  inverted: { fg: "#FFFFFF", bg: "#111827", label: "Invertido",   preview: "bg-white border-gray-800 ring-1 ring-gray-800" },
-  brand:    { fg: "#1D4ED8", bg: "#EFF6FF", label: "Azul NX036",   preview: "bg-blue-50 border-blue-200" },
+  dark: { fg: "#111827", bg: "#FFFFFF", label: "Oscuro", preview: "bg-gray-700 border-gray-200" },
+  light: { fg: "#374151", bg: "#F9FAFB", label: "Gris suave", preview: "bg-gray-100 border-gray-200" },
+  inverted: { fg: "#FFFFFF", bg: "#111827", label: "Invertido", preview: "bg-white border-gray-800 ring-1 ring-gray-800" },
+  brand: { fg: "#1D4ED8", bg: "#EFF6FF", label: "Azul NX036", preview: "bg-blue-50 border-blue-200" },
 };
 
 const SIZES: { label: string; value: QRSize }[] = [
-  { label: "S",  value: 128 },
-  { label: "M",  value: 192 },
-  { label: "L",  value: 256 },
+  { label: "S", value: 128 },
+  { label: "M", value: 192 },
+  { label: "L", value: 256 },
   { label: "XL", value: 320 },
 ];
 
 const LEVELS: { label: string; value: QRLevel; hint: string }[] = [
-  { label: "L", value: "L", hint: "7% — mínimo"   },
+  { label: "L", value: "L", hint: "7% — mínimo" },
   { label: "M", value: "M", hint: "15% — estándar" },
-  { label: "Q", value: "Q", hint: "25% — bueno"    },
-  { label: "H", value: "H", hint: "30% — máximo"   },
+  { label: "Q", value: "Q", hint: "25% — bueno" },
+  { label: "H", value: "H", hint: "30% — máximo" },
 ];
 
 /* ── Helpers ───────────────────────────────────────────────── */
 function stockBadge(stock: number) {
-  if (stock === 0)  return { cls: "bg-red-50 text-red-600",   label: "Sin stock" };
-  if (stock < 10)   return { cls: "bg-amber-50 text-amber-600", label: `Stock bajo (${stock})` };
-  return                   { cls: "bg-green-50 text-green-700", label: `En stock (${stock})` };
+  if (stock === 0) return { cls: "bg-red-50 text-red-600", label: "Sin stock" };
+  if (stock < 10) return { cls: "bg-amber-50 text-amber-600", label: `Stock bajo (${stock})` };
+  return { cls: "bg-green-50 text-green-700", label: `En stock (${stock})` };
 }
 
 /* ── Modal ─────────────────────────────────────────────────── */
@@ -50,27 +50,27 @@ export function ProductQRModal({
   const base = typeof window !== "undefined" ? window.location.origin : "https://nx036.com";
 
   /* ── State ── */
-  const [urlMode,    setUrlMode]    = useState<URLMode>("store");
-  const [customUrl,  setCustomUrl]  = useState("");
-  const [qrSize,     setQrSize]     = useState<QRSize>(256);
-  const [qrStyle,    setQrStyle]    = useState<QRStyle>("dark");
-  const [qrLevel,    setQrLevel]    = useState<QRLevel>("M");
-  const [copied,     setCopied]     = useState(false);
-  const [logoOn,     setLogoOn]     = useState(false);
-  const [margin,     setMargin]     = useState(true);
+  const [urlMode, setUrlMode] = useState<URLMode>("store");
+  const [customUrl, setCustomUrl] = useState("");
+  const [qrSize, setQrSize] = useState<QRSize>(256);
+  const [qrStyle, setQrStyle] = useState<QRStyle>("dark");
+  const [qrLevel, setQrLevel] = useState<QRLevel>("M");
+  const [copied, setCopied] = useState(false);
+  const [logoOn, setLogoOn] = useState(false);
+  const [margin, setMargin] = useState(true);
 
   const svgContainerRef = useRef<HTMLDivElement>(null);
 
   /* ── Computed URL ── */
   const qrValue = (() => {
-    if (urlMode === "store")   return `${base}/producto/${product.id}`;
-    if (urlMode === "sku")     return product.sku || `SKU-${product.id}`;
+    if (urlMode === "store") return `${base}/producto/${product.id}`;
+    if (urlMode === "sku") return product.sku || `SKU-${product.id}`;
     if (urlMode === "barcode") return product.barcode || `BC-${product.id}`;
     return customUrl.trim() || `${base}/producto/${product.id}`;
   })();
 
   const scheme = COLOR_SCHEMES[qrStyle];
-  const badge  = stockBadge(product.stock);
+  const badge = stockBadge(product.stock);
 
   /* ── Actions ── */
   const handleCopy = useCallback(async () => {
@@ -101,8 +101,8 @@ export function ProductQRModal({
     const serializer = new XMLSerializer();
     const svgStr = serializer.serializeToString(svg);
     const blob = new Blob([svgStr], { type: "image/svg+xml" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
     a.download = `qr-${product.slug || product.id}.svg`;
     a.href = url;
     a.click();
@@ -233,11 +233,10 @@ export function ProductQRModal({
                 <button
                   key={value}
                   onClick={() => setQrSize(value)}
-                  className={`w-8 h-7 text-xs rounded-lg border transition-all ${
-                    qrSize === value
+                  className={`w-8 h-7 text-xs rounded-lg border transition-all ${qrSize === value
                       ? "border-gray-600 bg-gray-600 text-white"
                       : "border-gray-200 text-gray-500 hover:border-gray-400"
-                  }`}
+                    }`}
                 >
                   {label}
                 </button>
@@ -254,17 +253,16 @@ export function ProductQRModal({
               <p className="text-xs text-gray-400 uppercase tracking-wider mb-2.5">Contenido del QR</p>
               <div className="space-y-1.5">
                 {([
-                  { value: "store",   icon: ExternalLink, label: "URL de la tienda",    hint: `/producto/${product.id}` },
-                  { value: "sku",     icon: Tag,          label: "Código SKU",           hint: product.sku || "SKU" },
-                  { value: "barcode", icon: QrCode,       label: "Código de barras",     hint: product.barcode || "Barcode" },
-                  { value: "custom",  icon: Package,      label: "URL personalizada",    hint: "Introduce una URL" },
+                  { value: "store", icon: ExternalLink, label: "URL de la tienda", hint: `/producto/${product.id}` },
+                  { value: "sku", icon: Tag, label: "Código SKU", hint: product.sku || "SKU" },
+                  { value: "barcode", icon: QrCode, label: "Código de barras", hint: product.barcode || "Barcode" },
+                  { value: "custom", icon: Package, label: "URL personalizada", hint: "Introduce una URL" },
                 ] as const).map(({ value, icon: Icon, label, hint }) => (
                   <label key={value} className="flex items-center gap-2.5 cursor-pointer group">
                     <div
                       onClick={() => setUrlMode(value)}
-                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        urlMode === value ? "border-gray-600 bg-gray-600" : "border-gray-300 group-hover:border-gray-500"
-                      }`}
+                      className={`w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors ${urlMode === value ? "border-gray-600 bg-gray-600" : "border-gray-300 group-hover:border-gray-500"
+                        }`}
                     >
                       {urlMode === value && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
                     </div>
@@ -292,11 +290,10 @@ export function ProductQRModal({
                   <button
                     key={key}
                     onClick={() => setQrStyle(key)}
-                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition-all ${
-                      qrStyle === key
+                    className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition-all ${qrStyle === key
                         ? "border-gray-900 bg-gray-50 text-gray-900"
                         : "border-gray-100 text-gray-500 hover:border-gray-300"
-                    }`}
+                      }`}
                   >
                     <div className={`w-4 h-4 rounded border flex-shrink-0 ${s.preview}`} />
                     {s.label}
@@ -315,11 +312,10 @@ export function ProductQRModal({
                     key={value}
                     onClick={() => setQrLevel(value)}
                     title={hint}
-                    className={`flex-1 h-7 text-xs rounded-lg border transition-all ${
-                      qrLevel === value
+                    className={`flex-1 h-7 text-xs rounded-lg border transition-all ${qrLevel === value
                         ? "border-gray-600 bg-gray-600 text-white"
                         : "border-gray-200 text-gray-500 hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     {label}
                   </button>
@@ -363,11 +359,10 @@ export function ProductQRModal({
         <div className="flex items-center gap-2 flex-wrap px-6 py-4 border-t border-gray-100 bg-gray-50/50">
           <button
             onClick={handleCopy}
-            className={`flex items-center gap-1.5 text-xs border rounded-xl px-3.5 py-2 transition-all ${
-              copied
+            className={`flex items-center gap-1.5 text-xs border rounded-xl px-3.5 py-2 transition-all ${copied
                 ? "border-green-500 bg-green-50 text-green-700"
                 : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-white"
-            }`}
+              }`}
           >
             {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
             {copied ? "¡Copiado!" : "Copiar URL"}

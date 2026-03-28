@@ -23,43 +23,43 @@ export interface AppNotification {
 
 /* ── Default notifications (initial state) ──────────────────── */
 export const DEFAULT_NOTIFICATIONS: AppNotification[] = [
-  { id:"n01", type:"venta",     title:"Nueva orden recibida",          body:"#NX-001284 · Laura Gómez · $1,899",                 time:"hace 8 min",   read:false, link:"/admin/ordenes" },
-  { id:"n02", type:"venta",     title:"Pago confirmado",               body:"#NX-001283 · Andrés Ruiz · $349 via tarjeta",        time:"hace 22 min",  read:false, link:"/admin/ordenes" },
-  { id:"n03", type:"alerta",    title:"Stock crítico",                 body:"Sony WH-1000XM5 · solo 3 unidades restantes",        time:"hace 35 min",  read:false, link:"/admin/productos" },
-  { id:"n04", type:"cliente",   title:"Nuevo cliente VIP",             body:"Carlos Mendoza alcanzó nivel Premium",               time:"hace 1 h",     read:false, link:"/admin/clientes" },
-  { id:"n05", type:"reseña",    title:"Reseña negativa recibida",      body:"iPhone 15 Pro · 2 estrellas · \"Llegó dañado\"",     time:"hace 1 h",     read:false, link:"/admin/resenas" },
-  { id:"n06", type:"venta",     title:"Orden completada",              body:"#NX-001281 · Carlos Mendoza · $4,299",               time:"hace 2 h",     read:true,  link:"/admin/ordenes" },
-  { id:"n07", type:"devolucion",title:"Solicitud de devolución",       body:"#NX-001270 · Isabel Herrera · $1,599 pendiente",     time:"hace 2 h",     read:false, link:"/admin/devoluciones" },
-  { id:"n08", type:"sistema",   title:"Copia de seguridad completada", body:"Backup automático realizado correctamente",          time:"hace 3 h",     read:true  },
-  { id:"n09", type:"alerta",    title:"Certificado SSL por vencer",    body:"El certificado vence en 14 días · renovar ahora",    time:"hace 4 h",     read:true,  link:"/admin/configuracion" },
-  { id:"n10", type:"venta",     title:"Meta diaria alcanzada",         body:"$8,940 recaudados hoy · 100% de la meta",            time:"hace 4 h",     read:true  },
-  { id:"n11", type:"cliente",   title:"Pico de registros",             body:"8 nuevos clientes en las últimas 6 horas",           time:"hace 5 h",     read:true,  link:"/admin/clientes" },
-  { id:"n12", type:"reseña",    title:"12 reseñas 5 estrellas",        body:"Sony WH-1000XM5 lidera con 98% satisfacción",        time:"hace 6 h",     read:true,  link:"/admin/resenas" },
-  { id:"n13", type:"sistema",   title:"Actualización disponible",      body:"NX036 Admin v2.4.1 · mejoras de rendimiento",         time:"ayer",         read:true  },
-  { id:"n14", type:"devolucion",title:"Devolución aprobada",           body:"#NX-001263 · Marcos Molina · $699 reembolsado",      time:"ayer",         read:true,  link:"/admin/devoluciones" },
-  { id:"n15", type:"alerta",    title:"Tasa devolución alta",          body:"Alcanzó 6.1% esta semana · umbral recomendado: 5%",  time:"ayer",         read:true,  link:"/admin/reportes" },
-  { id:"n16", type:"sistema",   title:"Nuevo administrador añadido",   body:"admin@nx036.com tiene acceso desde hoy",         time:"hace 2 días",  read:true  },
-  { id:"n17", type:"venta",     title:"Orden de alto valor",           body:"#NX-001257 · Héctor Santos · $7,499",               time:"hace 2 días",  read:true,  link:"/admin/ordenes" },
-  { id:"n18", type:"cliente",   title:"Cuenta verificada",             body:"Gloria Peña completó verificación de identidad",     time:"hace 3 días",  read:true,  link:"/admin/clientes" },
+  { id: "n01", type: "venta", title: "Nueva orden recibida", body: "#NX-001284 · Laura Gómez · $1,899", time: "hace 8 min", read: false, link: "/admin/ordenes" },
+  { id: "n02", type: "venta", title: "Pago confirmado", body: "#NX-001283 · Andrés Ruiz · $349 via tarjeta", time: "hace 22 min", read: false, link: "/admin/ordenes" },
+  { id: "n03", type: "alerta", title: "Stock crítico", body: "Sony WH-1000XM5 · solo 3 unidades restantes", time: "hace 35 min", read: false, link: "/admin/productos" },
+  { id: "n04", type: "cliente", title: "Nuevo cliente VIP", body: "Carlos Mendoza alcanzó nivel Premium", time: "hace 1 h", read: false, link: "/admin/clientes" },
+  { id: "n05", type: "reseña", title: "Reseña negativa recibida", body: "iPhone 15 Pro · 2 estrellas · \"Llegó dañado\"", time: "hace 1 h", read: false, link: "/admin/resenas" },
+  { id: "n06", type: "venta", title: "Orden completada", body: "#NX-001281 · Carlos Mendoza · $4,299", time: "hace 2 h", read: true, link: "/admin/ordenes" },
+  { id: "n07", type: "devolucion", title: "Solicitud de devolución", body: "#NX-001270 · Isabel Herrera · $1,599 pendiente", time: "hace 2 h", read: false, link: "/admin/devoluciones" },
+  { id: "n08", type: "sistema", title: "Copia de seguridad completada", body: "Backup automático realizado correctamente", time: "hace 3 h", read: true },
+  { id: "n09", type: "alerta", title: "Certificado SSL por vencer", body: "El certificado vence en 14 días · renovar ahora", time: "hace 4 h", read: true, link: "/admin/configuracion" },
+  { id: "n10", type: "venta", title: "Meta diaria alcanzada", body: "$8,940 recaudados hoy · 100% de la meta", time: "hace 4 h", read: true },
+  { id: "n11", type: "cliente", title: "Pico de registros", body: "8 nuevos clientes en las últimas 6 horas", time: "hace 5 h", read: true, link: "/admin/clientes" },
+  { id: "n12", type: "reseña", title: "12 reseñas 5 estrellas", body: "Sony WH-1000XM5 lidera con 98% satisfacción", time: "hace 6 h", read: true, link: "/admin/resenas" },
+  { id: "n13", type: "sistema", title: "Actualización disponible", body: "NX036 Admin v2.4.1 · mejoras de rendimiento", time: "ayer", read: true },
+  { id: "n14", type: "devolucion", title: "Devolución aprobada", body: "#NX-001263 · Marcos Molina · $699 reembolsado", time: "ayer", read: true, link: "/admin/devoluciones" },
+  { id: "n15", type: "alerta", title: "Tasa devolución alta", body: "Alcanzó 6.1% esta semana · umbral recomendado: 5%", time: "ayer", read: true, link: "/admin/reportes" },
+  { id: "n16", type: "sistema", title: "Nuevo administrador añadido", body: "admin@nx036.com tiene acceso desde hoy", time: "hace 2 días", read: true },
+  { id: "n17", type: "venta", title: "Orden de alto valor", body: "#NX-001257 · Héctor Santos · $7,499", time: "hace 2 días", read: true, link: "/admin/ordenes" },
+  { id: "n18", type: "cliente", title: "Cuenta verificada", body: "Gloria Peña completó verificación de identidad", time: "hace 3 días", read: true, link: "/admin/clientes" },
 ];
 
 /* ── Type metadata ───────────────────────────────────────────── */
 const TYPE_META: Record<NotifType, { label: string; icon: React.ElementType; bg: string; icon_color: string }> = {
-  venta:      { label: "Venta",      icon: ShoppingBag, bg: "bg-gray-500",    icon_color: "text-white"        },
-  alerta:     { label: "Alerta",     icon: AlertTriangle, bg: "bg-amber-100", icon_color: "text-amber-600"    },
-  sistema:    { label: "Sistema",    icon: Settings,    bg: "bg-gray-100",    icon_color: "text-gray-500"     },
-  cliente:    { label: "Cliente",    icon: Users,       bg: "bg-blue-100",    icon_color: "text-blue-600"     },
-  devolucion: { label: "Devolución", icon: RotateCcw,   bg: "bg-orange-100", icon_color: "text-orange-600"   },
-  reseña:     { label: "Reseña",     icon: Star,        bg: "bg-violet-100",  icon_color: "text-violet-600"   },
+  venta: { label: "Venta", icon: ShoppingBag, bg: "bg-gray-500", icon_color: "text-white" },
+  alerta: { label: "Alerta", icon: AlertTriangle, bg: "bg-amber-100", icon_color: "text-amber-600" },
+  sistema: { label: "Sistema", icon: Settings, bg: "bg-gray-100", icon_color: "text-gray-500" },
+  cliente: { label: "Cliente", icon: Users, bg: "bg-blue-100", icon_color: "text-blue-600" },
+  devolucion: { label: "Devolución", icon: RotateCcw, bg: "bg-orange-100", icon_color: "text-orange-600" },
+  reseña: { label: "Reseña", icon: Star, bg: "bg-violet-100", icon_color: "text-violet-600" },
 };
 
 type FilterTab = "todas" | "no_leidas" | "alerta" | "venta" | "sistema";
 const TABS: { id: FilterTab; label: string }[] = [
-  { id: "todas",     label: "Todas"    },
-  { id: "no_leidas", label: "No leídas"},
-  { id: "alerta",    label: "Alertas"  },
-  { id: "venta",     label: "Ventas"   },
-  { id: "sistema",   label: "Sistema"  },
+  { id: "todas", label: "Todas" },
+  { id: "no_leidas", label: "No leídas" },
+  { id: "alerta", label: "Alertas" },
+  { id: "venta", label: "Ventas" },
+  { id: "sistema", label: "Sistema" },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -69,10 +69,10 @@ interface Props {
   open: boolean;
   onClose: () => void;
   notifications: AppNotification[];
-  onMarkRead:    (id: string) => void;
+  onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
-  onDelete:      (id: string) => void;
-  onClearRead:   () => void;
+  onDelete: (id: string) => void;
+  onClearRead: () => void;
 }
 
 export function NotificationsPanel({
@@ -87,19 +87,19 @@ export function NotificationsPanel({
   const filtered = useMemo(() => {
     switch (tab) {
       case "no_leidas": return notifications.filter(n => !n.read);
-      case "alerta":    return notifications.filter(n => n.type === "alerta");
-      case "venta":     return notifications.filter(n => n.type === "venta");
-      case "sistema":   return notifications.filter(n => n.type === "sistema");
-      default:          return notifications;
+      case "alerta": return notifications.filter(n => n.type === "alerta");
+      case "venta": return notifications.filter(n => n.type === "venta");
+      case "sistema": return notifications.filter(n => n.type === "sistema");
+      default: return notifications;
     }
   }, [notifications, tab]);
 
   const tabCount = (t: FilterTab) => {
-    if (t === "todas")     return notifications.length;
+    if (t === "todas") return notifications.length;
     if (t === "no_leidas") return notifications.filter(n => !n.read).length;
-    if (t === "alerta")    return notifications.filter(n => n.type === "alerta").length;
-    if (t === "venta")     return notifications.filter(n => n.type === "venta").length;
-    if (t === "sistema")   return notifications.filter(n => n.type === "sistema" || n.type === "devolucion" || n.type === "reseña" || n.type === "cliente").length;
+    if (t === "alerta") return notifications.filter(n => n.type === "alerta").length;
+    if (t === "venta") return notifications.filter(n => n.type === "venta").length;
+    if (t === "sistema") return notifications.filter(n => n.type === "sistema" || n.type === "devolucion" || n.type === "reseña" || n.type === "cliente").length;
     return 0;
   };
 
@@ -148,15 +148,13 @@ export function NotificationsPanel({
               <button
                 key={t.id}
                 onClick={() => { setTab(t.id); setSelected(null); }}
-                className={`flex items-center gap-1.5 h-6 px-2.5 text-[11px] rounded-lg whitespace-nowrap transition-colors flex-shrink-0 ${
-                  tab === t.id ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
-                }`}
+                className={`flex items-center gap-1.5 h-6 px-2.5 text-[11px] rounded-lg whitespace-nowrap transition-colors flex-shrink-0 ${tab === t.id ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                  }`}
               >
                 {t.label}
                 {cnt > 0 && (
-                  <span className={`text-[10px] px-1 min-w-[16px] text-center rounded-full ${
-                    tab === t.id ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
-                  }`}>
+                  <span className={`text-[10px] px-1 min-w-[16px] text-center rounded-full ${tab === t.id ? "bg-white/20 text-white" : "bg-gray-100 text-gray-500"
+                    }`}>
                     {cnt}
                   </span>
                 )}

@@ -35,10 +35,10 @@ export interface InvoiceData {
 
 /* ── Status meta ───────────────────────────────────────────── */
 const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; text: string; border: string; icon: typeof CheckCircle2 }> = {
-  paid:    { label: "PAGADA",   bg: "bg-green-50",  text: "text-green-700",  border: "border-green-200", icon: CheckCircle2  },
-  pending: { label: "PENDIENTE",bg: "bg-amber-50",  text: "text-amber-700",  border: "border-amber-200", icon: Clock         },
-  overdue: { label: "VENCIDA",  bg: "bg-red-50",    text: "text-red-700",    border: "border-red-200",   icon: AlertTriangle },
-  void:    { label: "ANULADA",  bg: "bg-gray-100",  text: "text-gray-500",   border: "border-gray-200",  icon: Ban           },
+  paid: { label: "PAGADA", bg: "bg-green-50", text: "text-green-700", border: "border-green-200", icon: CheckCircle2 },
+  pending: { label: "PENDIENTE", bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200", icon: Clock },
+  overdue: { label: "VENCIDA", bg: "bg-red-50", text: "text-red-700", border: "border-red-200", icon: AlertTriangle },
+  void: { label: "ANULADA", bg: "bg-gray-100", text: "text-gray-500", border: "border-gray-200", icon: Ban },
 };
 
 /* ── Helpers ─────────────────────────────────────────────── */

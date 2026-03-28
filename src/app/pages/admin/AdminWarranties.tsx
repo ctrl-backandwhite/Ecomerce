@@ -14,8 +14,8 @@ import {
 } from "../../data/warranties";
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
-const inp  = "w-full h-7 px-2.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400 transition-colors placeholder:text-gray-300";
-const lbl  = "block text-[11px] text-gray-500 mb-1";
+const inp = "w-full h-7 px-2.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400 transition-colors placeholder:text-gray-300";
+const lbl = "block text-[11px] text-gray-500 mb-1";
 
 const emptyWarranty: Omit<Warranty, "id" | "productsCount"> = {
   name: "",
@@ -37,7 +37,7 @@ function durationLabel(months: number): string {
   if (months === 0) return "Sin período";
   if (months < 12) return `${months} mes${months > 1 ? "es" : ""}`;
   const years = Math.floor(months / 12);
-  const rem   = months % 12;
+  const rem = months % 12;
   return rem === 0 ? `${years} año${years > 1 ? "s" : ""}` : `${years}a ${rem}m`;
 }
 
@@ -83,15 +83,15 @@ interface WarrantyPanelProps {
 
 function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
   const [form, setForm] = useState({ ...initial });
-  const [tab, setTab]   = useState<"general" | "cobertura" | "contacto">("general");
+  const [tab, setTab] = useState<"general" | "cobertura" | "contacto">("general");
   const isEdit = Boolean(initial.id);
 
   const set = (field: keyof typeof form, value: any) =>
     setForm(prev => ({ ...prev, [field]: value }));
 
   const validate = () => {
-    if (!form.name.trim())     { toast.error("El nombre es obligatorio");       return false; }
-    if (!form.coverage.trim()) { toast.error("La cobertura es obligatoria");    return false; }
+    if (!form.name.trim()) { toast.error("El nombre es obligatorio"); return false; }
+    if (!form.coverage.trim()) { toast.error("La cobertura es obligatoria"); return false; }
     if (form.durationMonths < 0) { toast.error("La duración no puede ser negativa"); return false; }
     return true;
   };
@@ -129,9 +129,9 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
         {/* Tabs */}
         <div className="flex border-b border-gray-100 flex-shrink-0">
           {([
-            { id: "general",   label: "General" },
+            { id: "general", label: "General" },
             { id: "cobertura", label: "Cobertura" },
-            { id: "contacto",  label: "Contacto" },
+            { id: "contacto", label: "Contacto" },
           ] as const).map(t => (
             <button
               key={t.id}
@@ -303,9 +303,9 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
                 <label className={lbl}>Incluye</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { field: "includesLabor"   as const, label: "Mano de obra",     icon: Wrench   },
-                    { field: "includesParts"   as const, label: "Piezas / recambios", icon: Package  },
-                    { field: "includesPickup"  as const, label: "Recogida a domicilio", icon: Truck  },
+                    { field: "includesLabor" as const, label: "Mano de obra", icon: Wrench },
+                    { field: "includesParts" as const, label: "Piezas / recambios", icon: Package },
+                    { field: "includesPickup" as const, label: "Recogida a domicilio", icon: Truck },
                   ].map(opt => (
                     <button
                       key={opt.field}
@@ -330,15 +330,15 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
               <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
                 <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Resumen de cobertura</p>
                 {[
-                  { value: form.includesLabor,   label: "Mano de obra"         },
-                  { value: form.includesParts,   label: "Piezas y recambios"   },
-                  { value: form.includesPickup,  label: "Recogida a domicilio" },
+                  { value: form.includesLabor, label: "Mano de obra" },
+                  { value: form.includesParts, label: "Piezas y recambios" },
+                  { value: form.includesPickup, label: "Recogida a domicilio" },
                   { value: form.repairLimit === null, label: "Reparaciones ilimitadas" },
                 ].map(item => (
                   <div key={item.label} className="flex items-center gap-2">
                     {item.value
                       ? <CheckCircle className="w-3 h-3 text-green-500 flex-shrink-0" strokeWidth={2} />
-                      : <XCircle    className="w-3 h-3 text-gray-300 flex-shrink-0"   strokeWidth={1.5} />
+                      : <XCircle className="w-3 h-3 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
                     }
                     <p className={`text-xs ${item.value ? "text-gray-700" : "text-gray-400"}`}>{item.label}</p>
                   </div>
@@ -409,8 +409,8 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {form.includesLabor  && <BoolBadge value={true} label="Mano de obra" />}
-                    {form.includesParts  && <BoolBadge value={true} label="Piezas" />}
+                    {form.includesLabor && <BoolBadge value={true} label="Mano de obra" />}
+                    {form.includesParts && <BoolBadge value={true} label="Piezas" />}
                     {form.includesPickup && <BoolBadge value={true} label="Recogida domicilio" />}
                     {form.repairLimit === null
                       ? <BoolBadge value={true} label="Reparaciones ilimitadas" />
@@ -459,10 +459,10 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminWarranties() {
   const [warranties, setWarranties] = useState<Warranty[]>(initialWarranties);
-  const [searchQ, setSearchQ]       = useState("");
+  const [searchQ, setSearchQ] = useState("");
   const [filterType, setFilterType] = useState<WarrantyType | "all">("all");
-  const [panelData, setPanelData]   = useState<
-    | { mode: "new";  data: Omit<Warranty, "id" | "productsCount"> }
+  const [panelData, setPanelData] = useState<
+    | { mode: "new"; data: Omit<Warranty, "id" | "productsCount"> }
     | { mode: "edit"; data: Warranty }
     | null
   >(null);
@@ -498,7 +498,7 @@ export function AdminWarranties() {
   };
 
   const totalProducts = warranties.reduce((s, w) => s + w.productsCount, 0);
-  const activeCount   = warranties.filter(w => w.active).length;
+  const activeCount = warranties.filter(w => w.active).length;
 
   return (
     <div className="p-6 space-y-5">
@@ -521,10 +521,10 @@ export function AdminWarranties() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Garantías",       value: warranties.length,                  icon: Shield        },
-          { label: "Activas",         value: activeCount,                        icon: ShieldCheck   },
-          { label: "Productos cubiertos", value: totalProducts,                  icon: Package       },
-          { label: "Con recogida",    value: warranties.filter(w => w.includesPickup).length, icon: Truck },
+          { label: "Garantías", value: warranties.length, icon: Shield },
+          { label: "Activas", value: activeCount, icon: ShieldCheck },
+          { label: "Productos cubiertos", value: totalProducts, icon: Package },
+          { label: "Con recogida", value: warranties.filter(w => w.includesPickup).length, icon: Truck },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
@@ -566,13 +566,13 @@ export function AdminWarranties() {
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
         <div className="hidden lg:grid grid-cols-[2.5fr_1fr_0.8fr_1.4fr_0.8fr_0.7fr_auto] gap-3 px-5 py-2.5 bg-gray-50/60 border-b border-gray-100">
           {[
-            { label: "Garantía",           cls: "text-left"   },
-            { label: "Tipo",               cls: "text-left"   },
-            { label: "Duración",           cls: "text-center" },
-            { label: "Cobertura incluye",  cls: "text-left"   },
-            { label: "Productos",          cls: "text-right"  },
-            { label: "Estado",             cls: "text-left"   },
-            { label: "",                   cls: "text-right"  },
+            { label: "Garantía", cls: "text-left" },
+            { label: "Tipo", cls: "text-left" },
+            { label: "Duración", cls: "text-center" },
+            { label: "Cobertura incluye", cls: "text-left" },
+            { label: "Productos", cls: "text-right" },
+            { label: "Estado", cls: "text-left" },
+            { label: "", cls: "text-right" },
           ].map(h => (
             <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
@@ -616,8 +616,8 @@ export function AdminWarranties() {
 
               {/* Includes */}
               <div className="flex flex-wrap gap-1">
-                {w.includesLabor  && <BoolBadge value={true} label="Mano obra" />}
-                {w.includesParts  && <BoolBadge value={true} label="Piezas" />}
+                {w.includesLabor && <BoolBadge value={true} label="Mano obra" />}
+                {w.includesParts && <BoolBadge value={true} label="Piezas" />}
                 {w.includesPickup && <BoolBadge value={true} label="Recogida" />}
                 {w.repairLimit === null && <BoolBadge value={true} label="Ilimitado" />}
               </div>
