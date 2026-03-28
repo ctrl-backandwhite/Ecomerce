@@ -4,6 +4,7 @@ import { RootLayout } from "./components/RootLayout";
 import { AuthGuard } from "./components/AuthGuard";
 import { Layout } from "./components/Layout";
 import { AdminLayout } from "./components/admin/AdminLayout";
+import { RouteError } from "./components/RouteError";
 
 // Helper: lazy-load a named export from a module
 function lazyPage<T extends Record<string, unknown>>(
@@ -63,6 +64,7 @@ export const router = createBrowserRouter([
   {
     // Pathless root route — owns all context providers (including AuthProvider)
     Component: RootLayout,
+    errorElement: <RouteError />,
     children: [
       // OAuth2 callback
       { path: "/auth/callback", Component: AuthCallback },
