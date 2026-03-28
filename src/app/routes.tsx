@@ -1,6 +1,7 @@
 import { lazy } from "react";
 import { createBrowserRouter } from "react-router";
 import { RootLayout } from "./components/RootLayout";
+import { AuthGuard } from "./components/AuthGuard";
 import { Layout } from "./components/Layout";
 import { AdminLayout } from "./components/admin/AdminLayout";
 
@@ -28,6 +29,7 @@ const OrderTracking   = lazyPage(() => import("./pages/OrderTracking"),    "Orde
 const ComparePage     = lazyPage(() => import("./pages/ComparePage"),      "ComparePage");
 const BrandPage       = lazyPage(() => import("./pages/BrandPage"),        "BrandPage");
 const NotFound        = lazyPage(() => import("./pages/NotFound"),         "NotFound");
+const AuthCallback    = lazyPage(() => import("./pages/AuthCallback"),    "AuthCallback");
 
 // ── Admin pages ───────────────────────────────────────────────────────────────
 const Dashboard         = lazyPage(() => import("./pages/admin/Dashboard"),         "Dashboard");
@@ -59,73 +61,72 @@ const AdminFlows        = lazyPage(() => import("./pages/admin/AdminFlows"),    
 
 export const router = createBrowserRouter([
   {
-    // Pathless root route — owns all context providers
+    // Pathless root route — owns all context providers (including AuthProvider)
     Component: RootLayout,
     children: [
+      // Public: OAuth2 callback (no auth guard)
+      { path: "/auth/callback", Component: AuthCallback },
       {
-        path: "/",
-        Component: Layout,
+        // Protected: all app routes require authentication
+        Component: AuthGuard,
         children: [
-          { index: true,              Component: Home },
-          // Tienda con categorías en la ruta (URLs limpias)
-          { path: "tienda",                          Component: Home },
-          { path: "tienda/:catSlug",                 Component: Home },
-          { path: "tienda/:catSlug/:subcatSlug",     Component: Home },
-          // Búsqueda con término en la ruta
-          { path: "buscar/:query",                   Component: Home },
-          { path: "producto/:id",     Component: ProductDetail },
-          { path: "carrito",          Component: Cart },
-          { path: "checkout",         Component: Checkout },
-          { path: "cuenta",           Component: UserProfile },
-          { path: "tarjetas-regalo",  Component: GiftCardPurchase },
-          // Informativas
-          { path: "nosotros",         Component: AboutPage },
-          { path: "contacto",         Component: ContactPage },
-          { path: "faq",              Component: FAQPage },
-          { path: "envios",           Component: ShippingPage },
-          { path: "legal/:slug",      Component: LegalPage },
-          { path: "seguimiento",      Component: OrderTracking },
-          { path: "comparar",         Component: ComparePage },
-          { path: "marca/:slug",      Component: BrandPage },
-          { path: "*",                Component: NotFound },
-        ],
-      },
-      {
-        path: "/admin",
-        Component: AdminLayout,
-        children: [
-          // Panel
-          { index: true,              Component: Dashboard },
-          { path: "reportes",         Component: AdminReports },
-          // Ventas
-          { path: "ordenes",          Component: AdminOrders },
-          { path: "facturas",         Component: AdminInvoices },
-          { path: "devoluciones",     Component: AdminReturns },
-          // Clientes
-          { path: "clientes",         Component: AdminCustomers },
-          { path: "resenas",          Component: AdminReviews },
-          { path: "cupones",          Component: AdminCoupons },
-          { path: "puntos",           Component: AdminLoyalty },
-          { path: "regalo",           Component: AdminGiftCards },
-          // Catálogo
-          { path: "productos",        Component: AdminProducts },
-          { path: "variantes",        Component: AdminVariants },
-          { path: "categorias",       Component: AdminCategories },
-          { path: "marcas",           Component: AdminBrands },
-          { path: "atributos",        Component: AdminAttributes },
-          { path: "medios",           Component: AdminMedia },
-          { path: "garantias",        Component: AdminWarranties },
-          // Marketing
-          { path: "campanas",         Component: AdminCampaigns },
-          { path: "newsletter",       Component: AdminNewsletter },
-          { path: "seo",              Component: AdminSEO },
-          { path: "slides",           Component: AdminSlides },
-          // Sistema
-          { path: "flujos",           Component: AdminFlows },
-          { path: "envios",           Component: AdminShipping },
-          { path: "impuestos",        Component: AdminTaxes },
-          { path: "emails",           Component: AdminEmails },
-          { path: "configuracion",    Component: AdminSettings },
+          {
+            path: "/",
+            Component: Layout,
+            children: [
+              { index: true,              Component: Home },
+              { path: "tienda",                          Component: Home },
+              { path: "tienda/:catSlug",                 Component: Home },
+              { path: "tienda/:catSlug/:subcatSlug",     Component: Home },
+              { path: "buscar/:query",                   Component: Home },
+              { path: "producto/:id",     Component: ProductDetail },
+              { path: "carrito",          Component: Cart },
+              { path: "checkout",         Component: Checkout },
+              { path: "cuenta",           Component: UserProfile },
+              { path: "tarjetas-regalo",  Component: GiftCardPurchase },
+              { path: "nosotros",         Component: AboutPage },
+              { path: "contacto",         Component: ContactPage },
+              { path: "faq",              Component: FAQPage },
+              { path: "envios",           Component: ShippingPage },
+              { path: "legal/:slug",      Component: LegalPage },
+              { path: "seguimiento",      Component: OrderTracking },
+              { path: "comparar",         Component: ComparePage },
+              { path: "marca/:slug",      Component: BrandPage },
+              { path: "*",                Component: NotFound },
+            ],
+          },
+          {
+            path: "/admin",
+            Component: AdminLayout,
+            children: [
+              { index: true,              Component: Dashboard },
+              { path: "reportes",         Component: AdminReports },
+              { path: "ordenes",          Component: AdminOrders },
+              { path: "facturas",         Component: AdminInvoices },
+              { path: "devoluciones",     Component: AdminReturns },
+              { path: "clientes",         Component: AdminCustomers },
+              { path: "resenas",          Component: AdminReviews },
+              { path: "cupones",          Component: AdminCoupons },
+              { path: "puntos",           Component: AdminLoyalty },
+              { path: "regalo",           Component: AdminGiftCards },
+              { path: "productos",        Component: AdminProducts },
+              { path: "variantes",        Component: AdminVariants },
+              { path: "categorias",       Component: AdminCategories },
+              { path: "marcas",           Component: AdminBrands },
+              { path: "atributos",        Component: AdminAttributes },
+              { path: "medios",           Component: AdminMedia },
+              { path: "garantias",        Component: AdminWarranties },
+              { path: "campanas",         Component: AdminCampaigns },
+              { path: "newsletter",       Component: AdminNewsletter },
+              { path: "seo",              Component: AdminSEO },
+              { path: "slides",           Component: AdminSlides },
+              { path: "flujos",           Component: AdminFlows },
+              { path: "envios",           Component: AdminShipping },
+              { path: "impuestos",        Component: AdminTaxes },
+              { path: "emails",           Component: AdminEmails },
+              { path: "configuracion",    Component: AdminSettings },
+            ],
+          },
         ],
       },
     ],

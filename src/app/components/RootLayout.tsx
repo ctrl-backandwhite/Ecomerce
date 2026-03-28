@@ -15,6 +15,7 @@ import { NewsletterProvider } from "../context/NewsletterContext";
 import { StoreProvider } from "../context/StoreContext";
 import { LanguageProvider } from "../context/LanguageContext";
 import { TimezoneProvider } from "../context/TimezoneContext";
+import { AuthProvider } from "../context/AuthContext";
 
 type Provider = ({ children }: { children: ReactNode }) => ReactNode;
 
@@ -28,6 +29,7 @@ function composeProviders(...providers: Provider[]) {
 }
 
 const AllProviders = composeProviders(
+  AuthProvider,
   LanguageProvider,
   TimezoneProvider,
   StoreProvider,

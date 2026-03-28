@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { urls } from "../lib/urls";
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
+import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTimezone } from "../context/TimezoneContext";
 import { useState, useRef, useEffect } from "react";
@@ -10,6 +11,7 @@ import { useState, useRef, useEffect } from "react";
 export function Header() {
   const { getTotalItems } = useCart();
   const { user } = useUser();
+  const { logout } = useAuth();
   const { t } = useLanguage();
   const { selectedCountry, toggleSidebar } = useTimezone();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -55,7 +57,7 @@ export function Header() {
 
   const handleLogout = () => {
     setIsUserDropdownOpen(false);
-    navigate("/");
+    logout();
   };
 
   return (
@@ -68,7 +70,7 @@ export function Header() {
             <div className="w-8 h-8 bg-gray-500 rounded flex items-center justify-center sm:flex hidden">
               <ShoppingCart className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl tracking-tight">NEXA</span>
+            <span className="text-xl tracking-tight">NX036</span>
           </Link>
 
           {/* Desktop Search */}
@@ -132,7 +134,7 @@ export function Header() {
                     <p className="text-xs text-gray-400 mt-0.5">{user.email}</p>
                     <div className="mt-2.5 flex items-center justify-center gap-1.5 text-xs text-gray-500">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                      Miembro NEXA · {user.loyaltyPoints.toLocaleString()} pts
+                      Miembro NX036 · {user.loyaltyPoints.toLocaleString()} pts
                     </div>
                   </div>
 
