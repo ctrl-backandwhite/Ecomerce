@@ -1,5 +1,5 @@
-import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LayoutDashboard, Gift, Clock } from "lucide-react";
-import { Link, useNavigate } from "react-router";
+import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LogIn, LayoutDashboard, Gift, Clock } from "lucide-react";
+import { Link, useNavigate, useLocation } from "react-router";
 import { urls } from "../lib/urls";
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
@@ -11,16 +11,17 @@ import { useState, useRef, useEffect } from "react";
 export function Header() {
   const { getTotalItems } = useCart();
   const { user } = useUser();
-  const { logout } = useAuth();
+  const { isAuthenticated, login, logout } = useAuth();
   const { t } = useLanguage();
   const { selectedCountry, toggleSidebar } = useTimezone();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
+  const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const initials = `${user.firstName[0]}${user.lastName[0]}`;
+  const initials = isAuthenticated ? `${user.firstName[0]}${user.lastName[0]}` : "";
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -53,6 +54,10 @@ export function Header() {
       const el = document.getElementById("productos");
       if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 80);
+  };
+
+  const handleLogin = () => {
+    login(location.pathname + location.search);
   };
 
   const handleLogout = () => {
@@ -114,14 +119,16 @@ export function Header() {
 
             {/* ── User Dropdown ── */}
             <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setIsUserDropdownOpen((v) => !v)}
-                className="flex items-center gap-2 group"
-              >
-                <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs tracking-widest group-hover:bg-gray-400 transition-colors">
-                  {initials}
-                </div>
-              </button>
+              {isAuthenticated ? (
+                <>
+                  <button
+                    onClick={() => setIsUserDropdownOpen((v) => !v)}
+                    className="flex items-center gap-2 group"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs tracking-widest group-hover:bg-gray-400 transition-colors">
+                      {initials}
+                    </div>
+                  </button>
 
               {isUserDropdownOpen && (
                 <div className="absolute right-0 top-full mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
@@ -192,6 +199,16 @@ export function Header() {
                   </div>
                 </div>
               )}
+                </>
+              ) : (
+                <button
+                  onClick={handleLogin}
+                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                >
+                  <LogIn className="w-4 h-4" strokeWidth={1.5} />
+                  {t("nav.login")}
+                </button>
+              )}
             </div>
           </div>
 
@@ -259,38 +276,50 @@ export function Header() {
 
               {/* Mobile user section */}
               <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
-                <div className="px-3 py-2 flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs tracking-widest">
-                    {initials}
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-900">{user.firstName} {user.lastName}</p>
-                    <p className="text-xs text-gray-400">{user.email}</p>
-                  </div>
-                </div>
-                <Link
-                  to="/cuenta"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <User className="w-4 h-4" strokeWidth={1.5} />
-                  {t("nav.profile")}
-                </Link>
-                <Link
-                  to="/admin"
-                  onClick={() => setIsMenuOpen(false)}
-                  className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
-                  {t("nav.admin.short")}
-                </Link>
-                <button
-                  onClick={() => { setIsMenuOpen(false); navigate("/"); }}
-                  className="w-full px-3 py-2 text-left text-red-400 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <LogOut className="w-4 h-4" strokeWidth={1.5} />
-                  {t("nav.logout")}
-                </button>
+                {isAuthenticated ? (
+                  <>
+                    <div className="px-3 py-2 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center text-white text-xs tracking-widest">
+                        {initials}
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-900">{user.firstName} {user.lastName}</p>
+                        <p className="text-xs text-gray-400">{user.email}</p>
+                      </div>
+                    </div>
+                    <Link
+                      to="/cuenta"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <User className="w-4 h-4" strokeWidth={1.5} />
+                      {t("nav.profile")}
+                    </Link>
+                    <Link
+                      to="/admin"
+                      onClick={() => setIsMenuOpen(false)}
+                      className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
+                      {t("nav.admin.short")}
+                    </Link>
+                    <button
+                      onClick={() => { setIsMenuOpen(false); handleLogout(); }}
+                      className="w-full px-3 py-2 text-left text-red-400 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
+                    >
+                      <LogOut className="w-4 h-4" strokeWidth={1.5} />
+                      {t("nav.logout")}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    onClick={() => { setIsMenuOpen(false); handleLogin(); }}
+                    className="w-full px-3 py-2 text-left text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <LogIn className="w-4 h-4" strokeWidth={1.5} />
+                    {t("nav.login")}
+                  </button>
+                )}
               </div>
             </nav>
           </div>
