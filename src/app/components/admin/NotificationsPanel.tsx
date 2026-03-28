@@ -38,7 +38,7 @@ export const DEFAULT_NOTIFICATIONS: AppNotification[] = [
   { id:"n13", type:"sistema",   title:"Actualización disponible",      body:"NX036 Admin v2.4.1 · mejoras de rendimiento",         time:"ayer",         read:true  },
   { id:"n14", type:"devolucion",title:"Devolución aprobada",           body:"#NX-001263 · Marcos Molina · $699 reembolsado",      time:"ayer",         read:true,  link:"/admin/devoluciones" },
   { id:"n15", type:"alerta",    title:"Tasa devolución alta",          body:"Alcanzó 6.1% esta semana · umbral recomendado: 5%",  time:"ayer",         read:true,  link:"/admin/reportes" },
-  { id:"n16", type:"sistema",   title:"Nuevo administrador añadido",   body:"admin@nexastore.com tiene acceso desde hoy",         time:"hace 2 días",  read:true  },
+  { id:"n16", type:"sistema",   title:"Nuevo administrador añadido",   body:"admin@nx036.com tiene acceso desde hoy",         time:"hace 2 días",  read:true  },
   { id:"n17", type:"venta",     title:"Orden de alto valor",           body:"#NX-001257 · Héctor Santos · $7,499",               time:"hace 2 días",  read:true,  link:"/admin/ordenes" },
   { id:"n18", type:"cliente",   title:"Cuenta verificada",             body:"Gloria Peña completó verificación de identidad",     time:"hace 3 días",  read:true,  link:"/admin/clientes" },
 ];

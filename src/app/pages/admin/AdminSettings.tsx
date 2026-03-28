@@ -49,13 +49,13 @@ function Toggle({ value, onChange, label: lbl }: { value: boolean; onChange: (v:
 function GeneralTab() {
   const [form, setForm] = useState({
     storeName: "NX036",
-    storeEmail: "hola@nexastore.com",
+    storeEmail: "hola@nx036.com",
     phone: "+1 (800) 555-NX036",
     address: "350 Fifth Avenue, New York, NY 10118",
-    website: "https://nexastore.com",
-    instagram: "@nexastore",
-    facebook: "nexastore",
-    twitter: "@nexastore",
+    website: "https://nx036.com",
+    instagram: "@nx036store",
+    facebook: "nx036store",
+    twitter: "@nx036store",
     description: "La plataforma de e-commerce más completa para compradores y vendedores.",
     currency: "USD",
     language: "es",
@@ -102,9 +102,9 @@ function GeneralTab() {
       <Section title="Redes sociales">
         <div className="grid sm:grid-cols-3 gap-4">
           {[
-            { icon: Instagram, key: "instagram" as const, placeholder: "@nexastore" },
-            { icon: Facebook,  key: "facebook"  as const, placeholder: "nexastore" },
-            { icon: Twitter,   key: "twitter"   as const, placeholder: "@nexastore" },
+            { icon: Instagram, key: "instagram" as const, placeholder: "@nx036store" },
+            { icon: Facebook,  key: "facebook"  as const, placeholder: "nx036store" },
+            { icon: Twitter,   key: "twitter"   as const, placeholder: "@nx036store" },
           ].map(({ icon: Icon, key, placeholder }) => (
             <div key={key}>
               <label className={label}>

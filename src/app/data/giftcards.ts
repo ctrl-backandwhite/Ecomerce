@@ -135,7 +135,7 @@ export const mockReceivedCards: ReceivedGiftCard[] = [
     balance: 0,
     originalAmount: 25,
     fromName: "Equipo NX036",
-    fromEmail: "gifts@nexa.com",
+    fromEmail: "gifts@nx036.com",
     message: "Como cliente VIP, te regalamos este bono de bienvenida.",
     receivedDate: "01/01/2026",
     expiryDate: "01/01/2027",

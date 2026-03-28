@@ -124,7 +124,7 @@ export function ContactPage() {
                 {[
                   { icon: MapPin, title: "Dirección",     value: "Calle Principal 123, Madrid 28001, España" },
                   { icon: Phone,  title: "Teléfono",      value: "+34 91 234 56 78" },
-                  { icon: Mail,   title: "Email",         value: "info@nexa.com" },
+                  { icon: Mail,   title: "Email",         value: "info@nx036.com" },
                   { icon: Clock,  title: "Horario",       value: "Lun–Vie 9:00–18:00 CET · Sab 10:00–14:00" },
                 ].map(i => (
                   <div key={i.title} className="flex items-start gap-3">

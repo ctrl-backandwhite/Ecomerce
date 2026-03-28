@@ -85,7 +85,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
-                <span>info@nexa.com</span>
+                <span>info@nx036.com</span>
               </li>
             </ul>
           </div>

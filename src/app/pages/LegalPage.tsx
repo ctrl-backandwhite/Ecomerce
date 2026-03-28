@@ -4,12 +4,12 @@ const PAGES: Record<string, { title: string; sections: { heading: string; body: 
   privacidad: {
     title: "Política de Privacidad",
     sections: [
-      { heading: "1. Responsable del tratamiento", body: "NX036 Commerce S.L., con CIF B-12345678, con domicilio en Calle Principal 123, 28001 Madrid. Email de contacto: privacidad@nexa.com." },
+      { heading: "1. Responsable del tratamiento", body: "NX036 Commerce S.L., con CIF B-12345678, con domicilio en Calle Principal 123, 28001 Madrid. Email de contacto: privacidad@nx036.com." },
       { heading: "2. Datos que recopilamos", body: "Nombre y apellidos, dirección de correo electrónico, dirección postal, número de teléfono, datos de pago (procesados por Stripe — no los almacenamos), historial de compras y preferencias de navegación." },
       { heading: "3. Finalidad del tratamiento", body: "Gestión de pedidos y envíos, facturación, atención al cliente, comunicaciones transaccionales, personalización de la experiencia de compra y, con tu consentimiento, envío de newsletters y ofertas." },
       { heading: "4. Base jurídica", body: "Ejecución de contrato para la gestión de pedidos; interés legítimo para prevención de fraude; consentimiento para comunicaciones de marketing." },
       { heading: "5. Conservación de datos", body: "Conservamos tus datos durante la relación comercial y hasta 5 años adicionales para cumplimiento de obligaciones fiscales y legales." },
-      { heading: "6. Tus derechos (RGPD)", body: "Tienes derecho de acceso, rectificación, supresión ('derecho al olvido'), portabilidad, oposición y limitación del tratamiento. Puedes ejercerlos escribiendo a privacidad@nexa.com adjuntando copia de tu DNI." },
+      { heading: "6. Tus derechos (RGPD)", body: "Tienes derecho de acceso, rectificación, supresión ('derecho al olvido'), portabilidad, oposición y limitación del tratamiento. Puedes ejercerlos escribiendo a privacidad@nx036.com adjuntando copia de tu DNI." },
       { heading: "7. Transferencias internacionales", body: "Algunos proveedores (Stripe, AWS, Sendgrid) pueden estar en EEUU. Usamos Cláusulas Contractuales Tipo aprobadas por la Comisión Europea." },
       { heading: "8. Cookies", body: "Usamos cookies propias y de terceros. Más información en nuestra Política de Cookies." },
     ],
@@ -17,7 +17,7 @@ const PAGES: Record<string, { title: string; sections: { heading: string; body: 
   terminos: {
     title: "Términos y Condiciones",
     sections: [
-      { heading: "1. Objeto", body: "Estos Términos y Condiciones regulan el acceso y uso de la plataforma NX036 (www.nexa.com) y la adquisición de productos a través de la misma." },
+      { heading: "1. Objeto", body: "Estos Términos y Condiciones regulan el acceso y uso de la plataforma NX036 (www.nx036.com) y la adquisición de productos a través de la misma." },
       { heading: "2. Usuarios", body: "El acceso está disponible para mayores de 18 años o menores con consentimiento paternal. Al registrarte aceptas estos términos en su totalidad." },
       { heading: "3. Proceso de compra", body: "El contrato de compraventa se perfecciona cuando recibes la confirmación de pedido por email. NX036 se reserva el derecho de cancelar pedidos por error de precio, falta de stock o sospecha de fraude." },
       { heading: "4. Precios e impuestos", body: "Los precios mostrados incluyen IVA (21 % en España). NX036 puede modificar precios sin previo aviso. El precio aplicable es el vigente en el momento de confirmar el pedido." },

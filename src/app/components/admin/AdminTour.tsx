@@ -4,7 +4,7 @@ import "driver.js/dist/driver.css";
 import { HelpCircle } from "lucide-react";
 import type { DriveStep } from "driver.js";
 
-const TOUR_KEY = "nexa_admin_tour_v1";
+const TOUR_KEY = "nx036_admin_tour_v1";
 
 // ── Tour steps ────────────────────────────────────────────────────────────────
 const STEPS: DriveStep[] = [
@@ -147,7 +147,7 @@ export function AdminTour() {
       smoothScroll: true,
       allowClose: true,
       overlayOpacity: 0.35,
-      popoverClass: "nexa-tour-popover",
+      popoverClass: "nx036-tour-popover",
       doneBtnText: "Finalizar",
       nextBtnText: "Siguiente →",
       prevBtnText: "← Anterior",
@@ -183,7 +183,7 @@ export function AdminTour() {
 
       {/* Popover style overrides */}
       <style>{`
-        .nexa-tour-popover {
+        .nx036-tour-popover {
           font-family: "Roboto", system-ui, sans-serif !important;
           border-radius: 16px !important;
           box-shadow: 0 20px 60px rgba(0,0,0,0.18) !important;
@@ -192,7 +192,7 @@ export function AdminTour() {
           min-width: 300px !important;
           max-width: 380px !important;
         }
-        .nexa-tour-popover .driver-popover-title {
+        .nx036-tour-popover .driver-popover-title {
           font-size: 13px !important;
           font-weight: 400 !important;
           color: #111827 !important;
@@ -200,29 +200,29 @@ export function AdminTour() {
           border-bottom: 1px solid #f3f4f6 !important;
           letter-spacing: 0 !important;
         }
-        .nexa-tour-popover .driver-popover-description {
+        .nx036-tour-popover .driver-popover-description {
           font-size: 12px !important;
           color: #6b7280 !important;
           line-height: 1.65 !important;
           padding: 12px 20px !important;
         }
-        .nexa-tour-popover .driver-popover-description b {
+        .nx036-tour-popover .driver-popover-description b {
           color: #111827 !important;
           font-weight: 500 !important;
         }
-        .nexa-tour-popover .driver-popover-footer {
+        .nx036-tour-popover .driver-popover-footer {
           padding: 12px 20px 16px !important;
           border-top: 1px solid #f3f4f6 !important;
           gap: 6px !important;
         }
-        .nexa-tour-popover .driver-popover-progress-text {
+        .nx036-tour-popover .driver-popover-progress-text {
           font-size: 10px !important;
           color: #9ca3af !important;
           letter-spacing: 0.05em !important;
         }
-        .nexa-tour-popover .driver-popover-next-btn,
-        .nexa-tour-popover .driver-popover-prev-btn,
-        .nexa-tour-popover .driver-popover-done-btn {
+        .nx036-tour-popover .driver-popover-next-btn,
+        .nx036-tour-popover .driver-popover-prev-btn,
+        .nx036-tour-popover .driver-popover-done-btn {
           font-size: 11px !important;
           padding: 5px 14px !important;
           border-radius: 8px !important;
@@ -230,31 +230,31 @@ export function AdminTour() {
           letter-spacing: 0 !important;
           transition: all 0.15s !important;
         }
-        .nexa-tour-popover .driver-popover-next-btn,
-        .nexa-tour-popover .driver-popover-done-btn {
+        .nx036-tour-popover .driver-popover-next-btn,
+        .nx036-tour-popover .driver-popover-done-btn {
           background: #111827 !important;
           border: 1px solid #111827 !important;
           color: #fff !important;
         }
-        .nexa-tour-popover .driver-popover-next-btn:hover,
-        .nexa-tour-popover .driver-popover-done-btn:hover {
+        .nx036-tour-popover .driver-popover-next-btn:hover,
+        .nx036-tour-popover .driver-popover-done-btn:hover {
           background: #374151 !important;
         }
-        .nexa-tour-popover .driver-popover-prev-btn {
+        .nx036-tour-popover .driver-popover-prev-btn {
           background: #fff !important;
           border: 1px solid #e5e7eb !important;
           color: #374151 !important;
         }
-        .nexa-tour-popover .driver-popover-prev-btn:hover {
+        .nx036-tour-popover .driver-popover-prev-btn:hover {
           background: #f9fafb !important;
         }
-        .nexa-tour-popover .driver-popover-close-btn {
+        .nx036-tour-popover .driver-popover-close-btn {
           color: #9ca3af !important;
           font-size: 16px !important;
           top: 12px !important;
           right: 14px !important;
         }
-        .nexa-tour-popover .driver-popover-close-btn:hover {
+        .nx036-tour-popover .driver-popover-close-btn:hover {
           color: #111827 !important;
         }
         .driver-overlay {

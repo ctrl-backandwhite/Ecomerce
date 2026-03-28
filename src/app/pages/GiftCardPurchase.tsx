@@ -113,7 +113,7 @@ function GiftCardVisual({
           </p>
         )}
         <p className={`${dims.txt} opacity-60`} style={{ color: design.accent }}>
-          nexa.com
+          nx036.com
         </p>
       </div>
     </div>

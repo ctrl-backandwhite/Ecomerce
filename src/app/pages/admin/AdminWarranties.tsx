@@ -28,7 +28,7 @@ const emptyWarranty: Omit<Warranty, "id" | "productsCount"> = {
   includesPickup: false,
   repairLimit: null,
   contactPhone: "+34 91 123 45 67",
-  contactEmail: "garantias@nexa.com",
+  contactEmail: "garantias@nx036.com",
   active: true,
 };
 
@@ -383,7 +383,7 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
                   <input
                     type="email"
                     className={inp + " pl-7"}
-                    placeholder="garantias@nexa.com"
+                    placeholder="garantias@nx036.com"
                     value={form.contactEmail}
                     onChange={e => set("contactEmail", e.target.value)}
                   />

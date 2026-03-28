@@ -562,7 +562,7 @@ export function Home() {
               {/* ── Product grid ── */}
               {!productsLoading || products.length > 0 ? (
                 filtered.length > 0 ? (
-                  <div key={filterKey} className="nexa-grid-enter">
+                  <div key={filterKey} className="nx036-grid-enter">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                       {filtered.map((product) => (
                         <ProductCard key={product.id} product={product} />

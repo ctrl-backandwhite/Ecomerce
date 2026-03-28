@@ -51,7 +51,7 @@ function fmtDate(s: string) {
 }
 
 function buildQRValue(data: InvoiceData): string {
-  const base = typeof window !== "undefined" ? window.location.origin : "https://nexa.com";
+  const base = typeof window !== "undefined" ? window.location.origin : "https://nx036.com";
   return [
     `${base}/verificar-factura/${data.invoiceNumber}`,
     `Factura: ${data.invoiceNumber}`,
@@ -152,7 +152,7 @@ export function InvoiceDocument({
                   </div>
                   <span className="text-xl text-gray-900 tracking-widest">NX036</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">info@nexa.com · +1 234 567 890</p>
+                <p className="text-xs text-gray-400 mt-1">info@nx036.com · +1 234 567 890</p>
                 <p className="text-xs text-gray-400">Calle Principal 123 · New York, NY 10001 · US</p>
               </div>
 
@@ -268,7 +268,7 @@ export function InvoiceDocument({
           <div className="px-10 py-5 border-t border-gray-100 bg-gray-50/50 flex items-end justify-between gap-6">
             {/* Legal */}
             <div className="space-y-1">
-              <p className="text-[10px] text-gray-400">NX036 Commerce S.L. · CIF: B-12345678 · info@nexa.com</p>
+              <p className="text-[10px] text-gray-400">NX036 Commerce S.L. · CIF: B-12345678 · info@nx036.com</p>
               <p className="text-[10px] text-gray-400">{data.invoiceNumber} · Página 1 de 1</p>
               <p className="text-[10px] text-gray-300 mt-2 max-w-xs leading-relaxed">
                 Documento generado electrónicamente. Escanea el código QR para verificar la autenticidad de esta factura.

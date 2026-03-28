@@ -47,7 +47,7 @@ export function ProductQRModal({
   product: Product;
   onClose: () => void;
 }) {
-  const base = typeof window !== "undefined" ? window.location.origin : "https://nexa.com";
+  const base = typeof window !== "undefined" ? window.location.origin : "https://nx036.com";
 
   /* ── State ── */
   const [urlMode,    setUrlMode]    = useState<URLMode>("store");
