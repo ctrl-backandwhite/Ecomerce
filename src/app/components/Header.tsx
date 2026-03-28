@@ -203,10 +203,10 @@ export function Header() {
               ) : (
                 <button
                   onClick={handleLogin}
-                  className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+                  className="p-2 text-gray-700 hover:text-gray-900 transition-colors"
+                  title={t("nav.login")}
                 >
-                  <LogIn className="w-4 h-4" strokeWidth={1.5} />
-                  {t("nav.login")}
+                  <LogIn className="w-5 h-5" strokeWidth={1.5} />
                 </button>
               )}
             </div>
