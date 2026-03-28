@@ -9,7 +9,8 @@ import { useState, useRef, useEffect } from "react";
 
 export function Header() {
   const { getTotalItems } = useCart();
-  const { isAuthenticated, login, logout, user: authUser } = useAuth();
+  const { isAuthenticated, login, logout, user: authUser, roles } = useAuth();
+  const isAdmin = roles.includes("ROLE_ADMIN");
   const { t } = useLanguage();
   const { selectedCountry, toggleSidebar } = useTimezone();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -162,30 +163,32 @@ export function Header() {
                         </Link>
                       </div>
 
-                      {/* Administrar tienda */}
-                      <div className="px-3 pb-2">
-                        <div className="border border-gray-100 rounded-xl overflow-hidden">
-                          <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
-                            <p className="text-xs text-gray-400 tracking-wide uppercase">{t("nav.store")}</p>
+                      {/* Administrar tienda — solo ROLE_ADMIN */}
+                      {isAdmin && (
+                        <div className="px-3 pb-2">
+                          <div className="border border-gray-100 rounded-xl overflow-hidden">
+                            <div className="px-3 py-2 bg-gray-50 border-b border-gray-100">
+                              <p className="text-xs text-gray-400 tracking-wide uppercase">{t("nav.store")}</p>
+                            </div>
+                            <Link
+                              to="/admin"
+                              onClick={() => setIsUserDropdownOpen(false)}
+                              className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center flex-shrink-0">
+                                <LayoutDashboard className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900">{t("nav.admin")}</p>
+                                <p className="text-xs text-gray-400">{t("nav.admin.desc")}</p>
+                              </div>
+                              <span className="text-xs text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                                {t("nav.store.active")}
+                              </span>
+                            </Link>
                           </div>
-                          <Link
-                            to="/admin"
-                            onClick={() => setIsUserDropdownOpen(false)}
-                            className="flex items-center gap-3 px-3 py-3 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center flex-shrink-0">
-                              <LayoutDashboard className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm text-gray-900">{t("nav.admin")}</p>
-                              <p className="text-xs text-gray-400">{t("nav.admin.desc")}</p>
-                            </div>
-                            <span className="text-xs text-green-600 bg-green-50 border border-green-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                              {t("nav.store.active")}
-                            </span>
-                          </Link>
                         </div>
-                      </div>
+                      )}
 
                       {/* Cerrar sesión */}
                       <div className="border-t border-gray-100 py-1.5">
@@ -295,14 +298,16 @@ export function Header() {
                       <User className="w-4 h-4" strokeWidth={1.5} />
                       {t("nav.profile")}
                     </Link>
-                    <Link
-                      to="/admin"
-                      onClick={() => setIsMenuOpen(false)}
-                      className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
-                      {t("nav.admin.short")}
-                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
+                      >
+                        <LayoutDashboard className="w-4 h-4" strokeWidth={1.5} />
+                        {t("nav.admin.short")}
+                      </Link>
+                    )}
                     <button
                       onClick={() => { setIsMenuOpen(false); handleLogout(); }}
                       className="w-full px-3 py-2 text-left text-red-400 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
