@@ -1,15 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search, Plus, Pencil, Trash2, X, Check,
   Globe, Package, ChevronDown, ExternalLink,
 } from "lucide-react";
-import { Brand } from "../../data/brands";
+import { type Brand, brandRepository } from "../../repositories/BrandRepository";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
-import { useStore } from "../../context/StoreContext";
 
-const EMPTY: Omit<Brand, "id"> = {
-  name: "", slug: "", logo: "", website: "", description: "", productCount: 0, status: "active",
+const EMPTY: Partial<Brand> = {
+  name: "", slug: "", logo: "", website: "", description: "", productCount: 0, status: "ACTIVE",
 };
 
 function slugify(str: string) {
@@ -25,17 +24,17 @@ function BrandModal({
   onClose: () => void;
 }) {
   const isNew = !brand.id;
-  const [form, setForm] = useState<Omit<Brand, "id">>({
-    name:         brand.name         ?? "",
-    slug:         brand.slug         ?? "",
-    logo:         brand.logo         ?? "",
-    website:      brand.website      ?? "",
-    description:  brand.description  ?? "",
+  const [form, setForm] = useState<Omit<Brand, "id" | "createdAt" | "updatedAt">>({
+    name: brand.name ?? "",
+    slug: brand.slug ?? "",
+    logo: brand.logo ?? "",
+    website: brand.website ?? "",
+    description: brand.description ?? "",
     productCount: brand.productCount ?? 0,
-    status:       brand.status       ?? "active",
+    status: brand.status ?? "ACTIVE",
   });
 
-  const set = (k: keyof typeof form, v: any) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: keyof typeof form, v: any) => setForm((f: typeof form) => ({ ...f, [k]: v }));
 
   function handleNameChange(v: string) {
     set("name", v);
@@ -49,7 +48,7 @@ function BrandModal({
 
   function handleSave() {
     if (!validate()) return;
-    onSave({ id: brand.id ?? `brand-${Date.now()}`, ...form });
+    onSave({ id: brand.id ?? `brand-${Date.now()}`, ...form, createdAt: brand.createdAt ?? new Date().toISOString(), updatedAt: brand.updatedAt ?? null });
   }
 
   const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
@@ -80,8 +79,8 @@ function BrandModal({
               <label className={lbl}>Estado</label>
               <div className="relative">
                 <select value={form.status} onChange={(e) => set("status", e.target.value)} className={`${field} appearance-none pr-8`}>
-                  <option value="active">Activa</option>
-                  <option value="inactive">Inactiva</option>
+                  <option value="ACTIVE">Activa</option>
+                  <option value="INACTIVE">Inactiva</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" strokeWidth={1.5} />
               </div>
@@ -97,7 +96,7 @@ function BrandModal({
           {/* Logo URL */}
           <div>
             <label className={lbl}>URL del logo (opcional)</label>
-            <input value={form.logo} onChange={(e) => set("logo", e.target.value)} className={field} placeholder="https://..." />
+            <input value={form.logo ?? ""} onChange={(e) => set("logo", e.target.value)} className={field} placeholder="https://..." />
           </div>
 
           {/* Website */}
@@ -105,14 +104,14 @@ function BrandModal({
             <label className={lbl}>Sitio web (opcional)</label>
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-              <input value={form.website} onChange={(e) => set("website", e.target.value)} className={`${field} pl-8`} placeholder="https://apple.com" />
+              <input value={form.website ?? ""} onChange={(e) => set("website", e.target.value)} className={`${field} pl-8`} placeholder="https://apple.com" />
             </div>
           </div>
 
           {/* Description */}
           <div>
             <label className={lbl}>Descripción</label>
-            <textarea value={form.description} onChange={(e) => set("description", e.target.value)} className={`${field} h-20 resize-none`} placeholder="Breve descripción de la marca..." />
+            <textarea value={form.description ?? ""} onChange={(e) => set("description", e.target.value)} className={`${field} h-20 resize-none`} placeholder="Breve descripción de la marca..." />
           </div>
         </div>
 
@@ -133,33 +132,52 @@ function BrandModal({
 
 /* ── Main ────────────────────────────────────────────────── */
 export function AdminBrands() {
-  const { brands: list, saveBrand, deleteBrand } = useStore();
-
+  const [list, setList] = useState<Brand[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<Partial<Brand> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
 
+  const loadBrands = useCallback(async () => {
+    setLoading(true);
+    try { setList(await brandRepository.findAll()); }
+    catch { toast.error("Error al cargar las marcas"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadBrands(); }, [loadBrands]);
+
   const filtered = list.filter((b) =>
     b.name.toLowerCase().includes(search.toLowerCase()) ||
-    b.description.toLowerCase().includes(search.toLowerCase())
+    (b.description ?? "").toLowerCase().includes(search.toLowerCase())
   );
 
   useEffect(() => setPage(1), [search]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  function handleSave(b: Brand) {
-    saveBrand(b);
-    toast.success(modal?.id ? "Marca actualizada" : "Marca creada");
+  async function handleSave(b: Brand) {
+    try {
+      if (modal?.id) {
+        await brandRepository.update(b.id, { name: b.name, slug: b.slug, logo: b.logo ?? undefined, website: b.website ?? undefined, description: b.description ?? undefined });
+      } else {
+        await brandRepository.create({ name: b.name, slug: b.slug, logo: b.logo ?? undefined, website: b.website ?? undefined, description: b.description ?? undefined });
+      }
+      await loadBrands();
+      toast.success(modal?.id ? "Marca actualizada" : "Marca creada");
+    } catch { toast.error("Error al guardar la marca"); }
     setModal(null);
   }
 
-  function handleDelete(id: string) {
-    deleteBrand(id);
-    toast.success("Marca eliminada");
+  async function handleDelete(id: string) {
+    try {
+      await brandRepository.delete(id);
+      await loadBrands();
+      toast.success("Marca eliminada");
+    } catch { toast.error("Error al eliminar la marca"); }
     setDeleteId(null);
   }
 
@@ -243,13 +261,13 @@ export function AdminBrands() {
                   </td>
                   <td className="px-5 py-4 hidden sm:table-cell">
                     <div className="flex items-center justify-end gap-1.5 text-xs text-gray-600">
-                       <Package className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                       {brand.productCount}
-                     </div>
-                   </td>
+                      <Package className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                      {brand.productCount}
+                    </div>
+                  </td>
                   <td className="px-5 py-4">
-                    <span className={`text-[10px] px-2.5 py-1 rounded-full ${brand.status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-                      {brand.status === "active" ? "Activa" : "Inactiva"}
+                    <span className={`text-[10px] px-2.5 py-1 rounded-full ${brand.status === "ACTIVE" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                      {brand.status === "ACTIVE" ? "Activa" : "Inactiva"}
                     </span>
                   </td>
                   <td className="px-5 py-4">

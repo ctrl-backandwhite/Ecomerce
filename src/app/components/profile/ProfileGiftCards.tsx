@@ -1,19 +1,22 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router";
 import {
-  Gift, Plus, Copy, Check, ArrowRight, Clock,
+  Gift, Plus, Copy, ArrowRight, Clock,
   Mail, Send, Eye, EyeOff, AlertTriangle, Sparkles,
-  Tag, X, ChevronRight,
+  Tag, X, ChevronRight, Loader,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
   GIFT_CARD_DESIGNS,
-  mockReceivedCards,
-  mockSentCards,
   type ReceivedGiftCard,
   type SentGiftCard,
   type GCStatus,
-} from "../../data/giftcards";
+} from "../../types/giftcard";
+import {
+  giftCardRepository,
+  toReceivedGiftCard,
+  toSentGiftCard,
+} from "../../repositories/GiftCardRepository";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getDesign(id: string) {
@@ -23,24 +26,24 @@ function getDesign(id: string) {
 function durationFromNow(dateStr: string) {
   const [d, m, y] = dateStr.split("/").map(Number);
   const expiry = new Date(y, m - 1, d);
-  const now    = new Date();
-  const days   = Math.ceil((expiry.getTime() - now.getTime()) / 86400000);
-  if (days < 0)   return "Expirada";
+  const now = new Date();
+  const days = Math.ceil((expiry.getTime() - now.getTime()) / 86400000);
+  if (days < 0) return "Expirada";
   if (days === 0) return "Expira hoy";
-  if (days < 30)  return `${days} día${days !== 1 ? "s" : ""}`;
+  if (days < 30) return `${days} día${days !== 1 ? "s" : ""}`;
   const months = Math.ceil(days / 30);
   return `${months} mes${months !== 1 ? "es" : ""}`;
 }
 
 const STATUS_SENT: Record<string, { label: string; dot: string; text: string }> = {
-  delivered: { label: "Entregada",  dot: "bg-blue-400",   text: "text-blue-600"  },
-  pending:   { label: "Pendiente",  dot: "bg-amber-400",  text: "text-amber-600" },
-  redeemed:  { label: "Canjeada",   dot: "bg-green-400",  text: "text-green-600" },
+  delivered: { label: "Entregada", dot: "bg-blue-400", text: "text-blue-600" },
+  pending: { label: "Pendiente", dot: "bg-amber-400", text: "text-amber-600" },
+  redeemed: { label: "Canjeada", dot: "bg-green-400", text: "text-green-600" },
 };
 const STATUS_RECEIVED: Record<GCStatus, { label: string; dot: string; text: string; bg: string }> = {
-  active:  { label: "Activa",     dot: "bg-green-400",  text: "text-green-700",  bg: "bg-green-50"  },
-  used:    { label: "Agotada",    dot: "bg-gray-300",   text: "text-gray-500",   bg: "bg-gray-100"  },
-  expired: { label: "Expirada",   dot: "bg-red-300",    text: "text-red-500",    bg: "bg-red-50"    },
+  active: { label: "Activa", dot: "bg-green-400", text: "text-green-700", bg: "bg-green-50" },
+  used: { label: "Agotada", dot: "bg-gray-300", text: "text-gray-500", bg: "bg-gray-100" },
+  expired: { label: "Expirada", dot: "bg-red-300", text: "text-red-500", bg: "bg-red-50" },
 };
 
 // ── Mini card visual ─────────────────────────────────────────────────────────
@@ -62,20 +65,28 @@ function MiniCard({ designId, amount, label }: { designId: string; amount: numbe
 // ── Activate dialog ─────────────────────────────────────────────────────────
 function ActivateModal({ onClose, onActivate }: {
   onClose: () => void;
-  onActivate: (code: string) => void;
+  onActivate: (code: string) => Promise<void>;
 }) {
-  const [code, setCode]  = useState("");
-  const [show, setShow]  = useState(false);
+  const [code, setCode] = useState("");
+  const [show, setShow] = useState(false);
   const [error, setError] = useState("");
+  const [activating, setActivating] = useState(false);
 
   const formatted = code.replace(/[^A-Z0-9]/gi, "").toUpperCase()
     .replace(/(.{4})(?=.)/g, "$1-").slice(0, 14);
 
-  function handleActivate() {
-    const clean = code.replace(/[-\s]/g, "");
-    if (clean.length < 12) { setError("El código debe tener al menos 12 caracteres"); return; }
-    // Mock validation: any code works in demo
-    onActivate(formatted || code);
+  async function handleActivate() {
+    const clean = code.replace(/\s/g, "").toUpperCase();
+    if (clean.length < 8) { setError("El código debe tener al menos 8 caracteres"); return; }
+    setError("");
+    setActivating(true);
+    try {
+      await onActivate(clean);
+    } catch {
+      setError("Código no válido o tarjeta no encontrada");
+    } finally {
+      setActivating(false);
+    }
   }
 
   return (
@@ -94,7 +105,7 @@ function ActivateModal({ onClose, onActivate }: {
         </div>
 
         <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-          Introduce el código que encontrarás en el email de tu tarjeta regalo. Formato: <span className="font-mono text-gray-700">NX036-XXXX-XXXX</span>
+          Introduce el código que encontrarás en el email de tu tarjeta regalo. Formato: <span className="font-mono text-gray-700">GC-XXXXXXXX</span>
         </p>
 
         <div className="mb-4">
@@ -104,7 +115,7 @@ function ActivateModal({ onClose, onActivate }: {
             <input
               type={show ? "text" : "password"}
               className="w-full h-10 pl-9 pr-10 text-sm font-mono tracking-widest border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-500 transition-colors placeholder:text-gray-300 placeholder:tracking-normal"
-              placeholder="NX036-XXXX-XXXX"
+              placeholder="GC-XXXXXXXX"
               value={code}
               onChange={e => { setCode(e.target.value.toUpperCase()); setError(""); }}
               onKeyDown={e => e.key === "Enter" && handleActivate()}
@@ -126,16 +137,18 @@ function ActivateModal({ onClose, onActivate }: {
         </div>
 
         <div className="flex gap-2">
-          <button onClick={onClose} className="flex-1 h-9 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <button onClick={onClose} disabled={activating} className="flex-1 h-9 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-40">
             Cancelar
           </button>
           <button
             onClick={handleActivate}
-            disabled={!code.trim()}
+            disabled={!code.trim() || activating}
             className="flex-1 h-9 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-40 transition-colors flex items-center justify-center gap-1.5"
           >
-            <Check className="w-3.5 h-3.5" />
-            Activar tarjeta
+            {activating
+              ? <Loader className="w-3.5 h-3.5 animate-spin" />
+              : <Tag className="w-3.5 h-3.5" />}
+            {activating ? "Verificando..." : "Activar tarjeta"}
           </button>
         </div>
       </div>
@@ -301,41 +314,62 @@ function SentCard({ card, onCopy }: { card: SentGiftCard; onCopy: (code: string)
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export function ProfileGiftCards() {
-  const [receivedCards, setReceivedCards] = useState<ReceivedGiftCard[]>(mockReceivedCards);
-  const [sentCards]     = useState<SentGiftCard[]>(mockSentCards);
+  const [receivedCards, setReceivedCards] = useState<ReceivedGiftCard[]>([]);
+  const [sentCards, setSentCards] = useState<SentGiftCard[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showActivate, setShowActivate] = useState(false);
-  const [activeTab, setActiveTab]       = useState<"received" | "sent">("received");
-  const [copiedCode, setCopiedCode]     = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
-  const totalBalance  = receivedCards.filter(c => c.status === "active").reduce((s, c) => s + c.balance, 0);
-  const activeCount   = receivedCards.filter(c => c.status === "active").length;
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    Promise.allSettled([
+      giftCardRepository.getMyReceived(),
+      giftCardRepository.getMySent(),
+    ]).then(([receivedResult, sentResult]) => {
+      if (cancelled) return;
+      if (receivedResult.status === "fulfilled") {
+        setReceivedCards(receivedResult.value.map(toReceivedGiftCard));
+      }
+      if (sentResult.status === "fulfilled") {
+        setSentCards(sentResult.value.map(toSentGiftCard));
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  const totalBalance = receivedCards.filter(c => c.status === "active").reduce((s, c) => s + c.balance, 0);
+  const activeCount = receivedCards.filter(c => c.status === "active").length;
 
   function handleCopy(code: string) {
-    navigator.clipboard.writeText(code).catch(() => {});
+    navigator.clipboard.writeText(code).catch(() => { });
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(null), 1500);
     toast.success("Código copiado");
   }
 
-  function handleActivate(code: string) {
-    // Mock: add a new active card
-    const newCard: ReceivedGiftCard = {
-      id: `rc-${Date.now()}`,
-      code,
-      balance: 25,
-      originalAmount: 25,
-      fromName: "Código manual",
-      fromEmail: "—",
-      message: "Tarjeta activada manualmente",
-      receivedDate: "13/03/2026",
-      expiryDate: "13/03/2027",
-      designId: "classic",
-      status: "active",
-      isActivated: true,
-    };
-    setReceivedCards(prev => [newCard, ...prev]);
-    setShowActivate(false);
-    toast.success(`Tarjeta activada — Saldo de 25€ añadido a tu cuenta`);
+  async function handleActivate(code: string) {
+    const clean = code.replace(/\s/g, "").toUpperCase();
+    try {
+      const card = await giftCardRepository.claimByCode(clean);
+      if (card.status !== "ACTIVE") {
+        toast.error("Esta tarjeta ya no está activa");
+        return;
+      }
+      const mapped = toReceivedGiftCard(card);
+      const alreadyAdded = receivedCards.some(c => c.id === mapped.id);
+      if (alreadyAdded) {
+        toast.info("Esta tarjeta ya está en tu lista");
+      } else {
+        setReceivedCards(prev => [mapped, ...prev]);
+        toast.success(`Tarjeta activada — Saldo de ${card.balance}€ disponible`);
+      }
+      setShowActivate(false);
+    } catch {
+      toast.error("Código no válido o tarjeta no encontrada");
+    }
   }
 
   return (
@@ -405,42 +439,51 @@ export function ProfileGiftCards() {
         </button>
       </div>
 
-      {/* Received cards */}
-      {activeTab === "received" && (
-        <div className="space-y-3">
-          {receivedCards.length === 0 ? (
-            <div className="text-center py-12 bg-white border border-gray-100 rounded-xl">
-              <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
-                <Gift className="w-6 h-6 text-gray-300" strokeWidth={1} />
-              </div>
-              <p className="text-sm text-gray-500 mb-1">Sin tarjetas recibidas</p>
-              <p className="text-xs text-gray-400">¿Tienes un código? Actívalo con el botón de arriba</p>
-            </div>
-          ) : (
-            receivedCards.map(c => (
-              <ReceivedCard key={c.id} card={c} onCopy={handleCopy} />
-            ))
-          )}
+      {/* Loading state */}
+      {loading ? (
+        <div className="flex items-center justify-center py-12 bg-white border border-gray-100 rounded-xl">
+          <Loader className="w-5 h-5 text-gray-300 animate-spin" strokeWidth={1.5} />
         </div>
-      )}
+      ) : (
+        <>
+          {/* Received cards */}
+          {activeTab === "received" && (
+            <div className="space-y-3">
+              {receivedCards.length === 0 ? (
+                <div className="text-center py-12 bg-white border border-gray-100 rounded-xl">
+                  <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                    <Gift className="w-6 h-6 text-gray-300" strokeWidth={1} />
+                  </div>
+                  <p className="text-sm text-gray-500 mb-1">Sin tarjetas recibidas</p>
+                  <p className="text-xs text-gray-400">¿Tienes un código? Actívalo con el botón de arriba</p>
+                </div>
+              ) : (
+                receivedCards.map(c => (
+                  <ReceivedCard key={c.id} card={c} onCopy={handleCopy} />
+                ))
+              )}
+            </div>
+          )}
 
-      {/* Sent cards */}
-      {activeTab === "sent" && (
-        <div className="space-y-3">
-          {sentCards.length === 0 ? (
-            <div className="text-center py-12 bg-white border border-gray-100 rounded-xl">
-              <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
-                <Send className="w-6 h-6 text-gray-300" strokeWidth={1} />
-              </div>
-              <p className="text-sm text-gray-500 mb-1">Aún no has enviado ninguna tarjeta</p>
-              <Link to="/tarjetas-regalo" className="text-xs text-gray-900 underline">Enviar mi primera tarjeta regalo</Link>
+          {/* Sent cards */}
+          {activeTab === "sent" && (
+            <div className="space-y-3">
+              {sentCards.length === 0 ? (
+                <div className="text-center py-12 bg-white border border-gray-100 rounded-xl">
+                  <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mx-auto mb-3">
+                    <Send className="w-6 h-6 text-gray-300" strokeWidth={1} />
+                  </div>
+                  <p className="text-sm text-gray-500 mb-1">Aún no has enviado ninguna tarjeta</p>
+                  <Link to="/tarjetas-regalo" className="text-xs text-gray-900 underline">Enviar mi primera tarjeta regalo</Link>
+                </div>
+              ) : (
+                sentCards.map(c => (
+                  <SentCard key={c.id} card={c} onCopy={handleCopy} />
+                ))
+              )}
             </div>
-          ) : (
-            sentCards.map(c => (
-              <SentCard key={c.id} card={c} onCopy={handleCopy} />
-            ))
           )}
-        </div>
+        </>
       )}
 
       {/* Promo */}

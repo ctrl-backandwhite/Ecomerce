@@ -1,16 +1,16 @@
 import { createContext, useContext, useState, ReactNode } from "react";
-import { Product } from "../data/products";
+import { Product } from "../types/product";
 
 export interface CartItem extends Product {
-  quantity:      number;
-  productId:     string;                        // always the original product id (for navigation)
-  variantId?:    string;                        // selected variant id (if any)
+  quantity: number;
+  productId: string;                        // always the original product id (for navigation)
+  variantId?: string;                        // selected variant id (if any)
   selectedAttrs?: Record<string, string>;       // e.g. { Color: "Black", Size: "M" }
 }
 
 interface AddToCartOptions {
-  quantity?:     number;
-  variantId?:    string;
+  quantity?: number;
+  variantId?: string;
   selectedAttrs?: Record<string, string>;
 }
 
@@ -30,7 +30,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
   const addToCart = (product: Product, options?: AddToCartOptions) => {
-    const qty    = options?.quantity ?? 1;
+    const qty = options?.quantity ?? 1;
     // Composite key: productId::variantId when a variant is chosen
     const cartId = options?.variantId
       ? `${product.id}::${options.variantId}`
@@ -49,11 +49,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ...prevItems,
         {
           ...product,
-          id:            cartId,          // cart-unique key
-          productId:     product.id,      // base product id for navigation
-          variantId:     options?.variantId,
+          id: cartId,          // cart-unique key
+          productId: product.id,      // base product id for navigation
+          variantId: options?.variantId,
           selectedAttrs: options?.selectedAttrs,
-          quantity:      qty,
+          quantity: qty,
         },
       ];
     });

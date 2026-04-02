@@ -1,28 +1,29 @@
 /* ── Shared payment brand SVG logos ──────────────────────── */
 
-export function VisaLogo({ className = "" }: { className?: string }) {
+export function VisaLogo({ size = 24 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 60 22" className={className} aria-label="Visa">
-      <text x="0" y="17" fontFamily="Arial" fontWeight="800" fontSize="21" fontStyle="italic" fill="#1A1F71" letterSpacing="-1">VISA</text>
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-label="Visa">
+      <circle cx="12" cy="12" r="12" fill="#1A1F71" />
+      <text x="12" y="16" textAnchor="middle" fontFamily="Arial" fontWeight="800" fontSize="11" fontStyle="italic" fill="white" letterSpacing="-0.5">VISA</text>
     </svg>
   );
 }
 
-export function MastercardLogo({ className = "" }: { className?: string }) {
+export function MastercardLogo({ size = 24 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 38 24" className={className} aria-label="Mastercard">
-      <circle cx="13" cy="12" r="11" fill="#EB001B" />
-      <circle cx="25" cy="12" r="11" fill="#F79E1B" />
-      <path d="M19 3.2a11 11 0 0 1 0 17.6A11 11 0 0 1 19 3.2z" fill="#FF5F00" />
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-label="Mastercard">
+      <circle cx="9" cy="12" r="7" fill="#EB001B" />
+      <circle cx="15" cy="12" r="7" fill="#F79E1B" />
+      <path d="M12 6.1a7 7 0 0 1 0 11.8A7 7 0 0 1 12 6.1z" fill="#FF5F00" />
     </svg>
   );
 }
 
-export function PayPalLogo({ className = "" }: { className?: string }) {
+export function PayPalLogo({ size = 24 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 76 22" className={className} aria-label="PayPal">
-      <text x="0" y="16" fontFamily="Arial" fontWeight="800" fontSize="16" fill="#253B80">Pay</text>
-      <text x="27" y="16" fontFamily="Arial" fontWeight="800" fontSize="16" fill="#179BD7">Pal</text>
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-label="PayPal">
+      <circle cx="12" cy="12" r="12" fill="#253B80" />
+      <text x="12" y="16" textAnchor="middle" fontFamily="Arial" fontWeight="800" fontSize="11" fill="white">PP</text>
     </svg>
   );
 }

@@ -19,34 +19,34 @@ const deliveryTypes: {
   bg: string;
   border: string;
 }[] = [
-  {
-    id: "home",
-    label: "Envío a domicilio",
-    sublabel: "Recibe en la dirección que prefieras",
-    icon: <Truck className="w-5 h-5" strokeWidth={1.5} />,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-  },
-  {
-    id: "store",
-    label: "Recogida en tienda",
-    sublabel: "Retira gratis en cualquier tienda NX036",
-    icon: <Store className="w-5 h-5" strokeWidth={1.5} />,
-    color: "text-violet-600",
-    bg: "bg-violet-50",
-    border: "border-violet-200",
-  },
-  {
-    id: "pickup",
-    label: "Punto de entrega",
-    sublabel: "Operadores logísticos oficiales",
-    icon: <Package2 className="w-5 h-5" strokeWidth={1.5} />,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-    border: "border-emerald-200",
-  },
-];
+    {
+      id: "home",
+      label: "Envío a domicilio",
+      sublabel: "Recibe en la dirección que prefieras",
+      icon: <Truck className="w-5 h-5" strokeWidth={1.5} />,
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      border: "border-blue-200",
+    },
+    {
+      id: "store",
+      label: "Recogida en tienda",
+      sublabel: "Retira gratis en cualquier tienda NX036",
+      icon: <Store className="w-5 h-5" strokeWidth={1.5} />,
+      color: "text-violet-600",
+      bg: "bg-violet-50",
+      border: "border-violet-200",
+    },
+    {
+      id: "pickup",
+      label: "Punto de entrega",
+      sublabel: "Operadores logísticos oficiales",
+      icon: <Package2 className="w-5 h-5" strokeWidth={1.5} />,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50",
+      border: "border-emerald-200",
+    },
+  ];
 
 /* ── Mock NX036 stores ────────────────────────────────────── */
 interface Location {
@@ -54,18 +54,21 @@ interface Location {
   name: string;
   address: string;
   city: string;
+  state: string;
+  postalCode: string;
+  country: string;
   hours: string;
   phone: string;
   badge?: string;
 }
 
 const nexaStores: Location[] = [
-  { id: "s1", name: "NX036 Manhattan",       address: "350 Fifth Avenue, Suite 210",    city: "New York, NY",      hours: "Mon–Sat 10:00–20:00, Sun 11:00–18:00", phone: "+1 212 555 0101", badge: "Flagship" },
-  { id: "s2", name: "NX036 Beverly Hills",   address: "9500 Wilshire Blvd",              city: "Los Angeles, CA",   hours: "Mon–Sat 10:00–21:00, Sun 11:00–19:00", phone: "+1 310 555 0182" },
-  { id: "s3", name: "NX036 Chicago Loop",    address: "111 N State Street",              city: "Chicago, IL",       hours: "Mon–Sat 10:00–20:00, Sun 12:00–18:00", phone: "+1 312 555 0143" },
-  { id: "s4", name: "NX036 Oxford Street",   address: "374 Oxford Street",               city: "London, W1C 1JX",   hours: "Mon–Sat 09:30–21:00, Sun 12:00–18:00", phone: "+44 20 7946 0301", badge: "Flagship" },
-  { id: "s5", name: "NX036 Manchester",      address: "18 Market Street",                city: "Manchester, M1 1PT",hours: "Mon–Sat 10:00–20:00, Sun 11:00–17:00", phone: "+44 161 496 0210" },
-  { id: "s6", name: "NX036 Edinburgh",       address: "93 Princes Street",               city: "Edinburgh, EH2 2ER",hours: "Mon–Sat 10:00–19:30, Sun 12:00–17:00", phone: "+44 131 496 0145" },
+  { id: "s1", name: "NX036 Manhattan", address: "350 Fifth Avenue, Suite 210", city: "New York", state: "NY", postalCode: "10118", country: "United States", hours: "Mon–Sat 10:00–20:00, Sun 11:00–18:00", phone: "+1 212 555 0101", badge: "Flagship" },
+  { id: "s2", name: "NX036 Beverly Hills", address: "9500 Wilshire Blvd", city: "Los Angeles", state: "CA", postalCode: "90210", country: "United States", hours: "Mon–Sat 10:00–21:00, Sun 11:00–19:00", phone: "+1 310 555 0182" },
+  { id: "s3", name: "NX036 Chicago Loop", address: "111 N State Street", city: "Chicago", state: "IL", postalCode: "60603", country: "United States", hours: "Mon–Sat 10:00–20:00, Sun 12:00–18:00", phone: "+1 312 555 0143" },
+  { id: "s4", name: "NX036 Oxford Street", address: "374 Oxford Street", city: "London", state: "", postalCode: "W1C 1JX", country: "United Kingdom", hours: "Mon–Sat 09:30–21:00, Sun 12:00–18:00", phone: "+44 20 7946 0301", badge: "Flagship" },
+  { id: "s5", name: "NX036 Manchester", address: "18 Market Street", city: "Manchester", state: "", postalCode: "M1 1PT", country: "United Kingdom", hours: "Mon–Sat 10:00–20:00, Sun 11:00–17:00", phone: "+44 161 496 0210" },
+  { id: "s6", name: "NX036 Edinburgh", address: "93 Princes Street", city: "Edinburgh", state: "", postalCode: "EH2 2ER", country: "United Kingdom", hours: "Mon–Sat 10:00–19:30, Sun 12:00–17:00", phone: "+44 131 496 0145" },
 ];
 
 /* ── Mock pickup points ──────────────────────────────────── */
@@ -84,9 +87,9 @@ const pickupOperators: PickupOperator[] = [
     logo: "UPS",
     description: "Over 40,000 access points across the US and UK",
     points: [
-      { id: "ups1", name: "UPS – Midtown Manhattan",  address: "630 Lexington Ave",            city: "New York, NY 10022",    hours: "Mon–Fri 8:00–19:00, Sat 9:00–15:00", phone: "+1 800 742 5877" },
-      { id: "ups2", name: "UPS – Downtown Chicago",   address: "77 W Wacker Dr, Suite 100",    city: "Chicago, IL 60601",     hours: "Mon–Fri 8:30–18:30, Sat 9:00–14:00", phone: "+1 800 742 5877" },
-      { id: "ups3", name: "UPS – London Victoria",    address: "14 Buckingham Palace Rd",      city: "London, SW1W 0QP",      hours: "Mon–Fri 8:00–18:30, Sat 9:00–14:00", phone: "+44 345 787 7877" },
+      { id: "ups1", name: "UPS – Midtown Manhattan", address: "630 Lexington Ave", city: "New York", state: "NY", postalCode: "10022", country: "United States", hours: "Mon–Fri 8:00–19:00, Sat 9:00–15:00", phone: "+1 800 742 5877" },
+      { id: "ups2", name: "UPS – Downtown Chicago", address: "77 W Wacker Dr, Suite 100", city: "Chicago", state: "IL", postalCode: "60601", country: "United States", hours: "Mon–Fri 8:30–18:30, Sat 9:00–14:00", phone: "+1 800 742 5877" },
+      { id: "ups3", name: "UPS – London Victoria", address: "14 Buckingham Palace Rd", city: "London", state: "", postalCode: "SW1W 0QP", country: "United Kingdom", hours: "Mon–Fri 8:00–18:30, Sat 9:00–14:00", phone: "+44 345 787 7877" },
     ],
   },
   {
@@ -95,9 +98,9 @@ const pickupOperators: PickupOperator[] = [
     logo: "FDX",
     description: "Nationwide FedEx drop-off & collection network",
     points: [
-      { id: "fdx1", name: "FedEx – Sunset Blvd",      address: "8500 Sunset Blvd",             city: "Los Angeles, CA 90069", hours: "Mon–Fri 8:00–19:00, Sat 9:00–15:00", phone: "+1 800 463 3339" },
-      { id: "fdx2", name: "FedEx – Houston Galleria",  address: "5085 Westheimer Rd",           city: "Houston, TX 77056",     hours: "Mon–Fri 8:30–18:30, Sat 9:00–14:00", phone: "+1 800 463 3339" },
-      { id: "fdx3", name: "FedEx – Birmingham UK",     address: "126 Colmore Row",              city: "Birmingham, B3 3AP",    hours: "Mon–Fri 9:00–18:00, Sat 9:00–13:00", phone: "+44 345 600 0068" },
+      { id: "fdx1", name: "FedEx – Sunset Blvd", address: "8500 Sunset Blvd", city: "Los Angeles", state: "CA", postalCode: "90069", country: "United States", hours: "Mon–Fri 8:00–19:00, Sat 9:00–15:00", phone: "+1 800 463 3339" },
+      { id: "fdx2", name: "FedEx – Houston Galleria", address: "5085 Westheimer Rd", city: "Houston", state: "TX", postalCode: "77056", country: "United States", hours: "Mon–Fri 8:30–18:30, Sat 9:00–14:00", phone: "+1 800 463 3339" },
+      { id: "fdx3", name: "FedEx – Birmingham UK", address: "126 Colmore Row", city: "Birmingham", state: "", postalCode: "B3 3AP", country: "United Kingdom", hours: "Mon–Fri 9:00–18:00, Sat 9:00–13:00", phone: "+44 345 600 0068" },
     ],
   },
   {
@@ -106,9 +109,9 @@ const pickupOperators: PickupOperator[] = [
     logo: "RM",
     description: "Official postal service collection offices",
     points: [
-      { id: "rm1", name: "USPS – Grand Central",       address: "450 Lexington Ave",            city: "New York, NY 10017",    hours: "Mon–Fri 9:00–18:00",                  phone: "+1 800 275 8777" },
-      { id: "rm2", name: "USPS – State Street",        address: "211 S State Street",           city: "Chicago, IL 60604",     hours: "Mon–Fri 8:30–17:30",                  phone: "+1 800 275 8777" },
-      { id: "rm3", name: "Royal Mail – Trafalgar Sq",  address: "24–28 William IV Street",      city: "London, WC2N 4DL",      hours: "Mon–Fri 8:30–18:30, Sat 9:00–13:00", phone: "+44 345 722 3344" },
+      { id: "rm1", name: "USPS – Grand Central", address: "450 Lexington Ave", city: "New York", state: "NY", postalCode: "10017", country: "United States", hours: "Mon–Fri 9:00–18:00", phone: "+1 800 275 8777" },
+      { id: "rm2", name: "USPS – State Street", address: "211 S State Street", city: "Chicago", state: "IL", postalCode: "60604", country: "United States", hours: "Mon–Fri 8:30–17:30", phone: "+1 800 275 8777" },
+      { id: "rm3", name: "Royal Mail – Trafalgar Sq", address: "24–28 William IV Street", city: "London", state: "", postalCode: "WC2N 4DL", country: "United Kingdom", hours: "Mon–Fri 8:30–18:30, Sat 9:00–13:00", phone: "+44 345 722 3344" },
     ],
   },
 ];
@@ -129,11 +132,10 @@ function LocationCard({
     <button
       type="button"
       onClick={onSelect}
-      className={`w-full text-left p-4 rounded-xl border transition-all ${
-        selected
-          ? "border-gray-500 bg-gray-50 ring-1 ring-gray-500"
-          : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
-      }`}
+      className={`w-full text-left p-4 rounded-xl border transition-all ${selected
+        ? "border-gray-500 bg-gray-50 ring-1 ring-gray-500"
+        : "border-gray-100 hover:border-gray-300 hover:bg-gray-50"
+        }`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -147,7 +149,7 @@ function LocationCard({
           </div>
           <div className="flex items-center gap-1.5 mb-1">
             <MapPin className="w-3 h-3 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-            <p className="text-xs text-gray-500 truncate">{location.address}, {location.city}</p>
+            <p className="text-xs text-gray-500 truncate">{location.address}, {location.city}{location.state ? `, ${location.state}` : ''} {location.postalCode}</p>
           </div>
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
@@ -156,9 +158,8 @@ function LocationCard({
             </div>
           </div>
         </div>
-        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-          selected ? "border-gray-500 bg-gray-500" : "border-gray-200"
-        }`}>
+        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${selected ? "border-gray-500 bg-gray-500" : "border-gray-200"
+          }`}>
           {selected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
         </div>
       </div>
@@ -214,8 +215,17 @@ function AddressForm({
   const setDelivery = (type: DeliveryType) =>
     setForm((f) => ({ ...f, deliveryType: type, locationId: "", locationName: "" }));
 
-  const selectLocation = (locId: string, locName: string) =>
-    setForm((f) => ({ ...f, locationId: locId, locationName: locName }));
+  const selectLocation = (loc: Location, displayName?: string) =>
+    setForm((f) => ({
+      ...f,
+      locationId: loc.id,
+      locationName: displayName ?? loc.name,
+      street: loc.address,
+      city: loc.city,
+      state: loc.state,
+      zip: loc.postalCode,
+      country: loc.country,
+    }));
 
   const filteredStores = nexaStores.filter(
     (s) =>
@@ -245,15 +255,13 @@ function AddressForm({
               key={dt.id}
               type="button"
               onClick={() => setDelivery(dt.id)}
-              className={`flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${
-                form.deliveryType === dt.id
-                  ? `${dt.border} ${dt.bg}`
-                  : "border-gray-200 bg-white hover:border-gray-300"
-              }`}
+              className={`flex items-start gap-3 p-3.5 rounded-xl border-2 text-left transition-all ${form.deliveryType === dt.id
+                ? `${dt.border} ${dt.bg}`
+                : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
             >
-              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                form.deliveryType === dt.id ? `${dt.bg} ${dt.color}` : "bg-gray-100 text-gray-400"
-              }`}>
+              <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${form.deliveryType === dt.id ? `${dt.bg} ${dt.color}` : "bg-gray-100 text-gray-400"
+                }`}>
                 {dt.icon}
               </div>
               <div>
@@ -308,11 +316,11 @@ function AddressForm({
         {form.deliveryType === "home" && (
           <div className="grid grid-cols-2 gap-4">
             {[
-              { label: "Street address", name: "street",  col: "col-span-2", placeholder: "Street, number, apt / suite" },
-              { label: "City",           name: "city",    col: "col-span-1", placeholder: "New York" },
-              { label: "State / County", name: "state",   col: "col-span-1", placeholder: "NY" },
-              { label: "ZIP / Postcode", name: "zip",     col: "col-span-1", placeholder: "10001" },
-              { label: "Country",        name: "country", col: "col-span-1", placeholder: "United States" },
+              { label: "Street address", name: "street", col: "col-span-2", placeholder: "Street, number, apt / suite" },
+              { label: "City", name: "city", col: "col-span-1", placeholder: "New York" },
+              { label: "State / County", name: "state", col: "col-span-1", placeholder: "NY" },
+              { label: "ZIP / Postcode", name: "zip", col: "col-span-1", placeholder: "10001" },
+              { label: "Country", name: "country", col: "col-span-1", placeholder: "United States" },
             ].map(({ label, name, col, placeholder }) => (
               <div key={name} className={col}>
                 <label className="block text-xs text-gray-400 mb-1.5">{label}</label>
@@ -363,7 +371,7 @@ function AddressForm({
                     key={store.id}
                     location={store}
                     selected={form.locationId === store.id}
-                    onSelect={() => selectLocation(store.id, store.name)}
+                    onSelect={() => selectLocation(store)}
                     badgeColor="bg-violet-50 text-violet-600 border-violet-200"
                   />
                 ))
@@ -411,7 +419,7 @@ function AddressForm({
                         key={point.id}
                         location={point}
                         selected={form.locationId === point.id}
-                        onSelect={() => selectLocation(point.id, `${op.name} – ${point.name}`)}
+                        onSelect={() => selectLocation(point, `${op.name} – ${point.name}`)}
                         badgeColor="bg-emerald-50 text-emerald-600 border-emerald-200"
                       />
                     ))}
@@ -447,11 +455,10 @@ function AddressForm({
             type="button"
             onClick={() => canSave() && onSave(form)}
             disabled={!canSave()}
-            className={`inline-flex items-center gap-2 text-sm rounded-lg px-4 py-2 transition-colors ${
-              canSave()
-                ? "text-gray-700 bg-gray-200 hover:bg-gray-300"
-                : "text-gray-300 bg-gray-100 cursor-not-allowed"
-            }`}
+            className={`inline-flex items-center gap-2 text-sm rounded-lg px-4 py-2 transition-colors ${canSave()
+              ? "text-gray-700 bg-gray-200 hover:bg-gray-300"
+              : "text-gray-300 bg-gray-100 cursor-not-allowed"
+              }`}
           >
             <Check className="w-4 h-4" strokeWidth={1.5} />
             Guardar
@@ -475,7 +482,7 @@ function AddressCard({
   onSetDefault: () => void;
 }) {
   const labelIcon = (label: string) => {
-    if (label.toLowerCase() === "casa")    return <Home className="w-4 h-4" strokeWidth={1.5} />;
+    if (label.toLowerCase() === "casa") return <Home className="w-4 h-4" strokeWidth={1.5} />;
     if (label.toLowerCase() === "trabajo") return <Briefcase className="w-4 h-4" strokeWidth={1.5} />;
     return <MapPin className="w-4 h-4" strokeWidth={1.5} />;
   };
@@ -557,25 +564,37 @@ function AddressCard({
 
 /* ── Main component ──────────────────────────────────────── */
 export function ProfileDirecciones() {
-  const { user, addAddress, updateAddress, removeAddress } = useUser();
-  const [showAdd, setShowAdd]     = useState(false);
+  const { user, addAddress, updateAddress, removeAddress, setDefaultAddress } = useUser();
+  const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const handleAdd = (form: FormState) => {
-    addAddress(form);
-    setShowAdd(false);
-    toast.success("Dirección añadida correctamente");
+  const handleAdd = async (form: FormState) => {
+    try {
+      await addAddress(form);
+      setShowAdd(false);
+      toast.success("Dirección añadida correctamente");
+    } catch {
+      toast.error("No se pudo guardar la dirección");
+    }
   };
 
-  const handleUpdate = (id: string, form: FormState) => {
-    updateAddress(id, form);
-    setEditingId(null);
-    toast.success("Dirección actualizada correctamente");
+  const handleUpdate = async (id: string, form: FormState) => {
+    try {
+      await updateAddress(id, form);
+      setEditingId(null);
+      toast.success("Dirección actualizada correctamente");
+    } catch {
+      toast.error("No se pudo actualizar la dirección");
+    }
   };
 
-  const handleRemove = (id: string) => {
-    removeAddress(id);
-    toast.success("Dirección eliminada");
+  const handleRemove = async (id: string) => {
+    try {
+      await removeAddress(id);
+      toast.success("Dirección eliminada");
+    } catch {
+      toast.error("No se pudo eliminar la dirección");
+    }
   };
 
   return (
@@ -634,7 +653,7 @@ export function ProfileDirecciones() {
               addr={addr}
               onEdit={() => { setEditingId(addr.id); setShowAdd(false); }}
               onRemove={() => handleRemove(addr.id)}
-              onSetDefault={() => updateAddress(addr.id, { isDefault: true })}
+              onSetDefault={() => setDefaultAddress(addr.id).then(() => toast.success("Dirección predeterminada actualizada")).catch(() => toast.error("No se pudo actualizar"))}
             />
           )
         )}

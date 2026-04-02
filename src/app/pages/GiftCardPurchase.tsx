@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { giftCardRepository } from "../repositories/GiftCardRepository";
 import {
   Gift, Mail, Check, ChevronRight, ChevronLeft,
   User, MessageSquare, Calendar, CreditCard,
@@ -11,7 +12,7 @@ import {
   GIFT_CARD_DESIGNS,
   GIFT_CARD_AMOUNTS,
   type GiftCardDesign,
-} from "../data/giftcards";
+} from "../types/giftcard";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -134,8 +135,8 @@ function StepBar({ step }: { step: Step }) {
         <div key={s.n} className="flex items-center">
           <div className="flex flex-col items-center gap-1">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs transition-all ${step > s.n ? "bg-gray-600 text-white" :
-                step === s.n ? "bg-gray-600 text-white ring-4 ring-gray-200" :
-                  "bg-gray-100 text-gray-400"
+              step === s.n ? "bg-gray-600 text-white ring-4 ring-gray-200" :
+                "bg-gray-100 text-gray-400"
               }`}>
               {step > s.n ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : s.n}
             </div>
@@ -207,12 +208,25 @@ export function GiftCardPurchase() {
     return v;
   }
 
-  function handlePay() {
+  async function handlePay() {
     if (!step3Valid) { toast.error("Completa los datos de pago"); return; }
-    const code = `NX036-${Math.random().toString(36).slice(2, 6).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-    setGeneratedCode(code);
-    setStep(4);
-    toast.success("¡Pago completado! Tarjeta enviada correctamente");
+    try {
+      const result = await giftCardRepository.purchase({
+        designId: form.design.id,
+        amount: effectiveAmount,
+        recipientName: form.toName,
+        recipientEmail: form.toEmail,
+        message: form.message || undefined,
+        sendDate: !form.sendNow && form.scheduledDate
+          ? form.scheduledDate.slice(0, 10)
+          : undefined,
+      });
+      setGeneratedCode(result.code);
+      setStep(4);
+      toast.success("¡Pago completado! Tarjeta enviada correctamente");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Error al procesar el pago");
+    }
   }
 
   function copyCode() {
@@ -269,8 +283,8 @@ export function GiftCardPurchase() {
                       key={d.id}
                       onClick={() => set("design", d)}
                       className={`relative rounded-xl overflow-hidden aspect-[3/2] transition-all ${form.design.id === d.id
-                          ? "ring-2 ring-gray-900 ring-offset-2 scale-[1.02]"
-                          : "ring-1 ring-gray-200 hover:ring-gray-400"
+                        ? "ring-2 ring-gray-900 ring-offset-2 scale-[1.02]"
+                        : "ring-1 ring-gray-200 hover:ring-gray-400"
                         }`}
                     >
                       <div
@@ -295,8 +309,8 @@ export function GiftCardPurchase() {
                       key={a}
                       onClick={() => { set("amount", a); set("customAmount", ""); }}
                       className={`h-11 rounded-xl text-sm border transition-all ${form.amount === a && !form.customAmount
-                          ? "bg-gray-600 text-white border-gray-600"
-                          : "bg-white text-gray-700 border-gray-200 hover:border-gray-500"
+                        ? "bg-gray-600 text-white border-gray-600"
+                        : "bg-white text-gray-700 border-gray-200 hover:border-gray-500"
                         }`}
                     >
                       {a}€

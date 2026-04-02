@@ -18,13 +18,11 @@ import {
 } from "react";
 
 import { toAppError } from "../lib/AppError";
-import { brands as initialBrands } from "../data/brands";
-import { attributes as initialAttributes } from "../data/attributes";
+import { brandRepository, type Brand } from "../repositories/BrandRepository";
+import { attributeRepository, type Attribute } from "../repositories/AttributeRepository";
 
-import type { Product } from "../data/products";
-import type { Category } from "../data/adminData";
-import type { Brand } from "../data/brands";
-import type { Attribute } from "../data/attributes";
+import type { Product } from "../types/product";
+import type { Category } from "../types/admin";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Context type
@@ -81,13 +79,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading] = useState(false);
 
-  // ── Local state ───────────────────────────────────────────────────────────
-  const [brands, setBrands] = useState<Brand[]>(initialBrands);
-  const [attributes, setAttributes] = useState<Attribute[]>(initialAttributes);
+  // ── Brands & Attributes (from real API) ──────────────────────────────────
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [attributes, setAttributes] = useState<Attribute[]>([]);
 
   // ── Bootstrap on mount ────────────────────────────────────────────────────
   useEffect(() => {
     refreshProducts();
+    brandRepository.findAll().then(setBrands).catch(() => { });
+    attributeRepository.findAll().then(setAttributes).catch(() => { });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Products — currently mock data ───────────────────────────────────────
@@ -157,24 +157,56 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ── Brand / Attribute helpers ─────────────────────────────────────────────
 
-  function saveBrand(b: Brand) {
-    setBrands((prev) => {
-      const exists = prev.find((x) => x.id === b.id);
-      return exists ? prev.map((x) => (x.id === b.id ? b : x)) : [...prev, b];
-    });
+  async function saveBrand(b: Brand) {
+    try {
+      const exists = brands.find((x) => x.id === b.id);
+      if (exists) {
+        const updated = await brandRepository.update(b.id, { name: b.name, slug: b.slug, logo: b.logo ?? undefined, website: b.website ?? undefined, description: b.description ?? undefined });
+        setBrands((prev) => prev.map((x) => (x.id === b.id ? updated : x)));
+      } else {
+        const created = await brandRepository.create({ name: b.name, slug: b.slug, logo: b.logo ?? undefined, website: b.website ?? undefined, description: b.description ?? undefined });
+        setBrands((prev) => [...prev, created]);
+      }
+    } catch {
+      setBrands((prev) => {
+        const exists = prev.find((x) => x.id === b.id);
+        return exists ? prev.map((x) => (x.id === b.id ? b : x)) : [...prev, b];
+      });
+    }
   }
-  function deleteBrand(id: string) {
-    setBrands((prev) => prev.filter((b) => b.id !== id));
+  async function deleteBrand(id: string) {
+    try {
+      await brandRepository.delete(id);
+      setBrands((prev) => prev.filter((b) => b.id !== id));
+    } catch {
+      setBrands((prev) => prev.filter((b) => b.id !== id));
+    }
   }
 
-  function saveAttribute(a: Attribute) {
-    setAttributes((prev) => {
-      const exists = prev.find((x) => x.id === a.id);
-      return exists ? prev.map((x) => (x.id === a.id ? a : x)) : [...prev, a];
-    });
+  async function saveAttribute(a: Attribute) {
+    try {
+      const exists = attributes.find((x) => x.id === a.id);
+      if (exists) {
+        const updated = await attributeRepository.update(a.id, { name: a.name, slug: a.slug, type: a.type, values: a.values.map(v => ({ value: v.value, color: v.color ?? undefined })) });
+        setAttributes((prev) => prev.map((x) => (x.id === a.id ? updated : x)));
+      } else {
+        const created = await attributeRepository.create({ name: a.name, slug: a.slug, type: a.type, values: a.values.map(v => ({ value: v.value, color: v.color ?? undefined })) });
+        setAttributes((prev) => [...prev, created]);
+      }
+    } catch {
+      setAttributes((prev) => {
+        const exists = prev.find((x) => x.id === a.id);
+        return exists ? prev.map((x) => (x.id === a.id ? a : x)) : [...prev, a];
+      });
+    }
   }
-  function deleteAttribute(id: string) {
-    setAttributes((prev) => prev.filter((a) => a.id !== id));
+  async function deleteAttribute(id: string) {
+    try {
+      await attributeRepository.delete(id);
+      setAttributes((prev) => prev.filter((a) => a.id !== id));
+    } catch {
+      setAttributes((prev) => prev.filter((a) => a.id !== id));
+    }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────

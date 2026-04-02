@@ -1,8 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Plus, Image as ImageIcon, Trash2, Pencil, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import { type Slide as ApiSlide, type SlidePayload, slideRepository } from "../../repositories/CmsRepository";
 
 interface Slide {
   id: string;
@@ -19,51 +20,36 @@ interface Slide {
   order: number;
 }
 
-// Mock data inicial
-const initialSlides: Slide[] = [
-  {
-    id: "1",
-    title: "Descubre los Mejores Productos",
-    subtitle: "Tecnología de vanguardia",
-    description: "Ofertas exclusivas con garantía de satisfacción y envío gratis en tu primera compra.",
-    badge: "Nuevo",
+// Mock data replaced with API loading
+
+/* ── API Mappers ─────────────────────────────────────── */
+function mapApiToUi(s: ApiSlide): Slide {
+  return {
+    id: s.id,
+    title: s.title,
+    subtitle: s.subtitle ?? "",
+    description: "",
+    badge: "",
     badgeColor: "#3B82F6",
-    buttonText: "Ver Ofertas",
-    buttonLink: "/?ofertas=true",
-    image: "https://images.unsplash.com/photo-1738520420654-87cd2ad005d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMHRlY2hub2xvZ3klMjBtb2Rlcm4lMjBnYWRnZXRzfGVufDF8fHx8MTc3MzMxMjk4N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+    buttonText: "",
+    buttonLink: s.linkUrl ?? "",
+    image: s.imageUrl,
     align: "left",
-    status: "active",
-    order: 1,
-  },
-  {
-    id: "2",
-    title: "Hasta 50% OFF",
-    subtitle: "Moda & Tendencias",
-    description: "Las últimas tendencias de moda con descuentos increíbles. Stock limitado.",
-    badge: "Oferta",
-    badgeColor: "#F43F5E",
-    buttonText: "Ver Ofertas de Moda",
-    buttonLink: "/?category=Moda&ofertas=true",
-    image: "https://images.unsplash.com/photo-1771435416537-fdad7cbf4ef8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwY2xvdGhpbmclMjBzYWxlJTIwZGlzY291bnQlMjBzaG9wcGluZ3xlbnwxfHx8fDE3NzMzMTI5ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    align: "right",
-    status: "active",
-    order: 2,
-  },
-  {
-    id: "3",
-    title: "Gaming al Siguiente Nivel",
-    subtitle: "Setups Épicos",
-    description: "Consolas, periféricos y accesorios para dominar cada partida.",
-    badge: "Destacado",
-    badgeColor: "#8B5CF6",
-    buttonText: "Explorar Gaming",
-    buttonLink: "/?category=Gaming",
-    image: "https://images.unsplash.com/photo-1771014817844-327a14245bd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBzZXR1cCUyMHJnYiUyMG5lb24lMjBkYXJrfGVufDF8fHx8MTc3MzMxMjk4OHww&ixlib=rb-4.1.0&q=80&w=1080",
-    align: "left",
-    status: "active",
-    order: 3,
-  },
-];
+    status: s.active ? "active" : "inactive",
+    order: s.position,
+  };
+}
+
+function uiToPayload(s: Slide): SlidePayload {
+  return {
+    title: s.title,
+    subtitle: s.subtitle || undefined,
+    imageUrl: s.image,
+    linkUrl: s.buttonLink || undefined,
+    position: s.order,
+    active: s.status === "active",
+  };
+}
 
 interface SlideModalProps {
   slide?: Slide;
@@ -326,9 +312,8 @@ function DraggableSlideRow({
   return (
     <div
       ref={(node) => preview(drop(node))}
-      className={`bg-white border border-gray-100 rounded-xl overflow-hidden transition-all ${
-        isDragging ? "opacity-50 scale-95" : ""
-      }`}
+      className={`bg-white border border-gray-100 rounded-xl overflow-hidden transition-all ${isDragging ? "opacity-50 scale-95" : ""
+        }`}
     >
       {/* Main Row */}
       <div className="px-4 py-3 flex items-center gap-3">
@@ -371,11 +356,10 @@ function DraggableSlideRow({
 
         {/* Status badge */}
         <div
-          className={`text-[10px] px-2 py-1 rounded-lg border ${
-            slide.status === "active"
+          className={`text-[10px] px-2 py-1 rounded-lg border ${slide.status === "active"
               ? "text-green-600 bg-green-50 border-green-100"
               : "text-gray-400 bg-gray-50 border-gray-100"
-          }`}
+            }`}
         >
           {slide.status === "active" ? "Activo" : "Inactivo"}
         </div>
@@ -456,51 +440,65 @@ function DraggableSlideRow({
 }
 
 export function AdminSlides() {
-  const [list, setList] = useState<Slide[]>(initialSlides);
+  const [list, setList] = useState<Slide[]>([]);
   const [modal, setModal] = useState<{ slide?: Slide } | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  const loadSlides = useCallback(async () => {
+    try {
+      const slides = await slideRepository.findAll();
+      setList(slides.map(mapApiToUi));
+    } catch { toast.error("Error al cargar los slides"); }
+  }, []);
+
+  useEffect(() => { loadSlides(); }, [loadSlides]);
+
   const activeSlides = useMemo(() => list.filter((s) => s.status === "active").length, [list]);
 
-  const handleSaveSlide = (slide: Slide) => {
-    if (slide.id) {
-      // Edit existing
-      setList((prev) => prev.map((s) => (s.id === slide.id ? slide : s)));
-      toast.success("Slide actualizado");
-    } else {
-      // Create new
-      const newSlide = {
-        ...slide,
-        id: Date.now().toString(),
-        order: list.length + 1,
-      };
-      setList((prev) => [...prev, newSlide]);
-      toast.success("Slide creado");
-    }
+  const handleSaveSlide = async (slide: Slide) => {
+    try {
+      if (slide.id) {
+        const updated = await slideRepository.update(slide.id, uiToPayload(slide));
+        setList((prev) => prev.map((s) => (s.id === slide.id ? mapApiToUi(updated) : s)));
+        toast.success("Slide actualizado");
+      } else {
+        const created = await slideRepository.create(uiToPayload({ ...slide, order: list.length + 1 }));
+        setList((prev) => [...prev, mapApiToUi(created)]);
+        toast.success("Slide creado");
+      }
+    } catch { toast.error("Error al guardar el slide"); }
     setModal(null);
   };
 
-  const handleDelete = (id: string) => {
-    setList((prev) => prev.filter((s) => s.id !== id));
-    toast.success("Slide eliminado");
+  const handleDelete = async (id: string) => {
+    try {
+      await slideRepository.delete(id);
+      setList((prev) => prev.filter((s) => s.id !== id));
+      toast.success("Slide eliminado");
+    } catch { toast.error("Error al eliminar el slide"); }
     setDeleteId(null);
   };
 
-  const handleToggleStatus = (id: string) => {
-    setList((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, status: s.status === "active" ? "inactive" : "active" } : s))
-    );
+  const handleToggleStatus = async (id: string) => {
+    const slide = list.find(s => s.id === id);
+    if (!slide) return;
+    try {
+      const updated = await slideRepository.update(id, uiToPayload({ ...slide, status: slide.status === "active" ? "inactive" : "active" }));
+      setList((prev) => prev.map((s) => (s.id === id ? mapApiToUi(updated) : s)));
+    } catch { toast.error("Error al cambiar el estado"); }
   };
 
-  const moveSlide = (dragIndex: number, hoverIndex: number) => {
+  const moveSlide = async (dragIndex: number, hoverIndex: number) => {
     const dragSlide = list[dragIndex];
     const newList = [...list];
     newList.splice(dragIndex, 1);
     newList.splice(hoverIndex, 0, dragSlide);
-    // Update order
     const reordered = newList.map((s, i) => ({ ...s, order: i + 1 }));
     setList(reordered);
+    try {
+      await slideRepository.updatePositions(reordered.map(s => ({ id: s.id, position: s.order })));
+    } catch { /* silently fail and keep UI state */ }
   };
 
   return (

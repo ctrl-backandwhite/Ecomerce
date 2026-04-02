@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Pencil, Check, X, TrendingUp, Globe, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import { type SeoPage as ApiSeoPage, type SeoPagePayload, seoPageRepository } from "../../repositories/CmsRepository";
 
 interface SEOEntry {
   id: string;
@@ -12,21 +13,33 @@ interface SEOEntry {
   indexed: boolean;
 }
 
-const initEntries: SEOEntry[] = [
-  { id: "s1", page: "Inicio",         url: "/",                  title: "NX036 — Tecnología y Estilo de Vida Premium",   description: "Compra tecnología, moda y más con los mejores precios y envío rápido a toda Europa.", score: 88, indexed: true  },
-  { id: "s2", page: "Catálogo",       url: "/productos",         title: "Catálogo de Productos | NX036",                 description: "Explora nuestro catálogo de más de 16 000 productos con filtros avanzados.",          score: 75, indexed: true  },
-  { id: "s3", page: "Sobre Nosotros", url: "/nosotros",          title: "Quiénes Somos | NX036 Commerce",                description: "Conoce la historia y valores de NX036, el marketplace premium de confianza.",          score: 70, indexed: true  },
-  { id: "s4", page: "Contacto",       url: "/contacto",          title: "Contacto y Atención al Cliente | NX036",        description: "Contacta con nuestro equipo de soporte disponible 24/7.",                           score: 65, indexed: true  },
-  { id: "s5", page: "FAQ",            url: "/faq",               title: "Preguntas Frecuentes | NX036",                  description: "Resolvemos todas tus dudas sobre pedidos, envíos, devoluciones y pagos.",            score: 72, indexed: true  },
-  { id: "s6", page: "Envíos",        url: "/envios",            title: "Información de Envíos y Entregas | NX036",      description: "Conoce nuestras tarifas, plazos y métodos de envío a toda Europa.",                  score: 68, indexed: true  },
-  { id: "s7", page: "Privacidad",     url: "/legal/privacidad",  title: "Política de Privacidad | NX036",                description: "Consulta cómo tratamos y protegemos tus datos personales.",                         score: 55, indexed: true  },
-  { id: "s8", page: "Términos",      url: "/legal/terminos",    title: "Términos y Condiciones | NX036",                description: "Lee nuestros términos y condiciones de compra y uso del servicio.",                  score: 55, indexed: false },
-];
+// Removed: data is now loaded from the API.
+
+function mapApiToUi(s: ApiSeoPage): SEOEntry {
+  const label = s.path === "/" ? "Inicio" : s.path.replace(/^\//, "").replace(/\/.*$/, "").replace(/-/g, " ");
+  return {
+    id: s.id,
+    page: label.charAt(0).toUpperCase() + label.slice(1) || s.path,
+    url: s.path,
+    title: s.title,
+    description: s.description,
+    score: 70,
+    indexed: true,
+  };
+}
+
+function uiToPayload(e: SEOEntry): SeoPagePayload {
+  return {
+    path: e.url,
+    title: e.title,
+    description: e.description,
+  };
+}
 
 const scoreColor = (s: number) =>
   s >= 80 ? "text-green-600 bg-green-50" :
-  s >= 60 ? "text-amber-600 bg-amber-50" :
-  "text-red-600 bg-red-50";
+    s >= 60 ? "text-amber-600 bg-amber-50" :
+      "text-red-600 bg-red-50";
 
 function ScoreBar({ score }: { score: number }) {
   return (
@@ -43,10 +56,21 @@ function ScoreBar({ score }: { score: number }) {
 }
 
 export function AdminSEO() {
-  const [entries, setEntries] = useState<SEOEntry[]>(initEntries);
+  const [entries, setEntries] = useState<SEOEntry[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<SEOEntry>>({});
   const [search, setSearch] = useState("");
+
+  const loadEntries = useCallback(async () => {
+    try {
+      const data = await seoPageRepository.findAll();
+      setEntries(data.map(mapApiToUi));
+    } catch {
+      toast.error("Error al cargar páginas SEO");
+    }
+  }, []);
+
+  useEffect(() => { loadEntries(); }, [loadEntries]);
 
   const filtered = entries.filter(e =>
     !search ||
@@ -59,10 +83,18 @@ export function AdminSEO() {
     setEditData({ title: e.title, description: e.description });
   };
 
-  const saveEdit = (id: string) => {
-    setEntries(prev => prev.map(e => e.id === id ? { ...e, ...editData } : e));
-    setEditing(null);
-    toast.success("Meta datos actualizados");
+  const saveEdit = async (id: string) => {
+    try {
+      const current = entries.find(e => e.id === id);
+      if (!current) return;
+      const updated = { ...current, ...editData };
+      await seoPageRepository.update(id, uiToPayload(updated));
+      setEntries(prev => prev.map(e => e.id === id ? updated : e));
+      setEditing(null);
+      toast.success("Meta datos actualizados");
+    } catch {
+      toast.error("Error al guardar los meta datos");
+    }
   };
 
   const avg = Math.round(entries.reduce((s, e) => s + e.score, 0) / entries.length);
@@ -87,10 +119,10 @@ export function AdminSEO() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Puntuación media",  value: avg,                                      color: scoreColor(avg)             },
-          { label: "Páginas indexadas", value: entries.filter(e => e.indexed).length,    color: "text-green-600 bg-green-50" },
-          { label: "No indexadas",      value: entries.filter(e => !e.indexed).length,   color: "text-gray-600 bg-gray-50"   },
-          { label: "A mejorar (<70)",   value: entries.filter(e => e.score < 70).length, color: "text-amber-600 bg-amber-50" },
+          { label: "Puntuación media", value: avg, color: scoreColor(avg) },
+          { label: "Páginas indexadas", value: entries.filter(e => e.indexed).length, color: "text-green-600 bg-green-50" },
+          { label: "No indexadas", value: entries.filter(e => !e.indexed).length, color: "text-gray-600 bg-gray-50" },
+          { label: "A mejorar (<70)", value: entries.filter(e => e.score < 70).length, color: "text-amber-600 bg-amber-50" },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3">
             <p className="text-lg text-gray-900 leading-none tabular-nums">{s.value}</p>

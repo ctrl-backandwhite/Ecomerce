@@ -1,6 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Gift, Copy, Ban, Eye, DollarSign, Check } from "lucide-react";
 import { toast } from "sonner";
+import {
+  type GiftCard as ApiGiftCard, type GiftCardDesign,
+  giftCardRepository,
+} from "../../repositories/CmsRepository";
 
 type GCStatus = "active" | "used" | "expired" | "void";
 
@@ -18,49 +22,77 @@ interface GiftCard {
 }
 
 const STATUS_META: Record<GCStatus, { label: string; bg: string; text: string; dot: string }> = {
-  active:  { label: "Activa",   bg: "bg-green-50",  text: "text-green-700", dot: "bg-green-400"  },
-  used:    { label: "Usada",    bg: "bg-gray-100",  text: "text-gray-500",  dot: "bg-gray-300"   },
-  expired: { label: "Expirada", bg: "bg-amber-50",  text: "text-amber-700", dot: "bg-amber-400"  },
-  void:    { label: "Anulada",  bg: "bg-red-50",    text: "text-red-600",   dot: "bg-red-400"    },
+  active: { label: "Activa", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400" },
+  used: { label: "Usada", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300" },
+  expired: { label: "Expirada", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
+  void: { label: "Anulada", bg: "bg-red-50", text: "text-red-600", dot: "bg-red-400" },
 };
 
-const initCards: GiftCard[] = [
-  { id: "gc1", code: "NX036-GFT-4A9K", amount: 50,  balance: 50,  status: "active",  createdAt: "01/03/2026", expiresAt: "01/03/2027", buyer: "María García",  recipient: "info@juan.com",   note: "Regalo cumpleaños" },
-  { id: "gc2", code: "NX036-GFT-7H2M", amount: 100, balance: 0,   status: "used",    createdAt: "15/02/2026", expiresAt: "15/02/2027", buyer: "Carlos López",  recipient: "laura@email.com" },
-  { id: "gc3", code: "NX036-GFT-3B8N", amount: 25,  balance: 25,  status: "active",  createdAt: "10/03/2026", expiresAt: "10/03/2027", recipient: "ana@email.com" },
-  { id: "gc4", code: "NX036-GFT-9L5P", amount: 200, balance: 80,  status: "active",  createdAt: "05/03/2026", expiresAt: "05/03/2027", buyer: "Sofía Torres",  note: "Promo 5 aniversario" },
-  { id: "gc5", code: "NX036-GFT-2Q1R", amount: 50,  balance: 50,  status: "expired", createdAt: "01/01/2025", expiresAt: "01/01/2026" },
-  { id: "gc6", code: "NX036-GFT-6T4S", amount: 75,  balance: 75,  status: "void",    createdAt: "20/02/2026", expiresAt: "20/02/2027", note: "Anulada por reclamación" },
-];
+// Removed: data is now loaded from the API.
+
+function mapApiToUi(c: ApiGiftCard): GiftCard {
+  const now = new Date().toISOString();
+  let status: GCStatus = "active";
+  if (!c.active) status = "void";
+  else if (c.expiresAt && c.expiresAt < now) status = "expired";
+  else if (c.currentBalance === 0) status = "used";
+  return {
+    id: c.id,
+    code: c.code,
+    amount: c.initialBalance,
+    balance: c.currentBalance,
+    status,
+    createdAt: new Date(c.createdAt).toLocaleDateString("es-ES"),
+    expiresAt: c.expiresAt ? new Date(c.expiresAt).toLocaleDateString("es-ES") : "",
+    recipient: c.recipientEmail ?? undefined,
+    note: c.message ?? undefined,
+  };
+}
 
 const AMOUNTS = [25, 50, 100, 150, 200, 500];
 
 export function AdminGiftCards() {
-  const [cards, setCards]         = useState<GiftCard[]>(initCards);
+  const [cards, setCards] = useState<GiftCard[]>([]);
+  const [designs, setDesigns] = useState<GiftCardDesign[]>([]);
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm]           = useState({ amount: 50, recipient: "", note: "" });
+  const [form, setForm] = useState({ amount: 50, recipient: "", note: "" });
 
-  const handleCreate = () => {
-    const code = `NX036-GFT-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-    const newCard: GiftCard = {
-      id:         `gc${Date.now()}`,
-      code,
-      amount:     form.amount,
-      balance:    form.amount,
-      status:     "active",
-      createdAt:  new Date().toLocaleDateString("es-ES"),
-      expiresAt:  new Date(Date.now() + 365 * 86400000).toLocaleDateString("es-ES"),
-      recipient:  form.recipient || undefined,
-      note:       form.note || undefined,
-    };
-    setCards(prev => [newCard, ...prev]);
-    setShowCreate(false);
-    setForm({ amount: 50, recipient: "", note: "" });
-    toast.success(`Tarjeta regalo creada: ${code}`);
+  const loadCards = useCallback(async () => {
+    try {
+      const [page, designList] = await Promise.all([
+        giftCardRepository.findAll({ size: 200 }),
+        giftCardRepository.findAllDesigns(),
+      ]);
+      setCards(page.content.map(mapApiToUi));
+      setDesigns(designList);
+    } catch {
+      toast.error("Error al cargar tarjetas regalo");
+    }
+  }, []);
+
+  useEffect(() => { loadCards(); }, [loadCards]);
+
+  const handleCreate = async () => {
+    const designId = designs.find(d => d.active)?.id ?? designs[0]?.id;
+    if (!designId) { toast.error("No hay diseños disponibles"); return; }
+    try {
+      const created = await giftCardRepository.purchase({
+        designId,
+        amount: form.amount,
+        recipientEmail: form.recipient || undefined,
+        message: form.note || undefined,
+      });
+      setCards(prev => [mapApiToUi(created), ...prev]);
+      setShowCreate(false);
+      setForm({ amount: 50, recipient: "", note: "" });
+      toast.success(`Tarjeta regalo creada: ${created.code}`);
+    } catch {
+      toast.error("Error al crear tarjeta regalo");
+    }
   };
 
   const voidCard = (id: string) => {
-    setCards(prev => prev.map(c => c.id === id ? { ...c, status: "void" } : c));
+    setCards(prev => prev.map(c => c.id === id ? { ...c, status: "void" as GCStatus } : c));
     toast.success("Tarjeta anulada");
   };
 
@@ -69,7 +101,7 @@ export function AdminGiftCards() {
     toast.success("Código copiado");
   };
 
-  const active   = cards.filter(c => c.status === "active");
+  const active = cards.filter(c => c.status === "active");
   const totalBal = active.reduce((s, c) => s + c.balance, 0);
 
   return (
@@ -93,10 +125,10 @@ export function AdminGiftCards() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total emitidas",  value: cards.length                                        },
-          { label: "Activas",         value: active.length                                        },
-          { label: "Saldo pendiente", value: `$${totalBal}`                                      },
-          { label: "Valor emitido",   value: `$${cards.reduce((s, c) => s + c.amount, 0)}`       },
+          { label: "Total emitidas", value: cards.length },
+          { label: "Activas", value: active.length },
+          { label: "Saldo pendiente", value: `$${totalBal}` },
+          { label: "Valor emitido", value: `$${cards.reduce((s, c) => s + c.amount, 0)}` },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
@@ -114,14 +146,14 @@ export function AdminGiftCards() {
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
         <div className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_1fr_1fr_0.8fr_80px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
           {[
-            { label: "Código",       cls: "text-left"   },
-            { label: "Destinatario", cls: "text-left"   },
-            { label: "Valor",        cls: "text-right"  },
-            { label: "Saldo",        cls: "text-right"  },
-            { label: "Creada",       cls: "text-center" },
-            { label: "Vence",        cls: "text-center" },
-            { label: "Estado",       cls: "text-left"   },
-            { label: "",             cls: "text-right"  },
+            { label: "Código", cls: "text-left" },
+            { label: "Destinatario", cls: "text-left" },
+            { label: "Valor", cls: "text-right" },
+            { label: "Saldo", cls: "text-right" },
+            { label: "Creada", cls: "text-center" },
+            { label: "Vence", cls: "text-center" },
+            { label: "Estado", cls: "text-left" },
+            { label: "", cls: "text-right" },
           ].map(h => (
             <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
@@ -193,11 +225,10 @@ export function AdminGiftCards() {
                     <button
                       key={a}
                       onClick={() => setForm(f => ({ ...f, amount: a }))}
-                      className={`h-8 px-4 text-xs rounded-lg border transition-colors ${
-                        form.amount === a
+                      className={`h-8 px-4 text-xs rounded-lg border transition-colors ${form.amount === a
                           ? "bg-gray-600 text-white border-gray-600"
                           : "border-gray-200 text-gray-600 hover:bg-gray-50"
-                      }`}
+                        }`}
                     >
                       ${a}
                     </button>

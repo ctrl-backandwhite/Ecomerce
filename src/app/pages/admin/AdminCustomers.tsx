@@ -1,20 +1,19 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search, Eye, Users, DollarSign, ShoppingCart,
   UserCheck, UserX, X, Mail, Phone, Calendar,
   TrendingUp, ArrowUpDown,
 } from "lucide-react";
-import { customers as initialCustomers, type Customer } from "../../data/customers";
+import { type Customer, customerRepository } from "../../repositories/CustomerRepository";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
 
-function StatusBadge({ status }: { status: "active" | "inactive" }) {
+function StatusBadge({ status }: { status: "ACTIVE" | "INACTIVE" }) {
   return (
-    <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full ${
-      status === "active" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
-    }`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${status === "active" ? "bg-green-400" : "bg-gray-300"}`} />
-      {status === "active" ? "Activo" : "Inactivo"}
+    <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full ${status === "ACTIVE" ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"
+      }`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${status === "ACTIVE" ? "bg-green-400" : "bg-gray-300"}`} />
+      {status === "ACTIVE" ? "Activo" : "Inactivo"}
     </span>
   );
 }
@@ -56,7 +55,7 @@ function CustomerDrawer({
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3">
             {[
-              { label: "Pedidos",     value: customer.orders },
+              { label: "Pedidos", value: customer.orders },
               { label: "Total gastado", value: `$${customer.totalSpent.toLocaleString()}` },
               { label: "Ticket medio", value: `$${avgOrder}` },
             ].map(({ label, value }) => (
@@ -72,8 +71,8 @@ function CustomerDrawer({
             <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Contacto</p>
             <div className="space-y-3">
               {[
-                { icon: Mail,     value: customer.email },
-                { icon: Phone,    value: customer.phone },
+                { icon: Mail, value: customer.email },
+                { icon: Phone, value: customer.phone },
                 { icon: Calendar, value: `Miembro desde ${customer.joinDate}` },
               ].map(({ icon: Icon, value }) => (
                 <div key={value} className="flex items-center gap-3 text-xs text-gray-600">
@@ -92,13 +91,12 @@ function CustomerDrawer({
             <div className="space-y-2">
               <button
                 onClick={() => { onToggleStatus(customer.id); toast.success("Estado del cliente actualizado"); }}
-                className={`w-full flex items-center gap-2.5 text-xs px-4 py-2.5 rounded-xl border transition-colors ${
-                  customer.status === "active"
+                className={`w-full flex items-center gap-2.5 text-xs px-4 py-2.5 rounded-xl border transition-colors ${customer.status === "ACTIVE"
                     ? "text-red-600 border-red-100 bg-red-50 hover:bg-red-100"
                     : "text-green-600 border-green-100 bg-green-50 hover:bg-green-100"
-                }`}
+                  }`}
               >
-                {customer.status === "active"
+                {customer.status === "ACTIVE"
                   ? <><UserX className="w-3.5 h-3.5" strokeWidth={1.5} /> Desactivar cuenta</>
                   : <><UserCheck className="w-3.5 h-3.5" strokeWidth={1.5} /> Activar cuenta</>
                 }
@@ -119,18 +117,30 @@ function CustomerDrawer({
 
 /* ── Main page ───────────────────────────────────────── */
 export function AdminCustomers() {
-  const [list, setList]             = useState<Customer[]>(initialCustomers);
-  const [search, setSearch]         = useState("");
-  const [statusFilter, setStatusF]  = useState<"all" | "active" | "inactive">("all");
-  const [selectedCustomer, setSel]  = useState<Customer | null>(null);
-  const [sortKey, setSortKey]       = useState<"name" | "orders" | "totalSpent" | "joinDate">("totalSpent");
-  const [sortDir, setSortDir]       = useState<"asc" | "desc">("desc");
-  const [page, setPage]             = useState(1);
+  const [list, setList] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusF] = useState<"all" | "ACTIVE" | "INACTIVE">("all");
+  const [selectedCustomer, setSel] = useState<Customer | null>(null);
+  const [sortKey, setSortKey] = useState<"name" | "orders" | "totalSpent" | "joinDate">("totalSpent");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
+
+  const loadCustomers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await customerRepository.findAll({ size: 500 });
+      setList(res.content);
+    } catch { toast.error("Error al cargar los clientes"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadCustomers(); }, [loadCustomers]);
 
   const filtered = useMemo(() => {
     let l = [...list];
-    if (search)              l = l.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
+    if (search) l = l.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
     if (statusFilter !== "all") l = l.filter((c) => c.status === statusFilter);
     l.sort((a, b) => {
       const va = a[sortKey] as any;
@@ -144,11 +154,11 @@ export function AdminCustomers() {
   useEffect(() => setPage(1), [search, statusFilter, sortKey, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   function handleToggleStatus(id: string) {
-    setList((prev) => prev.map((c) => c.id === id ? { ...c, status: c.status === "active" ? "inactive" : "active" } : c));
-    setSel((prev) => prev?.id === id ? { ...prev, status: prev.status === "active" ? "inactive" : "active" } : prev);
+    setList((prev) => prev.map((c) => c.id === id ? { ...c, status: c.status === "ACTIVE" ? "INACTIVE" as const : "ACTIVE" as const } : c));
+    setSel((prev) => prev?.id === id ? { ...prev, status: prev.status === "ACTIVE" ? "INACTIVE" as const : "ACTIVE" as const } : prev);
   }
 
   function handleSort(k: typeof sortKey) {
@@ -156,8 +166,8 @@ export function AdminCustomers() {
     else { setSortKey(k); setSortDir("desc"); }
   }
 
-  const totalSpent   = list.reduce((s, c) => s + c.totalSpent, 0);
-  const activeCount  = list.filter((c) => c.status === "active").length;
+  const totalSpent = list.reduce((s, c) => s + c.totalSpent, 0);
+  const activeCount = list.filter((c) => c.status === "ACTIVE").length;
 
   const SortBtn = ({ k, label }: { k: typeof sortKey; label: string }) => (
     <button onClick={() => handleSort(k)} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 transition-colors">
@@ -178,10 +188,10 @@ export function AdminCustomers() {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: Users,       label: "Total clientes",  value: list.length },
-          { icon: UserCheck,   label: "Activos",         value: activeCount },
-          { icon: DollarSign,  label: "Ingresos totales", value: `$${totalSpent.toLocaleString()}` },
-          { icon: TrendingUp,  label: "Ticket promedio",  value: `$${Math.round(totalSpent / (list.reduce((s, c) => s + c.orders, 0) || 1)).toLocaleString()}` },
+          { icon: Users, label: "Total clientes", value: list.length },
+          { icon: UserCheck, label: "Activos", value: activeCount },
+          { icon: DollarSign, label: "Ingresos totales", value: `$${totalSpent.toLocaleString()}` },
+          { icon: TrendingUp, label: "Ticket promedio", value: `$${Math.round(totalSpent / (list.reduce((s, c) => s + c.orders, 0) || 1)).toLocaleString()}` },
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -199,15 +209,14 @@ export function AdminCustomers() {
       <div className="bg-white border border-gray-100 rounded-xl px-4 py-3.5 flex flex-wrap items-center gap-3">
         {/* Status pills */}
         <div className="flex gap-1.5">
-          {(["all", "active", "inactive"] as const).map((s) => (
+          {(["all", "ACTIVE", "INACTIVE"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusF(s)}
-              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${
-                statusFilter === s ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"
-              }`}
+              className={`text-xs px-3 py-1.5 rounded-full border transition-all ${statusFilter === s ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"
+                }`}
             >
-              {s === "all" ? "Todos" : s === "active" ? "Activos" : "Inactivos"}
+              {s === "all" ? "Todos" : s === "ACTIVE" ? "Activos" : "Inactivos"}
             </button>
           ))}
         </div>

@@ -1,4 +1,20 @@
-import { createContext, useContext, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  type ReactNode,
+} from "react";
+import { useAuth } from "./AuthContext";
+import { profileRepository } from "../repositories/ProfileRepository";
+import type {
+  Address as ApiAddress,
+  AddressPayload,
+  PaymentMethod as ApiPaymentMethod,
+  PaymentMethodPayload,
+  NotificationPrefs,
+} from "../repositories/ProfileRepository";
 
 export interface Address {
   id: string;
@@ -82,197 +98,371 @@ export interface UserProfile {
   };
 }
 
-interface UserContextType {
-  user: UserProfile;
-  updateProfile: (data: Partial<UserProfile>) => void;
-  addAddress: (address: Omit<Address, "id">) => void;
-  updateAddress: (id: string, data: Partial<Address>) => void;
-  removeAddress: (id: string) => void;
-  toggleFavorite: (productId: string) => void;
-  isFavorite: (productId: string) => boolean;
-  addPaymentMethod: (pm: Omit<PaymentMethod, "id">) => void;
-  removePaymentMethod: (id: string) => void;
-  setDefaultPaymentMethod: (id: string) => void;
+// ── Mappers: API → UI ────────────────────────────────────────────────────────
+
+const ADDRESS_TYPE_TO_UI: Record<string, Address["deliveryType"]> = {
+  HOME: "home",
+  STORE_PICKUP: "store",
+  PICKUP_POINT: "pickup",
+};
+
+const ADDRESS_TYPE_TO_API: Record<string, "HOME" | "STORE_PICKUP" | "PICKUP_POINT"> = {
+  home: "HOME",
+  store: "STORE_PICKUP",
+  pickup: "PICKUP_POINT",
+};
+
+function mapApiAddress(a: ApiAddress): Address {
+  return {
+    id: a.id,
+    label: a.label ?? "",
+    name: a.line2 ?? "",
+    street: a.line1 ?? "",
+    city: a.city ?? "",
+    state: a.state ?? "",
+    zip: a.postalCode ?? "",
+    country: a.country ?? "",
+    isDefault: a.isDefault ?? false,
+    deliveryType: ADDRESS_TYPE_TO_UI[a.type] ?? "home",
+    locationId: a.storeId ?? a.pickupPointId,
+    locationName: a.pickupPointId ?? a.storeId,
+  };
 }
 
-const defaultUser: UserProfile = {
-  id: "u-001",
-  firstName: "James",
-  lastName: "Carter",
-  username: "james.carter",
-  email: "james.carter@email.com",
-  phone: "+1 (212) 555-0147",
-  birthDate: "1990-07-15",
+function mapApiPaymentMethod(pm: ApiPaymentMethod): PaymentMethod {
+  const expiryStr =
+    pm.expiryMonth != null && pm.expiryYear != null
+      ? `${String(pm.expiryMonth).padStart(2, "0")}/${String(pm.expiryYear).slice(-2)}`
+      : undefined;
+  return {
+    id: pm.id,
+    type: pm.type.toLowerCase() as PayMethodType,
+    label: pm.label ?? "",
+    isDefault: pm.isDefault ?? false,
+    cardBrand: pm.brand
+      ? (pm.brand.toLowerCase() as PaymentMethod["cardBrand"])
+      : undefined,
+    cardLast4: pm.last4,
+    cardExpiry: expiryStr,
+    paypalEmail: pm.paypalEmail,
+    cryptoAddress: pm.walletAddress,
+  };
+}
+
+// ── Mappers: UI → API ────────────────────────────────────────────────────────
+
+function toAddressPayload(a: Omit<Address, "id">): AddressPayload {
+  return {
+    label: a.label,
+    type: ADDRESS_TYPE_TO_API[a.deliveryType] ?? "HOME",
+    line1: a.street,
+    line2: a.name || undefined,
+    city: a.city,
+    state: a.state,
+    postalCode: a.zip,
+    country: a.country,
+    storeId: a.deliveryType === "store" ? a.locationId : undefined,
+    pickupPointId: a.deliveryType === "pickup" ? a.locationId : undefined,
+  };
+}
+
+function toPaymentMethodPayload(
+  pm: Omit<PaymentMethod, "id">,
+): PaymentMethodPayload {
+  let expiryMonth: number | undefined;
+  let expiryYear: number | undefined;
+  if (pm.cardExpiry) {
+    const [mm, yy] = pm.cardExpiry.split("/");
+    expiryMonth = parseInt(mm, 10) || undefined;
+    expiryYear = yy ? 2000 + parseInt(yy, 10) : undefined;
+  }
+  return {
+    type: pm.type.toUpperCase() as PaymentMethodPayload["type"],
+    label: pm.label,
+    last4: pm.cardLast4,
+    brand: pm.cardBrand,
+    expiryMonth,
+    expiryYear,
+    paypalEmail: pm.paypalEmail,
+    walletAddress: pm.cryptoAddress,
+    isDefault: pm.isDefault ?? false,
+  };
+}
+
+interface UserContextType {
+  user: UserProfile;
+  loading: boolean;
+  updateProfile: (data: Partial<UserProfile>) => void;
+  addAddress: (address: Omit<Address, "id">) => Promise<void>;
+  updateAddress: (id: string, data: Omit<Address, "id">) => Promise<void>;
+  removeAddress: (id: string) => Promise<void>;
+  setDefaultAddress: (id: string) => Promise<void>;
+  toggleFavorite: (productId: string) => Promise<void>;
+  isFavorite: (productId: string) => boolean;
+  addPaymentMethod: (pm: Omit<PaymentMethod, "id">) => Promise<void>;
+  updatePaymentMethod: (id: string, pm: Omit<PaymentMethod, "id">) => Promise<void>;
+  removePaymentMethod: (id: string) => Promise<void>;
+  setDefaultPaymentMethod: (id: string) => Promise<void>;
+  saveNotificationPrefs: (prefs: UserProfile["notifications"]) => Promise<void>;
+  reloadUserData: () => Promise<void>;
+}
+
+const emptyUser: UserProfile = {
+  id: "",
+  firstName: "",
+  lastName: "",
+  username: "",
+  email: "",
+  phone: "",
+  birthDate: "",
   avatar: "",
-  memberSince: "2023-03-10",
-  totalOrders: 12,
-  totalSpent: 3847,
-  loyaltyPoints: 1240,
-  documentType: "passport",
-  documentNumber: "US-A12345678",
-  isSeller: true,
+  memberSince: "",
+  totalOrders: 0,
+  totalSpent: 0,
+  loyaltyPoints: 0,
+  documentType: "dni",
+  documentNumber: "",
+  isSeller: false,
   faceVerified: false,
   faceVerificationStatus: "unverified",
   store: {
-    name: "Tech Zone NYC",
-    slug: "tech-zone-nyc",
-    description: "Specialist store for tech, accessories and next-gen gadgets. Fast shipping across the US and UK.",
-    category: "Tecnología",
-    phone: "+1 (212) 555-0193",
-    email: "sales@techzonenyc.com",
-    website: "https://techzonenyc.com",
-    instagram: "@techzonenyc",
-    facebook: "techzonenyc",
-    tiktok: "@techzonenyc",
-    status: "active",
-    totalSales: 148,
-    totalRevenue: 12480000,
-    rating: 4.7,
-    reviewCount: 83,
-    returnPolicy: "We accept returns within 30 days of delivery. Items must be in their original packaging and unused condition.",
-    shippingPolicy: "Orders dispatched within 24–48 business hours. Free shipping on orders over $75.",
+    name: "",
+    slug: "",
+    description: "",
+    category: "",
+    phone: "",
+    email: "",
+    website: "",
+    instagram: "",
+    facebook: "",
+    tiktok: "",
+    status: "draft",
+    totalSales: 0,
+    totalRevenue: 0,
+    rating: 0,
+    reviewCount: 0,
+    returnPolicy: "",
+    shippingPolicy: "",
   },
-  addresses: [
-    {
-      id: "addr-1",
-      label: "Home",
-      name: "James Carter",
-      street: "742 Evergreen Terrace, Apt 4B",
-      city: "New York",
-      state: "NY",
-      zip: "10001",
-      country: "United States",
-      isDefault: true,
-      deliveryType: "home",
-    },
-    {
-      id: "addr-2",
-      label: "Office",
-      name: "James Carter",
-      street: "350 Fifth Avenue, Suite 2100",
-      city: "New York",
-      state: "NY",
-      zip: "10118",
-      country: "United States",
-      isDefault: false,
-      deliveryType: "home",
-    },
-  ],
-  paymentMethods: [
-    {
-      id: "pm-1",
-      type: "card",
-      label: "Personal Visa",
-      isDefault: true,
-      cardBrand: "visa",
-      cardLast4: "4242",
-      cardName: "JAMES CARTER",
-      cardExpiry: "09/27",
-    },
-    {
-      id: "pm-2",
-      type: "paypal",
-      label: "My PayPal",
-      isDefault: false,
-      paypalEmail: "james.carter@email.com",
-    },
-  ],
-  favoriteIds: ["3", "4", "14", "26", "7"],
+  addresses: [],
+  paymentMethods: [],
+  favoriteIds: [],
   notifications: {
-    email: true,
+    email: false,
     sms: false,
-    promotions: true,
-    orderUpdates: true,
+    promotions: false,
+    orderUpdates: false,
   },
 };
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<UserProfile>(defaultUser);
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const [user, setUser] = useState<UserProfile>(emptyUser);
+  const [loading, setLoading] = useState(true);
+
+  // ── Load all user data in parallel ───────────────────────────────────────
+
+  const loadUserData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [profileRes, addressesRes, paymentsRes, favoritesRes, notifsRes] =
+        await Promise.allSettled([
+          profileRepository.getMyProfile(),
+          profileRepository.getAddresses(),
+          profileRepository.getPaymentMethods(),
+          profileRepository.getFavorites(),
+          profileRepository.getNotificationPrefs(),
+        ]);
+
+      setUser((prev) => {
+        const next = { ...prev };
+
+        if (profileRes.status === "fulfilled") {
+          const p = profileRes.value;
+          next.id = p.id;
+          next.firstName = p.firstName ?? "";
+          next.lastName = p.lastName ?? "";
+          next.username = p.nickName ?? p.email ?? "";
+          next.email = p.email ?? "";
+          next.phone = p.phone ?? "";
+          next.birthDate = p.birthDate ?? "";
+          next.avatar = p.avatarUrl ?? "";
+          next.documentType = (p.documentType?.toLowerCase() ?? "dni") as UserProfile["documentType"];
+          next.documentNumber = p.documentNumber ?? "";
+          next.memberSince = p.memberSince;
+          next.loyaltyPoints = p.loyaltyPoints;
+        }
+
+        if (addressesRes.status === "fulfilled") {
+          next.addresses = addressesRes.value.map(mapApiAddress);
+        }
+
+        if (paymentsRes.status === "fulfilled") {
+          next.paymentMethods = paymentsRes.value.map(mapApiPaymentMethod);
+        }
+
+        if (favoritesRes.status === "fulfilled") {
+          next.favoriteIds = favoritesRes.value;
+        }
+
+        if (notifsRes.status === "fulfilled") {
+          const n = notifsRes.value;
+          next.notifications = {
+            email: n.emailOrders ?? false,
+            sms: n.smsOrders ?? false,
+            promotions: n.emailPromos ?? false,
+            orderUpdates: n.smsPromos ?? false,
+          };
+        }
+
+        return next;
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Only load user data when auth is resolved and user is authenticated
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      setUser(emptyUser);
+      setLoading(false);
+      return;
+    }
+    loadUserData();
+  }, [loadUserData, authLoading, isAuthenticated]);
+
+  // ── Profile (local-only for now) ─────────────────────────────────────────
 
   const updateProfile = (data: Partial<UserProfile>) => {
     setUser((prev) => ({ ...prev, ...data }));
   };
 
-  const addAddress = (address: Omit<Address, "id">) => {
-    setUser((prev) => ({
-      ...prev,
-      addresses: [
-        ...prev.addresses,
-        { ...address, id: `addr-${prev.addresses.length + 1}` },
-      ],
-    }));
+  // ── Addresses ────────────────────────────────────────────────────────────
+
+  const addAddress = async (address: Omit<Address, "id">) => {
+    const created = await profileRepository.createAddress(toAddressPayload(address));
+    if (address.isDefault) {
+      await profileRepository.setDefaultAddress(created.id);
+    }
+    const fresh = await profileRepository.getAddresses();
+    setUser((prev) => ({ ...prev, addresses: fresh.map(mapApiAddress) }));
   };
 
-  const updateAddress = (id: string, data: Partial<Address>) => {
-    setUser((prev) => ({
-      ...prev,
-      addresses: prev.addresses.map((addr) =>
-        addr.id === id ? { ...addr, ...data } : addr
-      ),
-    }));
+  const updateAddress = async (id: string, data: Omit<Address, "id">) => {
+    await profileRepository.updateAddress(id, toAddressPayload(data));
+    if (data.isDefault) {
+      await profileRepository.setDefaultAddress(id);
+    }
+    const fresh = await profileRepository.getAddresses();
+    setUser((prev) => ({ ...prev, addresses: fresh.map(mapApiAddress) }));
   };
 
-  const removeAddress = (id: string) => {
+  const removeAddress = async (id: string) => {
+    await profileRepository.deleteAddress(id);
     setUser((prev) => ({
       ...prev,
       addresses: prev.addresses.filter((addr) => addr.id !== id),
     }));
   };
 
-  const toggleFavorite = (productId: string) => {
-    setUser((prev) => ({
-      ...prev,
-      favoriteIds: prev.favoriteIds.includes(productId)
-        ? prev.favoriteIds.filter((id) => id !== productId)
-        : [...prev.favoriteIds, productId],
-    }));
+  const setDefaultAddress = async (id: string) => {
+    await profileRepository.setDefaultAddress(id);
+    const fresh = await profileRepository.getAddresses();
+    setUser((prev) => ({ ...prev, addresses: fresh.map(mapApiAddress) }));
+  };
+
+  // ── Favorites ────────────────────────────────────────────────────────────
+
+  const toggleFavorite = async (productId: string) => {
+    if (user.favoriteIds.includes(productId)) {
+      await profileRepository.removeFavorite(productId);
+    } else {
+      await profileRepository.addFavorite(productId);
+    }
+    const fresh = await profileRepository.getFavorites();
+    setUser((prev) => ({ ...prev, favoriteIds: fresh }));
   };
 
   const isFavorite = (productId: string) => {
     return user.favoriteIds.includes(productId);
   };
 
-  const addPaymentMethod = (pm: Omit<PaymentMethod, "id">) => {
-    setUser((prev) => ({
-      ...prev,
-      paymentMethods: [
-        ...prev.paymentMethods,
-        { ...pm, id: `pm-${prev.paymentMethods.length + 1}` },
-      ],
-    }));
+  // ── Payment Methods ──────────────────────────────────────────────────────
+
+  const addPaymentMethod = async (pm: Omit<PaymentMethod, "id">) => {
+    const created = await profileRepository.createPaymentMethod(toPaymentMethodPayload(pm));
+    if (pm.isDefault) {
+      await profileRepository.setDefaultPaymentMethod(created.id);
+    }
+    const fresh = await profileRepository.getPaymentMethods();
+    setUser((prev) => ({ ...prev, paymentMethods: fresh.map(mapApiPaymentMethod) }));
   };
 
-  const removePaymentMethod = (id: string) => {
+  const removePaymentMethod = async (id: string) => {
+    await profileRepository.deletePaymentMethod(id);
     setUser((prev) => ({
       ...prev,
       paymentMethods: prev.paymentMethods.filter((pm) => pm.id !== id),
     }));
   };
 
-  const setDefaultPaymentMethod = (id: string) => {
+  const updatePaymentMethod = async (id: string, pm: Omit<PaymentMethod, "id">) => {
+    await profileRepository.updatePaymentMethod(id, toPaymentMethodPayload(pm));
+    const fresh = await profileRepository.getPaymentMethods();
+    setUser((prev) => ({ ...prev, paymentMethods: fresh.map(mapApiPaymentMethod) }));
+  };
+
+  const setDefaultPaymentMethod = async (id: string) => {
+    await profileRepository.setDefaultPaymentMethod(id);
+    const fresh = await profileRepository.getPaymentMethods();
+    setUser((prev) => ({ ...prev, paymentMethods: fresh.map(mapApiPaymentMethod) }));
+  };
+
+  // ── Notification Preferences ─────────────────────────────────────────────
+
+  const saveNotificationPrefs = async (prefs: UserProfile["notifications"]) => {
+    const apiPrefs: NotificationPrefs = {
+      emailOrders: prefs.email,
+      emailPromos: prefs.promotions,
+      smsOrders: prefs.sms,
+      smsPromos: prefs.orderUpdates,
+    };
+    const updated = await profileRepository.updateNotificationPrefs(apiPrefs);
     setUser((prev) => ({
       ...prev,
-      paymentMethods: prev.paymentMethods.map((pm) =>
-        pm.id === id ? { ...pm, isDefault: true } : { ...pm, isDefault: false }
-      ),
+      notifications: {
+        email: updated.emailOrders ?? false,
+        sms: updated.smsOrders ?? false,
+        promotions: updated.emailPromos ?? false,
+        orderUpdates: updated.smsPromos ?? false,
+      },
     }));
   };
+
+  // ── Provider ─────────────────────────────────────────────────────────────
 
   return (
     <UserContext.Provider
       value={{
         user,
+        loading,
         updateProfile,
         addAddress,
         updateAddress,
         removeAddress,
+        setDefaultAddress,
         toggleFavorite,
         isFavorite,
         addPaymentMethod,
+        updatePaymentMethod,
         removePaymentMethod,
         setDefaultPaymentMethod,
+        saveNotificationPrefs,
+        reloadUserData: loadUserData,
       }}
     >
       {children}

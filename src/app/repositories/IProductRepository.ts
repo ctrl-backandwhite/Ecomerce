@@ -6,7 +6,7 @@
  * implementation (supplier API, REST backend, mock, etc.).
  */
 
-import type { Product } from "../data/products";
+import type { Product } from "../types/product";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Query / result types

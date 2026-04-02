@@ -20,7 +20,7 @@ import {
 } from "../mappers/NexaProductMapper";
 import { nexaCategoryRepository, type NexaCategory } from "../repositories/NexaCategoryRepository";
 import { useLanguage } from "../context/LanguageContext";
-import type { Product } from "../data/products";
+import type { Product } from "../types/product";
 
 const PAGE_SIZE = 24;
 

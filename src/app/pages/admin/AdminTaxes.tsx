@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Pencil, Trash2, Percent, Globe,
   X, AlertTriangle, Info, FileText, Tag,
 } from "lucide-react";
 import { toast } from "sonner";
+import { type TaxRate as ApiTaxRate, type TaxRatePayload, taxRepository } from "../../repositories/TaxRepository";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface TaxRule {
@@ -39,23 +40,40 @@ const CATEGORIES = [
 ];
 
 const TYPE_META: Record<TaxRule["type"], { label: string; bg: string; text: string; description: string }> = {
-  standard:      { label: "Estándar",      bg: "bg-blue-50",   text: "text-blue-700",   description: "Tipo general, aplica a la mayoría de productos" },
-  reduced:       { label: "Reducido",      bg: "bg-amber-50",  text: "text-amber-700",  description: "Tasa reducida para categorías específicas" },
+  standard: { label: "Estándar", bg: "bg-blue-50", text: "text-blue-700", description: "Tipo general, aplica a la mayoría de productos" },
+  reduced: { label: "Reducido", bg: "bg-amber-50", text: "text-amber-700", description: "Tasa reducida para categorías específicas" },
   super_reduced: { label: "Superreducido", bg: "bg-violet-50", text: "text-violet-700", description: "Tasa mínima para bienes de primera necesidad" },
-  zero:          { label: "Exento (0%)",   bg: "bg-gray-100",  text: "text-gray-500",   description: "Sin impuesto aplicado" },
+  zero: { label: "Exento (0%)", bg: "bg-gray-100", text: "text-gray-500", description: "Sin impuesto aplicado" },
 };
 
 // ── Datos iniciales ───────────────────────────────────────────────────────────
-const initRules: TaxRule[] = [
-  { id: "t1", name: "IVA General España",       country: "España",        region: "",              rate: 21,   type: "standard",      applies: "Electrónica, ropa",       includesShipping: true,  active: true,  notes: "" },
-  { id: "t2", name: "IVA Reducido España",       country: "España",        region: "",              rate: 10,   type: "reduced",       applies: "Alimentación, transporte", includesShipping: false, active: true,  notes: "" },
-  { id: "t3", name: "IVA Superreducido España",  country: "España",        region: "",              rate: 4,    type: "super_reduced", applies: "Libros, medicamentos",     includesShipping: false, active: true,  notes: "" },
-  { id: "t4", name: "IVA Portugal",              country: "Portugal",      region: "",              rate: 23,   type: "standard",      applies: "General",                  includesShipping: true,  active: true,  notes: "" },
-  { id: "t5", name: "TVA France",                country: "Francia",       region: "",              rate: 20,   type: "standard",      applies: "General",                  includesShipping: true,  active: true,  notes: "" },
-  { id: "t6", name: "MwSt Deutschland",          country: "Alemania",      region: "",              rate: 19,   type: "standard",      applies: "General",                  includesShipping: true,  active: true,  notes: "" },
-  { id: "t7", name: "Sales Tax California",      country: "Estados Unidos", region: "California",   rate: 7.25, type: "standard",      applies: "General",                  includesShipping: false, active: false, notes: "Varía por ciudad/condado" },
-  { id: "t8", name: "IVA México",                country: "México",        region: "",              rate: 16,   type: "standard",      applies: "General",                  includesShipping: true,  active: true,  notes: "" },
-];
+// Removed: data is now loaded from the API.
+
+function mapApiToUi(t: ApiTaxRate): TaxRule {
+  return {
+    id: t.id,
+    name: t.name,
+    country: t.country,
+    region: t.state ?? "",
+    rate: t.rate,
+    type: t.type === "FIXED" ? "zero" : "standard",
+    applies: "General",
+    includesShipping: true,
+    active: t.active,
+    notes: "",
+  };
+}
+
+function uiToPayload(r: TaxRule): TaxRatePayload {
+  return {
+    name: r.name,
+    country: r.country,
+    state: r.region || undefined,
+    rate: r.rate,
+    type: r.type === "zero" ? "FIXED" : "PERCENTAGE",
+    active: r.active,
+  };
+}
 
 const emptyRule: Omit<TaxRule, "id"> = {
   name: "", country: "España", region: "", rate: 21,
@@ -78,7 +96,7 @@ interface TaxModalProps {
 }
 
 function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
-  const [form, setForm]           = useState({ ...initial });
+  const [form, setForm] = useState({ ...initial });
   const [appliesInput, setAppliesInput] = useState(initial.applies);
   const [selectedCats, setSelectedCats] = useState<string[]>(
     initial.applies === "General" ? [] : initial.applies.split(", ").filter(Boolean),
@@ -107,10 +125,10 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim())    { toast.error("El nombre es obligatorio");  return; }
-    if (!form.country.trim()) { toast.error("El país es obligatorio");    return; }
+    if (!form.name.trim()) { toast.error("El nombre es obligatorio"); return; }
+    if (!form.country.trim()) { toast.error("El país es obligatorio"); return; }
     if (form.rate < 0 || form.rate > 100) { toast.error("La tasa debe estar entre 0 y 100"); return; }
-    if (!form.applies.trim()) { toast.error("Especifica a qué aplica");   return; }
+    if (!form.applies.trim()) { toast.error("Especifica a qué aplica"); return; }
     onSave(form);
   };
 
@@ -217,11 +235,10 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
                         set("type", key);
                         if (key === "zero") set("rate", 0);
                       }}
-                      className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-left transition-all ${
-                        form.type === key
+                      className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-left transition-all ${form.type === key
                           ? "border-gray-900 bg-gray-50"
                           : "border-gray-200 hover:border-gray-300"
-                      }`}
+                        }`}
                     >
                       <span className={`mt-0.5 inline-flex text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${meta.bg} ${meta.text}`}>
                         {meta.label}
@@ -263,11 +280,10 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
                       type="button"
                       disabled={form.type === "zero"}
                       onClick={() => set("rate", r)}
-                      className={`h-6 px-2 text-[11px] rounded-lg border transition-colors disabled:opacity-30 ${
-                        form.rate === r
+                      className={`h-6 px-2 text-[11px] rounded-lg border transition-colors disabled:opacity-30 ${form.rate === r
                           ? "bg-gray-600 text-white border-gray-600"
                           : "border-gray-200 text-gray-500 hover:border-gray-400"
-                      }`}
+                        }`}
                     >
                       {r}%
                     </button>
@@ -301,11 +317,10 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
                     key={cat}
                     type="button"
                     onClick={() => toggleCat(cat)}
-                    className={`h-6 px-2 text-[11px] rounded-lg border transition-colors ${
-                      selectedCats.includes(cat)
+                    className={`h-6 px-2 text-[11px] rounded-lg border transition-colors ${selectedCats.includes(cat)
                         ? "bg-gray-600 text-white border-gray-600"
                         : "border-gray-200 text-gray-500 hover:border-gray-400"
-                    }`}
+                      }`}
                   >
                     {cat}
                   </button>
@@ -317,11 +332,10 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
             <button
               type="button"
               onClick={() => set("includesShipping", !form.includesShipping)}
-              className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${
-                form.includesShipping
+              className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${form.includesShipping
                   ? "border-blue-200 bg-blue-50"
                   : "border-gray-200 bg-gray-50"
-              }`}
+                }`}
             >
               <div
                 className={`relative rounded-full transition-colors flex-shrink-0 ${form.includesShipping ? "bg-blue-400" : "bg-gray-200"}`}
@@ -351,11 +365,10 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
             <button
               type="button"
               onClick={() => set("active", !form.active)}
-              className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${
-                form.active
+              className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${form.active
                   ? "border-green-200 bg-green-50"
                   : "border-gray-200 bg-gray-50"
-              }`}
+                }`}
             >
               <div
                 className={`relative rounded-full transition-colors flex-shrink-0 ${form.active ? "bg-green-400" : "bg-gray-200"}`}
@@ -469,7 +482,7 @@ function DeleteDialog({
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminTaxes() {
-  const [rules, setRules] = useState<TaxRule[]>(initRules);
+  const [rules, setRules] = useState<TaxRule[]>([]);
 
   const [modal, setModal] = useState<{
     open: boolean;
@@ -478,33 +491,62 @@ export function AdminTaxes() {
 
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
+  const loadRules = useCallback(async () => {
+    try {
+      const page = await taxRepository.findAll({ size: 500 });
+      setRules(page.content.map(mapApiToUi));
+    } catch {
+      toast.error("Error al cargar reglas fiscales");
+    }
+  }, []);
+
+  useEffect(() => { loadRules(); }, [loadRules]);
+
   const countries = [...new Set(rules.map(r => r.country))];
 
   /* ── CRUD ────────────────────────────────────────────────── */
-  const openNew  = () => setModal({ open: true, data: { ...emptyRule } });
+  const openNew = () => setModal({ open: true, data: { ...emptyRule } });
   const openEdit = (r: TaxRule) => setModal({ open: true, data: { ...r } });
 
-  const handleSave = (data: Omit<TaxRule, "id"> & { id?: string }) => {
-    if (data.id) {
-      setRules(prev => prev.map(r => r.id === data.id ? { ...r, ...data } as TaxRule : r));
-      toast.success("Regla fiscal actualizada");
-    } else {
-      setRules(prev => [...prev, { ...data, id: `t-${Date.now()}` } as TaxRule]);
-      toast.success("Regla fiscal creada");
+  const handleSave = async (data: Omit<TaxRule, "id"> & { id?: string }) => {
+    try {
+      if (data.id) {
+        const updated = await taxRepository.update(data.id, uiToPayload(data as TaxRule));
+        setRules(prev => prev.map(r => r.id === data.id ? mapApiToUi(updated) : r));
+        toast.success("Regla fiscal actualizada");
+      } else {
+        const created = await taxRepository.create(uiToPayload(data as TaxRule));
+        setRules(prev => [...prev, mapApiToUi(created)]);
+        toast.success("Regla fiscal creada");
+      }
+      setModal({ open: false, data: null });
+    } catch {
+      toast.error("Error al guardar regla fiscal");
     }
-    setModal({ open: false, data: null });
   };
 
-  const toggleActive = (id: string) => {
-    setRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
-    toast.success("Estado actualizado");
+  const toggleActive = async (id: string) => {
+    const rule = rules.find(r => r.id === id);
+    if (!rule) return;
+    try {
+      await taxRepository.update(id, uiToPayload({ ...rule, active: !rule.active }));
+      setRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
+      toast.success("Estado actualizado");
+    } catch {
+      toast.error("Error al actualizar estado");
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    setRules(prev => prev.filter(r => r.id !== deleteTarget.id));
-    toast.success("Regla eliminada");
-    setDeleteTarget(null);
+    try {
+      await taxRepository.delete(deleteTarget.id);
+      setRules(prev => prev.filter(r => r.id !== deleteTarget.id));
+      toast.success("Regla eliminada");
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Error al eliminar regla");
+    }
   };
 
   /* ── Render ──────────────────────────────────────────────── */
@@ -529,10 +571,10 @@ export function AdminTaxes() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Reglas fiscales",  value: rules.length },
+          { label: "Reglas fiscales", value: rules.length },
           { label: "Países cubiertos", value: countries.length },
-          { label: "Reglas activas",   value: rules.filter(r => r.active).length },
-          { label: "Tasa máxima",      value: `${Math.max(...rules.map(r => r.rate))}%` },
+          { label: "Reglas activas", value: rules.filter(r => r.active).length },
+          { label: "Tasa máxima", value: `${Math.max(...rules.map(r => r.rate))}%` },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
@@ -550,13 +592,13 @@ export function AdminTaxes() {
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
         <div className="hidden lg:grid grid-cols-[2fr_1.2fr_0.7fr_1fr_1.5fr_0.8fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
           {[
-            { label: "Nombre",         cls: "text-left"   },
-            { label: "País / Región",  cls: "text-left"   },
-            { label: "Tasa",           cls: "text-right"  },
-            { label: "Tipo",           cls: "text-left"   },
-            { label: "Aplica a",       cls: "text-left"   },
-            { label: "Estado",         cls: "text-left"   },
-            { label: "",               cls: "text-right"  },
+            { label: "Nombre", cls: "text-left" },
+            { label: "País / Región", cls: "text-left" },
+            { label: "Tasa", cls: "text-right" },
+            { label: "Tipo", cls: "text-left" },
+            { label: "Aplica a", cls: "text-left" },
+            { label: "Estado", cls: "text-left" },
+            { label: "", cls: "text-right" },
           ].map(h => (
             <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}

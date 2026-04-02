@@ -14,6 +14,7 @@
  */
 
 import { ApiError, NetworkError } from "../lib/AppError";
+import { authFetch } from "../lib/authFetch";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
@@ -152,7 +153,7 @@ class NexaProductAdminRepository {
             if (query.sortBy) params.set("sortBy", query.sortBy);
             if (query.ascending !== undefined) params.set("ascending", String(query.ascending));
             const url = `${BASE_URL}?${params.toString()}`;
-            const res = await fetch(url);
+            const res = await authFetch(url);
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -177,7 +178,7 @@ class NexaProductAdminRepository {
     async findById(productId: string, locale: string = "en"): Promise<AdminProduct> {
         try {
             const params = new URLSearchParams({ locale });
-            const res = await fetch(`${BASE_URL}/${productId}?${params.toString()}`);
+            const res = await authFetch(`${BASE_URL}/${productId}?${params.toString()}`);
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -201,7 +202,7 @@ class NexaProductAdminRepository {
      */
     async createProduct(data: ProductPayload): Promise<AdminProduct> {
         try {
-            const res = await fetch(BASE_URL, {
+            const res = await authFetch(BASE_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
@@ -229,7 +230,7 @@ class NexaProductAdminRepository {
      */
     async updateProduct(productId: string, data: ProductPayload): Promise<AdminProduct> {
         try {
-            const res = await fetch(`${BASE_URL}/${productId}`, {
+            const res = await authFetch(`${BASE_URL}/${productId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
@@ -257,7 +258,7 @@ class NexaProductAdminRepository {
      */
     async deleteProducts(productIds: string[]): Promise<void> {
         try {
-            const res = await fetch(BASE_URL, {
+            const res = await authFetch(BASE_URL, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(productIds),
@@ -284,7 +285,7 @@ class NexaProductAdminRepository {
      */
     async bulkCreate(rows: ProductPayload[]): Promise<BulkImportResult> {
         try {
-            const res = await fetch(`${BASE_URL}/bulk`, {
+            const res = await authFetch(`${BASE_URL}/bulk`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ rows }),
@@ -312,7 +313,7 @@ class NexaProductAdminRepository {
      */
     async togglePublish(productId: string): Promise<void> {
         try {
-            const res = await fetch(`${BASE_URL}/${productId}/publish`, { method: "PATCH" });
+            const res = await authFetch(`${BASE_URL}/${productId}/publish`, { method: "PATCH" });
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -335,7 +336,7 @@ class NexaProductAdminRepository {
      */
     async bulkUpdateStatus(productIds: string[], status: "DRAFT" | "PUBLISHED"): Promise<void> {
         try {
-            const res = await fetch(`${BASE_URL}/bulk-status`, {
+            const res = await authFetch(`${BASE_URL}/bulk-status`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ids: productIds, status }),
@@ -423,7 +424,7 @@ class NexaProductAdminRepository {
                     "color: #0891b2",
                 );
 
-                const res = await fetch(
+                const res = await authFetch(
                     `${BASE_URL}/sync/page?page=${page}&size=${PAGE_SIZE}`,
                     { method: "POST", headers: { accept: "*/*" }, signal: abortCtrl.signal },
                 );

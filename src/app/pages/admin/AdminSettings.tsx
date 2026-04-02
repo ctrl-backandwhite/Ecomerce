@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { type Setting, settingRepository } from "../../repositories/CmsRepository";
 import {
   Store, Bell, Shield, CreditCard, Globe, Truck,
   Save, Check, ChevronRight, Mail, Phone, MapPin,
@@ -10,11 +11,11 @@ import { toast } from "sonner";
 type SettingsTab = "general" | "notifications" | "payments" | "shipping" | "security";
 
 const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
-  { id: "general",       label: "General",        icon: Store    },
-  { id: "notifications", label: "Notificaciones", icon: Bell     },
-  { id: "payments",      label: "Pagos",          icon: CreditCard },
-  { id: "shipping",      label: "Envíos",         icon: Truck    },
-  { id: "security",      label: "Seguridad",      icon: Shield   },
+  { id: "general", label: "General", icon: Store },
+  { id: "notifications", label: "Notificaciones", icon: Bell },
+  { id: "payments", label: "Pagos", icon: CreditCard },
+  { id: "shipping", label: "Envíos", icon: Truck },
+  { id: "security", label: "Seguridad", icon: Shield },
 ];
 
 const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
@@ -38,11 +39,25 @@ function Toggle({ value, onChange, label: lbl }: { value: boolean; onChange: (v:
       <button onClick={() => onChange(!value)} className="flex-shrink-0">
         {value
           ? <ToggleRight className="w-6 h-6 text-gray-900" strokeWidth={1.5} />
-          : <ToggleLeft  className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
+          : <ToggleLeft className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
         }
       </button>
     </div>
   );
+}
+
+/** Convert Setting[] from API into a plain key→value map (strips the prefix). */
+function toMap(settings: Setting[]): Record<string, string> {
+  const m: Record<string, string> = {};
+  for (const s of settings) m[s.key] = s.value;
+  return m;
+}
+
+function Field(section: string, key: string, value: string): Setting {
+  return { key: `${section}.${key}`, value, section, type: "STRING" };
+}
+function BoolField(section: string, key: string, value: boolean): Setting {
+  return { key: `${section}.${key}`, value: value ? "true" : "false", section, type: "BOOLEAN" };
 }
 
 /* ── Tab: General ──────────────────────────────────────── */
@@ -64,8 +79,49 @@ function GeneralTab() {
 
   const set = (k: keyof typeof form, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
-  function handleSave() {
-    toast.success("Configuración general guardada");
+  const loadSettings = useCallback(async () => {
+    try {
+      const settings = await settingRepository.findBySection("general");
+      const m = toMap(settings);
+      setForm(f => ({
+        storeName: m["general.store.name"] ?? f.storeName,
+        storeEmail: m["general.store.email"] ?? f.storeEmail,
+        phone: m["general.store.phone"] ?? f.phone,
+        address: m["general.store.address"] ?? f.address,
+        website: m["general.store.website"] ?? f.website,
+        instagram: m["general.store.instagram"] ?? f.instagram,
+        facebook: m["general.store.facebook"] ?? f.facebook,
+        twitter: m["general.store.twitter"] ?? f.twitter,
+        description: m["general.store.description"] ?? f.description,
+        currency: m["general.store.currency"] ?? f.currency,
+        language: m["general.store.language"] ?? f.language,
+        timezone: m["general.store.timezone"] ?? f.timezone,
+      }));
+    } catch { /* use defaults */ }
+  }, []);
+
+  useEffect(() => { loadSettings(); }, [loadSettings]);
+
+  async function handleSave() {
+    try {
+      await Promise.all([
+        settingRepository.save(Field("general", "store.name", form.storeName)),
+        settingRepository.save(Field("general", "store.email", form.storeEmail)),
+        settingRepository.save(Field("general", "store.phone", form.phone)),
+        settingRepository.save(Field("general", "store.address", form.address)),
+        settingRepository.save(Field("general", "store.website", form.website)),
+        settingRepository.save(Field("general", "store.instagram", form.instagram)),
+        settingRepository.save(Field("general", "store.facebook", form.facebook)),
+        settingRepository.save(Field("general", "store.twitter", form.twitter)),
+        settingRepository.save(Field("general", "store.description", form.description)),
+        settingRepository.save(Field("general", "store.currency", form.currency)),
+        settingRepository.save(Field("general", "store.language", form.language)),
+        settingRepository.save(Field("general", "store.timezone", form.timezone)),
+      ]);
+      toast.success("Configuración general guardada");
+    } catch {
+      toast.error("Error al guardar la configuración");
+    }
   }
 
   return (
@@ -103,8 +159,8 @@ function GeneralTab() {
         <div className="grid sm:grid-cols-3 gap-4">
           {[
             { icon: Instagram, key: "instagram" as const, placeholder: "@nx036store" },
-            { icon: Facebook,  key: "facebook"  as const, placeholder: "nx036store" },
-            { icon: Twitter,   key: "twitter"   as const, placeholder: "@nx036store" },
+            { icon: Facebook, key: "facebook" as const, placeholder: "nx036store" },
+            { icon: Twitter, key: "twitter" as const, placeholder: "@nx036store" },
           ].map(({ icon: Icon, key, placeholder }) => (
             <div key={key}>
               <label className={label}>
@@ -161,26 +217,51 @@ function GeneralTab() {
 /* ── Tab: Notifications ──────────────────────────────── */
 function TabNotificaciones() {
   const [settings, setSettings] = useState({
-    newOrder:       true,
-    lowStock:       true,
-    newSeller:      true,
-    orderShipped:   true,
-    paymentFailed:  true,
+    newOrder: true,
+    lowStock: true,
+    newSeller: true,
+    orderShipped: true,
+    paymentFailed: true,
     customerSignup: false,
-    reviewPosted:   false,
-    weeklyReport:   true,
-    monthlyReport:  true,
-    adminAlerts:    true,
+    reviewPosted: false,
+    weeklyReport: true,
+    monthlyReport: true,
+    adminAlerts: true,
   });
 
   const toggle = (k: keyof typeof settings) => setSettings((s) => ({ ...s, [k]: !s[k] }));
+
+  const loadSettings = useCallback(async () => {
+    try {
+      const list = await settingRepository.findBySection("notifications");
+      const m = toMap(list);
+      setSettings(s => Object.fromEntries(
+        Object.keys(s).map(k => [k, m[`notifications.${k}`] !== undefined ? m[`notifications.${k}`] === "true" : s[k as keyof typeof s]])
+      ) as typeof settings);
+    } catch { /* use defaults */ }
+  }, []);
+
+  useEffect(() => { loadSettings(); }, [loadSettings]);
+
+  const handleSaveNotifications = async () => {
+    try {
+      await Promise.all(
+        (Object.keys(settings) as (keyof typeof settings)[]).map(k =>
+          settingRepository.save(BoolField("notifications", k, settings[k]))
+        )
+      );
+      toast.success("Preferencias de notificaciones guardadas");
+    } catch {
+      toast.error("Error al guardar notificaciones");
+    }
+  };
 
   const groups = [
     {
       title: "Órdenes",
       items: [
-        { key: "newOrder"      as const, label: "Nueva orden recibida" },
-        { key: "orderShipped"  as const, label: "Orden enviada" },
+        { key: "newOrder" as const, label: "Nueva orden recibida" },
+        { key: "orderShipped" as const, label: "Orden enviada" },
         { key: "paymentFailed" as const, label: "Pago fallido" },
       ],
     },
@@ -193,17 +274,17 @@ function TabNotificaciones() {
     {
       title: "Usuarios",
       items: [
-        { key: "newSeller"      as const, label: "Nueva solicitud de tienda" },
+        { key: "newSeller" as const, label: "Nueva solicitud de tienda" },
         { key: "customerSignup" as const, label: "Nuevo cliente registrado" },
-        { key: "reviewPosted"   as const, label: "Nueva reseña publicada" },
+        { key: "reviewPosted" as const, label: "Nueva reseña publicada" },
       ],
     },
     {
       title: "Reportes",
       items: [
-        { key: "weeklyReport"  as const, label: "Reporte semanal" },
+        { key: "weeklyReport" as const, label: "Reporte semanal" },
         { key: "monthlyReport" as const, label: "Reporte mensual" },
-        { key: "adminAlerts"   as const, label: "Alertas del sistema" },
+        { key: "adminAlerts" as const, label: "Alertas del sistema" },
       ],
     },
   ];
@@ -218,7 +299,7 @@ function TabNotificaciones() {
         </Section>
       ))}
       <div className="flex justify-end">
-        <button onClick={() => toast.success("Preferencias de notificaciones guardadas")} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
+        <button onClick={handleSaveNotifications} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar
         </button>
@@ -230,25 +311,62 @@ function TabNotificaciones() {
 /* ── Tab: Payments ───────────────────────────────────── */
 function PaymentsTab() {
   const [settings, setSettings] = useState({
-    cards:        true,
-    paypal:       true,
-    usdt:         true,
-    bitcoin:      false,
-    commission:   "8",
-    minPayout:    "50",
-    payoutCycle:  "weekly",
-    taxRate:      "10",
+    cards: true,
+    paypal: true,
+    usdt: true,
+    bitcoin: false,
+    commission: "8",
+    minPayout: "50",
+    payoutCycle: "weekly",
+    taxRate: "10",
   });
 
   const set = (k: keyof typeof settings, v: any) => setSettings((s) => ({ ...s, [k]: v }));
+
+  const loadPayments = useCallback(async () => {
+    try {
+      const list = await settingRepository.findBySection("payments");
+      const m = toMap(list);
+      setSettings(s => ({
+        cards: m["payments.cards"] !== undefined ? m["payments.cards"] === "true" : s.cards,
+        paypal: m["payments.paypal"] !== undefined ? m["payments.paypal"] === "true" : s.paypal,
+        usdt: m["payments.usdt"] !== undefined ? m["payments.usdt"] === "true" : s.usdt,
+        bitcoin: m["payments.bitcoin"] !== undefined ? m["payments.bitcoin"] === "true" : s.bitcoin,
+        commission: m["payments.commission"] ?? s.commission,
+        minPayout: m["payments.minPayout"] ?? s.minPayout,
+        payoutCycle: m["payments.payoutCycle"] ?? s.payoutCycle,
+        taxRate: m["payments.taxRate"] ?? s.taxRate,
+      }));
+    } catch { /* use defaults */ }
+  }, []);
+
+  useEffect(() => { loadPayments(); }, [loadPayments]);
+
+  const handleSavePayments = async () => {
+    try {
+      await Promise.all([
+        settingRepository.save(BoolField("payments", "cards", settings.cards)),
+        settingRepository.save(BoolField("payments", "paypal", settings.paypal)),
+        settingRepository.save(BoolField("payments", "usdt", settings.usdt)),
+        settingRepository.save(BoolField("payments", "bitcoin", settings.bitcoin)),
+        settingRepository.save(Field("payments", "commission", settings.commission)),
+        settingRepository.save(Field("payments", "minPayout", settings.minPayout)),
+        settingRepository.save(Field("payments", "payoutCycle", settings.payoutCycle)),
+        settingRepository.save(Field("payments", "taxRate", settings.taxRate)),
+      ]);
+      toast.success("Configuración de pagos guardada");
+    } catch {
+      toast.error("Error al guardar pagos");
+    }
+  };
 
   return (
     <div className="space-y-5">
       <Section title="Métodos de pago aceptados">
         {[
-          { key: "cards"   as const, label: "Tarjetas (Visa / Mastercard)" },
-          { key: "paypal"  as const, label: "PayPal" },
-          { key: "usdt"    as const, label: "USDT (Tether)" },
+          { key: "cards" as const, label: "Tarjetas (Visa / Mastercard)" },
+          { key: "paypal" as const, label: "PayPal" },
+          { key: "usdt" as const, label: "USDT (Tether)" },
           { key: "bitcoin" as const, label: "Bitcoin (BTC)" },
         ].map(({ key, label: lbl }) => (
           <Toggle key={key} value={settings[key] as boolean} onChange={() => set(key, !settings[key])} label={lbl} />
@@ -294,7 +412,7 @@ function PaymentsTab() {
       </Section>
 
       <div className="flex justify-end">
-        <button onClick={() => toast.success("Configuración de pagos guardada")} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
+        <button onClick={handleSavePayments} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar
         </button>
@@ -307,27 +425,68 @@ function PaymentsTab() {
 function ShippingTab() {
   const [settings, setSettings] = useState({
     freeShippingThreshold: "100",
-    baseShippingRate:      "15",
-    expressRate:           "30",
-    internationalRate:     "45",
-    processingDays:        "1-2",
-    estimatedDelivery:     "3-5",
-    freeShippingEnabled:   true,
-    expressEnabled:        true,
-    internationalEnabled:  false,
-    trackingEnabled:       true,
+    baseShippingRate: "15",
+    expressRate: "30",
+    internationalRate: "45",
+    processingDays: "1-2",
+    estimatedDelivery: "3-5",
+    freeShippingEnabled: true,
+    expressEnabled: true,
+    internationalEnabled: false,
+    trackingEnabled: true,
   });
 
   const set = (k: keyof typeof settings, v: any) => setSettings((s) => ({ ...s, [k]: v }));
+
+  const loadShipping = useCallback(async () => {
+    try {
+      const list = await settingRepository.findBySection("shipping");
+      const m = toMap(list);
+      setSettings(s => ({
+        freeShippingThreshold: m["shipping.freeShippingThreshold"] ?? s.freeShippingThreshold,
+        baseShippingRate: m["shipping.baseShippingRate"] ?? s.baseShippingRate,
+        expressRate: m["shipping.expressRate"] ?? s.expressRate,
+        internationalRate: m["shipping.internationalRate"] ?? s.internationalRate,
+        processingDays: m["shipping.processingDays"] ?? s.processingDays,
+        estimatedDelivery: m["shipping.estimatedDelivery"] ?? s.estimatedDelivery,
+        freeShippingEnabled: m["shipping.freeShippingEnabled"] !== undefined ? m["shipping.freeShippingEnabled"] === "true" : s.freeShippingEnabled,
+        expressEnabled: m["shipping.expressEnabled"] !== undefined ? m["shipping.expressEnabled"] === "true" : s.expressEnabled,
+        internationalEnabled: m["shipping.internationalEnabled"] !== undefined ? m["shipping.internationalEnabled"] === "true" : s.internationalEnabled,
+        trackingEnabled: m["shipping.trackingEnabled"] !== undefined ? m["shipping.trackingEnabled"] === "true" : s.trackingEnabled,
+      }));
+    } catch { /* use defaults */ }
+  }, []);
+
+  useEffect(() => { loadShipping(); }, [loadShipping]);
+
+  const handleSaveShipping = async () => {
+    try {
+      await Promise.all([
+        settingRepository.save(Field("shipping", "freeShippingThreshold", settings.freeShippingThreshold)),
+        settingRepository.save(Field("shipping", "baseShippingRate", settings.baseShippingRate)),
+        settingRepository.save(Field("shipping", "expressRate", settings.expressRate)),
+        settingRepository.save(Field("shipping", "internationalRate", settings.internationalRate)),
+        settingRepository.save(Field("shipping", "processingDays", settings.processingDays)),
+        settingRepository.save(Field("shipping", "estimatedDelivery", settings.estimatedDelivery)),
+        settingRepository.save(BoolField("shipping", "freeShippingEnabled", settings.freeShippingEnabled)),
+        settingRepository.save(BoolField("shipping", "expressEnabled", settings.expressEnabled)),
+        settingRepository.save(BoolField("shipping", "internationalEnabled", settings.internationalEnabled)),
+        settingRepository.save(BoolField("shipping", "trackingEnabled", settings.trackingEnabled)),
+      ]);
+      toast.success("Configuración de envíos guardada");
+    } catch {
+      toast.error("Error al guardar envíos");
+    }
+  };
 
   return (
     <div className="space-y-5">
       <Section title="Opciones de envío">
         {[
-          { key: "freeShippingEnabled"  as const, label: "Envío gratuito (por umbral)" },
-          { key: "expressEnabled"       as const, label: "Envío exprés" },
+          { key: "freeShippingEnabled" as const, label: "Envío gratuito (por umbral)" },
+          { key: "expressEnabled" as const, label: "Envío exprés" },
           { key: "internationalEnabled" as const, label: "Envío internacional" },
-          { key: "trackingEnabled"      as const, label: "Seguimiento de envíos" },
+          { key: "trackingEnabled" as const, label: "Seguimiento de envíos" },
         ].map(({ key, label: lbl }) => (
           <Toggle key={key} value={settings[key] as boolean} onChange={() => set(key, !settings[key])} label={lbl} />
         ))}
@@ -363,7 +522,7 @@ function ShippingTab() {
       </Section>
 
       <div className="flex justify-end">
-        <button onClick={() => toast.success("Configuración de envíos guardada")} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
+        <button onClick={handleSaveShipping} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar
         </button>
@@ -375,26 +534,63 @@ function ShippingTab() {
 /* ── Tab: Security ───────────────────────────────────── */
 function SecurityTab() {
   const [settings, setSettings] = useState({
-    twoFactor:          false,
-    sessionTimeout:     "30",
-    ipWhitelist:        false,
-    auditLog:           true,
-    requireStrongPwd:   true,
-    autoLockout:        true,
-    lockoutAttempts:    "5",
-    dataRetentionDays:  "365",
+    twoFactor: false,
+    sessionTimeout: "30",
+    ipWhitelist: false,
+    auditLog: true,
+    requireStrongPwd: true,
+    autoLockout: true,
+    lockoutAttempts: "5",
+    dataRetentionDays: "365",
   });
 
   const set = (k: keyof typeof settings, v: any) => setSettings((s) => ({ ...s, [k]: v }));
+
+  const loadSecurity = useCallback(async () => {
+    try {
+      const list = await settingRepository.findBySection("security");
+      const m = toMap(list);
+      setSettings(s => ({
+        twoFactor: m["security.twoFactor"] !== undefined ? m["security.twoFactor"] === "true" : s.twoFactor,
+        ipWhitelist: m["security.ipWhitelist"] !== undefined ? m["security.ipWhitelist"] === "true" : s.ipWhitelist,
+        auditLog: m["security.auditLog"] !== undefined ? m["security.auditLog"] === "true" : s.auditLog,
+        requireStrongPwd: m["security.requireStrongPwd"] !== undefined ? m["security.requireStrongPwd"] === "true" : s.requireStrongPwd,
+        autoLockout: m["security.autoLockout"] !== undefined ? m["security.autoLockout"] === "true" : s.autoLockout,
+        sessionTimeout: m["security.sessionTimeout"] ?? s.sessionTimeout,
+        lockoutAttempts: m["security.lockoutAttempts"] ?? s.lockoutAttempts,
+        dataRetentionDays: m["security.dataRetentionDays"] ?? s.dataRetentionDays,
+      }));
+    } catch { /* use defaults */ }
+  }, []);
+
+  useEffect(() => { loadSecurity(); }, [loadSecurity]);
+
+  const handleSaveSecurity = async () => {
+    try {
+      await Promise.all([
+        settingRepository.save(BoolField("security", "twoFactor", settings.twoFactor)),
+        settingRepository.save(BoolField("security", "ipWhitelist", settings.ipWhitelist)),
+        settingRepository.save(BoolField("security", "auditLog", settings.auditLog)),
+        settingRepository.save(BoolField("security", "requireStrongPwd", settings.requireStrongPwd)),
+        settingRepository.save(BoolField("security", "autoLockout", settings.autoLockout)),
+        settingRepository.save(Field("security", "sessionTimeout", settings.sessionTimeout)),
+        settingRepository.save(Field("security", "lockoutAttempts", settings.lockoutAttempts)),
+        settingRepository.save(Field("security", "dataRetentionDays", settings.dataRetentionDays)),
+      ]);
+      toast.success("Configuración de seguridad guardada");
+    } catch {
+      toast.error("Error al guardar seguridad");
+    }
+  };
 
   return (
     <div className="space-y-5">
       <Section title="Autenticación">
         {[
-          { key: "twoFactor"        as const, label: "Autenticación de dos factores (2FA)" },
+          { key: "twoFactor" as const, label: "Autenticación de dos factores (2FA)" },
           { key: "requireStrongPwd" as const, label: "Requerir contraseña fuerte" },
-          { key: "autoLockout"      as const, label: "Bloqueo automático por intentos fallidos" },
-          { key: "ipWhitelist"      as const, label: "Whitelist de IPs permitidas" },
+          { key: "autoLockout" as const, label: "Bloqueo automático por intentos fallidos" },
+          { key: "ipWhitelist" as const, label: "Whitelist de IPs permitidas" },
         ].map(({ key, label: lbl }) => (
           <Toggle key={key} value={settings[key] as boolean} onChange={() => set(key, !settings[key])} label={lbl} />
         ))}
@@ -430,7 +626,7 @@ function SecurityTab() {
       </Section>
 
       <div className="flex justify-end">
-        <button onClick={() => toast.success("Configuración de seguridad guardada")} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
+        <button onClick={handleSaveSecurity} className="inline-flex items-center gap-2 text-xs text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Save className="w-3.5 h-3.5" strokeWidth={1.5} />
           Guardar
         </button>
@@ -444,11 +640,11 @@ export function AdminSettings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
   const tabContent: Record<SettingsTab, React.ReactNode> = {
-    general:       <GeneralTab />,
+    general: <GeneralTab />,
     notifications: <TabNotificaciones />,
-    payments:      <PaymentsTab />,
-    shipping:      <ShippingTab />,
-    security:      <SecurityTab />,
+    payments: <PaymentsTab />,
+    shipping: <ShippingTab />,
+    security: <SecurityTab />,
   };
 
   return (
@@ -465,11 +661,10 @@ export function AdminSettings() {
             <button
               key={id}
               onClick={() => setActiveTab(id)}
-              className={`w-full flex items-center justify-between px-4 py-3.5 text-sm text-left border-l-2 transition-colors ${
-                activeTab === id
+              className={`w-full flex items-center justify-between px-4 py-3.5 text-sm text-left border-l-2 transition-colors ${activeTab === id
                   ? "border-gray-900 bg-gray-50 text-gray-900"
                   : "border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2.5">
                 <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />

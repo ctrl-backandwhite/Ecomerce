@@ -9,6 +9,7 @@
  */
 
 import { ApiError, NetworkError } from "../lib/AppError";
+import { nxFetch } from "../lib/nxFetch";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
@@ -162,7 +163,7 @@ class NexaProductRepository {
 
             const url = `${NX036_PRODUCTS_BASE}?${params.toString()}`;
             console.log('[NexaProductRepository] fetch URL:', url);
-            const res = await fetch(url, { signal });
+            const res = await nxFetch(url, { signal });
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
@@ -187,6 +188,34 @@ class NexaProductRepository {
     }
 
     /**
+     * Fetches a single product by its DB ID (UUID or numeric).
+     */
+    async findById(id: string, locale: string = "es"): Promise<NexaProduct> {
+        try {
+            const params = new URLSearchParams({ locale });
+            const url = `${NX036_PRODUCTS_BASE}/${id}?${params.toString()}`;
+            const res = await nxFetch(url);
+
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch { /* */ }
+                throw new ApiError(res.status, errorMsg);
+            }
+
+            return (await res.json()) as NexaProduct;
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo obtener el producto",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
+
+    /**
      * Fetches product detail by CJ pid.
      * If the product doesn't exist in the local DB, the backend will fetch it
      * from CJ Dropshipping, persist it, and return it.
@@ -197,7 +226,7 @@ class NexaProductRepository {
             const params = new URLSearchParams({ locale });
             const url = `${NX036_PRODUCTS_BASE}/detail/${pid}?${params.toString()}`;
             console.log('[NexaProductRepository] detail URL:', url);
-            const res = await fetch(url, { signal });
+            const res = await nxFetch(url, { signal });
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;

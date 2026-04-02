@@ -96,6 +96,10 @@
   animation: nx036-fade-in 0.8s ease-out both;
 }
 
+.nx036-section-fade {
+  animation: nx036-fade-in 1s ease-out both;
+}
+
 /* ── Icon color blink: gray ↔ black ── */
 @keyframes icon-blink {
   0%, 100% { color: #9ca3af; }

@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router";
-import { mockOrders, statusConfig, OrderStatus, Order, OrderItem } from "../../data/mockOrders";
-import { products } from "../../data/products";
+import { orderRepository, type Order as ApiOrder } from "../../repositories/OrderRepository";
 import { useCart } from "../../context/CartContext";
 import {
   Package,
@@ -24,6 +23,66 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
+
+/* ── Local types (mapped from API) ────────────────────────── */
+
+type OrderStatus = "processing" | "shipped" | "delivered" | "cancelled";
+
+interface OrderItem {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  quantity: number;
+  category: string;
+}
+
+interface Order {
+  id: string;
+  date: string;
+  status: OrderStatus;
+  items: OrderItem[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+  address: string;
+  trackingCode?: string;
+}
+
+const statusConfig: Record<OrderStatus, { label: string; color: string; bg: string; dot: string }> = {
+  processing: { label: "En proceso", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-600" },
+  shipped: { label: "Enviado", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500" },
+  delivered: { label: "Entregado", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-500" },
+  cancelled: { label: "Cancelado", color: "text-red-500", bg: "bg-red-50", dot: "bg-red-500" },
+};
+
+function mapApiOrder(api: ApiOrder): Order {
+  const statusMap: Record<string, OrderStatus> = {
+    PENDING: "processing",
+    PROCESSING: "processing",
+    SHIPPED: "shipped",
+    DELIVERED: "delivered",
+    CANCELLED: "cancelled",
+  };
+  return {
+    id: api.orderNumber || api.id,
+    date: api.date,
+    status: statusMap[api.status] ?? "processing",
+    items: api.items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      image: item.image ?? "",
+      price: item.price,
+      quantity: item.quantity,
+      category: item.category ?? "",
+    })),
+    subtotal: api.subtotal,
+    shipping: api.shipping,
+    total: api.total,
+    address: api.shippingAddress ?? "",
+    trackingCode: api.trackingCode ?? undefined,
+  };
+}
 
 /* ── Tracking steps ──────────────────────────────────────── */
 interface TrackStep {
@@ -68,8 +127,8 @@ const allSteps: TrackStep[] = [
 
 const statusStepMap: Record<OrderStatus, number> = {
   processing: 1,
-  shipped:    3,
-  delivered:  4,
+  shipped: 3,
+  delivered: 4,
   cancelled: -1,
 };
 
@@ -88,9 +147,8 @@ function StarInput({ value, onChange }: { value: number; onChange: (v: number) =
           className="transition-transform hover:scale-110"
         >
           <Star
-            className={`w-5 h-5 transition-colors ${
-              s <= (hover || value) ? "text-amber-400 fill-amber-400" : "text-gray-200 fill-gray-200"
-            }`}
+            className={`w-5 h-5 transition-colors ${s <= (hover || value) ? "text-amber-400 fill-amber-400" : "text-gray-200 fill-gray-200"
+              }`}
           />
         </button>
       ))}
@@ -248,11 +306,10 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
             <button
               onClick={handleSubmit}
               disabled={!allRated}
-              className={`ml-auto inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${
-                allRated
-                  ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  : "bg-gray-100 text-gray-300 cursor-not-allowed"
-              }`}
+              className={`ml-auto inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${allRated
+                ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                }`}
             >
               <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
               Enviar valoración
@@ -294,28 +351,8 @@ function OrderModal({
   };
 
   const handleReorder = () => {
-    let added = 0;
-    order.items.forEach((orderItem) => {
-      const product = products.find((p) => p.id === orderItem.id);
-      if (product) {
-        // Check if already in cart (match by productId for variant-aware items, or id for legacy)
-        const inCart = cartItems.find((c) => (c.productId ?? c.id) === product.id && !c.variantId);
-        if (inCart) {
-          updateQuantity(inCart.id, inCart.quantity + orderItem.quantity);
-        } else {
-          // Add with the correct quantity in one call
-          addToCart(product, { quantity: orderItem.quantity });
-        }
-        added++;
-      }
-    });
-    if (added > 0) {
-      toast.success(`${added} producto${added > 1 ? "s" : ""} añadido${added > 1 ? "s" : ""} al carrito`);
-      onClose();
-      navigate("/carrito");
-    } else {
-      toast.error("No se pudieron encontrar los productos en el catálogo");
-    }
+    // TODO: implement reorder from real product catalog
+    toast.info("Función de re-pedido disponible próximamente");
   };
 
   return (
@@ -416,20 +453,19 @@ function OrderModal({
               {/* Step list */}
               <div className="space-y-0">
                 {allSteps.map((step, i) => {
-                  const done   = i <= completedStep;
+                  const done = i <= completedStep;
                   const active = i === completedStep;
                   return (
                     <div key={step.key} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${
-                          done && !active ? "bg-gray-600 text-white"
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${done && !active ? "bg-gray-600 text-white"
                           : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
-                          : "bg-gray-100 text-gray-300"
-                        }`}>
+                            : "bg-gray-100 text-gray-300"
+                          }`}>
                           {done && !active
                             ? <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
                             : active ? step.icon
-                            : <CircleDot className="w-4 h-4" strokeWidth={1.5} />}
+                              : <CircleDot className="w-4 h-4" strokeWidth={1.5} />}
                         </div>
                         {i < allSteps.length - 1 && (
                           <div className={`w-px flex-1 my-1 min-h-[20px] transition-colors ${i < completedStep ? "bg-gray-600" : "bg-gray-200"}`} />
@@ -544,20 +580,38 @@ function OrderModal({
 
 /* ── Filter tabs ─────────────────────────────────────────── */
 const filterTabs: { id: "all" | OrderStatus; label: string }[] = [
-  { id: "all",        label: "Todos" },
+  { id: "all", label: "Todos" },
   { id: "processing", label: "En proceso" },
-  { id: "shipped",    label: "Enviados" },
-  { id: "delivered",  label: "Entregados" },
-  { id: "cancelled",  label: "Cancelados" },
+  { id: "shipped", label: "Enviados" },
+  { id: "delivered", label: "Entregados" },
+  { id: "cancelled", label: "Cancelados" },
 ];
 
 /* ── Main component ──────────────────────────────────────── */
 export function ProfilePedidos() {
-  const [filter, setFilter]     = useState<"all" | OrderStatus>("all");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loadingOrders, setLoading] = useState(true);
+  const [filter, setFilter] = useState<"all" | OrderStatus>("all");
   const [selected, setSelected] = useState<Order | null>(null);
-  const [rating, setRating]     = useState<Order | null>(null);
+  const [rating, setRating] = useState<Order | null>(null);
 
-  const filtered = filter === "all" ? mockOrders : mockOrders.filter((o) => o.status === filter);
+  const loadOrders = useCallback(async () => {
+    setLoading(true);
+    try {
+      const page = await orderRepository.getMyOrders(0, 50);
+      setOrders(page.content.map(mapApiOrder));
+    } catch {
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  const filtered = filter === "all" ? orders : orders.filter((o) => o.status === filter);
 
   return (
     <>
@@ -579,7 +633,7 @@ export function ProfilePedidos() {
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100">
           <h2 className="text-base text-gray-900">Mis Pedidos</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{mockOrders.length} pedidos en total</p>
+          <p className="text-xs text-gray-400 mt-0.5">{orders.length} pedidos en total</p>
         </div>
 
         {/* Filter tabs */}
@@ -588,11 +642,10 @@ export function ProfilePedidos() {
             <button
               key={id}
               onClick={() => setFilter(id)}
-              className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors ${
-                filter === id
-                  ? "bg-gray-600 text-white border-gray-600"
-                  : "text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700"
-              }`}
+              className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full border transition-colors ${filter === id
+                ? "bg-gray-600 text-white border-gray-600"
+                : "text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700"
+                }`}
             >
               {label}
             </button>

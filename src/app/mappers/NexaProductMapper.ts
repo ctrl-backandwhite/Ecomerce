@@ -7,7 +7,7 @@
  * ╚══════════════════════════════════════════════════════════════╝
  */
 
-import type { Product, ProductImage, ProductVariant } from "../data/products";
+import type { Product, ProductImage, ProductVariant } from "../types/product";
 import type { NexaProduct, NexaProductDetail, NexaDetailVariant } from "../repositories/NexaProductRepository";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────

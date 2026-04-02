@@ -29,8 +29,8 @@ import {
   RefreshCw,
   type LucideIcon,
 } from "lucide-react";
-import { priceRanges } from "../data/products";
-import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../data/filters";
+import { priceRanges } from "../config/priceRanges";
+import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
 import { useStore } from "../context/StoreContext";
 import { useNexaCategories } from "../services/useNexaCategories";
 import type { NexaCategory } from "../repositories/NexaCategoryRepository";

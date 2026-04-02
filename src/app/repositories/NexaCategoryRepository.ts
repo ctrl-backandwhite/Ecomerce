@@ -11,6 +11,7 @@
 
 import { TTLCache } from "../lib/cache";
 import { ApiError, NetworkError } from "../lib/AppError";
+import { nxFetch } from "../lib/nxFetch";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
@@ -62,7 +63,7 @@ class NexaCategoryRepository {
 
         try {
             const url = `${NX036_CATEGORIES_BASE}?locale=${encodeURIComponent(locale)}&status=PUBLISHED&active=true`;
-            const res = await fetch(url);
+            const res = await nxFetch(url);
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
@@ -98,7 +99,7 @@ class NexaCategoryRepository {
 
         try {
             const url = `${NX036_CATEGORIES_BASE}/featured?locale=${encodeURIComponent(locale)}`;
-            const res = await fetch(url);
+            const res = await nxFetch(url);
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;

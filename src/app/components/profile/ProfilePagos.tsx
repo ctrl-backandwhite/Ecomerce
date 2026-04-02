@@ -5,30 +5,30 @@ import {
 } from "../PaymentLogos";
 import {
   Plus, Check, Trash2, Star, X, CreditCard,
-  ChevronDown, Shield, AlertCircle, Mail, Copy,
+  ChevronDown, Shield, AlertCircle, Mail, Copy, Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
 
 /* ── Helpers ─────────────────────────────────────────────── */
-const MOCK_USDT_ADDRESS = "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE";
-const MOCK_BTC_ADDRESS  = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+const USDT_NETWORKS = ["TRC-20 (TRON)", "ERC-20 (Ethereum)", "BEP-20 (BSC)"] as const;
+const BTC_NETWORKS = ["Native SegWit", "Taproot", "Legacy"] as const;
 
-function pmIcon(pm: PaymentMethod, size = 20) {
+function pmIcon(pm: PaymentMethod, size = 22) {
   if (pm.type === "card") {
     return pm.cardBrand === "mastercard"
-      ? <MastercardLogo className="h-5 w-auto" />
-      : <VisaLogo className="h-4 w-auto" />;
+      ? <MastercardLogo size={size} />
+      : <VisaLogo size={size} />;
   }
-  if (pm.type === "paypal")  return <PayPalLogo className="h-4 w-auto" />;
-  if (pm.type === "usdt")    return <USDTLogo size={size} />;
-  if (pm.type === "btc")     return <BTCLogo size={size} />;
+  if (pm.type === "paypal") return <PayPalLogo size={size} />;
+  if (pm.type === "usdt") return <USDTLogo size={size} />;
+  if (pm.type === "btc") return <BTCLogo size={size} />;
   return <CreditCard className="w-4 h-4 text-gray-400" strokeWidth={1.5} />;
 }
 
 function pmAccentColors(type: PayMethodType) {
-  if (type === "paypal")  return { border: "border-[#179BD7]", bg: "bg-sky-50/40",     badge: "bg-sky-100 text-sky-700"     };
-  if (type === "usdt")    return { border: "border-[#26A17B]", bg: "bg-emerald-50/40", badge: "bg-emerald-100 text-emerald-700" };
-  if (type === "btc")     return { border: "border-[#F7931A]", bg: "bg-orange-50/40",  badge: "bg-orange-100 text-orange-700"  };
+  if (type === "paypal") return { border: "border-[#179BD7]", bg: "bg-sky-50/40", badge: "bg-sky-100 text-sky-700" };
+  if (type === "usdt") return { border: "border-[#26A17B]", bg: "bg-emerald-50/40", badge: "bg-emerald-100 text-emerald-700" };
+  if (type === "btc") return { border: "border-[#F7931A]", bg: "bg-orange-50/40", badge: "bg-orange-100 text-orange-700" };
   return { border: "border-gray-200", bg: "bg-gray-50", badge: "bg-gray-100 text-gray-600" };
 }
 
@@ -45,35 +45,27 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
 
   /* Card fields */
   const [cardNumber, setCardNumber] = useState("");
-  const [cardName, setCardName]     = useState("");
+  const [cardName, setCardName] = useState("");
   const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv]       = useState("");
-  const [cardLabel, setCardLabel]   = useState("My Card");
-  const [cardBrand, setCardBrand]   = useState<"visa" | "mastercard">("visa");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardLabel, setCardLabel] = useState("My Card");
+  const [cardBrand, setCardBrand] = useState<"visa" | "mastercard">("visa");
 
   /* PayPal */
-  const [ppEmail, setPpEmail]   = useState("");
-  const [ppLabel, setPpLabel]   = useState("My PayPal");
+  const [ppEmail, setPpEmail] = useState("");
+  const [ppLabel, setPpLabel] = useState("My PayPal");
 
   /* USDT */
   const [usdtLabel, setUsdtLabel] = useState("USDT Wallet");
+  const [usdtNetwork, setUsdtNetwork] = useState<string>(USDT_NETWORKS[0]);
+  const [usdtAddress, setUsdtAddress] = useState("");
 
   /* BTC */
   const [btcLabel, setBtcLabel] = useState("Bitcoin Wallet");
+  const [btcNetwork, setBtcNetwork] = useState<string>(BTC_NETWORKS[0]);
+  const [btcAddress, setBtcAddress] = useState("");
 
   const [setAsDefault, setSetAsDefault] = useState(false);
-  const [copied, setCopied] = useState(false);
-
-  function copyAddr(text: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  function detectBrand(num: string): "visa" | "mastercard" {
-    return num.startsWith("5") || num.startsWith("2") ? "mastercard" : "visa";
-  }
 
   function handleSave() {
     if (tab === "card") {
@@ -90,23 +82,25 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
       if (!ppEmail) { toast.error("Introduce el email de PayPal"); return; }
       onSave({ type: "paypal", label: ppLabel, isDefault: setAsDefault, paypalEmail: ppEmail });
     } else if (tab === "usdt") {
+      if (!usdtAddress.trim()) { toast.error("Introduce la dirección de tu wallet USDT"); return; }
       onSave({
         type: "usdt", label: usdtLabel, isDefault: setAsDefault,
-        cryptoNetwork: "TRC-20", cryptoAddress: MOCK_USDT_ADDRESS,
+        cryptoNetwork: usdtNetwork.split(" ")[0], cryptoAddress: usdtAddress.trim(),
       });
     } else {
+      if (!btcAddress.trim()) { toast.error("Introduce la dirección de tu wallet Bitcoin"); return; }
       onSave({
         type: "btc", label: btcLabel, isDefault: setAsDefault,
-        cryptoNetwork: "Native SegWit", cryptoAddress: MOCK_BTC_ADDRESS,
+        cryptoNetwork: btcNetwork, cryptoAddress: btcAddress.trim(),
       });
     }
   }
 
   const tabDefs: { id: FormTab; label: string; logo: React.ReactNode }[] = [
-    { id: "card",   label: "Tarjeta",  logo: <div className="flex items-center gap-1.5"><VisaLogo className="h-3.5 w-auto" /><MastercardLogo className="h-4 w-auto" /></div> },
-    { id: "paypal", label: "PayPal",   logo: <PayPalLogo className="h-4 w-auto" /> },
-    { id: "usdt",   label: "USDT",     logo: <USDTLogo size={18} /> },
-    { id: "btc",    label: "Bitcoin",  logo: <BTCLogo size={18} /> },
+    { id: "card", label: "Tarjeta", logo: <div className="flex items-center gap-1.5"><VisaLogo size={16} /><MastercardLogo size={18} /></div> },
+    { id: "paypal", label: "PayPal", logo: <PayPalLogo size={18} /> },
+    { id: "usdt", label: "USDT", logo: <USDTLogo size={18} /> },
+    { id: "btc", label: "Bitcoin", logo: <BTCLogo size={18} /> },
   ];
 
   return (
@@ -128,11 +122,10 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
               key={id}
               type="button"
               onClick={() => setTab(id)}
-              className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs transition-all ${
-                tab === id
-                  ? "border-gray-900 bg-white text-gray-900"
-                  : "border-gray-200 bg-white text-gray-400 hover:border-gray-300"
-              }`}
+              className={`flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs transition-all ${tab === id
+                ? "border-gray-900 bg-white text-gray-900"
+                : "border-gray-200 bg-white text-gray-400 hover:border-gray-300"
+                }`}
             >
               <div className="h-5 flex items-center">{logo}</div>
               <span>{label}</span>
@@ -152,11 +145,10 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
                     key={b}
                     type="button"
                     onClick={() => setCardBrand(b)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${
-                      cardBrand === b ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-300"
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border-2 transition-all ${cardBrand === b ? "border-gray-900 bg-gray-50" : "border-gray-200 hover:border-gray-300"
+                      }`}
                   >
-                    {b === "visa" ? <VisaLogo className="h-3.5 w-auto" /> : <MastercardLogo className="h-5 w-auto" />}
+                    {b === "visa" ? <VisaLogo size={16} /> : <MastercardLogo size={22} />}
                     <span className="text-xs text-gray-600 capitalize">{b}</span>
                     {cardBrand === b && <Check className="w-3 h-3 text-gray-900 ml-1" strokeWidth={2.5} />}
                   </button>
@@ -182,15 +174,14 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
                     const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
                     const fmt = raw.match(/.{1,4}/g)?.join(" ") ?? raw;
                     setCardNumber(fmt);
-                    setCardBrand(detectBrand(raw));
                   }}
                   className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-24 focus:outline-none focus:border-gray-400 font-mono tracking-widest placeholder-gray-300"
                   placeholder="1234 5678 9012 3456"
                   maxLength={19}
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-                  <VisaLogo className="h-3 w-auto opacity-40" />
-                  <MastercardLogo className="h-4 w-auto opacity-40" />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-40">
+                  <VisaLogo size={14} />
+                  <MastercardLogo size={16} />
                 </div>
               </div>
             </div>
@@ -240,7 +231,7 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
         {tab === "paypal" && (
           <div className="space-y-3">
             <div className="flex items-center gap-3 px-4 py-3 bg-sky-50/40 rounded-xl border border-sky-100">
-              <PayPalLogo className="h-5 w-auto flex-shrink-0" />
+              <PayPalLogo size={22} />
               <p className="text-xs text-gray-500">Vincula tu cuenta PayPal para pagar rápidamente en futuros pedidos.</p>
             </div>
             <div>
@@ -289,25 +280,26 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
             <div>
               <label className="block text-xs text-gray-400 mb-1.5">Red</label>
               <div className="flex gap-2">
-                {["TRC-20 (TRON)", "ERC-20 (Ethereum)", "BEP-20 (BSC)"].map((n, i) => (
-                  <button key={n} type="button" className={`text-[11px] px-3 py-1.5 rounded-full border ${i === 0 ? "bg-emerald-600 text-white border-emerald-600" : "text-gray-400 border-gray-200"}`}>
+                {USDT_NETWORKS.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setUsdtNetwork(n)}
+                    className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${usdtNetwork === n ? "bg-emerald-600 text-white border-emerald-600" : "text-gray-500 border-gray-200 hover:border-gray-400"}`}
+                  >
                     {n}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">Dirección de destino (TRC-20)</label>
-              <div className="flex gap-2">
-                <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                  <span className="text-xs text-gray-700 font-mono truncate">{MOCK_USDT_ADDRESS}</span>
-                </div>
-                <button type="button" onClick={() => copyAddr(MOCK_USDT_ADDRESS)}
-                  className={`flex-shrink-0 flex items-center gap-1 text-xs px-3 py-2.5 rounded-lg border transition-all ${copied ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "text-gray-500 border-gray-200 hover:border-gray-400"}`}>
-                  {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                  {copied ? "OK" : "Copiar"}
-                </button>
-              </div>
+              <label className="block text-xs text-gray-400 mb-1.5">Dirección de destino ({usdtNetwork.split(" ")[0]})</label>
+              <input
+                value={usdtAddress}
+                onChange={(e) => setUsdtAddress(e.target.value)}
+                className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-emerald-400 font-mono placeholder-gray-300"
+                placeholder="Pega tu dirección de wallet aquí"
+              />
             </div>
           </div>
         )}
@@ -331,17 +323,28 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
               />
             </div>
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">Dirección de destino (Native SegWit)</label>
+              <label className="block text-xs text-gray-400 mb-1.5">Red</label>
               <div className="flex gap-2">
-                <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                  <span className="text-xs text-gray-700 font-mono truncate">{MOCK_BTC_ADDRESS}</span>
-                </div>
-                <button type="button" onClick={() => copyAddr(MOCK_BTC_ADDRESS)}
-                  className={`flex-shrink-0 flex items-center gap-1 text-xs px-3 py-2.5 rounded-lg border transition-all ${copied ? "bg-orange-50 text-orange-600 border-orange-200" : "text-gray-500 border-gray-200 hover:border-gray-400"}`}>
-                  {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                  {copied ? "OK" : "Copiar"}
-                </button>
+                {BTC_NETWORKS.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setBtcNetwork(n)}
+                    className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${btcNetwork === n ? "bg-orange-500 text-white border-orange-500" : "text-gray-500 border-gray-200 hover:border-gray-400"}`}
+                  >
+                    {n}
+                  </button>
+                ))}
               </div>
+            </div>
+            <div>
+              <label className="block text-xs text-gray-400 mb-1.5">Dirección de destino ({btcNetwork})</label>
+              <input
+                value={btcAddress}
+                onChange={(e) => setBtcAddress(e.target.value)}
+                className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-orange-400 font-mono placeholder-gray-300"
+                placeholder="Pega tu dirección de wallet aquí"
+              />
             </div>
             <div className="flex items-start gap-2">
               <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
@@ -356,9 +359,8 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
             <button
               type="button"
               onClick={() => setSetAsDefault(!setAsDefault)}
-              className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${
-                setAsDefault ? "bg-gray-500 border-gray-500" : "border-gray-300"
-              }`}
+              className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors ${setAsDefault ? "bg-gray-500 border-gray-500" : "border-gray-300"
+                }`}
             >
               {setAsDefault && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
             </button>
@@ -388,31 +390,61 @@ function AddPaymentForm({ onSave, onCancel }: AddFormProps) {
 
 /* ── Main component ──────────────────────────────────────── */
 export function ProfilePagos() {
-  const { user, addPaymentMethod, removePaymentMethod, setDefaultPaymentMethod } = useUser();
+  const { user, addPaymentMethod, updatePaymentMethod, removePaymentMethod, setDefaultPaymentMethod } = useUser();
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editExpiry, setEditExpiry] = useState("");
+
+  function startEdit(pm: PaymentMethod) {
+    setEditingId(pm.id);
+    setEditLabel(pm.label);
+    setEditEmail(pm.paypalEmail ?? "");
+    setEditExpiry(pm.cardExpiry ?? "");
+    setExpandedId(pm.id);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  function handleSaveEdit(pm: PaymentMethod) {
+    const updated: Omit<PaymentMethod, "id"> = {
+      ...pm,
+      label: editLabel,
+      paypalEmail: pm.type === "paypal" ? editEmail : pm.paypalEmail,
+      cardExpiry: pm.type === "card" ? editExpiry : pm.cardExpiry,
+    };
+    updatePaymentMethod(pm.id, updated)
+      .then(() => { setEditingId(null); toast.success("Método de pago actualizado"); })
+      .catch(() => toast.error("No se pudo actualizar el método de pago"));
+  }
 
   function handleAdd(pm: Omit<PaymentMethod, "id">) {
-    addPaymentMethod(pm);
-    setShowForm(false);
-    toast.success("Método de pago guardado");
+    addPaymentMethod(pm)
+      .then(() => { setShowForm(false); toast.success("Método de pago guardado"); })
+      .catch(() => toast.error("No se pudo guardar el método de pago"));
   }
 
   function handleRemove(id: string) {
-    removePaymentMethod(id);
-    toast.success("Método eliminado");
+    removePaymentMethod(id)
+      .then(() => toast.success("Método eliminado"))
+      .catch(() => toast.error("No se pudo eliminar el método"));
   }
 
   function handleSetDefault(id: string) {
-    setDefaultPaymentMethod(id);
-    toast.success("Método predeterminado actualizado");
+    setDefaultPaymentMethod(id)
+      .then(() => toast.success("Método predeterminado actualizado"))
+      .catch(() => toast.error("No se pudo actualizar el método predeterminado"));
   }
 
   function cardTypeLabel(pm: PaymentMethod) {
-    if (pm.type === "card")   return `${pm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${pm.cardLast4}`;
+    if (pm.type === "card") return `${pm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${pm.cardLast4}`;
     if (pm.type === "paypal") return pm.paypalEmail ?? "PayPal";
-    if (pm.type === "usdt")   return `USDT · ${pm.cryptoNetwork}`;
-    if (pm.type === "btc")    return `Bitcoin · ${pm.cryptoNetwork}`;
+    if (pm.type === "usdt") return `USDT · ${pm.cryptoNetwork}`;
+    if (pm.type === "btc") return `Bitcoin · ${pm.cryptoNetwork}`;
     return "";
   }
 
@@ -467,19 +499,17 @@ export function ProfilePagos() {
             return (
               <div
                 key={pm.id}
-                className={`bg-white rounded-xl border-2 overflow-hidden transition-all ${
-                  pm.isDefault ? accent.border : "border-gray-100"
-                }`}
+                className={`bg-white rounded-xl border-2 overflow-hidden transition-all ${pm.isDefault ? accent.border : "border-gray-100"
+                  }`}
               >
                 {/* Main row */}
                 <div className="flex items-center gap-4 px-5 py-4">
                   {/* Logo */}
-                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    pm.type === "card" ? "bg-gray-50 border border-gray-100"
+                  <div className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden ${pm.type === "card" ? "bg-gray-50 border border-gray-100"
                     : pm.type === "paypal" ? "bg-sky-50"
-                    : pm.type === "usdt"   ? "bg-emerald-50"
-                    : "bg-orange-50"
-                  }`}>
+                      : pm.type === "usdt" ? "bg-emerald-50"
+                        : "bg-orange-50"
+                    }`}>
                     {pmIcon(pm, 22)}
                   </div>
 
@@ -501,16 +531,25 @@ export function ProfilePagos() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 flex-shrink-0">
-                    {!pm.isDefault && (
-                      <button
-                        type="button"
-                        onClick={() => handleSetDefault(pm.id)}
-                        title="Establecer como predeterminado"
-                        className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-                      >
-                        <Star className="w-4 h-4" strokeWidth={1.5} />
-                      </button>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => !pm.isDefault && handleSetDefault(pm.id)}
+                      title={pm.isDefault ? "Método predeterminado" : "Establecer como predeterminado"}
+                      className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors ${pm.isDefault
+                        ? "text-emerald-500 cursor-default"
+                        : "text-gray-400 hover:text-gray-900 hover:bg-gray-100"
+                        }`}
+                    >
+                      <Star className="w-4 h-4" strokeWidth={1.5} fill={pm.isDefault ? "currentColor" : "none"} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startEdit(pm)}
+                      title="Editar método de pago"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4" strokeWidth={1.5} />
+                    </button>
                     <button
                       type="button"
                       onClick={() => setExpandedId(isExpanded ? null : pm.id)}
@@ -530,39 +569,104 @@ export function ProfilePagos() {
 
                 {/* Expanded detail */}
                 {isExpanded && (
-                  <div className={`px-5 pb-4 pt-1 border-t border-gray-50 ${accent.bg}`}>
-                    {pm.type === "card" && (
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
-                        <div><span className="text-gray-400">Titular</span><p className="text-gray-700 mt-0.5">{pm.cardName}</p></div>
-                        <div><span className="text-gray-400">Últimos 4 dígitos</span><p className="text-gray-700 font-mono mt-0.5">···· {pm.cardLast4}</p></div>
-                        <div><span className="text-gray-400">Vencimiento</span><p className="text-gray-700 font-mono mt-0.5">{pm.cardExpiry}</p></div>
-                        <div><span className="text-gray-400">Red</span><p className="text-gray-700 mt-0.5 capitalize">{pm.cardBrand}</p></div>
-                      </div>
-                    )}
-                    {pm.type === "paypal" && (
-                      <div className="text-xs">
-                        <span className="text-gray-400">Email vinculado</span>
-                        <p className="text-gray-700 mt-0.5">{pm.paypalEmail}</p>
-                      </div>
-                    )}
-                    {(pm.type === "usdt" || pm.type === "btc") && (
-                      <div className="space-y-1.5 text-xs">
-                        <div><span className="text-gray-400">Red</span><p className="text-gray-700 mt-0.5">{pm.cryptoNetwork}</p></div>
+                  <div className={`px-5 pb-4 pt-3 border-t border-gray-50 ${accent.bg}`}>
+                    {editingId === pm.id ? (
+                      /* ── Inline edit form ── */
+                      <div className="space-y-3">
                         <div>
-                          <span className="text-gray-400">Dirección de destino</span>
-                          <p className="text-gray-700 font-mono mt-0.5 break-all">{pm.cryptoAddress}</p>
+                          <label className="text-xs text-gray-400">Nombre / Etiqueta</label>
+                          <input
+                            type="text"
+                            value={editLabel}
+                            onChange={(e) => setEditLabel(e.target.value)}
+                            className="mt-1 w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300"
+                          />
+                        </div>
+                        {pm.type === "paypal" && (
+                          <div>
+                            <label className="text-xs text-gray-400">Email de PayPal</label>
+                            <input
+                              type="email"
+                              value={editEmail}
+                              onChange={(e) => setEditEmail(e.target.value)}
+                              className="mt-1 w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300"
+                            />
+                          </div>
+                        )}
+                        {pm.type === "card" && (
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs text-gray-400">Vencimiento (MM/AA)</label>
+                              <input
+                                type="text"
+                                value={editExpiry}
+                                onChange={(e) => setEditExpiry(e.target.value)}
+                                placeholder="01/28"
+                                maxLength={5}
+                                className="mt-1 w-full text-xs border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-400">Últimos 4 dígitos</label>
+                              <p className="mt-1 text-xs text-gray-500 font-mono px-3 py-2">···· {pm.cardLast4}</p>
+                            </div>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleSaveEdit(pm)}
+                            className="inline-flex items-center gap-1.5 text-xs text-white bg-gray-800 rounded-lg px-4 py-2 hover:bg-gray-700 transition-colors"
+                          >
+                            <Check className="w-3.5 h-3.5" strokeWidth={2} />
+                            Guardar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={cancelEdit}
+                            className="text-xs text-gray-500 hover:text-gray-700 px-3 py-2 transition-colors"
+                          >
+                            Cancelar
+                          </button>
                         </div>
                       </div>
-                    )}
-                    {!pm.isDefault && (
-                      <button
-                        type="button"
-                        onClick={() => handleSetDefault(pm.id)}
-                        className="mt-3 inline-flex items-center gap-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 bg-white hover:border-gray-400 hover:text-gray-900 transition-colors"
-                      >
-                        <Star className="w-3 h-3" strokeWidth={1.5} />
-                        Establecer como predeterminado
-                      </button>
+                    ) : (
+                      /* ── Read-only detail ── */
+                      <>
+                        {pm.type === "card" && (
+                          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 text-xs">
+                            <div><span className="text-gray-400">Titular</span><p className="text-gray-700 mt-0.5">{pm.cardName}</p></div>
+                            <div><span className="text-gray-400">Últimos 4 dígitos</span><p className="text-gray-700 font-mono mt-0.5">···· {pm.cardLast4}</p></div>
+                            <div><span className="text-gray-400">Vencimiento</span><p className="text-gray-700 font-mono mt-0.5">{pm.cardExpiry}</p></div>
+                            <div><span className="text-gray-400">Red</span><p className="text-gray-700 mt-0.5 capitalize">{pm.cardBrand}</p></div>
+                          </div>
+                        )}
+                        {pm.type === "paypal" && (
+                          <div className="text-xs">
+                            <span className="text-gray-400">Email vinculado</span>
+                            <p className="text-gray-700 mt-0.5">{pm.paypalEmail}</p>
+                          </div>
+                        )}
+                        {(pm.type === "usdt" || pm.type === "btc") && (
+                          <div className="space-y-1.5 text-xs">
+                            <div><span className="text-gray-400">Red</span><p className="text-gray-700 mt-0.5">{pm.cryptoNetwork}</p></div>
+                            <div>
+                              <span className="text-gray-400">Dirección de destino</span>
+                              <p className="text-gray-700 font-mono mt-0.5 break-all">{pm.cryptoAddress}</p>
+                            </div>
+                          </div>
+                        )}
+                        {!pm.isDefault && (
+                          <button
+                            type="button"
+                            onClick={() => handleSetDefault(pm.id)}
+                            className="mt-3 inline-flex items-center gap-1.5 text-xs text-gray-600 border border-gray-200 rounded-lg px-3 py-1.5 bg-white hover:border-gray-400 hover:text-gray-900 transition-colors"
+                          >
+                            <Star className="w-3 h-3" strokeWidth={1.5} />
+                            Establecer como predeterminado
+                          </button>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

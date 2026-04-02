@@ -1,43 +1,33 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search, X, Star, Check, Trash2, Eye, MessageSquare,
   ThumbsUp, ShieldCheck, Clock, XCircle, CheckCircle2,
   AlertTriangle,
 } from "lucide-react";
-import { type Review } from "../../data/reviews";
-import { getProductReviews } from "../../data/reviewSynthesizer";
-import { useStore } from "../../context/StoreContext";
+import { type Review, reviewRepository } from "../../repositories/ReviewRepository";
 import { toast } from "sonner";
 
-/* ── Types ─────────────────────────────────────────────────── */
-type ReviewStatus = "pending" | "approved" | "rejected";
+/* ── Types ───────────────────────────────────────────────── */
+type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 interface ManagedReview extends Review {
-  status: ReviewStatus;
   productName: string;
 }
 
-/* ── Seed data: assign statuses ────────────────────────────── */
-const STATUS_SEED: ReviewStatus[] = [
-  "approved","approved","pending","approved","rejected",
-  "approved","pending","approved","approved","pending",
-  "approved","approved","rejected","pending","approved",
-  "approved","approved","pending","approved","approved",
-  "rejected","approved","pending","approved",
-];
+/* ── Seed data: removed — using real API ───────────── */
 
-/* ── Status meta ───────────────────────────────────────────── */
+/* ── Status meta ─────────────────────────────────────── */
 const STATUS_META: Record<ReviewStatus, { label: string; bg: string; text: string; dot: string; icon: typeof Check }> = {
-  pending:  { label: "Pendiente",  bg: "bg-amber-50",  text: "text-amber-700",  dot: "bg-amber-400",  icon: Clock        },
-  approved: { label: "Aprobada",   bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-400",  icon: CheckCircle2 },
-  rejected: { label: "Rechazada",  bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-400",    icon: XCircle      },
+  PENDING: { label: "Pendiente", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400", icon: Clock },
+  APPROVED: { label: "Aprobada", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400", icon: CheckCircle2 },
+  REJECTED: { label: "Rechazada", bg: "bg-red-50", text: "text-red-600", dot: "bg-red-400", icon: XCircle },
 };
 
 /* ── Stars ─────────────────────────────────────────────────── */
 function Stars({ rating }: { rating: number }) {
   return (
     <div className="flex items-center gap-0.5">
-      {[1,2,3,4,5].map(n => (
+      {[1, 2, 3, 4, 5].map(n => (
         <Star key={n} className={`w-3 h-3 ${n <= rating ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
       ))}
     </div>
@@ -75,8 +65,8 @@ function ReviewDetail({
         <div className="p-6 space-y-4">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs flex-shrink-0 ${review.avatarColor}`}>
-                {review.avatar}
+              <div className="w-9 h-9 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-xs flex-shrink-0">
+                {review.avatar ?? review.author.charAt(0).toUpperCase()}
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
@@ -113,12 +103,12 @@ function ReviewDetail({
 
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50/50">
           <button onClick={onClose} className="h-7 px-3 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors">Cerrar</button>
-          {review.status !== "rejected" && (
+          {review.status !== "REJECTED" && (
             <button onClick={() => { onReject(); onClose(); }} className="h-7 px-3 text-xs text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center gap-1">
               <XCircle className="w-3 h-3" /> Rechazar
             </button>
           )}
-          {review.status !== "approved" && (
+          {review.status !== "APPROVED" && (
             <button onClick={() => { onApprove(); onClose(); }} className="h-7 px-3 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors flex items-center gap-1.5">
               <Check className="w-3 h-3" /> Aprobar
             </button>
@@ -131,44 +121,29 @@ function ReviewDetail({
 
 /* ── Main ──────────────────────────────────────────────────── */
 export function AdminReviews() {
-  // Live products from the same source as /home
-  const { products } = useStore();
+  const [allReviews, setAllReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Build all reviews: static + synthesized for every loaded product
-  const allReviews = useMemo<Review[]>(() => {
-    const seen = new Set<string>();
-    const out: Review[] = [];
-    products.forEach((p) => {
-      getProductReviews(p.id, p.name, p.category).forEach((r) => {
-        if (!seen.has(r.id)) { seen.add(r.id); out.push(r); }
-      });
-    });
-    return out;
-  }, [products]);
+  const loadReviews = useCallback(async () => {
+    setLoading(true);
+    try {
+      const page = await reviewRepository.findAllAdmin({ size: 200 });
+      setAllReviews(page.content);
+    } catch { toast.error("Error al cargar reseñas"); }
+    finally { setLoading(false); }
+  }, []);
 
-  // Status overrides: map of review id → status
-  const [statusMap, setStatusMap] = useState<Record<string, ReviewStatus>>({});
+  useEffect(() => { loadReviews(); }, [loadReviews]);
 
-  // Deleted review IDs
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
-
-  // Merge reviews with live product names and status overrides
-  const reviews = useMemo<ManagedReview[]>(() => {
-    const productMap = new Map(products.map(p => [p.id, p.name]));
-    return allReviews
-      .filter(r => !deletedIds.has(r.id))
-      .map((r, i) => ({
-        ...r,
-        status: statusMap[r.id] ?? STATUS_SEED[i % STATUS_SEED.length],
-        productName: productMap.get(r.productId) ?? r.productId,
-      }));
-  }, [products, allReviews, statusMap, deletedIds]);
-
-  const [search,   setSearch]   = useState("");
-  const [statusF,  setStatusF]  = useState<"all" | ReviewStatus>("all");
-  const [ratingF,  setRatingF]  = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
-  const [detail,   setDetail]   = useState<ManagedReview | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusF, setStatusF] = useState<"all" | ReviewStatus>("all");
+  const [ratingF, setRatingF] = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
+  const [detail, setDetail] = useState<ManagedReview | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const reviews = useMemo<ManagedReview[]>(() =>
+    allReviews.map(r => ({ ...r, productName: r.productId })),
+    [allReviews]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -176,32 +151,37 @@ export function AdminReviews() {
       if (statusF !== "all" && r.status !== statusF) return false;
       if (ratingF !== "all" && r.rating !== Number(ratingF)) return false;
       if (q && !r.author.toLowerCase().includes(q) &&
-          !r.productName.toLowerCase().includes(q) &&
-          !r.title.toLowerCase().includes(q)) return false;
+        !r.productName.toLowerCase().includes(q) &&
+        !r.title.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [reviews, search, statusF, ratingF]);
 
   const stats = useMemo(() => ({
-    total:     reviews.length,
-    pending:   reviews.filter(r => r.status === "pending").length,
-    approved:  reviews.filter(r => r.status === "approved").length,
+    total: reviews.length,
+    pending: reviews.filter(r => r.status === "PENDING").length,
+    approved: reviews.filter(r => r.status === "APPROVED").length,
     avgRating: reviews.length
       ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1)
       : "0.0",
   }), [reviews]);
 
-  function setStatus(id: string, status: ReviewStatus) {
-    setStatusMap(prev => ({ ...prev, [id]: status }));
-    const labels = { approved: "Reseña aprobada", rejected: "Reseña rechazada", pending: "Pendiente" };
-    toast.success(labels[status]);
-    // Update detail if open
-    if (detail?.id === id) setDetail(prev => prev ? { ...prev, status } : null);
+  async function setStatus(id: string, status: ReviewStatus) {
+    try {
+      await reviewRepository.moderate(id, status as "APPROVED" | "REJECTED");
+      const labels: Record<ReviewStatus, string> = { APPROVED: "Reseña aprobada", REJECTED: "Reseña rechazada", PENDING: "Pendiente" };
+      toast.success(labels[status]);
+      setAllReviews(prev => prev.map(r => r.id === id ? { ...r, status } : r));
+      if (detail?.id === id) setDetail(prev => prev ? { ...prev, status } : null);
+    } catch { toast.error("Error al actualizar estado"); }
   }
 
-  function handleDelete(id: string) {
-    setDeletedIds(prev => new Set([...prev, id]));
-    toast.success("Reseña eliminada");
+  async function handleDelete(id: string) {
+    try {
+      await reviewRepository.delete(id);
+      await loadReviews();
+      toast.success("Reseña eliminada");
+    } catch { toast.error("Error al eliminar la reseña"); }
     setDeleteId(null);
   }
 
@@ -225,10 +205,10 @@ export function AdminReviews() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total reseñas",     value: stats.total,     color: "text-gray-700",  icon: MessageSquare },
-          { label: "Pendientes",        value: stats.pending,   color: "text-amber-600", icon: Clock         },
-          { label: "Aprobadas",         value: stats.approved,  color: "text-green-600", icon: CheckCircle2  },
-          { label: "Valoración media",  value: stats.avgRating, color: "text-amber-500", icon: Star          },
+          { label: "Total reseñas", value: stats.total, color: "text-gray-700", icon: MessageSquare },
+          { label: "Pendientes", value: stats.pending, color: "text-amber-600", icon: Clock },
+          { label: "Aprobadas", value: stats.approved, color: "text-green-600", icon: CheckCircle2 },
+          { label: "Valoración media", value: stats.avgRating, color: "text-amber-500", icon: Star },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
@@ -257,14 +237,14 @@ export function AdminReviews() {
         <select value={statusF} onChange={e => setStatusF(e.target.value as any)}
           className="h-7 px-2.5 text-xs text-gray-600 border border-gray-200 rounded-lg bg-white focus:outline-none">
           <option value="all">Todos los estados</option>
-          <option value="pending">Pendientes</option>
-          <option value="approved">Aprobadas</option>
-          <option value="rejected">Rechazadas</option>
+          <option value="PENDING">Pendientes</option>
+          <option value="APPROVED">Aprobadas</option>
+          <option value="REJECTED">Rechazadas</option>
         </select>
         <select value={ratingF} onChange={e => setRatingF(e.target.value as any)}
           className="h-7 px-2.5 text-xs text-gray-600 border border-gray-200 rounded-lg bg-white focus:outline-none">
           <option value="all">Todas las valoraciones</option>
-          {[5,4,3,2,1].map(n => <option key={n} value={String(n)}>{n} ★</option>)}
+          {[5, 4, 3, 2, 1].map(n => <option key={n} value={String(n)}>{n} ★</option>)}
         </select>
         <span className="text-xs text-gray-400 ml-1">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>
       </div>
@@ -273,13 +253,13 @@ export function AdminReviews() {
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="grid grid-cols-[2fr_1.5fr_0.8fr_0.8fr_0.8fr_0.8fr_96px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60 flex-shrink-0">
           {[
-            { label: "Reseña",     cls: "text-left"   },
-            { label: "Producto",   cls: "text-left"   },
+            { label: "Reseña", cls: "text-left" },
+            { label: "Producto", cls: "text-left" },
             { label: "Valoración", cls: "text-center" },
-            { label: "Fecha",      cls: "text-center" },
-            { label: "Útil",       cls: "text-right"  },
-            { label: "Estado",     cls: "text-left"   },
-            { label: "",           cls: "text-right"  },
+            { label: "Fecha", cls: "text-center" },
+            { label: "Útil", cls: "text-right" },
+            { label: "Estado", cls: "text-left" },
+            { label: "", cls: "text-right" },
           ].map(h => (
             <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
@@ -301,7 +281,7 @@ export function AdminReviews() {
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${r.avatarColor}`}>{r.avatar}</div>
+                    <div className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center text-[10px] flex-shrink-0">{r.avatar ?? r.author.charAt(0).toUpperCase()}</div>
                     <div className="min-w-0">
                       <p className="text-xs text-gray-900 truncate">{r.author}</p>
                       <p className="text-[11px] text-gray-400 truncate">{r.title}</p>
@@ -324,13 +304,13 @@ export function AdminReviews() {
                   <button onClick={() => setDetail(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Ver detalle">
                     <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
-                  {r.status !== "approved" && (
-                    <button onClick={() => setStatus(r.id, "approved")} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Aprobar">
+                  {r.status !== "APPROVED" && (
+                    <button onClick={() => setStatus(r.id, "APPROVED")} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Aprobar">
                       <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                   )}
-                  {r.status !== "rejected" && (
-                    <button onClick={() => setStatus(r.id, "rejected")} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Rechazar">
+                  {r.status !== "REJECTED" && (
+                    <button onClick={() => setStatus(r.id, "REJECTED")} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Rechazar">
                       <XCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                   )}
@@ -349,8 +329,8 @@ export function AdminReviews() {
         <ReviewDetail
           review={detail}
           onClose={() => setDetail(null)}
-          onApprove={() => setStatus(detail.id, "approved")}
-          onReject={() => setStatus(detail.id, "rejected")}
+          onApprove={() => setStatus(detail.id, "APPROVED")}
+          onReject={() => setStatus(detail.id, "REJECTED")}
         />
       )}
 

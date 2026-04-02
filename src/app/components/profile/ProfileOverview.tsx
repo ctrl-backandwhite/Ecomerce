@@ -1,6 +1,33 @@
+import { useState, useEffect, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
-import { mockOrders, statusConfig } from "../../data/mockOrders";
-import { ShoppingBag, Heart, MapPin } from "lucide-react";
+import { orderRepository, type Order as ApiOrder } from "../../repositories/OrderRepository";
+import { ShoppingBag, Heart, MapPin, Loader2 } from "lucide-react";
+
+type OrderStatus = "processing" | "shipped" | "delivered" | "cancelled";
+
+const statusConfig: Record<OrderStatus, { label: string; color: string; bg: string; dot: string }> = {
+  processing: { label: "En proceso", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-600" },
+  shipped: { label: "Enviado", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500" },
+  delivered: { label: "Entregado", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-500" },
+  cancelled: { label: "Cancelado", color: "text-red-500", bg: "bg-red-50", dot: "bg-red-500" },
+};
+
+interface SimpleOrder {
+  id: string; date: string; status: OrderStatus;
+  items: { id: string; name: string; image: string }[];
+  total: number;
+}
+
+function mapApiOrder(api: ApiOrder): SimpleOrder {
+  const sMap: Record<string, OrderStatus> = { PENDING: "processing", PROCESSING: "processing", SHIPPED: "shipped", DELIVERED: "delivered", CANCELLED: "cancelled" };
+  return {
+    id: api.orderNumber || api.id,
+    date: api.date,
+    status: sMap[api.status] ?? "processing",
+    items: api.items.map((i) => ({ id: i.id, name: i.name, image: i.image ?? "" })),
+    total: api.total,
+  };
+}
 
 type Tab = "resumen" | "pedidos" | "favoritos" | "direcciones" | "seguridad";
 
@@ -10,12 +37,23 @@ interface Props {
 
 export function ProfileOverview({ onTabChange }: Props) {
   const { user } = useUser();
-  const lastOrder = mockOrders[0];
-  const cfg = statusConfig[lastOrder.status];
+  const [lastOrder, setLastOrder] = useState<SimpleOrder | null>(null);
+  const [loadingOrder, setLoadingOrder] = useState(true);
 
-  const memberDate = new Date(user.memberSince).toLocaleDateString("es-CL", {
-    year: "numeric", month: "long",
-  });
+  useEffect(() => {
+    orderRepository.getMyOrders(0, 1)
+      .then((page) => {
+        if (page.content.length > 0) setLastOrder(mapApiOrder(page.content[0]));
+      })
+      .catch(() => { })
+      .finally(() => setLoadingOrder(false));
+  }, []);
+
+  const cfg = lastOrder ? statusConfig[lastOrder.status] : null;
+
+  const memberDate = user.memberSince
+    ? new Date(user.memberSince).toLocaleDateString("es-CL", { year: "numeric", month: "long" })
+    : "";
 
   return (
     <div className="flex flex-col gap-4">
@@ -24,38 +62,53 @@ export function ProfileOverview({ onTabChange }: Props) {
         onClick={() => onTabChange("pedidos")}
         className="group bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-left hover:border-gray-300 transition-all"
       >
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <p className="text-xs text-gray-400 mb-0.5">Último pedido</p>
-            <p className="text-sm text-gray-900">{lastOrder.id}</p>
+        {loadingOrder ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="w-5 h-5 text-gray-300 animate-spin" />
           </div>
-          <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.color}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-            {cfg.label}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 mb-3">
-          {lastOrder.items.slice(0, 3).map((item) => (
-            <img
-              key={item.id}
-              src={item.image}
-              alt={item.name}
-              className="w-10 h-10 rounded-lg object-cover border border-gray-100"
-            />
-          ))}
-          {lastOrder.items.length > 3 && (
-            <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500">
-              +{lastOrder.items.length - 3}
+        ) : lastOrder && cfg ? (
+          <>
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <p className="text-xs text-gray-400 mb-0.5">Último pedido</p>
+                <p className="text-sm text-gray-900">{lastOrder.id}</p>
+              </div>
+              <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.color}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+                {cfg.label}
+              </span>
             </div>
-          )}
-        </div>
-        <p className="text-xs text-gray-400">
-          {new Date(lastOrder.date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
-          {" · "}${lastOrder.total.toLocaleString()}
-        </p>
-        <p className="text-xs text-gray-400 mt-1 group-hover:text-gray-600 transition-colors">
-          Ver todos los pedidos →
-        </p>
+            <div className="flex items-center gap-2 mb-3">
+              {lastOrder.items.slice(0, 3).map((item) => (
+                <img
+                  key={item.id}
+                  src={item.image}
+                  alt={item.name}
+                  className="w-10 h-10 rounded-lg object-cover border border-gray-100"
+                />
+              ))}
+              {lastOrder.items.length > 3 && (
+                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-xs text-gray-500">
+                  +{lastOrder.items.length - 3}
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-gray-400">
+              {new Date(lastOrder.date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
+              {" · "}${lastOrder.total.toLocaleString()}
+            </p>
+            <p className="text-xs text-gray-400 mt-1 group-hover:text-gray-600 transition-colors">
+              Ver todos los pedidos →
+            </p>
+          </>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-xs text-gray-400">Aún no tienes pedidos</p>
+            <p className="text-xs text-gray-400 mt-1 group-hover:text-gray-600 transition-colors">
+              Ver catálogo →
+            </p>
+          </div>
+        )}
       </button>
 
       {/* Stat: Favoritos */}

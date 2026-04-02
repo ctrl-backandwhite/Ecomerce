@@ -14,6 +14,7 @@
  */
 
 import { ApiError, NetworkError } from "../lib/AppError";
+import { authFetch } from "../lib/authFetch";
 import type {
     ProductVariant,
     VariantTranslation,
@@ -110,7 +111,7 @@ class NexaVariantAdminRepository {
             if (ascending !== undefined) {
                 url += `&ascending=${ascending}`;
             }
-            const res = await fetch(url);
+            const res = await authFetch(url);
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -134,7 +135,7 @@ class NexaVariantAdminRepository {
      */
     async findByPid(pid: string, locale: string = "en"): Promise<ProductVariant[]> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/${pid}/variants?locale=${encodeURIComponent(locale)}`);
+            const res = await authFetch(`${BASE_URL}/detail/${pid}/variants?locale=${encodeURIComponent(locale)}`);
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -158,7 +159,7 @@ class NexaVariantAdminRepository {
      */
     async findByVid(vid: string, locale: string = "en"): Promise<ProductVariant> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants/${vid}?locale=${encodeURIComponent(locale)}`);
+            const res = await authFetch(`${BASE_URL}/detail/variants/${vid}?locale=${encodeURIComponent(locale)}`);
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -182,7 +183,7 @@ class NexaVariantAdminRepository {
      */
     async createVariant(data: VariantPayload): Promise<ProductVariant> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants`, {
+            const res = await authFetch(`${BASE_URL}/detail/variants`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
@@ -210,7 +211,7 @@ class NexaVariantAdminRepository {
      */
     async updateVariant(vid: string, data: VariantPayload): Promise<ProductVariant> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants/${vid}`, {
+            const res = await authFetch(`${BASE_URL}/detail/variants/${vid}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
@@ -238,7 +239,7 @@ class NexaVariantAdminRepository {
      */
     async deleteVariant(vid: string): Promise<void> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants/${vid}`, { method: "DELETE" });
+            const res = await authFetch(`${BASE_URL}/detail/variants/${vid}`, { method: "DELETE" });
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -261,7 +262,7 @@ class NexaVariantAdminRepository {
      */
     async togglePublish(vid: string): Promise<void> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants/${vid}/publish`, { method: "PATCH" });
+            const res = await authFetch(`${BASE_URL}/detail/variants/${vid}/publish`, { method: "PATCH" });
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
                 try {
@@ -284,7 +285,7 @@ class NexaVariantAdminRepository {
      */
     async bulkCreate(rows: VariantPayload[]): Promise<BulkImportResult> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants/bulk`, {
+            const res = await authFetch(`${BASE_URL}/detail/variants/bulk`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ rows }),
@@ -312,7 +313,7 @@ class NexaVariantAdminRepository {
      */
     async deleteVariants(vids: string[]): Promise<void> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants`, {
+            const res = await authFetch(`${BASE_URL}/detail/variants`, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(vids),
@@ -339,7 +340,7 @@ class NexaVariantAdminRepository {
      */
     async bulkUpdateStatus(vids: string[], status: "DRAFT" | "PUBLISHED"): Promise<void> {
         try {
-            const res = await fetch(`${BASE_URL}/detail/variants/bulk-status`, {
+            const res = await authFetch(`${BASE_URL}/detail/variants/bulk-status`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ids: vids, status }),

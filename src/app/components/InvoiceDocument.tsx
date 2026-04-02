@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Printer, Download, X, CheckCircle2, Clock, AlertTriangle, Ban } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
-import type { InvoiceStatus } from "../data/invoices";
+import type { InvoiceStatus } from "../types/invoice";
 
 /* ── Types ─────────────────────────────────────────────────── */
 export interface InvoiceLine {

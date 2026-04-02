@@ -1,10 +1,11 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router";
-import { type Review } from "../data/reviews";
-import { getProductReviews, getReviewStats } from "../data/reviewSynthesizer";
+import { type Review } from "../types/review";
 import { useCart } from "../context/CartContext";
 import { useStore } from "../context/StoreContext";
 import { useLanguage } from "../context/LanguageContext";
+import { useUser } from "../context/UserContext";
+import { useAuth } from "../context/AuthContext";
 import { nexaProductRepository } from "../repositories/NexaProductRepository";
 import { mapNexaProductDetail } from "../mappers/NexaProductMapper";
 import DOMPurify from "dompurify";
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
 import { toast } from "sonner";
-import type { Product } from "../data/products";
+import type { Product } from "../types/product";
 
 // ── Trust badges data ──────────────────────────────────────────
 const TRUST_BADGES = [
@@ -149,9 +150,7 @@ function ReviewsSection({
   productName?: string;
   productCategory?: string;
 }) {
-  const [localReviews, setLocalReviews] = useState<Review[]>(
-    getProductReviews(productId, productName ?? "", productCategory ?? "")
-  );
+  const [localReviews, setLocalReviews] = useState<Review[]>([]);
   const [filter, setFilter] = useState<"all" | "5" | "4" | "3" | "2" | "1">("all");
   const [sort, setSort] = useState<"recent" | "helpful" | "rating_high" | "rating_low">("recent");
   const [showAll, setShowAll] = useState(false);
@@ -549,7 +548,9 @@ export function ProductDetail() {
 
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
-  const [wishlist, setWishlist] = useState(false);
+  const { toggleFavorite, isFavorite } = useUser();
+  const { isAuthenticated } = useAuth();
+  const wishlist = product ? isFavorite(product.id) : false;
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
   const [showSpecsModal, setShowSpecsModal] = useState(false);
   const [specsViewed, setSpecsViewed] = useState(false);
@@ -681,10 +682,10 @@ export function ProductDetail() {
 
   const hasSpecs = (product?.attributes?.length ?? 0) > 0;
 
-  // Compute review stats from synthesized/static reviews (for the header rating display)
+  // Review stats from product data
   const reviewStats = useMemo(() => {
     if (!product) return { avgRating: 0, count: 0 };
-    return getReviewStats(product.id, product.name, product.category);
+    return { avgRating: product.rating ?? 0, count: product.reviews ?? 0 };
   }, [product]);
 
   // ── Loading state ─────────────────────────────────────────
@@ -1008,8 +1009,8 @@ export function ProductDetail() {
                     </button>
                     <button
                       onClick={() => {
-                        setWishlist(!wishlist);
-                        toast.success(wishlist ? "Eliminado de favoritos" : "Agregado a favoritos");
+                        if (!isAuthenticated) { toast.error("Inicia sesión para agregar favoritos"); return; }
+                        if (product) toggleFavorite(product.id);
                       }}
                       title={wishlist ? "Quitar de favoritos" : "Agregar a favoritos"}
                       className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${wishlist

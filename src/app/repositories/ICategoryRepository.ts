@@ -2,7 +2,7 @@
  * ICategoryRepository — contract for category data access.
  */
 
-import type { Category } from "../data/adminData";
+import type { Category } from "../types/admin";
 
 export interface ICategoryRepository {
   /** Returns all available categories, applying caching internally. */

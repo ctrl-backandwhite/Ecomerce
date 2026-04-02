@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { QRCodeCanvas, QRCodeSVG } from "qrcode.react";
-import type { Product } from "../../data/products";
+import type { Product } from "../../types/product";
 import { toast } from "sonner";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -234,8 +234,8 @@ export function ProductQRModal({
                   key={value}
                   onClick={() => setQrSize(value)}
                   className={`w-8 h-7 text-xs rounded-lg border transition-all ${qrSize === value
-                      ? "border-gray-600 bg-gray-600 text-white"
-                      : "border-gray-200 text-gray-500 hover:border-gray-400"
+                    ? "border-gray-600 bg-gray-600 text-white"
+                    : "border-gray-200 text-gray-500 hover:border-gray-400"
                     }`}
                 >
                   {label}
@@ -291,8 +291,8 @@ export function ProductQRModal({
                     key={key}
                     onClick={() => setQrStyle(key)}
                     className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs transition-all ${qrStyle === key
-                        ? "border-gray-900 bg-gray-50 text-gray-900"
-                        : "border-gray-100 text-gray-500 hover:border-gray-300"
+                      ? "border-gray-900 bg-gray-50 text-gray-900"
+                      : "border-gray-100 text-gray-500 hover:border-gray-300"
                       }`}
                   >
                     <div className={`w-4 h-4 rounded border flex-shrink-0 ${s.preview}`} />
@@ -313,8 +313,8 @@ export function ProductQRModal({
                     onClick={() => setQrLevel(value)}
                     title={hint}
                     className={`flex-1 h-7 text-xs rounded-lg border transition-all ${qrLevel === value
-                        ? "border-gray-600 bg-gray-600 text-white"
-                        : "border-gray-200 text-gray-500 hover:border-gray-400"
+                      ? "border-gray-600 bg-gray-600 text-white"
+                      : "border-gray-200 text-gray-500 hover:border-gray-400"
                       }`}
                   >
                     {label}
@@ -360,8 +360,8 @@ export function ProductQRModal({
           <button
             onClick={handleCopy}
             className={`flex items-center gap-1.5 text-xs border rounded-xl px-3.5 py-2 transition-all ${copied
-                ? "border-green-500 bg-green-50 text-green-700"
-                : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-white"
+              ? "border-green-500 bg-green-50 text-green-700"
+              : "border-gray-200 text-gray-600 hover:border-gray-400 hover:bg-white"
               }`}
           >
             {copied ? <Check className="w-3.5 h-3.5" strokeWidth={2} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}

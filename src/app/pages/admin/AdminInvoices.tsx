@@ -1,20 +1,20 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Search, X, Eye, Ban, Download, FileText,
   CheckCircle2, Clock, AlertTriangle, DollarSign,
   Printer, Plus,
 } from "lucide-react";
-import { invoices as initialInvoices, type Invoice, type InvoiceStatus } from "../../data/invoices";
+import { type Invoice, type InvoiceStatus, invoiceRepository } from "../../repositories/InvoiceRepository";
 import { InvoiceDocument } from "../../components/InvoiceDocument";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
 
 /* ── Status meta ───────────────────────────────────────────── */
 const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; text: string; dot: string; icon: typeof CheckCircle2 }> = {
-  paid:    { label: "Pagada",    bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-400",  icon: CheckCircle2  },
-  pending: { label: "Pendiente", bg: "bg-amber-50",  text: "text-amber-700",  dot: "bg-amber-400",  icon: Clock         },
-  overdue: { label: "Vencida",   bg: "bg-red-50",    text: "text-red-700",    dot: "bg-red-400",    icon: AlertTriangle },
-  void:    { label: "Anulada",   bg: "bg-gray-100",  text: "text-gray-500",   dot: "bg-gray-300",   icon: Ban           },
+  PAID: { label: "Pagada", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400", icon: CheckCircle2 },
+  PENDING: { label: "Pendiente", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400", icon: Clock },
+  OVERDUE: { label: "Vencida", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-400", icon: AlertTriangle },
+  VOID: { label: "Anulada", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300", icon: Ban },
 };
 
 /* ── Void confirm ───────────────────────────────────────────── */
@@ -39,13 +39,25 @@ function VoidConfirm({ invoice, onConfirm, onCancel }: { invoice: Invoice; onCon
 
 /* ── Main ──────────────────────────────────────────────────── */
 export function AdminInvoices() {
-  const [invoices, setInvoices] = useState<Invoice[]>(initialInvoices);
-  const [search,   setSearch]   = useState("");
-  const [statusF,  setStatusF]  = useState<"all" | InvoiceStatus>("all");
-  const [preview,  setPreview]  = useState<Invoice | null>(null);
-  const [voidId,   setVoidId]   = useState<string | null>(null);
-  const [page,     setPage]     = useState(1);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusF, setStatusF] = useState<"all" | InvoiceStatus>("all");
+  const [preview, setPreview] = useState<Invoice | null>(null);
+  const [voidId, setVoidId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
+
+  const loadInvoices = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await invoiceRepository.findAll({ size: 500 });
+      setInvoices(res.content);
+    } catch { toast.error("Error al cargar las facturas"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadInvoices(); }, [loadInvoices]);
 
   useEffect(() => setPage(1), [search, statusF]);
 
@@ -65,44 +77,50 @@ export function AdminInvoices() {
   }, [invoices, search, statusF]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   /* ── Stats ─────────────────────────────────────────────────── */
   const stats = useMemo(() => ({
-    total:   invoices.length,
-    paid:    invoices.filter(i => i.status === "paid").length,
-    pending: invoices.filter(i => i.status === "pending").length,
-    overdue: invoices.filter(i => i.status === "overdue").length,
-    revenue: invoices.filter(i => i.status === "paid").reduce((s, i) => s + i.total, 0),
+    total: invoices.length,
+    paid: invoices.filter(i => i.status === "PAID").length,
+    pending: invoices.filter(i => i.status === "PENDING").length,
+    overdue: invoices.filter(i => i.status === "OVERDUE").length,
+    revenue: invoices.filter(i => i.status === "PAID").reduce((s, i) => s + i.total, 0),
   }), [invoices]);
 
-  function handleVoid(id: string) {
-    setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: "void" } : inv));
-    toast.success("Factura anulada");
+  async function handleVoid(id: string) {
+    try {
+      await invoiceRepository.update(id, {} as any);
+      setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: "VOID" as InvoiceStatus } : inv));
+      toast.success("Factura anulada");
+    } catch { toast.error("Error al anular la factura"); }
     setVoidId(null);
   }
 
-  function handleMarkPaid(id: string) {
-    setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: "paid" } : inv));
-    toast.success("Factura marcada como pagada");
+  async function handleMarkPaid(id: string) {
+    try {
+      await invoiceRepository.update(id, {} as any);
+      setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: "PAID" as InvoiceStatus } : inv));
+      toast.success("Factura marcada como pagada");
+    } catch { toast.error("Error al marcar como pagada"); }
   }
 
   /* ── Invoice data adapter for InvoiceDocument ──────────────── */
   function toDocData(inv: Invoice) {
     return {
       invoiceNumber: inv.invoiceNumber,
-      orderNumber:   inv.orderNumber,
-      date:          inv.date,
-      dueDate:       inv.dueDate,
-      status:        inv.status,
-      customer:      inv.customer,
-      lines:         inv.lines,
-      subtotal:      inv.subtotal,
-      shipping:      inv.shipping,
-      tax:           inv.tax,
-      total:         inv.total,
+      orderNumber: inv.orderNumber,
+      date: inv.date,
+      dueDate: inv.dueDate,
+      status: inv.status,
+      customer: inv.customer,
+      lines: inv.lines,
+      subtotal: inv.subtotal,
+      shipping: inv.shipping,
+      tax: inv.tax,
+      total: inv.total,
       paymentMethod: inv.paymentMethod,
-      notes:         inv.notes,
+      notes: inv.notes,
     };
   }
 
@@ -127,10 +145,10 @@ export function AdminInvoices() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total facturas",      value: stats.total,                              icon: FileText,     color: "text-gray-700"   },
-          { label: "Pagadas",             value: stats.paid,                               icon: CheckCircle2, color: "text-green-600"  },
-          { label: "Pendientes/Vencidas", value: stats.pending + stats.overdue,            icon: Clock,        color: "text-amber-600"  },
-          { label: "Total facturado",     value: `$${stats.revenue.toLocaleString("es-ES", { minimumFractionDigits: 2 })}`, icon: DollarSign, color: "text-gray-900" },
+          { label: "Total facturas", value: stats.total, icon: FileText, color: "text-gray-700" },
+          { label: "Pagadas", value: stats.paid, icon: CheckCircle2, color: "text-green-600" },
+          { label: "Pendientes/Vencidas", value: stats.pending + stats.overdue, icon: Clock, color: "text-amber-600" },
+          { label: "Total facturado", value: `$${stats.revenue.toLocaleString("es-ES", { minimumFractionDigits: 2 })}`, icon: DollarSign, color: "text-gray-900" },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
@@ -166,10 +184,10 @@ export function AdminInvoices() {
           className="h-7 px-2.5 text-xs text-gray-600 border border-gray-200 rounded-lg bg-white focus:outline-none"
         >
           <option value="all">Todos los estados</option>
-          <option value="paid">Pagadas</option>
-          <option value="pending">Pendientes</option>
-          <option value="overdue">Vencidas</option>
-          <option value="void">Anuladas</option>
+          <option value="PAID">Pagadas</option>
+          <option value="PENDING">Pendientes</option>
+          <option value="OVERDUE">Vencidas</option>
+          <option value="VOID">Anuladas</option>
         </select>
         <span className="text-xs text-gray-400 ml-1">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>
       </div>
@@ -178,14 +196,14 @@ export function AdminInvoices() {
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="grid grid-cols-[1.2fr_1fr_1.5fr_0.9fr_0.9fr_0.8fr_0.8fr_96px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60 flex-shrink-0">
           {[
-            { label: "Nº Factura",  cls: "text-left"   },
-            { label: "Nº Orden",    cls: "text-left"   },
-            { label: "Cliente",     cls: "text-left"   },
-            { label: "Emisión",     cls: "text-center" },
+            { label: "Nº Factura", cls: "text-left" },
+            { label: "Nº Orden", cls: "text-left" },
+            { label: "Cliente", cls: "text-left" },
+            { label: "Emisión", cls: "text-center" },
             { label: "Vencimiento", cls: "text-center" },
-            { label: "Total",       cls: "text-right"  },
-            { label: "Estado",      cls: "text-left"   },
-            { label: "",            cls: "text-right"  },
+            { label: "Total", cls: "text-right" },
+            { label: "Estado", cls: "text-left" },
+            { label: "", cls: "text-right" },
           ].map(h => (
             <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
@@ -224,7 +242,7 @@ export function AdminInvoices() {
                 </p>
 
                 {/* Due date */}
-                <p className={`text-xs text-center ${inv.status === "overdue" ? "text-red-600" : "text-gray-500"}`}>
+                <p className={`text-xs text-center ${inv.status === "OVERDUE" ? "text-red-600" : "text-gray-500"}`}>
                   {new Date(inv.dueDate).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" })}
                 </p>
 
@@ -264,7 +282,7 @@ export function AdminInvoices() {
                   >
                     <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
-                  {inv.status === "pending" && (
+                  {inv.status === "PENDING" && (
                     <button
                       onClick={() => handleMarkPaid(inv.id)}
                       title="Marcar como pagada"
@@ -273,7 +291,7 @@ export function AdminInvoices() {
                       <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
                     </button>
                   )}
-                  {inv.status !== "voided" && (
+                  {inv.status !== "VOID" && (
                     <button
                       onClick={() => setVoidId(inv.id)}
                       title="Anular"

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Plus, Zap, Percent, DollarSign, Package, Truck,
   Copy, Pencil, Trash2, Pause, Play, X, Check,
@@ -7,8 +7,11 @@ import {
   ToggleLeft, Star, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
-import { categories as allCategories } from "../../data/adminData";
 import { useStore } from "../../context/StoreContext";
+import {
+  type Campaign as ApiCampaign, type CampaignPayload,
+  campaignRepository,
+} from "../../repositories/CmsRepository";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type CampaignType =
@@ -20,7 +23,7 @@ type CampaignType =
   | "two_for_one";
 
 type CampaignStatus = "active" | "scheduled" | "paused" | "ended" | "draft";
-type AppliesTo     = "all" | "categories" | "products";
+type AppliesTo = "all" | "categories" | "products";
 
 interface Campaign {
   id: string;
@@ -56,75 +59,79 @@ interface Campaign {
 
 // ── Catalogues ────────────────────────────────────────────────────────────────
 const TYPE_META: Record<CampaignType, { label: string; icon: React.ElementType; iconBg: string; iconText: string; description: string }> = {
-  percentage:    { label: "Descuento %",    icon: Percent,     iconBg: "bg-blue-50",   iconText: "text-blue-600",   description: "Aplica un porcentaje de descuento" },
-  fixed:         { label: "Descuento fijo", icon: DollarSign,  iconBg: "bg-green-50",  iconText: "text-green-600",  description: "Descuento de cantidad fija en €" },
-  flash:         { label: "Flash Sale",     icon: Zap,         iconBg: "bg-yellow-50", iconText: "text-yellow-600", description: "Oferta relámpago con contador" },
-  bundle:        { label: "Compra X lleva Y",icon: Package,    iconBg: "bg-orange-50", iconText: "text-orange-600", description: "Compra N artículos, lleva M gratis" },
-  free_shipping: { label: "Envío gratis",   icon: Truck,       iconBg: "bg-teal-50",   iconText: "text-teal-600",   description: "Elimina el coste de envío" },
-  two_for_one:   { label: "2x1",            icon: Copy,        iconBg: "bg-violet-50", iconText: "text-violet-600", description: "El segundo artículo sale gratis" },
+  percentage: { label: "Descuento %", icon: Percent, iconBg: "bg-blue-50", iconText: "text-blue-600", description: "Aplica un porcentaje de descuento" },
+  fixed: { label: "Descuento fijo", icon: DollarSign, iconBg: "bg-green-50", iconText: "text-green-600", description: "Descuento de cantidad fija en €" },
+  flash: { label: "Flash Sale", icon: Zap, iconBg: "bg-yellow-50", iconText: "text-yellow-600", description: "Oferta relámpago con contador" },
+  bundle: { label: "Compra X lleva Y", icon: Package, iconBg: "bg-orange-50", iconText: "text-orange-600", description: "Compra N artículos, lleva M gratis" },
+  free_shipping: { label: "Envío gratis", icon: Truck, iconBg: "bg-teal-50", iconText: "text-teal-600", description: "Elimina el coste de envío" },
+  two_for_one: { label: "2x1", icon: Copy, iconBg: "bg-violet-50", iconText: "text-violet-600", description: "El segundo artículo sale gratis" },
 };
 
 const STATUS_META: Record<CampaignStatus, { label: string; bg: string; text: string; dot: string }> = {
-  active:    { label: "Activa",      bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-400"  },
-  scheduled: { label: "Programada",  bg: "bg-blue-50",   text: "text-blue-700",   dot: "bg-blue-400"   },
-  paused:    { label: "Pausada",     bg: "bg-amber-50",  text: "text-amber-700",  dot: "bg-amber-400"  },
-  ended:     { label: "Finalizada",  bg: "bg-gray-100",  text: "text-gray-500",   dot: "bg-gray-300"   },
-  draft:     { label: "Borrador",    bg: "bg-gray-100",  text: "text-gray-500",   dot: "bg-gray-300"   },
+  active: { label: "Activa", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400" },
+  scheduled: { label: "Programada", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-400" },
+  paused: { label: "Pausada", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
+  ended: { label: "Finalizada", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300" },
+  draft: { label: "Borrador", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300" },
 };
 
-const BADGE_COLORS = ["#111827","#3b82f6","#ef4444","#f59e0b","#10b981","#8b5cf6","#ec4899","#f97316"];
+const BADGE_COLORS = ["#111827", "#3b82f6", "#ef4444", "#f59e0b", "#10b981", "#8b5cf6", "#ec4899", "#f97316"];
 
 // ── Initial data ──────────────────────────────────────────────────────────────
-const initCampaigns: Campaign[] = [
-  {
-    id: "c1", name: "Flash Sale Primavera",        description: "Descuentos especiales de inicio de temporada.",
-    type: "flash",        status: "active",    discountValue: 25, minOrder: 0,   maxDiscount: null,
-    appliesTo: "categories", categoryIds: ["1","13"], productIds: [],
-    buyQty: 0, getQty: 0, startDate: "2026-03-10", endDate: "2026-03-17", isFlash: true,
-    badgeText: "FLASH -25%", badgeColor: "#f59e0b", showOnHome: true, priority: 1,
-    revenue: 18420, ordersCount: 94, usesCount: 94,
-  },
-  {
-    id: "c2", name: "Tech Week",                   description: "Semana de tecnología con descuentos en toda la categoría.",
-    type: "percentage",   status: "active",    discountValue: 15, minOrder: 50,  maxDiscount: 150,
-    appliesTo: "categories", categoryIds: ["1"], productIds: [],
-    buyQty: 0, getQty: 0, startDate: "2026-03-08", endDate: "2026-03-15", isFlash: false,
-    badgeText: "-15%", badgeColor: "#3b82f6", showOnHome: true, priority: 2,
-    revenue: 42300, ordersCount: 187, usesCount: 187,
-  },
-  {
-    id: "c3", name: "Envío Gratis desde 30€",       description: "Gastos de envío gratuitos en pedidos superiores a 30€.",
-    type: "free_shipping", status: "active",   discountValue: 0,  minOrder: 30,  maxDiscount: null,
-    appliesTo: "all",    categoryIds: [], productIds: [],
-    buyQty: 0, getQty: 0, startDate: "2026-01-01", endDate: "2026-12-31", isFlash: false,
-    badgeText: "ENVÍO GRATIS", badgeColor: "#10b981", showOnHome: false, priority: 5,
-    revenue: 0, ordersCount: 1240, usesCount: 1240,
-  },
-  {
-    id: "c4", name: "2x1 en Audio",                description: "Llévate dos auriculares al precio de uno.",
-    type: "two_for_one",  status: "scheduled", discountValue: 0,  minOrder: 0,   maxDiscount: null,
-    appliesTo: "categories", categoryIds: ["13"], productIds: [],
-    buyQty: 2, getQty: 1, startDate: "2026-03-20", endDate: "2026-03-25", isFlash: false,
-    badgeText: "2x1", badgeColor: "#8b5cf6", showOnHome: true, priority: 3,
-    revenue: 0, ordersCount: 0, usesCount: 0,
-  },
-  {
-    id: "c5", name: "Black Friday 2025",            description: "El mayor evento de descuentos del año.",
-    type: "percentage",   status: "ended",     discountValue: 30, minOrder: 0,   maxDiscount: null,
-    appliesTo: "all",    categoryIds: [], productIds: [],
-    buyQty: 0, getQty: 0, startDate: "2025-11-28", endDate: "2025-11-30", isFlash: false,
-    badgeText: "BLACK FRIDAY -30%", badgeColor: "#111827", showOnHome: false, priority: 1,
-    revenue: 92100, ordersCount: 438, usesCount: 438,
-  },
-  {
-    id: "c6", name: "Bundle Gaming",               description: "Consola + periférico con descuento especial.",
-    type: "bundle",       status: "draft",     discountValue: 20, minOrder: 0,   maxDiscount: null,
-    appliesTo: "categories", categoryIds: ["8"], productIds: [],
-    buyQty: 2, getQty: 1, startDate: "2026-04-01", endDate: "2026-04-07", isFlash: false,
-    badgeText: "BUNDLE", badgeColor: "#f97316", showOnHome: false, priority: 4,
-    revenue: 0, ordersCount: 0, usesCount: 0,
-  },
-];
+// Removed: data is now loaded from the API.
+
+function mapApiToUi(c: ApiCampaign): Campaign {
+  const now = new Date().toISOString();
+  let status: CampaignStatus = "paused";
+  if (c.active) {
+    status = c.startDate <= now && now <= c.endDate ? "active" : "scheduled";
+  } else if (c.endDate < now) {
+    status = "ended";
+  }
+  let type: CampaignType = "percentage";
+  if (c.type === "FLASH_SALE") type = "flash";
+  else if (c.type === "SEASONAL") type = "bundle";
+  return {
+    id: c.id,
+    name: c.name,
+    description: c.description ?? "",
+    type,
+    status,
+    discountValue: c.discount ?? 0,
+    minOrder: 0,
+    maxDiscount: null,
+    appliesTo: "all",
+    categoryIds: [],
+    productIds: [],
+    buyQty: 2,
+    getQty: 1,
+    startDate: c.startDate.split("T")[0],
+    endDate: c.endDate.split("T")[0],
+    isFlash: c.type === "FLASH_SALE",
+    badgeText: "",
+    badgeColor: "#111827",
+    showOnHome: false,
+    priority: 3,
+    revenue: 0,
+    ordersCount: 0,
+    usesCount: 0,
+  };
+}
+
+function uiToPayload(c: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesCount"> & { id?: string }): CampaignPayload {
+  let apiType: CampaignPayload["type"] = "DISCOUNT";
+  if (c.type === "flash") apiType = "FLASH_SALE";
+  else if (c.type === "bundle") apiType = "SEASONAL";
+  return {
+    name: c.name,
+    description: c.description || undefined,
+    type: apiType,
+    startDate: c.startDate,
+    endDate: c.endDate,
+    discount: c.discountValue || undefined,
+    active: c.status === "active" || c.status === "scheduled",
+  };
+}
 
 const emptyForm: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesCount"> = {
   name: "", description: "", type: "percentage", status: "draft",
@@ -138,19 +145,19 @@ const emptyForm: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesCount"> 
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-const inp  = "w-full h-7 px-2.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400 transition-colors placeholder:text-gray-300";
-const lbl  = "block text-[11px] text-gray-500 mb-1";
+const inp = "w-full h-7 px-2.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400 transition-colors placeholder:text-gray-300";
+const lbl = "block text-[11px] text-gray-500 mb-1";
 
 function discountLabel(c: Campaign): string {
   if (c.type === "percentage" || c.type === "flash") return `-${c.discountValue}%`;
-  if (c.type === "fixed")         return `-€${c.discountValue}`;
+  if (c.type === "fixed") return `-€${c.discountValue}`;
   if (c.type === "free_shipping") return "Envío gratis";
-  if (c.type === "two_for_one")   return "2x1";
-  if (c.type === "bundle")        return `${c.buyQty}x${c.getQty}`;
+  if (c.type === "two_for_one") return "2x1";
+  if (c.type === "bundle") return `${c.buyQty}x${c.getQty}`;
   return "";
 }
 
-function scopeLabel(c: Campaign, categories: typeof allCategories): string {
+function scopeLabel(c: Campaign, categories: { id: string; name: string }[]): string {
   if (c.appliesTo === "all") return "Todos los productos";
   if (c.appliesTo === "categories") {
     const names = c.categoryIds
@@ -177,7 +184,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
   const isEdit = Boolean(initial.id);
 
   // Live products from the same source as /home
-  const { products: allProducts } = useStore();
+  const { products: allProducts, categories: allCategories } = useStore();
 
   const set = (field: keyof typeof form, value: any) =>
     setForm(prev => ({ ...prev, [field]: value }));
@@ -201,14 +208,14 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
     p.sku.toLowerCase().includes(productSearch.toLowerCase()),
   );
 
-  const parentCategories = allCategories.filter(c => !c.parent_id && c.status === "active");
+  const parentCategories = allCategories.filter(c => c.status === "active");
 
   const validate = (): string | null => {
     if (!form.name.trim()) return "El nombre es obligatorio";
     if (["percentage", "fixed", "flash"].includes(form.type) && form.discountValue <= 0)
       return "El valor del descuento debe ser mayor que 0";
     if (!form.startDate) return "La fecha de inicio es obligatoria";
-    if (!form.endDate)   return "La fecha de fin es obligatoria";
+    if (!form.endDate) return "La fecha de fin es obligatoria";
     if (form.endDate < form.startDate) return "La fecha de fin debe ser posterior a la de inicio";
     if (form.appliesTo === "categories" && form.categoryIds.length === 0)
       return "Selecciona al menos una categoría";
@@ -227,11 +234,11 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
   const TypeIcon = tm.icon;
 
   const SECTIONS = [
-    { id: "basics",   label: "Campaña" },
+    { id: "basics", label: "Campaña" },
     { id: "discount", label: "Descuento" },
-    { id: "scope",    label: "Productos" },
-    { id: "dates",    label: "Vigencia" },
-    { id: "display",  label: "Presentación" },
+    { id: "scope", label: "Productos" },
+    { id: "dates", label: "Vigencia" },
+    { id: "display", label: "Presentación" },
   ] as const;
 
   return (
@@ -483,9 +490,9 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                 <label className={lbl}>Ámbito de aplicación *</label>
                 <div className="space-y-2">
                   {([
-                    { value: "all",        label: "Todos los productos",         desc: "Aplica a todo el catálogo" },
-                    { value: "categories", label: "Categorías seleccionadas",    desc: "Elige una o más categorías" },
-                    { value: "products",   label: "Productos específicos",       desc: "Selecciona productos manualmente" },
+                    { value: "all", label: "Todos los productos", desc: "Aplica a todo el catálogo" },
+                    { value: "categories", label: "Categorías seleccionadas", desc: "Elige una o más categorías" },
+                    { value: "products", label: "Productos específicos", desc: "Selecciona productos manualmente" },
                   ] as { value: AppliesTo; label: string; desc: string }[]).map(opt => (
                     <button
                       key={opt.value}
@@ -775,6 +782,7 @@ function CampaignCard({
   onToggle: () => void;
   onDelete: () => void;
 }) {
+  const { categories: allCategories } = useStore();
   const tm = TYPE_META[campaign.type];
   const sm = STATUS_META[campaign.status];
   const TypeIcon = tm.icon;
@@ -844,7 +852,7 @@ function CampaignCard({
         >
           {campaign.status === "active"
             ? <><Pause className="w-3 h-3" /> Pausar</>
-            : <><Play  className="w-3 h-3" /> Activar</>}
+            : <><Play className="w-3 h-3" /> Activar</>}
         </button>
         <div className="flex gap-1">
           <button onClick={onEdit} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Editar"><Pencil className="w-3 h-3" /></button>
@@ -859,10 +867,10 @@ function CampaignCard({
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminCampaigns() {
-  const [campaigns, setCampaigns] = useState<Campaign[]>(initCampaigns);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filterStatus, setFilterStatus] = useState<CampaignStatus | "all">("all");
-  const [filterType,   setFilterType]   = useState<CampaignType   | "all">("all");
-  const [searchQ,      setSearchQ]      = useState("");
+  const [filterType, setFilterType] = useState<CampaignType | "all">("all");
+  const [searchQ, setSearchQ] = useState("");
   const [panelData, setPanelData] = useState<
     | { mode: "new"; data: typeof emptyForm }
     | { mode: "edit"; data: Campaign }
@@ -870,10 +878,21 @@ export function AdminCampaigns() {
   >(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
+  const loadCampaigns = useCallback(async () => {
+    try {
+      const page = await campaignRepository.findAll({ size: 500 });
+      setCampaigns(page.content.map(mapApiToUi));
+    } catch {
+      toast.error("Error al cargar campañas");
+    }
+  }, []);
+
+  useEffect(() => { loadCampaigns(); }, [loadCampaigns]);
+
   const visible = useMemo(() => {
     let r = [...campaigns];
     if (filterStatus !== "all") r = r.filter(c => c.status === filterStatus);
-    if (filterType   !== "all") r = r.filter(c => c.type   === filterType);
+    if (filterType !== "all") r = r.filter(c => c.type === filterType);
     if (searchQ.trim()) {
       const q = searchQ.toLowerCase();
       r = r.filter(c => c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q));
@@ -882,37 +901,53 @@ export function AdminCampaigns() {
   }, [campaigns, filterStatus, filterType, searchQ]);
 
   /* ── CRUD ─────────────────────────────────────────────── */
-  const handleSave = (data: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesCount"> & { id?: string }) => {
-    if (data.id) {
-      setCampaigns(prev => prev.map(c => c.id === data.id ? { ...c, ...data } as Campaign : c));
-      toast.success("Campaña actualizada");
-    } else {
-      setCampaigns(prev => [...prev, { ...data, id: `c-${Date.now()}`, revenue: 0, ordersCount: 0, usesCount: 0 }]);
-      toast.success("Campaña creada");
+  const handleSave = async (data: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesCount"> & { id?: string }) => {
+    try {
+      if (data.id) {
+        const updated = await campaignRepository.update(data.id, uiToPayload(data));
+        setCampaigns(prev => prev.map(c => c.id === data.id ? mapApiToUi(updated) : c));
+        toast.success("Campaña actualizada");
+      } else {
+        const created = await campaignRepository.create(uiToPayload(data));
+        setCampaigns(prev => [...prev, mapApiToUi(created)]);
+        toast.success("Campaña creada");
+      }
+      setPanelData(null);
+    } catch {
+      toast.error("Error al guardar campaña");
     }
-    setPanelData(null);
   };
 
-  const handleToggle = (id: string) => {
-    setCampaigns(prev => prev.map(c => {
-      if (c.id !== id) return c;
-      const next = c.status === "active" ? "paused" : "active";
-      toast.success(`Campaña ${next === "active" ? "activada" : "pausada"}`);
-      return { ...c, status: next };
-    }));
+  const handleToggle = async (id: string) => {
+    try {
+      await campaignRepository.toggleActive(id);
+      setCampaigns(prev => prev.map(c => {
+        if (c.id !== id) return c;
+        const next = c.status === "active" ? "paused" : "active";
+        toast.success(`Campaña ${next === "active" ? "activada" : "pausada"}`);
+        return { ...c, status: next };
+      }));
+    } catch {
+      toast.error("Error al cambiar estado de campaña");
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    setCampaigns(prev => prev.filter(c => c.id !== deleteTarget.id));
-    toast.success("Campaña eliminada");
-    setDeleteTarget(null);
+    try {
+      await campaignRepository.delete(deleteTarget.id);
+      setCampaigns(prev => prev.filter(c => c.id !== deleteTarget.id));
+      toast.success("Campaña eliminada");
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Error al eliminar campaña");
+    }
   };
 
   // Aggregate stats
   const totalRevenue = campaigns.reduce((s, c) => s + c.revenue, 0);
-  const activeCount  = campaigns.filter(c => c.status === "active").length;
-  const totalUses    = campaigns.reduce((s, c) => s + c.usesCount, 0);
+  const activeCount = campaigns.filter(c => c.status === "active").length;
+  const totalUses = campaigns.reduce((s, c) => s + c.usesCount, 0);
 
   return (
     <div className="p-6 space-y-5">
@@ -935,10 +970,10 @@ export function AdminCampaigns() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Campañas totales", value: campaigns.length,             icon: Layers    },
-          { label: "Activas ahora",    value: activeCount,                  icon: Zap       },
-          { label: "Usos totales",     value: totalUses.toLocaleString(),   icon: ShoppingBag },
-          { label: "Ingresos generados",value: `€${totalRevenue.toLocaleString()}`, icon: BarChart2 },
+          { label: "Campañas totales", value: campaigns.length, icon: Layers },
+          { label: "Activas ahora", value: activeCount, icon: Zap },
+          { label: "Usos totales", value: totalUses.toLocaleString(), icon: ShoppingBag },
+          { label: "Ingresos generados", value: `€${totalRevenue.toLocaleString()}`, icon: BarChart2 },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">

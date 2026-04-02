@@ -4,11 +4,12 @@ import { Shield, Eye, EyeOff, Bell, Mail, MessageSquare, ShoppingBag, Tag, Check
 import { toast } from "sonner";
 
 export function ProfileSeguridad() {
-  const { user, updateProfile } = useUser();
+  const { user, saveNotificationPrefs } = useUser();
   const [notif, setNotif] = useState(user.notifications);
+  const [savingNotif, setSavingNotif] = useState(false);
 
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
-  const [showPw, setShowPw]   = useState({ current: false, next: false, confirm: false });
+  const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
   const [pwError, setPwError] = useState("");
 
   const togglePwVis = (field: keyof typeof showPw) =>
@@ -22,9 +23,16 @@ export function ProfileSeguridad() {
     toast.success("Contraseña actualizada correctamente");
   };
 
-  const handleNotifSave = () => {
-    updateProfile({ notifications: notif });
-    toast.success("Preferencias de notificación guardadas");
+  const handleNotifSave = async () => {
+    setSavingNotif(true);
+    try {
+      await saveNotificationPrefs(notif);
+      toast.success("Preferencias de notificación guardadas");
+    } catch {
+      toast.error("No se pudieron guardar las preferencias");
+    } finally {
+      setSavingNotif(false);
+    }
   };
 
   const PwField = ({
@@ -72,10 +80,10 @@ export function ProfileSeguridad() {
   );
 
   const notifItems = [
-    { key: "email" as const,        icon: Mail,         label: "Correo electrónico",       sub: "Recibe actualizaciones por email" },
-    { key: "sms" as const,          icon: MessageSquare, label: "SMS",                      sub: "Notificaciones vía mensaje de texto" },
-    { key: "orderUpdates" as const, icon: ShoppingBag,  label: "Estado de pedidos",        sub: "Cambios en el estado de tus envíos" },
-    { key: "promotions" as const,   icon: Tag,          label: "Ofertas y promociones",    sub: "Descuentos exclusivos para miembros" },
+    { key: "email" as const, icon: Mail, label: "Correo electrónico", sub: "Recibe actualizaciones por email" },
+    { key: "sms" as const, icon: MessageSquare, label: "SMS", sub: "Notificaciones vía mensaje de texto" },
+    { key: "orderUpdates" as const, icon: ShoppingBag, label: "Estado de pedidos", sub: "Cambios en el estado de tus envíos" },
+    { key: "promotions" as const, icon: Tag, label: "Ofertas y promociones", sub: "Descuentos exclusivos para miembros" },
   ];
 
   return (
@@ -95,8 +103,8 @@ export function ProfileSeguridad() {
 
         <div className="px-6 py-6">
           <div className="max-w-md space-y-4">
-            <PwField label="Contraseña actual"    field="current" />
-            <PwField label="Nueva contraseña"     field="next" />
+            <PwField label="Contraseña actual" field="current" />
+            <PwField label="Nueva contraseña" field="next" />
             <PwField label="Confirmar contraseña" field="confirm" />
 
             {pwError && (
@@ -115,14 +123,13 @@ export function ProfileSeguridad() {
                     return (
                       <div
                         key={i}
-                        className={`h-1 flex-1 rounded-full transition-colors ${
-                          i <= strength
+                        className={`h-1 flex-1 rounded-full transition-colors ${i <= strength
                             ? strength <= 1 ? "bg-red-400"
-                            : strength <= 2 ? "bg-amber-400"
-                            : strength <= 3 ? "bg-blue-400"
-                            : "bg-green-400"
+                              : strength <= 2 ? "bg-amber-400"
+                                : strength <= 3 ? "bg-blue-400"
+                                  : "bg-green-400"
                             : "bg-gray-200"
-                        }`}
+                          }`}
                       />
                     );
                   })}
@@ -197,7 +204,7 @@ export function ProfileSeguridad() {
         <div className="divide-y divide-gray-100">
           {[
             { device: "Chrome · macOS", location: "New York, NY", time: "Sesión actual", current: true },
-            { device: "Safari · iPhone 15", location: "London, UK", time: "Hace 2 días",   current: false },
+            { device: "Safari · iPhone 15", location: "London, UK", time: "Hace 2 días", current: false },
           ].map(({ device, location, time, current }) => (
             <div key={device} className="flex items-center justify-between px-6 py-4">
               <div>

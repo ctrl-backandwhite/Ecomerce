@@ -9,6 +9,7 @@
  */
 
 import { ApiError, NetworkError } from "../lib/AppError";
+import { authFetch } from "../lib/authFetch";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
@@ -115,7 +116,7 @@ class NexaCategoryPagedRepository {
             if (query.ascending !== undefined) params.set("ascending", String(query.ascending));
 
             const url = `${BASE_URL}?${params.toString()}`;
-            const res = await fetch(url);
+            const res = await authFetch(url);
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
@@ -144,7 +145,7 @@ class NexaCategoryPagedRepository {
     async togglePublish(categoryId: string): Promise<void> {
         try {
             const url = `${CATEGORIES_URL}/${categoryId}/publish`;
-            const res = await fetch(url, { method: "PATCH", headers: { accept: "*/*" } });
+            const res = await authFetch(url, { method: "PATCH", headers: { accept: "*/*" } });
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
@@ -171,7 +172,7 @@ class NexaCategoryPagedRepository {
     async toggleActive(categoryId: string, active: boolean): Promise<void> {
         try {
             const url = `${CATEGORIES_URL}/${categoryId}/active?active=${active}`;
-            const res = await fetch(url, { method: "PATCH", headers: { accept: "*/*" } });
+            const res = await authFetch(url, { method: "PATCH", headers: { accept: "*/*" } });
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
@@ -197,7 +198,7 @@ class NexaCategoryPagedRepository {
     async findById(categoryId: string, locale: string = "en"): Promise<CategoryDetail> {
         try {
             const url = `${CATEGORIES_URL}/${categoryId}?locale=${encodeURIComponent(locale)}`;
-            const res = await fetch(url);
+            const res = await authFetch(url);
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
@@ -229,7 +230,7 @@ class NexaCategoryPagedRepository {
         translations: { locale: string; name: string }[];
     }): Promise<CategoryDetail> {
         try {
-            const res = await fetch(CATEGORIES_URL, {
+            const res = await authFetch(CATEGORIES_URL, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", accept: "application/json" },
                 body: JSON.stringify(data),
@@ -264,7 +265,7 @@ class NexaCategoryPagedRepository {
     }): Promise<CategoryDetail> {
         try {
             const url = `${CATEGORIES_URL}/${categoryId}`;
-            const res = await fetch(url, {
+            const res = await authFetch(url, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json", accept: "application/json" },
                 body: JSON.stringify(data),
@@ -295,7 +296,7 @@ class NexaCategoryPagedRepository {
     async deleteCategory(categoryId: string): Promise<void> {
         try {
             const url = `${CATEGORIES_URL}/${categoryId}`;
-            const res = await fetch(url, { method: "DELETE", headers: { accept: "*/*" } });
+            const res = await authFetch(url, { method: "DELETE", headers: { accept: "*/*" } });
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
@@ -320,7 +321,7 @@ class NexaCategoryPagedRepository {
     async syncCategories(): Promise<{ created: number; updated: number; total: number }> {
         try {
             const url = `${CATEGORIES_URL}/sync`;
-            const res = await fetch(url, { method: "POST", headers: { accept: "*/*" }, body: "" });
+            const res = await authFetch(url, { method: "POST", headers: { accept: "*/*" }, body: "" });
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
@@ -349,7 +350,7 @@ class NexaCategoryPagedRepository {
     async bulkCreateCategories(rows: BulkCategoryRow[]): Promise<BulkCategoryResult> {
         try {
             const url = `${CATEGORIES_URL}/bulk`;
-            const res = await fetch(url, {
+            const res = await authFetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json", accept: "application/json" },
                 body: JSON.stringify({ rows }),
@@ -379,7 +380,7 @@ class NexaCategoryPagedRepository {
      */
     async deleteCategories(ids: string[]): Promise<void> {
         try {
-            const res = await fetch(CATEGORIES_URL, {
+            const res = await authFetch(CATEGORIES_URL, {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(ids),
@@ -406,7 +407,7 @@ class NexaCategoryPagedRepository {
      */
     async bulkUpdateStatus(ids: string[], status: "DRAFT" | "PUBLISHED"): Promise<void> {
         try {
-            const res = await fetch(`${CATEGORIES_URL}/bulk-status`, {
+            const res = await authFetch(`${CATEGORIES_URL}/bulk-status`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ids, status }),

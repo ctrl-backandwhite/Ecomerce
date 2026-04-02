@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search, Plus, Pencil, Trash2, X, Copy, Check,
   Tag, Percent, DollarSign, Calendar, Users,
@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
+import { type Coupon as ApiCoupon, type CouponPayload, couponRepository } from "../../repositories/CouponRepository";
 
 /* ── Types ────────────────────────────────────────────────── */
 interface Coupon {
@@ -25,16 +26,16 @@ interface Coupon {
 
 /* ── Mock data ───────────────────────────────────────────── */
 const INITIAL_COUPONS: Coupon[] = [
-  { id: "c1",  code: "WELCOME10",   type: "percentage", value: 10,  minOrder: 0,   maxUses: null, usedCount: 47,  expiresAt: null,         status: "active",   description: "Descuento de bienvenida para nuevos clientes", createdAt: "2025-01-15" },
-  { id: "c2",  code: "SUMMER25",    type: "percentage", value: 25,  minOrder: 100, maxUses: 200,  usedCount: 183, expiresAt: "2025-08-31", status: "active",   description: "Campaña de verano 2025", createdAt: "2025-06-01" },
-  { id: "c3",  code: "SAVE50",      type: "fixed",      value: 50,  minOrder: 200, maxUses: 100,  usedCount: 100, expiresAt: "2025-12-31", status: "inactive", description: "Descuento fijo de $50 en pedidos grandes", createdAt: "2025-03-10" },
-  { id: "c4",  code: "NX0362025",    type: "percentage", value: 15,  minOrder: 50,  maxUses: null, usedCount: 312, expiresAt: "2025-12-31", status: "active",   description: "Código anual de la tienda NX036", createdAt: "2025-01-01" },
-  { id: "c5",  code: "FLASH20",     type: "percentage", value: 20,  minOrder: 0,   maxUses: 50,   usedCount: 50,  expiresAt: "2025-03-01", status: "expired",  description: "Oferta flash de 24 horas", createdAt: "2025-02-28" },
-  { id: "c6",  code: "TECH30",      type: "percentage", value: 30,  minOrder: 300, maxUses: 75,   usedCount: 28,  expiresAt: "2026-01-01", status: "active",   description: "Descuento en tecnología de gama alta", createdAt: "2025-09-01" },
-  { id: "c7",  code: "FREESHIP",    type: "fixed",      value: 15,  minOrder: 75,  maxUses: null, usedCount: 89,  expiresAt: null,         status: "active",   description: "Cubre el costo de envío estándar", createdAt: "2025-04-20" },
-  { id: "c8",  code: "VIP100",      type: "fixed",      value: 100, minOrder: 500, maxUses: 20,   usedCount: 7,   expiresAt: "2026-06-30", status: "active",   description: "Cupón exclusivo para clientes VIP", createdAt: "2025-11-01" },
-  { id: "c9",  code: "BLACKFRI40",  type: "percentage", value: 40,  minOrder: 150, maxUses: 500,  usedCount: 500, expiresAt: "2025-11-30", status: "expired",  description: "Black Friday 2025", createdAt: "2025-11-25" },
-  { id: "c10", code: "LOYALTY5",    type: "percentage", value: 5,   minOrder: 0,   maxUses: null, usedCount: 204, expiresAt: null,         status: "inactive", description: "Programa de fidelización — uso interno", createdAt: "2025-05-12" },
+  { id: "c1", code: "WELCOME10", type: "percentage", value: 10, minOrder: 0, maxUses: null, usedCount: 47, expiresAt: null, status: "active", description: "Descuento de bienvenida para nuevos clientes", createdAt: "2025-01-15" },
+  { id: "c2", code: "SUMMER25", type: "percentage", value: 25, minOrder: 100, maxUses: 200, usedCount: 183, expiresAt: "2025-08-31", status: "active", description: "Campaña de verano 2025", createdAt: "2025-06-01" },
+  { id: "c3", code: "SAVE50", type: "fixed", value: 50, minOrder: 200, maxUses: 100, usedCount: 100, expiresAt: "2025-12-31", status: "inactive", description: "Descuento fijo de $50 en pedidos grandes", createdAt: "2025-03-10" },
+  { id: "c4", code: "NX0362025", type: "percentage", value: 15, minOrder: 50, maxUses: null, usedCount: 312, expiresAt: "2025-12-31", status: "active", description: "Código anual de la tienda NX036", createdAt: "2025-01-01" },
+  { id: "c5", code: "FLASH20", type: "percentage", value: 20, minOrder: 0, maxUses: 50, usedCount: 50, expiresAt: "2025-03-01", status: "expired", description: "Oferta flash de 24 horas", createdAt: "2025-02-28" },
+  { id: "c6", code: "TECH30", type: "percentage", value: 30, minOrder: 300, maxUses: 75, usedCount: 28, expiresAt: "2026-01-01", status: "active", description: "Descuento en tecnología de gama alta", createdAt: "2025-09-01" },
+  { id: "c7", code: "FREESHIP", type: "fixed", value: 15, minOrder: 75, maxUses: null, usedCount: 89, expiresAt: null, status: "active", description: "Cubre el costo de envío estándar", createdAt: "2025-04-20" },
+  { id: "c8", code: "VIP100", type: "fixed", value: 100, minOrder: 500, maxUses: 20, usedCount: 7, expiresAt: "2026-06-30", status: "active", description: "Cupón exclusivo para clientes VIP", createdAt: "2025-11-01" },
+  { id: "c9", code: "BLACKFRI40", type: "percentage", value: 40, minOrder: 150, maxUses: 500, usedCount: 500, expiresAt: "2025-11-30", status: "expired", description: "Black Friday 2025", createdAt: "2025-11-25" },
+  { id: "c10", code: "LOYALTY5", type: "percentage", value: 5, minOrder: 0, maxUses: null, usedCount: 204, expiresAt: null, status: "inactive", description: "Programa de fidelización — uso interno", createdAt: "2025-05-12" },
 ];
 
 const EMPTY_FORM: Omit<Coupon, "id" | "usedCount" | "createdAt"> = {
@@ -44,9 +45,9 @@ const EMPTY_FORM: Omit<Coupon, "id" | "usedCount" | "createdAt"> = {
 
 /* ── Status meta ─────────────────────────────────────────── */
 const STATUS_META = {
-  active:   { label: "Activo",   bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-400" },
-  inactive: { label: "Inactivo", bg: "bg-gray-100",   text: "text-gray-500",   dot: "bg-gray-400" },
-  expired:  { label: "Expirado", bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-400" },
+  active: { label: "Activo", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400" },
+  inactive: { label: "Inactivo", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-400" },
+  expired: { label: "Expirado", bg: "bg-red-50", text: "text-red-600", dot: "bg-red-400" },
 };
 
 /* ── Helpers ─────────────────────────────────────────────── */
@@ -69,7 +70,7 @@ function usagePercent(used: number, max: number | null) {
 function CopyBtn({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   function handleCopy() {
-    navigator.clipboard.writeText(text).catch(() => {});
+    navigator.clipboard.writeText(text).catch(() => { });
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   }
@@ -94,40 +95,40 @@ function CouponModal({
 }) {
   const isNew = !coupon.id;
   const [form, setForm] = useState<Omit<Coupon, "id" | "usedCount" | "createdAt">>({
-    code:        coupon.code        ?? "",
-    type:        coupon.type        ?? "percentage",
-    value:       coupon.value       ?? 10,
-    minOrder:    coupon.minOrder    ?? 0,
-    maxUses:     coupon.maxUses     ?? null,
-    expiresAt:   coupon.expiresAt   ?? null,
-    status:      coupon.status      ?? "active",
+    code: coupon.code ?? "",
+    type: coupon.type ?? "percentage",
+    value: coupon.value ?? 10,
+    minOrder: coupon.minOrder ?? 0,
+    maxUses: coupon.maxUses ?? null,
+    expiresAt: coupon.expiresAt ?? null,
+    status: coupon.status ?? "active",
     description: coupon.description ?? "",
   });
   const [unlimited, setUnlimited] = useState(coupon.maxUses === null || coupon.maxUses === undefined ? true : false);
-  const [noExpiry, setNoExpiry]   = useState(!coupon.expiresAt);
+  const [noExpiry, setNoExpiry] = useState(!coupon.expiresAt);
 
   const set = (k: keyof typeof form, v: any) => setForm(f => ({ ...f, [k]: v }));
 
   function handleSave() {
     if (!form.code.trim()) { toast.error("El código es obligatorio"); return; }
-    if (form.value <= 0)   { toast.error("El valor debe ser mayor a 0"); return; }
+    if (form.value <= 0) { toast.error("El valor debe ser mayor a 0"); return; }
     if (form.type === "percentage" && form.value > 100) { toast.error("El porcentaje no puede superar 100"); return; }
 
     const computed: Coupon = {
-      id:         coupon.id ?? `coup-${Date.now()}`,
-      usedCount:  coupon.usedCount ?? 0,
-      createdAt:  coupon.createdAt ?? new Date().toISOString().slice(0, 10),
+      id: coupon.id ?? `coup-${Date.now()}`,
+      usedCount: coupon.usedCount ?? 0,
+      createdAt: coupon.createdAt ?? new Date().toISOString().slice(0, 10),
       ...form,
-      code:       form.code.toUpperCase().trim(),
-      maxUses:    unlimited ? null : form.maxUses,
-      expiresAt:  noExpiry  ? null : form.expiresAt,
+      code: form.code.toUpperCase().trim(),
+      maxUses: unlimited ? null : form.maxUses,
+      expiresAt: noExpiry ? null : form.expiresAt,
     };
     onSave(computed);
   }
 
-  const inp  = "w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-2.5 h-7 focus:outline-none focus:border-gray-400 bg-white placeholder-gray-300";
-  const lbl  = "block text-[11px] text-gray-400 mb-1";
-  const row  = "grid grid-cols-2 gap-3";
+  const inp = "w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-2.5 h-7 focus:outline-none focus:border-gray-400 bg-white placeholder-gray-300";
+  const lbl = "block text-[11px] text-gray-400 mb-1";
+  const row = "grid grid-cols-2 gap-3";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
@@ -171,9 +172,8 @@ function CouponModal({
                   <button
                     key={t}
                     onClick={() => set("type", t)}
-                    className={`flex-1 flex items-center justify-center gap-1 text-[11px] transition-colors ${
-                      form.type === t ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50"
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-1 text-[11px] transition-colors ${form.type === t ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50"
+                      }`}
                   >
                     {t === "percentage" ? <Percent className="w-3 h-3" /> : <DollarSign className="w-3 h-3" />}
                     {t === "percentage" ? "%" : "Fijo"}
@@ -215,7 +215,7 @@ function CouponModal({
                 >
                   {unlimited
                     ? <ToggleRight className="w-4 h-4 text-gray-900" />
-                    : <ToggleLeft  className="w-4 h-4" />}
+                    : <ToggleLeft className="w-4 h-4" />}
                 </button>
               </label>
             </div>
@@ -247,7 +247,7 @@ function CouponModal({
                 >
                   {noExpiry
                     ? <ToggleRight className="w-4 h-4 text-gray-900" />
-                    : <ToggleLeft  className="w-4 h-4" />}
+                    : <ToggleLeft className="w-4 h-4" />}
                 </button>
               </label>
             </div>
@@ -286,9 +286,8 @@ function CouponModal({
                 <button
                   key={s}
                   onClick={() => set("status", s)}
-                  className={`flex-1 text-[11px] transition-colors ${
-                    form.status === s ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50"
-                  }`}
+                  className={`flex-1 text-[11px] transition-colors ${form.status === s ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50"
+                    }`}
                 >
                   {s === "active" ? "Activo" : "Inactivo"}
                 </button>
@@ -331,7 +330,7 @@ function DeleteConfirm({ code, onConfirm, onClose }: { code: string; onConfirm: 
           El cupón <span className="font-mono text-gray-700">{code}</span> será eliminado permanentemente.
         </p>
         <div className="flex gap-2 justify-center">
-          <button onClick={onClose}   className="h-7 px-4 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
+          <button onClick={onClose} className="h-7 px-4 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
           <button onClick={onConfirm} className="h-7 px-4 text-xs text-white bg-red-500 rounded-lg hover:bg-red-600 transition-colors">Eliminar</button>
         </div>
       </div>
@@ -341,21 +340,33 @@ function DeleteConfirm({ code, onConfirm, onClose }: { code: string; onConfirm: 
 
 /* ── Main page ───────────────────────────────────────────── */
 export function AdminCoupons() {
-  const [coupons, setCoupons]       = useState<Coupon[]>(INITIAL_COUPONS);
-  const [search,  setSearch]        = useState("");
-  const [statusFilter, setStatusF]  = useState<"all" | Coupon["status"]>("all");
-  const [typeFilter, setTypeF]     = useState<"all" | "percentage" | "fixed">("all");
-  const [modal, setModal]           = useState<{ open: boolean; coupon: Partial<Coupon> } | null>(null);
-  const [deleteId, setDeleteId]     = useState<string | null>(null);
-  const [page, setPage]             = useState(1);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [_loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusF] = useState<"all" | Coupon["status"]>("all");
+  const [typeFilter, setTypeF] = useState<"all" | "percentage" | "fixed">("all");
+  const [modal, setModal] = useState<{ open: boolean; coupon: Partial<Coupon> } | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
+
+  const loadCoupons = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await couponRepository.findAll({ size: 500 } as any);
+      setCoupons(res.content.map(mapApiToUi));
+    } catch { toast.error("Error al cargar los cupones"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadCoupons(); }, [loadCoupons]);
 
   /* ── Filtered list ── */
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return coupons.filter(c => {
       if (statusFilter !== "all" && c.status !== statusFilter) return false;
-      if (typeFilter   !== "all" && c.type   !== typeFilter)   return false;
+      if (typeFilter !== "all" && c.type !== typeFilter) return false;
       if (q && !c.code.toLowerCase().includes(q) && !c.description.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -363,8 +374,8 @@ export function AdminCoupons() {
 
   /* ── Stats ── */
   const stats = useMemo(() => ({
-    total:    coupons.length,
-    active:   coupons.filter(c => c.status === "active").length,
+    total: coupons.length,
+    active: coupons.filter(c => c.status === "active").length,
     totalUses: coupons.reduce((s, c) => s + c.usedCount, 0),
     expiring: coupons.filter(c => {
       if (!c.expiresAt || c.status !== "active") return false;
@@ -373,31 +384,43 @@ export function AdminCoupons() {
     }).length,
   }), [coupons]);
 
-  function handleSave(coupon: Coupon) {
-    setCoupons(prev => {
-      const idx = prev.findIndex(c => c.id === coupon.id);
-      if (idx >= 0) { const n = [...prev]; n[idx] = coupon; return n; }
-      return [coupon, ...prev];
-    });
-    toast.success(modal?.coupon?.id ? "Cupón actualizado" : "Cupón creado");
+  async function handleSave(coupon: Coupon) {
+    try {
+      const payload = uiToPayload(coupon);
+      if (coupon.id) {
+        const updated = await couponRepository.update(coupon.id, payload);
+        setCoupons(prev => prev.map(c => c.id === coupon.id ? mapApiToUi(updated) : c));
+        toast.success("Cupón actualizado");
+      } else {
+        const created = await couponRepository.create(payload);
+        setCoupons(prev => [mapApiToUi(created), ...prev]);
+        toast.success("Cupón creado");
+      }
+    } catch { toast.error("Error al guardar el cupón"); }
     setModal(null);
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteId) return;
     const c = coupons.find(x => x.id === deleteId);
-    setCoupons(prev => prev.filter(x => x.id !== deleteId));
-    toast.success(`Cupón ${c?.code} eliminado`);
+    try {
+      await couponRepository.delete(deleteId);
+      setCoupons(prev => prev.filter(x => x.id !== deleteId));
+      toast.success(`Cupón ${c?.code} eliminado`);
+    } catch { toast.error("Error al eliminar el cupón"); }
     setDeleteId(null);
   }
 
-  function toggleStatus(id: string) {
-    setCoupons(prev => prev.map(c => {
-      if (c.id !== id) return c;
-      const next = c.status === "active" ? "inactive" : "active";
-      toast.success(`Cupón ${next === "active" ? "activado" : "desactivado"}`);
-      return { ...c, status: next };
-    }));
+  async function toggleStatus(id: string) {
+    try {
+      await couponRepository.toggleActive(id);
+      setCoupons(prev => prev.map(c => {
+        if (c.id !== id) return c;
+        const next: Coupon["status"] = c.status === "active" ? "inactive" : "active";
+        toast.success(`Cupón ${next === "active" ? "activado" : "desactivado"}`);
+        return { ...c, status: next };
+      }));
+    } catch { toast.error("Error al cambiar el estado del cupón"); }
   }
 
   const deleteTarget = coupons.find(c => c.id === deleteId);
@@ -405,7 +428,7 @@ export function AdminCoupons() {
   useEffect(() => setPage(1), [search, statusFilter, typeFilter]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-5 h-full">
@@ -428,10 +451,10 @@ export function AdminCoupons() {
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total cupones",  value: stats.total,    icon: Tag,       color: "text-gray-700" },
-          { label: "Activos",        value: stats.active,   icon: Check,     color: "text-green-600" },
-          { label: "Usos totales",   value: stats.totalUses, icon: TrendingUp, color: "text-blue-600" },
-          { label: "Expiran pronto", value: stats.expiring, icon: Calendar,  color: "text-amber-600" },
+          { label: "Total cupones", value: stats.total, icon: Tag, color: "text-gray-700" },
+          { label: "Activos", value: stats.active, icon: Check, color: "text-green-600" },
+          { label: "Usos totales", value: stats.totalUses, icon: TrendingUp, color: "text-blue-600" },
+          { label: "Expiran pronto", value: stats.expiring, icon: Calendar, color: "text-amber-600" },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
@@ -495,13 +518,13 @@ export function AdminCoupons() {
         {/* Table head */}
         <div className="grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_80px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60 flex-shrink-0">
           {[
-            { label: "Código",       cls: "text-left"   },
-            { label: "Descuento",    cls: "text-left"   },
-            { label: "Pedido mín.",  cls: "text-right"  },
-            { label: "Usos",         cls: "text-left"   },
-            { label: "Vencimiento",  cls: "text-center" },
-            { label: "Estado",       cls: "text-left"   },
-            { label: "",             cls: "text-right"  },
+            { label: "Código", cls: "text-left" },
+            { label: "Descuento", cls: "text-left" },
+            { label: "Pedido mín.", cls: "text-right" },
+            { label: "Usos", cls: "text-left" },
+            { label: "Vencimiento", cls: "text-center" },
+            { label: "Estado", cls: "text-left" },
+            { label: "", cls: "text-right" },
           ].map(h => (
             <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
@@ -526,9 +549,8 @@ export function AdminCoupons() {
             return (
               <div
                 key={c.id}
-                className={`grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_80px] gap-3 px-4 py-3 items-center transition-colors hover:bg-gray-50/60 ${
-                  i !== paginated.length - 1 ? "border-b border-gray-50" : ""
-                }`}
+                className={`grid grid-cols-[1.8fr_1fr_1fr_1.2fr_1fr_0.8fr_80px] gap-3 px-4 py-3 items-center transition-colors hover:bg-gray-50/60 ${i !== paginated.length - 1 ? "border-b border-gray-50" : ""
+                  }`}
               >
                 {/* Código */}
                 <div className="flex items-center gap-1 min-w-0">
@@ -538,9 +560,8 @@ export function AdminCoupons() {
 
                 {/* Descuento */}
                 <div className="flex items-center">
-                  <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${
-                    c.type === "percentage" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"
-                  }`}>
+                  <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${c.type === "percentage" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"
+                    }`}>
                     {c.type === "percentage"
                       ? <><Percent className="w-2.5 h-2.5" />{c.value}%</>
                       : <><DollarSign className="w-2.5 h-2.5" />${c.value}</>}
@@ -598,7 +619,7 @@ export function AdminCoupons() {
                     >
                       {c.status === "active"
                         ? <ToggleRight className="w-3.5 h-3.5 text-green-500" />
-                        : <ToggleLeft  className="w-3.5 h-3.5" />}
+                        : <ToggleLeft className="w-3.5 h-3.5" />}
                     </button>
                   )}
                   <button

@@ -1,11 +1,12 @@
-import { Star, ShoppingCart, Heart, BarChart2, Eye, Check, Quote } from "lucide-react";
+import { Star, ShoppingCart, Heart, BarChart2, Eye, Check } from "lucide-react";
 import { Link } from "react-router";
-import { Product } from "../data/products";
-import { getBestReview, getReviewStats } from "../data/reviewSynthesizer";
+import { Product } from "../types/product";
 import { useCart } from "../context/CartContext";
 import { useCompare } from "../context/CompareContext";
+import { useUser } from "../context/UserContext";
+import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState } from "react";
 import { QuickViewModal } from "./QuickViewModal";
 
 interface ProductCardProps {
@@ -15,19 +16,13 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const { add: addCompare, has: inCompare } = useCompare();
+  const { toggleFavorite, isFavorite } = useUser();
+  const { isAuthenticated } = useAuth();
+  const liked = isFavorite(product.id);
   const imgRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState("perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)");
   const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
   const [quickView, setQuickView] = useState(false);
-
-  // Best review for this product (most helpful with 5 stars, fallback to any)
-  const featuredReview = useMemo(() => {
-    return getBestReview(product.id, product.name, product.category);
-  }, [product.id, product.name, product.category]);
-
-  const reviewStats = useMemo(() => {
-    return getReviewStats(product.id, product.name, product.category);
-  }, [product.id, product.name, product.category]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = imgRef.current;
@@ -124,11 +119,17 @@ export function ProductCard({ product }: ProductCardProps) {
             {/* Action buttons overlay */}
             <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
               <button
-                className="w-7 h-7 flex items-center justify-center rounded-full bg-white/90 hover:bg-white shadow-sm transition-colors"
-                onClick={(e) => e.preventDefault()}
-                title="Favorito"
+                className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-colors ${liked ? "bg-red-50 border border-red-200" : "bg-white/90 hover:bg-white"
+                  }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isAuthenticated) { toast.error("Inicia sesión para agregar favoritos"); return; }
+                  toggleFavorite(product.id);
+                }}
+                title={liked ? "Quitar de favoritos" : "Agregar a favoritos"}
               >
-                <Heart className="w-3.5 h-3.5" strokeWidth={1.5} />
+                <Heart className={`w-3.5 h-3.5 ${liked ? "fill-red-500 text-red-500" : ""}`} strokeWidth={1.5} />
               </button>
               <button
                 className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-colors ${inCompare(product.id)
@@ -170,22 +171,14 @@ export function ProductCard({ product }: ProductCardProps) {
             </h3>
 
             {/* Rating */}
-            <div className="flex items-center gap-1 text-sm mb-2">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-              <span className="text-gray-900">{reviewStats.avgRating}</span>
-              <span className="text-gray-500">({reviewStats.count})</span>
-            </div>
-
-            {/* Featured review snippet */}
-            {featuredReview && (
-              <div className="mb-3 flex items-start gap-1.5 min-h-[32px]">
-                <Quote className="w-3 h-3 text-gray-200 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                <p className="text-[11px] text-gray-400 leading-snug line-clamp-2 italic">
-                  {featuredReview.body.slice(0, 90)}{featuredReview.body.length > 90 ? "…" : ""}
-                </p>
+            {product.rating > 0 && (
+              <div className="flex items-center gap-1 text-sm mb-2">
+                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                <span className="text-gray-900">{product.rating}</span>
+                <span className="text-gray-500">({product.reviews})</span>
               </div>
             )}
-            {!featuredReview && <div className="mb-3 min-h-[32px]" />}
+            <div className="mb-3 min-h-[32px]" />
 
             {/* Price */}
             <div className="mt-auto">

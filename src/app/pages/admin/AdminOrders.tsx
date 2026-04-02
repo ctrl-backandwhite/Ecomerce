@@ -1,24 +1,25 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Search, X, Eye, Filter, ChevronDown, Check, Truck,
   Clock, CheckCircle2, XCircle, ArrowUpDown, Calendar, Package,
   ShoppingCart, DollarSign,
 } from "lucide-react";
-import { orders as initialOrders, type Order } from "../../data/orders";
+import { type AdminOrder, type OrderStatus, orderRepository } from "../../repositories/OrderRepository";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
 
-type Status = Order["status"];
+type Order = AdminOrder;
+type Status = OrderStatus;
 
 const STATUS_META: Record<Status, { label: string; dot: string; bg: string; text: string; icon: React.ElementType }> = {
-  pending:    { label: "Pendiente",  dot: "bg-amber-400",  bg: "bg-amber-50",  text: "text-amber-700",  icon: Clock        },
-  processing: { label: "Procesando", dot: "bg-blue-400",   bg: "bg-blue-50",   text: "text-blue-700",   icon: Package      },
-  shipped:    { label: "Enviado",    dot: "bg-violet-400", bg: "bg-violet-50", text: "text-violet-700", icon: Truck        },
-  delivered:  { label: "Entregado",  dot: "bg-green-400",  bg: "bg-green-50",  text: "text-green-700",  icon: CheckCircle2 },
-  cancelled:  { label: "Cancelado",  dot: "bg-red-400",    bg: "bg-red-50",    text: "text-red-700",    icon: XCircle      },
+  PENDING: { label: "Pendiente", dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-700", icon: Clock },
+  PROCESSING: { label: "Procesando", dot: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-700", icon: Package },
+  SHIPPED: { label: "Enviado", dot: "bg-violet-400", bg: "bg-violet-50", text: "text-violet-700", icon: Truck },
+  DELIVERED: { label: "Entregado", dot: "bg-green-400", bg: "bg-green-50", text: "text-green-700", icon: CheckCircle2 },
+  CANCELLED: { label: "Cancelado", dot: "bg-red-400", bg: "bg-red-50", text: "text-red-700", icon: XCircle },
 };
 
-const STATUS_FLOW: Status[] = ["pending", "processing", "shipped", "delivered"];
+const STATUS_FLOW: Status[] = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
 
 function StatusBadge({ status }: { status: Status }) {
   const m = STATUS_META[status];
@@ -63,23 +64,22 @@ function OrderDrawer({
           </div>
 
           {/* Progress track */}
-          {order.status !== "cancelled" && (
+          {order.status !== "CANCELLED" && (
             <div>
               <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Progreso del pedido</p>
               <div className="flex items-center">
                 {STATUS_FLOW.map((s, i) => {
-                  const done    = i <= currentIdx;
+                  const done = i <= currentIdx;
                   const current = i === currentIdx;
-                  const m       = STATUS_META[s];
+                  const m = STATUS_META[s];
                   const IconComp = m.icon as React.ComponentType<{ className: string; strokeWidth: number }>;
                   return (
                     <div key={s} className="flex items-center flex-1 last:flex-none">
                       <button
                         type="button"
                         onClick={() => { onStatusChange(order.id, s); toast.success(`Estado → ${m.label}`); }}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all ${
-                          done ? "bg-gray-600 border-gray-600 text-white" : "bg-white border-gray-200 text-gray-300"
-                        } ${current ? "ring-4 ring-gray-600/10" : ""}`}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 flex-shrink-0 transition-all ${done ? "bg-gray-600 border-gray-600 text-white" : "bg-white border-gray-200 text-gray-300"
+                          } ${current ? "ring-4 ring-gray-600/10" : ""}`}
                         title={`Cambiar a ${m.label}`}
                       >
                         <IconComp className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -112,9 +112,8 @@ function OrderDrawer({
                     key={s}
                     type="button"
                     onClick={() => { onStatusChange(order.id, s); toast.success(`Estado → ${m.label}`); }}
-                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-xs transition-all text-left ${
-                      active ? "border-gray-600 bg-gray-600 text-white" : `border-gray-100 ${m.bg} ${m.text} hover:border-gray-300`
-                    }`}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 text-xs transition-all text-left ${active ? "border-gray-600 bg-gray-600 text-white" : `border-gray-100 ${m.bg} ${m.text} hover:border-gray-300`
+                      }`}
                   >
                     <IconComp className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
                     {m.label}
@@ -163,17 +162,29 @@ function OrderDrawer({
 
 /* ── Main page ───────────────────────────────────────── */
 export function AdminOrders() {
-  const [list, setList]              = useState<Order[]>(initialOrders);
-  const [search, setSearch]          = useState("");
-  const [statusFilter, setStatus]    = useState<Status | "all">("all");
+  const [list, setList] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatus] = useState<Status | "all">("all");
   const [selectedOrder, setSelOrder] = useState<Order | null>(null);
-  const [sortDir, setSortDir]        = useState<"asc" | "desc">("desc");
-  const [page, setPage]              = useState(1);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
+
+  const loadOrders = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await orderRepository.findAll({ size: 500 });
+      setList(res.content);
+    } catch { toast.error("Error al cargar las órdenes"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadOrders(); }, [loadOrders]);
 
   const filtered = useMemo(() => {
     let l = [...list];
-    if (search)               l = l.filter((o) => o.orderNumber.toLowerCase().includes(search.toLowerCase()) || o.customer.name.toLowerCase().includes(search.toLowerCase()));
+    if (search) l = l.filter((o) => o.orderNumber.toLowerCase().includes(search.toLowerCase()) || o.customer.name.toLowerCase().includes(search.toLowerCase()));
     if (statusFilter !== "all") l = l.filter((o) => o.status === statusFilter);
     l.sort((a, b) =>
       sortDir === "desc"
@@ -183,18 +194,21 @@ export function AdminOrders() {
     return l;
   }, [list, search, statusFilter, sortDir]);
 
-  function handleStatusChange(id: string, status: Status) {
-    setList((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
-    setSelOrder((prev) => prev?.id === id ? { ...prev, status } : prev);
+  async function handleStatusChange(id: string, status: Status) {
+    try {
+      await orderRepository.updateStatus(id, status);
+      setList((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
+      setSelOrder((prev) => prev?.id === id ? { ...prev, status } : prev);
+    } catch { toast.error("Error al actualizar el estado"); }
   }
 
   const totalRevenue = filtered.reduce((s, o) => s + o.total, 0);
-  const statuses: (Status | "all")[] = ["all", "pending", "processing", "shipped", "delivered", "cancelled"];
+  const statuses: (Status | "all")[] = ["all", "PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
 
   useEffect(() => setPage(1), [search, statusFilter, sortDir]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-5 h-full">
@@ -209,9 +223,9 @@ export function AdminOrders() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { icon: ShoppingCart, label: "Total órdenes", value: list.length.toString() },
-          { icon: DollarSign,   label: "Ingresos",      value: `$${list.reduce((s, o) => s + o.total, 0).toLocaleString()}` },
-          { icon: Clock,        label: "Pendientes",    value: list.filter((o) => o.status === "pending").length.toString() },
-          { icon: Truck,        label: "En camino",     value: list.filter((o) => o.status === "shipped").length.toString() },
+          { icon: DollarSign, label: "Ingresos", value: `$${list.reduce((s, o) => s + o.total, 0).toLocaleString()}` },
+          { icon: Clock, label: "Pendientes", value: list.filter((o) => o.status === "PENDING").length.toString() },
+          { icon: Truck, label: "En camino", value: list.filter((o) => o.status === "SHIPPED").length.toString() },
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -231,15 +245,14 @@ export function AdminOrders() {
         <div className="flex flex-wrap gap-1.5">
           {statuses.map((s) => {
             const active = statusFilter === s;
-            const count  = s === "all" ? list.length : list.filter((o) => o.status === s).length;
-            const m      = s !== "all" ? STATUS_META[s] : null;
+            const count = s === "all" ? list.length : list.filter((o) => o.status === s).length;
+            const m = s !== "all" ? STATUS_META[s] : null;
             return (
               <button
                 key={s}
                 onClick={() => setStatus(s)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${
-                  active ? "bg-gray-600 text-white border-gray-600" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                }`}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-all ${active ? "bg-gray-600 text-white border-gray-600" : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
+                  }`}
               >
                 {m && <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-white" : m.dot}`} />}
                 {s === "all" ? "Todas" : m!.label}

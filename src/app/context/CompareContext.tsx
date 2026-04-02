@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, type ReactNode } from "react";
-import type { Product } from "../data/products";
+import type { Product } from "../types/product";
 import { toast } from "sonner";
 
 const MAX = 4;
@@ -25,8 +25,8 @@ export function CompareProvider({ children }: { children: ReactNode }) {
   };
 
   const remove = (id: string) => setItems(prev => prev.filter(i => i.id !== id));
-  const clear   = () => setItems([]);
-  const has     = (id: string) => items.some(i => i.id === id);
+  const clear = () => setItems([]);
+  const has = (id: string) => items.some(i => i.id === id);
 
   return (
     <CompareContext.Provider value={{ items, add, remove, clear, has }}>

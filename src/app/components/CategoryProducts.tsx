@@ -1,6 +1,6 @@
 import { Link } from "react-router";
 import { ArrowRight, Star } from "lucide-react";
-import type { Product } from "../data/products";
+import type { Product } from "../types/product";
 import { useStore } from "../context/StoreContext";
 
 const CATEGORY_ORDER = [

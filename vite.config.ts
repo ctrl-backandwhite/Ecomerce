@@ -19,6 +19,8 @@ export default defineConfig({
 
   server: {
     port: 5174,
+    host: '0.0.0.0',   // Necesario para que Docker (host.docker.internal) pueda alcanzar el dev server
+    allowedHosts: true, // Permite peticiones con Host: host.docker.internal desde el gateway en Docker
   },
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.

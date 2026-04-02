@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useEffect } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import {
   Upload, X, Search, Trash2, Image as ImageIcon,
   Download, Copy, Check, LayoutGrid, List, Calendar,
@@ -6,6 +6,7 @@ import {
   ExternalLink, Maximize2, Info, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
+import { type MediaFile, mediaRepository } from "../../repositories/MediaRepository";
 
 /* ── Types ──────────────────────────────────────────── */
 interface MediaItem {
@@ -258,11 +259,10 @@ function UploadModal({
             onDragOver={handleDrag}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-              dragActive
+            className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragActive
                 ? "border-gray-900 bg-gray-50"
                 : "border-gray-200 hover:border-gray-400 hover:bg-gray-50"
-            }`}
+              }`}
           >
             <input
               ref={fileInputRef}
@@ -273,9 +273,8 @@ function UploadModal({
               className="hidden"
             />
             <Upload
-              className={`w-10 h-10 mx-auto mb-3 transition-colors ${
-                dragActive ? "text-gray-900" : "text-gray-300"
-              }`}
+              className={`w-10 h-10 mx-auto mb-3 transition-colors ${dragActive ? "text-gray-900" : "text-gray-300"
+                }`}
               strokeWidth={1.5}
             />
             <p className="text-sm text-gray-700 mb-1">
@@ -659,7 +658,7 @@ function ImageDetailModal({
 
 /* ── Main Component ────────────────────────────────────── */
 export function AdminMedia() {
-  const [mediaList, setMediaList] = useState<MediaItem[]>(INITIAL_MEDIA);
+  const [mediaList, setMediaList] = useState<MediaItem[]>([]);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -669,6 +668,15 @@ export function AdminMedia() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const ITEMS_PER_PAGE = 12;
+
+  const loadMedia = useCallback(async () => {
+    try {
+      const res = await mediaRepository.findAll({ size: 200 });
+      setMediaList(res.content.map(mapApiToUi));
+    } catch { toast.error("Error al cargar los archivos"); }
+  }, []);
+
+  useEffect(() => { loadMedia(); }, [loadMedia]);
 
   // Reset page when filters change
   useEffect(() => { setCurrentPage(1); }, [search, selectedCategory, sortBy, viewMode]);
@@ -701,23 +709,30 @@ export function AdminMedia() {
   const totalSize = mediaList.reduce((sum, item) => sum + item.size, 0);
   const categories = Array.from(new Set(mediaList.map((item) => item.category || "otros")));
 
-  function handleUpload(newItems: MediaItem[]) {
+  async function handleUpload(newItems: MediaItem[]) {
     setMediaList((prev) => [...newItems, ...prev]);
     setShowUploadModal(false);
     setCurrentPage(1);
   }
 
-  function handleDelete(id: string) {
-    setMediaList((prev) => prev.filter((item) => item.id !== id));
-    setSelectedImage(null);
-    toast.success("Imagen eliminada");
+  async function handleDelete(id: string) {
+    try {
+      await mediaRepository.delete(id);
+      setMediaList((prev) => prev.filter((item) => item.id !== id));
+      setSelectedImage(null);
+      toast.success("Imagen eliminada");
+    } catch { toast.error("Error al eliminar la imagen"); }
   }
 
-  function handleUpdate(updated: MediaItem) {
-    setMediaList((prev) =>
-      prev.map((item) => (item.id === updated.id ? updated : item))
-    );
-    setSelectedImage(updated);
+  async function handleUpdate(updated: MediaItem) {
+    try {
+      await mediaRepository.updateMetadata(updated.id, {
+        alt: updated.tags.join(", "),
+        title: updated.category,
+      });
+      setMediaList((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
+      setSelectedImage(updated);
+    } catch { toast.error("Error al actualizar la imagen"); }
   }
 
   return (
@@ -785,21 +800,19 @@ export function AdminMedia() {
           <div className="flex gap-1 bg-gray-50 border border-gray-200 rounded-xl p-1">
             <button
               onClick={() => setViewMode("grid")}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
-                viewMode === "grid"
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${viewMode === "grid"
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-400 hover:text-gray-700"
-              }`}
+                }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
             <button
               onClick={() => setViewMode("list")}
-              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${
-                viewMode === "list"
+              className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${viewMode === "list"
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-400 hover:text-gray-700"
-              }`}
+                }`}
             >
               <List className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
@@ -963,11 +976,10 @@ export function AdminMedia() {
                   <button
                     key={p}
                     onClick={() => setCurrentPage(p as number)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors ${
-                      currentPage === p
+                    className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors ${currentPage === p
                         ? "bg-gray-600 text-white"
                         : "border border-gray-200 text-gray-600 hover:bg-gray-50"
-                    }`}
+                      }`}
                   >
                     {p}
                   </button>

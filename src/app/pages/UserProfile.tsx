@@ -19,15 +19,15 @@ import { useSearchParams } from "react-router";
 type Tab = "resumen" | "datos" | "pedidos" | "favoritos" | "direcciones" | "pagos" | "giftcards" | "tienda" | "seguridad";
 
 const tabs: { id: Tab; label: string; icon: typeof User; sellerOnly?: boolean }[] = [
-  { id: "resumen",     label: "Resumen",           icon: LayoutDashboard },
-  { id: "datos",       label: "Mis Datos",         icon: User },
-  { id: "pedidos",     label: "Mis Pedidos",       icon: ShoppingBag },
-  { id: "favoritos",   label: "Favoritos",         icon: Heart },
-  { id: "direcciones", label: "Direcciones",       icon: MapPin },
-  { id: "pagos",       label: "Métodos de Pago",   icon: CreditCard },
-  { id: "giftcards",   label: "Tarjetas Regalo",   icon: Gift },
-  { id: "tienda",      label: "Mi Tienda",         icon: Store, sellerOnly: true },
-  { id: "seguridad",   label: "Seguridad",         icon: Shield },
+  { id: "resumen", label: "Resumen", icon: LayoutDashboard },
+  { id: "datos", label: "Mis Datos", icon: User },
+  { id: "pedidos", label: "Mis Pedidos", icon: ShoppingBag },
+  { id: "favoritos", label: "Favoritos", icon: Heart },
+  { id: "direcciones", label: "Direcciones", icon: MapPin },
+  { id: "pagos", label: "Métodos de Pago", icon: CreditCard },
+  { id: "giftcards", label: "Tarjetas Regalo", icon: Gift },
+  { id: "tienda", label: "Mi Tienda", icon: Store, sellerOnly: true },
+  { id: "seguridad", label: "Seguridad", icon: Shield },
 ];
 
 export function UserProfile() {
@@ -38,20 +38,20 @@ export function UserProfile() {
   const { user: authUser, logout } = useAuth();
 
   const displayFirst = authUser?.firstName ?? user.firstName;
-  const displayLast  = authUser?.lastName  ?? user.lastName;
-  const displayEmail = authUser?.email     ?? user.email;
+  const displayLast = authUser?.lastName ?? user.lastName;
+  const displayEmail = authUser?.email ?? user.email;
   const initials = `${displayFirst[0]}${displayLast[0]}`;
 
   const contentMap: Record<Tab, JSX.Element> = {
-    resumen:     <ProfileOverview onTabChange={setActiveTab as any} />,
-    datos:       <ProfileDatos />,
-    pedidos:     <ProfilePedidos />,
-    favoritos:   <ProfileFavoritos />,
+    resumen: <ProfileOverview onTabChange={setActiveTab as any} />,
+    datos: <ProfileDatos />,
+    pedidos: <ProfilePedidos />,
+    favoritos: <ProfileFavoritos />,
     direcciones: <ProfileDirecciones />,
-    pagos:       <ProfilePagos />,
-    giftcards:   <ProfileGiftCards />,
-    tienda:      <ProfileTienda />,
-    seguridad:   <ProfileSeguridad />,
+    pagos: <ProfilePagos />,
+    giftcards: <ProfileGiftCards />,
+    tienda: <ProfileTienda />,
+    seguridad: <ProfileSeguridad />,
   };
 
   return (
@@ -87,13 +87,21 @@ export function UserProfile() {
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
                   Miembro NX036
                 </div>
+                {user.memberSince && (
+                  <p className="text-xs text-gray-400 mt-2">
+                    Miembro desde{" "}
+                    {new Date(user.memberSince).toLocaleDateString("es-CL", {
+                      day: "numeric", month: "long", year: "numeric",
+                    })}
+                  </p>
+                )}
               </div>
 
               {/* Stats strip */}
               <div className="grid grid-cols-2 gap-2 pt-4 border-t border-gray-100">
                 {[
-                  { value: user.totalOrders,          label: "Pedidos" },
-                  { value: user.loyaltyPoints,         label: "Puntos"  },
+                  { value: user.totalOrders, label: "Pedidos" },
+                  { value: user.loyaltyPoints, label: "Puntos" },
                 ].map(({ value, label }) => (
                   <div key={label} className="text-center">
                     <p className="text-sm text-gray-900">{value}</p>
@@ -110,11 +118,10 @@ export function UserProfile() {
                   <button
                     key={id}
                     onClick={() => { setActiveTab(id); setSearchParams({ tab: id }); }}
-                    className={`w-full flex items-center gap-3 px-5 py-3.5 text-sm text-left transition-colors border-l-2 ${
-                      activeTab === id
-                        ? "border-gray-900 bg-gray-50 text-gray-900"
-                        : "border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                    }`}
+                    className={`w-full flex items-center gap-3 px-5 py-3.5 text-sm text-left transition-colors border-l-2 ${activeTab === id
+                      ? "border-gray-900 bg-gray-50 text-gray-900"
+                      : "border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                      }`}
                   >
                     <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
                     {label}
@@ -162,7 +169,9 @@ export function UserProfile() {
             </div>
 
             {/* Active section */}
-            {contentMap[activeTab]}
+            <div key={activeTab} className="nx036-section-fade">
+              {contentMap[activeTab]}
+            </div>
           </main>
         </div>
       </div>

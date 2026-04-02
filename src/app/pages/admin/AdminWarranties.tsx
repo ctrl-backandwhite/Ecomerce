@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Shield, Plus, Pencil, Trash2, X, Check, AlertTriangle,
   Package, Phone, Mail, Clock, Wrench, Truck,
@@ -6,12 +6,34 @@ import {
   ShieldCheck, ShieldAlert, ShieldOff, Info,
 } from "lucide-react";
 import { toast } from "sonner";
-import {
-  initialWarranties,
-  WARRANTY_TYPE_META,
-  type Warranty,
-  type WarrantyType,
-} from "../../data/warranties";
+import { warrantyRepository } from "../../repositories/WarrantyRepository";
+
+/* ── Types ── */
+type WarrantyType = "MANUFACTURER" | "STORE" | "EXTENDED" | "LIMITED";
+
+interface Warranty {
+  id: string;
+  name: string;
+  type: WarrantyType;
+  durationMonths: number;
+  coverage: string;
+  conditions: string;
+  includesLabor: boolean;
+  includesParts: boolean;
+  includesPickup: boolean;
+  repairLimit: number | null;
+  contactPhone: string;
+  contactEmail: string;
+  active: boolean;
+  productsCount: number;
+}
+
+const WARRANTY_TYPE_META: Record<WarrantyType, { label: string; bg: string; text: string }> = {
+  MANUFACTURER: { label: "Fabricante", bg: "bg-blue-50", text: "text-blue-700" },
+  STORE: { label: "Tienda", bg: "bg-green-50", text: "text-green-700" },
+  EXTENDED: { label: "Extendida", bg: "bg-purple-50", text: "text-purple-700" },
+  LIMITED: { label: "Limitada", bg: "bg-amber-50", text: "text-amber-700" },
+};
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
 const inp = "w-full h-7 px-2.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400 transition-colors placeholder:text-gray-300";
@@ -19,7 +41,7 @@ const lbl = "block text-[11px] text-gray-500 mb-1";
 
 const emptyWarranty: Omit<Warranty, "id" | "productsCount"> = {
   name: "",
-  type: "store",
+  type: "STORE",
   durationMonths: 24,
   coverage: "",
   conditions: "",
@@ -458,9 +480,19 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminWarranties() {
-  const [warranties, setWarranties] = useState<Warranty[]>(initialWarranties);
+  const [warranties, setWarranties] = useState<Warranty[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState("");
   const [filterType, setFilterType] = useState<WarrantyType | "all">("all");
+
+  const loadWarranties = useCallback(async () => {
+    setLoading(true);
+    try { setWarranties(await warrantyRepository.findAll()); }
+    catch { toast.error("Error al cargar las garantías"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadWarranties(); }, [loadWarranties]);
   const [panelData, setPanelData] = useState<
     | { mode: "new"; data: Omit<Warranty, "id" | "productsCount"> }
     | { mode: "edit"; data: Warranty }
@@ -479,21 +511,27 @@ export function AdminWarranties() {
   }, [warranties, filterType, searchQ]);
 
   /* ── CRUD ─────────────────────────────────────────── */
-  const handleSave = (data: Omit<Warranty, "id" | "productsCount"> & { id?: string }) => {
-    if (data.id) {
-      setWarranties(prev => prev.map(w => w.id === data.id ? { ...w, ...data } as Warranty : w));
-      toast.success("Garantía actualizada");
-    } else {
-      setWarranties(prev => [...prev, { ...data, id: `w-${Date.now()}`, productsCount: 0 }]);
-      toast.success("Garantía creada");
-    }
+  const handleSave = async (data: Omit<Warranty, "id" | "productsCount"> & { id?: string }) => {
+    try {
+      if (data.id) {
+        await warrantyRepository.update(data.id, data as any);
+        toast.success("Garantía actualizada");
+      } else {
+        await warrantyRepository.create(data as any);
+        toast.success("Garantía creada");
+      }
+      await loadWarranties();
+    } catch { toast.error("Error al guardar la garantía"); }
     setPanelData(null);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    setWarranties(prev => prev.filter(w => w.id !== deleteTarget.id));
-    toast.success("Garantía eliminada");
+    try {
+      await warrantyRepository.delete(deleteTarget.id);
+      await loadWarranties();
+      toast.success("Garantía eliminada");
+    } catch { toast.error("Error al eliminar la garantía"); }
     setDeleteTarget(null);
   };
 
@@ -541,7 +579,7 @@ export function AdminWarranties() {
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-          {(["all", "manufacturer", "store", "extended", "limited"] as const).map(t => (
+          {(["all", "MANUFACTURER", "STORE", "EXTENDED", "LIMITED"] as const).map(t => (
             <button
               key={t}
               onClick={() => setFilterType(t)}

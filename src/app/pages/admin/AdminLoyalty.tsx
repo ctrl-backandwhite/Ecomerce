@@ -1,43 +1,77 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Star, Gift, TrendingUp, Users, Pencil, Check, X, Award } from "lucide-react";
 import { toast } from "sonner";
+import { type LoyaltyRule as ApiLoyaltyRule, loyaltyRepository } from "../../repositories/CmsRepository";
+
+interface UiRule {
+  id: string;
+  desc: string;
+  points: string;
+  active: boolean;
+  // API fields needed for updates
+  event: string;
+  apiPoints: number;
+}
 
 const members = [
-  { id: "u1", name: "María García",     email: "maria@email.com",  points: 3842, tier: "Gold",     spent: 4820, lastActivity: "13/03/2026" },
-  { id: "u2", name: "Carlos López",     email: "carlos@email.com", points: 1920, tier: "Silver",   spent: 2410, lastActivity: "10/03/2026" },
-  { id: "u3", name: "Ana Martínez",     email: "ana@email.com",    points: 780,  tier: "Bronze",   spent: 975,  lastActivity: "11/03/2026" },
-  { id: "u4", name: "Laura Sánchez",    email: "laura@email.com",  points: 5210, tier: "Platinum", spent: 6520, lastActivity: "13/03/2026" },
-  { id: "u5", name: "Juan Pérez",       email: "juan@email.com",   points: 420,  tier: "Bronze",   spent: 530,  lastActivity: "11/03/2026" },
-  { id: "u6", name: "Sofía Torres",     email: "sofia@email.com",  points: 2100, tier: "Gold",     spent: 2640, lastActivity: "09/03/2026" },
+  { id: "u1", name: "María García", email: "maria@email.com", points: 3842, tier: "Gold", spent: 4820, lastActivity: "13/03/2026" },
+  { id: "u2", name: "Carlos López", email: "carlos@email.com", points: 1920, tier: "Silver", spent: 2410, lastActivity: "10/03/2026" },
+  { id: "u3", name: "Ana Martínez", email: "ana@email.com", points: 780, tier: "Bronze", spent: 975, lastActivity: "11/03/2026" },
+  { id: "u4", name: "Laura Sánchez", email: "laura@email.com", points: 5210, tier: "Platinum", spent: 6520, lastActivity: "13/03/2026" },
+  { id: "u5", name: "Juan Pérez", email: "juan@email.com", points: 420, tier: "Bronze", spent: 530, lastActivity: "11/03/2026" },
+  { id: "u6", name: "Sofía Torres", email: "sofia@email.com", points: 2100, tier: "Gold", spent: 2640, lastActivity: "09/03/2026" },
 ];
 
 const TIERS = [
-  { name: "Bronze",   color: "text-amber-700",    bg: "bg-amber-50",    border: "border-amber-100", minPoints: 0,    perks: "Puntos x1, descuentos básicos" },
-  { name: "Silver",   color: "text-gray-600",     bg: "bg-gray-100",    border: "border-gray-200",  minPoints: 1000, perks: "Puntos x1.5, envío gratis +€50" },
-  { name: "Gold",     color: "text-yellow-700",   bg: "bg-yellow-50",   border: "border-yellow-100",minPoints: 3000, perks: "Puntos x2, envío gratis, soporte prioritario" },
-  { name: "Platinum", color: "text-violet-700",   bg: "bg-violet-50",   border: "border-violet-100",minPoints: 5000, perks: "Puntos x3, todo incluido, acceso anticipado a ofertas" },
+  { name: "Bronze", color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-100", minPoints: 0, perks: "Puntos x1, descuentos básicos" },
+  { name: "Silver", color: "text-gray-600", bg: "bg-gray-100", border: "border-gray-200", minPoints: 1000, perks: "Puntos x1.5, envío gratis +€50" },
+  { name: "Gold", color: "text-yellow-700", bg: "bg-yellow-50", border: "border-yellow-100", minPoints: 3000, perks: "Puntos x2, envío gratis, soporte prioritario" },
+  { name: "Platinum", color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-100", minPoints: 5000, perks: "Puntos x3, todo incluido, acceso anticipado a ofertas" },
 ];
 
 const TIER_META: Record<string, typeof TIERS[0]> = {};
 TIERS.forEach(t => { TIER_META[t.name] = t; });
 
-const rules = [
-  { id: "r1", desc: "Compra completada",       points: "1 pto. / €1",   active: true  },
-  { id: "r2", desc: "Reseña verificada",        points: "+25 pts",       active: true  },
-  { id: "r3", desc: "Primera compra",           points: "+100 pts",      active: true  },
-  { id: "r4", desc: "Cumpleaños del cliente",   points: "+50 pts",       active: true  },
-  { id: "r5", desc: "Referido registrado",      points: "+150 pts",      active: false },
-  { id: "r6", desc: "Suscripción newsletter",   points: "+20 pts",       active: true  },
-];
+function mapRuleToUi(r: ApiLoyaltyRule): UiRule {
+  return {
+    id: r.id,
+    desc: r.name,
+    points: `+${r.points} pts`,
+    active: r.active,
+    event: r.event,
+    apiPoints: r.points,
+  };
+}
+
+// Removed: rules data now loaded from API.
+const rules: UiRule[] = [];
 
 export function AdminLoyalty() {
-  const [activeRules, setActiveRules] = useState(rules);
+  const [activeRules, setActiveRules] = useState<UiRule[]>([]);
   const [editRate, setEditRate] = useState(false);
   const [rate, setRate] = useState("1");
 
-  const toggleRule = (id: string) => {
-    setActiveRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
-    toast.success("Regla actualizada");
+  const loadRules = useCallback(async () => {
+    try {
+      const data = await loyaltyRepository.findAllRules();
+      setActiveRules(data.map(mapRuleToUi));
+    } catch {
+      toast.error("Error al cargar reglas de fidelidad");
+    }
+  }, []);
+
+  useEffect(() => { loadRules(); }, [loadRules]);
+
+  const toggleRule = async (id: string) => {
+    const rule = activeRules.find(r => r.id === id);
+    if (!rule) return;
+    try {
+      await loyaltyRepository.updateRule(id, { name: rule.desc, event: rule.event, points: rule.apiPoints, active: !rule.active });
+      setActiveRules(prev => prev.map(r => r.id === id ? { ...r, active: !r.active } : r));
+      toast.success("Regla actualizada");
+    } catch {
+      toast.error("Error al actualizar regla");
+    }
   };
 
   const totalPoints = members.reduce((s, m) => s + m.points, 0);
@@ -54,10 +88,10 @@ export function AdminLoyalty() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Miembros activos",   value: members.length,                                    icon: Users    },
-          { label: "Puntos en circulación", value: totalPoints.toLocaleString(),                   icon: Star     },
-          { label: "Miembros Gold+",     value: members.filter(m => ["Gold","Platinum"].includes(m.tier)).length, icon: Award },
-          { label: "Canje estimado",     value: `$${(totalPoints * 0.01).toFixed(0)}`,             icon: Gift     },
+          { label: "Miembros activos", value: members.length, icon: Users },
+          { label: "Puntos en circulación", value: totalPoints.toLocaleString(), icon: Star },
+          { label: "Miembros Gold+", value: members.filter(m => ["Gold", "Platinum"].includes(m.tier)).length, icon: Award },
+          { label: "Canje estimado", value: `$${(totalPoints * 0.01).toFixed(0)}`, icon: Gift },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
@@ -134,12 +168,12 @@ export function AdminLoyalty() {
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="grid grid-cols-[2fr_1fr_0.8fr_1fr_1fr_0.9fr] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
             {[
-              { label: "Cliente",         cls: "text-left"   },
-              { label: "Nivel",           cls: "text-left"   },
-              { label: "Puntos",          cls: "text-right"  },
-              { label: "Total gastado",   cls: "text-right"  },
-              { label: "Último acceso",   cls: "text-center" },
-              { label: "Acciones",        cls: "text-right"  },
+              { label: "Cliente", cls: "text-left" },
+              { label: "Nivel", cls: "text-left" },
+              { label: "Puntos", cls: "text-right" },
+              { label: "Total gastado", cls: "text-right" },
+              { label: "Último acceso", cls: "text-center" },
+              { label: "Acciones", cls: "text-right" },
             ].map(h => (
               <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
             ))}

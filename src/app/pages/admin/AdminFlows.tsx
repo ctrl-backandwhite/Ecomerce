@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { type Flow as ApiFlow, type FlowPayload, flowRepository } from "../../repositories/CmsRepository";
 import {
   Plus, X, Check, Pencil, Trash2, AlertTriangle,
   Package, Truck, Navigation, Home, ClipboardCheck,
@@ -10,12 +11,12 @@ import {
 import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type FlowType     = "delivery" | "return" | "exchange" | "quality" | "custom";
-type TriggerType  = "auto" | "manual" | "carrier" | "timed";
+type FlowType = "delivery" | "return" | "exchange" | "quality" | "custom";
+type TriggerType = "auto" | "manual" | "carrier" | "timed";
 type StepIconName =
   | "package" | "clipboard" | "truck" | "navigation" | "home" | "check"
-  | "rotate"  | "clock"     | "wrench"| "camera"     | "phone"| "mappin"
-  | "bell"    | "warehouse" | "search"| "shield"     | "star" | "refresh";
+  | "rotate" | "clock" | "wrench" | "camera" | "phone" | "mappin"
+  | "bell" | "warehouse" | "search" | "shield" | "star" | "refresh";
 
 interface FlowStep {
   id: string;
@@ -51,50 +52,50 @@ interface DeliveryFlow {
 
 // ── Catalogues ─────────────────────────────────────────────────────────────────
 const FLOW_TYPE_META: Record<FlowType, { label: string; icon: React.ElementType; bg: string; text: string; desc: string }> = {
-  delivery: { label: "Entrega",        icon: Truck,         bg: "bg-blue-50",   text: "text-blue-600",   desc: "Flujo estándar de entrega de pedidos" },
-  return:   { label: "Devolución",     icon: RotateCcw,     bg: "bg-red-50",    text: "text-red-600",    desc: "Gestión de devoluciones y recogidas" },
-  exchange: { label: "Cambio",         icon: RefreshCw,     bg: "bg-violet-50", text: "text-violet-600", desc: "Cambio de producto por otro artículo" },
-  quality:  { label: "Control calidad",icon: ShieldCheck,   bg: "bg-green-50",  text: "text-green-600",  desc: "Inspección y control de calidad" },
-  custom:   { label: "Personalizado",  icon: Settings,      bg: "bg-gray-100",  text: "text-gray-600",   desc: "Flujo de trabajo personalizado" },
+  delivery: { label: "Entrega", icon: Truck, bg: "bg-blue-50", text: "text-blue-600", desc: "Flujo estándar de entrega de pedidos" },
+  return: { label: "Devolución", icon: RotateCcw, bg: "bg-red-50", text: "text-red-600", desc: "Gestión de devoluciones y recogidas" },
+  exchange: { label: "Cambio", icon: RefreshCw, bg: "bg-violet-50", text: "text-violet-600", desc: "Cambio de producto por otro artículo" },
+  quality: { label: "Control calidad", icon: ShieldCheck, bg: "bg-green-50", text: "text-green-600", desc: "Inspección y control de calidad" },
+  custom: { label: "Personalizado", icon: Settings, bg: "bg-gray-100", text: "text-gray-600", desc: "Flujo de trabajo personalizado" },
 };
 
 const SHIPPING_METHODS = [
-  { id: "standard",      label: "Envío estándar (3–5 días)" },
-  { id: "express",       label: "Envío express (24h)" },
-  { id: "sameday",       label: "Entrega el mismo día" },
-  { id: "pickup",        label: "Recogida en tienda" },
-  { id: "heavy",         label: "Envío voluminoso / pesado" },
+  { id: "standard", label: "Envío estándar (3–5 días)" },
+  { id: "express", label: "Envío express (24h)" },
+  { id: "sameday", label: "Entrega el mismo día" },
+  { id: "pickup", label: "Recogida en tienda" },
+  { id: "heavy", label: "Envío voluminoso / pesado" },
   { id: "international", label: "Envío internacional" },
 ];
 
 const TRIGGER_META: Record<TriggerType, { label: string; desc: string; color: string }> = {
-  auto:    { label: "Automático",    desc: "Avanza al completarse la acción anterior",  color: "bg-green-100 text-green-700"  },
-  manual:  { label: "Manual",        desc: "Requiere acción del equipo para avanzar",   color: "bg-amber-100 text-amber-700"  },
-  carrier: { label: "Transportista", desc: "Avanza con evento de tracking del carrier", color: "bg-blue-100 text-blue-700"    },
-  timed:   { label: "Programado",    desc: "Avanza automáticamente tras X horas",       color: "bg-violet-100 text-violet-700"},
+  auto: { label: "Automático", desc: "Avanza al completarse la acción anterior", color: "bg-green-100 text-green-700" },
+  manual: { label: "Manual", desc: "Requiere acción del equipo para avanzar", color: "bg-amber-100 text-amber-700" },
+  carrier: { label: "Transportista", desc: "Avanza con evento de tracking del carrier", color: "bg-blue-100 text-blue-700" },
+  timed: { label: "Programado", desc: "Avanza automáticamente tras X horas", color: "bg-violet-100 text-violet-700" },
 };
 
 const STEP_ICONS: { name: StepIconName; Icon: React.ElementType }[] = [
-  { name: "package",   Icon: Package       },
-  { name: "clipboard", Icon: ClipboardCheck},
-  { name: "truck",     Icon: Truck         },
-  { name: "navigation",Icon: Navigation    },
-  { name: "home",      Icon: Home          },
-  { name: "check",     Icon: CheckCircle2  },
-  { name: "rotate",    Icon: RotateCcw     },
-  { name: "clock",     Icon: Clock         },
-  { name: "wrench",    Icon: Wrench        },
-  { name: "camera",    Icon: Camera        },
-  { name: "phone",     Icon: Phone         },
-  { name: "mappin",    Icon: MapPin        },
-  { name: "bell",      Icon: Bell          },
-  { name: "warehouse", Icon: Warehouse     },
-  { name: "search",    Icon: Search        },
-  { name: "shield",    Icon: ShieldCheck   },
-  { name: "refresh",   Icon: RefreshCw     },
+  { name: "package", Icon: Package },
+  { name: "clipboard", Icon: ClipboardCheck },
+  { name: "truck", Icon: Truck },
+  { name: "navigation", Icon: Navigation },
+  { name: "home", Icon: Home },
+  { name: "check", Icon: CheckCircle2 },
+  { name: "rotate", Icon: RotateCcw },
+  { name: "clock", Icon: Clock },
+  { name: "wrench", Icon: Wrench },
+  { name: "camera", Icon: Camera },
+  { name: "phone", Icon: Phone },
+  { name: "mappin", Icon: MapPin },
+  { name: "bell", Icon: Bell },
+  { name: "warehouse", Icon: Warehouse },
+  { name: "search", Icon: Search },
+  { name: "shield", Icon: ShieldCheck },
+  { name: "refresh", Icon: RefreshCw },
 ];
 
-const STEP_COLORS = ["#6366f1","#3b82f6","#0ea5e9","#14b8a6","#10b981","#22c55e","#f59e0b","#f97316","#ef4444","#8b5cf6","#ec4899","#111827"];
+const STEP_COLORS = ["#6366f1", "#3b82f6", "#0ea5e9", "#14b8a6", "#10b981", "#22c55e", "#f59e0b", "#f97316", "#ef4444", "#8b5cf6", "#ec4899", "#111827"];
 
 function getStepIcon(name: StepIconName): React.ElementType {
   return STEP_ICONS.find(s => s.name === name)?.Icon ?? Package;
@@ -123,64 +124,68 @@ function makeStep(overrides: Partial<FlowStep> & { name: string; position: numbe
 
 const TEMPLATES: Record<FlowType, FlowStep[]> = {
   delivery: [
-    makeStep({ position: 1, name: "Pedido confirmado",             statusLabel: "Confirmado",          icon: "clipboard", color: "#6366f1", triggerType: "auto",    slaHours: 0,  sendEmail: true }),
-    makeStep({ position: 2, name: "En preparación",                statusLabel: "Preparando",          icon: "package",   color: "#f59e0b", triggerType: "manual",  slaHours: 24  }),
-    makeStep({ position: 3, name: "Recogido por transportista",    statusLabel: "Recogido",            icon: "truck",     color: "#3b82f6", triggerType: "carrier", slaHours: 4   }),
-    makeStep({ position: 4, name: "En tránsito",                   statusLabel: "En camino",           icon: "navigation",color: "#0ea5e9", triggerType: "carrier", slaHours: 48  }),
-    makeStep({ position: 5, name: "En reparto local",              statusLabel: "En reparto",          icon: "mappin",    color: "#8b5cf6", triggerType: "carrier", slaHours: 8   }),
-    makeStep({ position: 6, name: "Entregado",                     statusLabel: "Entregado",           icon: "home",      color: "#10b981", triggerType: "carrier", slaHours: 0,  sendEmail: true, isTerminal: true }),
+    makeStep({ position: 1, name: "Pedido confirmado", statusLabel: "Confirmado", icon: "clipboard", color: "#6366f1", triggerType: "auto", slaHours: 0, sendEmail: true }),
+    makeStep({ position: 2, name: "En preparación", statusLabel: "Preparando", icon: "package", color: "#f59e0b", triggerType: "manual", slaHours: 24 }),
+    makeStep({ position: 3, name: "Recogido por transportista", statusLabel: "Recogido", icon: "truck", color: "#3b82f6", triggerType: "carrier", slaHours: 4 }),
+    makeStep({ position: 4, name: "En tránsito", statusLabel: "En camino", icon: "navigation", color: "#0ea5e9", triggerType: "carrier", slaHours: 48 }),
+    makeStep({ position: 5, name: "En reparto local", statusLabel: "En reparto", icon: "mappin", color: "#8b5cf6", triggerType: "carrier", slaHours: 8 }),
+    makeStep({ position: 6, name: "Entregado", statusLabel: "Entregado", icon: "home", color: "#10b981", triggerType: "carrier", slaHours: 0, sendEmail: true, isTerminal: true }),
   ],
   return: [
-    makeStep({ position: 1, name: "Devolución solicitada",         statusLabel: "Solicitada",          icon: "rotate",    color: "#ef4444", triggerType: "auto",    slaHours: 0,  sendEmail: true }),
-    makeStep({ position: 2, name: "Recogida programada",           statusLabel: "Recogida prog.",      icon: "truck",     color: "#f97316", triggerType: "manual",  slaHours: 24  }),
-    makeStep({ position: 3, name: "Paquete recogido",              statusLabel: "En tránsito",         icon: "package",   color: "#3b82f6", triggerType: "carrier", slaHours: 48  }),
-    makeStep({ position: 4, name: "Recibido en almacén",           statusLabel: "Recibido",            icon: "warehouse", color: "#6366f1", triggerType: "manual",  slaHours: 4   }),
-    makeStep({ position: 5, name: "Inspeccionado",                 statusLabel: "Inspeccionado",       icon: "search",    color: "#f59e0b", triggerType: "manual",  slaHours: 24, requiresPhoto: true }),
-    makeStep({ position: 6, name: "Reembolso procesado",           statusLabel: "Reembolsado",         icon: "check",     color: "#10b981", triggerType: "auto",    slaHours: 72, sendEmail: true, isTerminal: true }),
+    makeStep({ position: 1, name: "Devolución solicitada", statusLabel: "Solicitada", icon: "rotate", color: "#ef4444", triggerType: "auto", slaHours: 0, sendEmail: true }),
+    makeStep({ position: 2, name: "Recogida programada", statusLabel: "Recogida prog.", icon: "truck", color: "#f97316", triggerType: "manual", slaHours: 24 }),
+    makeStep({ position: 3, name: "Paquete recogido", statusLabel: "En tránsito", icon: "package", color: "#3b82f6", triggerType: "carrier", slaHours: 48 }),
+    makeStep({ position: 4, name: "Recibido en almacén", statusLabel: "Recibido", icon: "warehouse", color: "#6366f1", triggerType: "manual", slaHours: 4 }),
+    makeStep({ position: 5, name: "Inspeccionado", statusLabel: "Inspeccionado", icon: "search", color: "#f59e0b", triggerType: "manual", slaHours: 24, requiresPhoto: true }),
+    makeStep({ position: 6, name: "Reembolso procesado", statusLabel: "Reembolsado", icon: "check", color: "#10b981", triggerType: "auto", slaHours: 72, sendEmail: true, isTerminal: true }),
   ],
   exchange: [
-    makeStep({ position: 1, name: "Cambio solicitado",             statusLabel: "Solicitado",          icon: "refresh",   color: "#8b5cf6", triggerType: "auto",    slaHours: 0,  sendEmail: true }),
-    makeStep({ position: 2, name: "Recogida del artículo",         statusLabel: "Recogida prog.",      icon: "truck",     color: "#f97316", triggerType: "manual",  slaHours: 24  }),
-    makeStep({ position: 3, name: "Artículo recibido",             statusLabel: "Recibido",            icon: "warehouse", color: "#6366f1", triggerType: "carrier", slaHours: 48  }),
-    makeStep({ position: 4, name: "Nuevo artículo preparado",      statusLabel: "Preparando envío",    icon: "package",   color: "#f59e0b", triggerType: "manual",  slaHours: 24  }),
-    makeStep({ position: 5, name: "Nuevo artículo enviado",        statusLabel: "Enviado",             icon: "navigation",color: "#0ea5e9", triggerType: "auto",    slaHours: 0,  sendEmail: true }),
-    makeStep({ position: 6, name: "Entregado",                     statusLabel: "Entregado",           icon: "home",      color: "#10b981", triggerType: "carrier", slaHours: 0,  isTerminal: true }),
+    makeStep({ position: 1, name: "Cambio solicitado", statusLabel: "Solicitado", icon: "refresh", color: "#8b5cf6", triggerType: "auto", slaHours: 0, sendEmail: true }),
+    makeStep({ position: 2, name: "Recogida del artículo", statusLabel: "Recogida prog.", icon: "truck", color: "#f97316", triggerType: "manual", slaHours: 24 }),
+    makeStep({ position: 3, name: "Artículo recibido", statusLabel: "Recibido", icon: "warehouse", color: "#6366f1", triggerType: "carrier", slaHours: 48 }),
+    makeStep({ position: 4, name: "Nuevo artículo preparado", statusLabel: "Preparando envío", icon: "package", color: "#f59e0b", triggerType: "manual", slaHours: 24 }),
+    makeStep({ position: 5, name: "Nuevo artículo enviado", statusLabel: "Enviado", icon: "navigation", color: "#0ea5e9", triggerType: "auto", slaHours: 0, sendEmail: true }),
+    makeStep({ position: 6, name: "Entregado", statusLabel: "Entregado", icon: "home", color: "#10b981", triggerType: "carrier", slaHours: 0, isTerminal: true }),
   ],
   quality: [
-    makeStep({ position: 1, name: "Artículo recibido",             statusLabel: "Recibido",            icon: "warehouse", color: "#6366f1", triggerType: "auto",    slaHours: 0   }),
-    makeStep({ position: 2, name: "En inspección visual",          statusLabel: "En inspección",       icon: "search",    color: "#f59e0b", triggerType: "manual",  slaHours: 4,  requiresPhoto: true }),
-    makeStep({ position: 3, name: "Control técnico",               statusLabel: "Control técnico",     icon: "wrench",    color: "#3b82f6", triggerType: "manual",  slaHours: 8   }),
-    makeStep({ position: 4, name: "Aprobado / Rechazado",          statusLabel: "Revisado",            icon: "check",     color: "#10b981", triggerType: "manual",  slaHours: 1,  isTerminal: true }),
+    makeStep({ position: 1, name: "Artículo recibido", statusLabel: "Recibido", icon: "warehouse", color: "#6366f1", triggerType: "auto", slaHours: 0 }),
+    makeStep({ position: 2, name: "En inspección visual", statusLabel: "En inspección", icon: "search", color: "#f59e0b", triggerType: "manual", slaHours: 4, requiresPhoto: true }),
+    makeStep({ position: 3, name: "Control técnico", statusLabel: "Control técnico", icon: "wrench", color: "#3b82f6", triggerType: "manual", slaHours: 8 }),
+    makeStep({ position: 4, name: "Aprobado / Rechazado", statusLabel: "Revisado", icon: "check", color: "#10b981", triggerType: "manual", slaHours: 1, isTerminal: true }),
   ],
   custom: [],
 };
 
 // ── Initial flows ─────────────────────────────────────────────────────────────
-const initFlows: DeliveryFlow[] = [
-  {
-    id: "f1", name: "Entrega estándar",          description: "Flujo por defecto para todos los pedidos con envío estándar.",
-    type: "delivery", shippingMethods: ["standard"], steps: TEMPLATES.delivery.map(s => ({ ...s, id: `f1-${s.position}` })),
-    active: true,  isDefault: true,  createdAt: "01/01/2026", ordersCount: 3841,
-  },
-  {
-    id: "f2", name: "Entrega express 24h",       description: "Flujo optimizado para envíos express con SLAs reducidos.",
-    type: "delivery", shippingMethods: ["express"], steps: [
-      ...TEMPLATES.delivery.slice(0, 5).map((s, i) => ({ ...s, id: `f2-${i}`, slaHours: Math.max(1, Math.floor(s.slaHours / 2)) })),
-      { ...TEMPLATES.delivery[5], id: "f2-5" },
-    ],
-    active: true,  isDefault: false, createdAt: "15/01/2026", ordersCount: 912,
-  },
-  {
-    id: "f3", name: "Devolución estándar",        description: "Proceso de devolución con recogida a domicilio.",
-    type: "return",   shippingMethods: [],          steps: TEMPLATES.return.map(s  => ({ ...s, id: `f3-${s.position}` })),
-    active: true,  isDefault: true,  createdAt: "01/01/2026", ordersCount: 189,
-  },
-  {
-    id: "f4", name: "Control de calidad",         description: "Inspección técnica para artículos devueltos.",
-    type: "quality",  shippingMethods: [],          steps: TEMPLATES.quality.map(s => ({ ...s, id: `f4-${s.position}` })),
-    active: true,  isDefault: false, createdAt: "20/02/2026", ordersCount: 47,
-  },
-];
+function mapApiToUi(f: ApiFlow): DeliveryFlow {
+  const typeMap: Record<string, FlowType> = {
+    delivery: "delivery", return: "return", exchange: "exchange",
+    quality: "quality", custom: "custom",
+  };
+  return {
+    id: f.id,
+    name: f.name,
+    description: f.description ?? "",
+    type: typeMap[f.trigger?.split(":")[0]] ?? "delivery",
+    shippingMethods: [],
+    steps: (Array.isArray(f.steps) ? f.steps : []) as unknown as FlowStep[],
+    active: f.active,
+    isDefault: false,
+    createdAt: new Date(f.createdAt).toLocaleDateString("es-ES"),
+    ordersCount: 0,
+  };
+}
+
+function uiToPayload(
+  f: Omit<DeliveryFlow, "id" | "createdAt" | "ordersCount">,
+): FlowPayload {
+  return {
+    name: f.name,
+    description: f.description,
+    trigger: `${f.type}:${f.shippingMethods[0] ?? "standard"}`,
+    active: f.active,
+  };
+}
 
 const emptyFlow: Omit<DeliveryFlow, "id" | "createdAt" | "ordersCount"> = {
   name: "", description: "", type: "delivery",
@@ -251,9 +256,9 @@ function StepEditor({ step, isFirst, isLast, onChange, onDelete, onMoveUp, onMov
 
         {/* Controls */}
         <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
-          <button onClick={onMoveUp}   disabled={isFirst} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-600 disabled:opacity-30 rounded transition-colors"><ChevronUp   className="w-3 h-3" /></button>
-          <button onClick={onMoveDown} disabled={isLast}  className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-600 disabled:opacity-30 rounded transition-colors"><ChevronDown className="w-3 h-3" /></button>
-          <button onClick={onDelete}                      className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded transition-colors"><Trash2 className="w-3 h-3" /></button>
+          <button onClick={onMoveUp} disabled={isFirst} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-600 disabled:opacity-30 rounded transition-colors"><ChevronUp className="w-3 h-3" /></button>
+          <button onClick={onMoveDown} disabled={isLast} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-600 disabled:opacity-30 rounded transition-colors"><ChevronDown className="w-3 h-3" /></button>
+          <button onClick={onDelete} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 rounded transition-colors"><Trash2 className="w-3 h-3" /></button>
           <ChevronDown className={`w-3.5 h-3.5 text-gray-400 ml-1 transition-transform ${open ? "rotate-180" : ""}`} />
         </div>
       </div>
@@ -355,11 +360,11 @@ function StepEditor({ step, isFirst, isLast, onChange, onDelete, onMoveUp, onMov
             <label className={lbl}>Requisitos y acciones</label>
             <div className="flex flex-wrap gap-2">
               {[
-                { field: "requiresPhoto"     as const, label: "Foto obligatoria",   icon: Camera },
-                { field: "requiresSignature" as const, label: "Firma del cliente",  icon: Settings },
-                { field: "sendEmail"         as const, label: "Notificación email", icon: Mail  },
-                { field: "sendSMS"           as const, label: "Notificación SMS",   icon: Phone },
-                { field: "isTerminal"        as const, label: "Paso final",         icon: CheckCircle2 },
+                { field: "requiresPhoto" as const, label: "Foto obligatoria", icon: Camera },
+                { field: "requiresSignature" as const, label: "Firma del cliente", icon: Settings },
+                { field: "sendEmail" as const, label: "Notificación email", icon: Mail },
+                { field: "sendSMS" as const, label: "Notificación SMS", icon: Phone },
+                { field: "isTerminal" as const, label: "Paso final", icon: CheckCircle2 },
               ].map(opt => (
                 <button
                   key={opt.field}
@@ -397,7 +402,7 @@ interface FlowPanelProps {
 
 function FlowPanel({ initial, onSave, onClose }: FlowPanelProps) {
   const [form, setForm] = useState({ ...initial });
-  const [tab, setTab]   = useState<"config" | "steps" | "automation">("config");
+  const [tab, setTab] = useState<"config" | "steps" | "automation">("config");
   const isEdit = Boolean((initial as any).id);
 
   const set = (field: keyof typeof form, value: any) =>
@@ -448,7 +453,7 @@ function FlowPanel({ initial, onSave, onClose }: FlowPanelProps) {
   };
 
   const validate = () => {
-    if (!form.name.trim())       { toast.error("El nombre es obligatorio"); return false; }
+    if (!form.name.trim()) { toast.error("El nombre es obligatorio"); return false; }
     if (form.steps.length === 0) { toast.error("El flujo debe tener al menos un paso"); return false; }
     return true;
   };
@@ -486,8 +491,8 @@ function FlowPanel({ initial, onSave, onClose }: FlowPanelProps) {
         {/* Tabs */}
         <div className="flex border-b border-gray-100 flex-shrink-0">
           {([
-            { id: "config",     label: `Configuración` },
-            { id: "steps",      label: `Pasos (${form.steps.length})` },
+            { id: "config", label: `Configuración` },
+            { id: "steps", label: `Pasos (${form.steps.length})` },
             { id: "automation", label: "Automatizaciones" },
           ] as const).map(t => (
             <button
@@ -712,9 +717,9 @@ function FlowPanel({ initial, onSave, onClose }: FlowPanelProps) {
               <div className="space-y-2">
                 {[
                   { label: "Notificar por email al cliente al cambiar de paso", icon: Mail, desc: "Usa las plantillas de email configuradas en Emails → Pedido enviado, Pedido entregado…" },
-                  { label: "Alertar al equipo si se supera el SLA del paso",    icon: Bell, desc: "Envía una notificación interna al responsable del paso cuando vence el SLA" },
-                  { label: "Crear tarea automática al entrar en cada paso",     icon: ClipboardCheck, desc: "Genera una tarea en el panel para el equipo operativo" },
-                  { label: "Solicitar foto en cada transición manual",          icon: Camera, desc: "El operario debe adjuntar una foto al avanzar manualmente el pedido" },
+                  { label: "Alertar al equipo si se supera el SLA del paso", icon: Bell, desc: "Envía una notificación interna al responsable del paso cuando vence el SLA" },
+                  { label: "Crear tarea automática al entrar en cada paso", icon: ClipboardCheck, desc: "Genera una tarea en el panel para el equipo operativo" },
+                  { label: "Solicitar foto en cada transición manual", icon: Camera, desc: "El operario debe adjuntar una foto al avanzar manualmente el pedido" },
                 ].map(item => (
                   <div key={item.label} className="flex items-start gap-3 px-3 py-3 border border-gray-200 rounded-xl">
                     <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -896,15 +901,26 @@ function FlowCard({ flow, onEdit, onDelete, onToggle }: {
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminFlows() {
-  const [flows, setFlows]       = useState<DeliveryFlow[]>(initFlows);
+  const [flows, setFlows] = useState<DeliveryFlow[]>([]);
   const [filterType, setFilterType] = useState<FlowType | "all">("all");
-  const [searchQ, setSearchQ]   = useState("");
+  const [searchQ, setSearchQ] = useState("");
   const [panelData, setPanelData] = useState<
-    | { mode: "new";  data: Omit<DeliveryFlow, "id" | "createdAt" | "ordersCount"> }
+    | { mode: "new"; data: Omit<DeliveryFlow, "id" | "createdAt" | "ordersCount"> }
     | { mode: "edit"; data: DeliveryFlow }
     | null
   >(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+
+  const loadFlows = useCallback(async () => {
+    try {
+      const page = await flowRepository.findAll({ size: 200 });
+      setFlows(page.content.map(mapApiToUi));
+    } catch {
+      toast.error("Error al cargar flujos");
+    }
+  }, []);
+
+  useEffect(() => { loadFlows(); }, [loadFlows]);
 
   const visible = useMemo(() => {
     let r = [...flows];
@@ -917,36 +933,50 @@ export function AdminFlows() {
   }, [flows, filterType, searchQ]);
 
   /* ── CRUD ─────────────────────────────────────────── */
-  const handleSave = (data: Omit<DeliveryFlow, "id" | "createdAt" | "ordersCount"> & { id?: string }) => {
-    if (data.id) {
-      setFlows(prev => prev.map(f => f.id === data.id ? { ...f, ...data } as DeliveryFlow : f));
-      toast.success("Flujo actualizado");
-    } else {
-      setFlows(prev => [...prev, { ...data, id: `f-${Date.now()}`, createdAt: "13/03/2026", ordersCount: 0 }]);
-      toast.success("Flujo creado");
+  const handleSave = async (data: Omit<DeliveryFlow, "id" | "createdAt" | "ordersCount"> & { id?: string }) => {
+    try {
+      if (data.id) {
+        const updated = await flowRepository.update(data.id, uiToPayload(data));
+        setFlows(prev => prev.map(f => f.id === data.id ? { ...mapApiToUi(updated), steps: data.steps, shippingMethods: data.shippingMethods } : f));
+        toast.success("Flujo actualizado");
+      } else {
+        const created = await flowRepository.create(uiToPayload(data));
+        setFlows(prev => [...prev, { ...mapApiToUi(created), steps: data.steps, shippingMethods: data.shippingMethods }]);
+        toast.success("Flujo creado");
+      }
+      setPanelData(null);
+    } catch {
+      toast.error("Error al guardar flujo");
     }
-    setPanelData(null);
   };
 
-  const handleToggle = (id: string) => {
-    setFlows(prev => prev.map(f => {
-      if (f.id !== id) return f;
-      const next = !f.active;
-      toast.success(`Flujo ${next ? "activado" : "pausado"}`);
-      return { ...f, active: next };
-    }));
+  const handleToggle = async (id: string) => {
+    const flow = flows.find(f => f.id === id);
+    if (!flow) return;
+    try {
+      const updated = await flowRepository.update(id, { name: flow.name, trigger: uiToPayload(flow).trigger, active: !flow.active });
+      setFlows(prev => prev.map(f => f.id === id ? { ...f, active: updated.active } : f));
+      toast.success(`Flujo ${updated.active ? "activado" : "pausado"}`);
+    } catch {
+      toast.error("Error al actualizar flujo");
+    }
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    setFlows(prev => prev.filter(f => f.id !== deleteTarget.id));
-    toast.success("Flujo eliminado");
-    setDeleteTarget(null);
+    try {
+      await flowRepository.delete(deleteTarget.id);
+      setFlows(prev => prev.filter(f => f.id !== deleteTarget.id));
+      toast.success("Flujo eliminado");
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Error al eliminar flujo");
+    }
   };
 
   const totalOrders = flows.reduce((s, f) => s + f.ordersCount, 0);
   const activeCount = flows.filter(f => f.active).length;
-  const totalSteps  = flows.reduce((s, f) => s + f.steps.length, 0);
+  const totalSteps = flows.reduce((s, f) => s + f.steps.length, 0);
 
   return (
     <div className="p-6 space-y-5">
@@ -969,9 +999,9 @@ export function AdminFlows() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Flujos",           value: flows.length,                icon: Activity },
-          { label: "Activos",          value: activeCount,                 icon: Zap      },
-          { label: "Pasos totales",    value: totalSteps,                  icon: Layers   },
+          { label: "Flujos", value: flows.length, icon: Activity },
+          { label: "Activos", value: activeCount, icon: Zap },
+          { label: "Pasos totales", value: totalSteps, icon: Layers },
           { label: "Pedidos procesados", value: totalOrders.toLocaleString(), icon: Truck },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">

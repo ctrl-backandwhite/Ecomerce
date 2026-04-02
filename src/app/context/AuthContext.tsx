@@ -18,6 +18,7 @@ import {
     storeReturnUrl,
 } from "../lib/token";
 import type { TokenResponse } from "../lib/token";
+import { nxFetch } from "../lib/nxFetch";
 import {
     generateCodeVerifier,
     generateCodeChallenge,
@@ -39,6 +40,7 @@ export interface AuthUser {
     id: number;
     firstName: string;
     lastName: string;
+    nickName: string;
     email: string;
     roles: string[];
     groups: string[];
@@ -74,6 +76,7 @@ function extractUser(token: string): AuthUser | null {
         id: (payload.id as number) ?? 0,
         firstName: (payload.firstName as string) ?? "",
         lastName: (payload.lastName as string) ?? "",
+        nickName: (payload.nickName as string) ?? "",
         email: (payload.sub as string) ?? "",
         roles: extractRoles(token),
         groups: Array.isArray(payload.groups) ? (payload.groups as string[]) : [],
@@ -209,7 +212,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = useCallback(async () => {
         try {
-            await fetch(`${GATEWAY_URL}/api/v1/auth/logout`, {
+            await nxFetch(`${GATEWAY_URL}/api/v1/auth/logout`, {
                 method: "POST",
                 credentials: "include",
             });

@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Mail, Users, TrendingUp, Send, X, Download, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
+import { type NewsletterSubscriber as ApiSub, newsletterRepository } from "../../repositories/CmsRepository";
 
 interface Subscriber {
   id: string;
@@ -13,38 +14,57 @@ interface Subscriber {
 }
 
 const STATUS_META = {
-  active:       { label: "Activo",      bg: "bg-green-50",  text: "text-green-700", dot: "bg-green-400"  },
-  unsubscribed: { label: "Baja",        bg: "bg-gray-100",  text: "text-gray-500",  dot: "bg-gray-300"   },
-  bounced:      { label: "Bounce",      bg: "bg-red-50",    text: "text-red-600",   dot: "bg-red-400"    },
+  active: { label: "Activo", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400" },
+  unsubscribed: { label: "Baja", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300" },
+  bounced: { label: "Bounce", bg: "bg-red-50", text: "text-red-600", dot: "bg-red-400" },
 };
 
-const initSubs: Subscriber[] = [
-  { id: "s1", email: "maria@email.com",  name: "María García",    subscribedAt: "01/03/2026", status: "active",       source: "popup",    tags: ["cliente","vip"]       },
-  { id: "s2", email: "juan@email.com",   name: "Juan Pérez",      subscribedAt: "05/03/2026", status: "active",       source: "checkout", tags: ["cliente"]             },
-  { id: "s3", email: "ana@email.com",    name: "Ana Martínez",    subscribedAt: "08/03/2026", status: "active",       source: "footer",   tags: ["cliente","newsletter"]},
-  { id: "s4", email: "carlos@email.com", name: "Carlos López",    subscribedAt: "10/03/2026", status: "unsubscribed", source: "popup",    tags: []                      },
-  { id: "s5", email: "sofia@email.com",  name: "Sofía Torres",    subscribedAt: "11/03/2026", status: "active",       source: "checkout", tags: ["vip"]                 },
-  { id: "s6", email: "laura@email.com",  name: "Laura Sánchez",   subscribedAt: "12/03/2026", status: "active",       source: "footer",   tags: ["newsletter"]          },
-  { id: "s7", email: "miguel@email.com", name: "Miguel A. Ruiz",  subscribedAt: "12/03/2026", status: "bounced",      source: "import",   tags: []                      },
-  { id: "s8", email: "pedro@email.com",  name: "Pedro Rodríguez", subscribedAt: "13/03/2026", status: "active",       source: "popup",    tags: []                      },
-];
+// Removed: data is now loaded from the API.
+
+function mapApiToUi(s: ApiSub): Subscriber {
+  return {
+    id: s.id,
+    email: s.email,
+    name: s.email.split("@")[0],
+    subscribedAt: new Date(s.subscribedAt).toLocaleDateString("es-ES"),
+    status: s.active ? "active" : "unsubscribed",
+    source: "popup",
+    tags: [],
+  };
+}
 
 const SOURCE_LABELS: Record<string, string> = {
   checkout: "Checkout", popup: "Popup web", footer: "Footer", import: "Importación",
 };
 
 export function AdminNewsletter() {
-  const [subs, setSubs] = useState<Subscriber[]>(initSubs);
+  const [subs, setSubs] = useState<Subscriber[]>([]);
   const [statusF, setStatusF] = useState<"all" | Subscriber["status"]>("all");
   const [showCompose, setShowCompose] = useState(false);
   const [campaign, setCampaign] = useState({ subject: "", body: "" });
 
+  const loadSubs = useCallback(async () => {
+    try {
+      const page = await newsletterRepository.findAll({ size: 500 });
+      setSubs(page.content.map(mapApiToUi));
+    } catch {
+      toast.error("Error al cargar suscriptores");
+    }
+  }, []);
+
+  useEffect(() => { loadSubs(); }, [loadSubs]);
+
   const filtered = statusF === "all" ? subs : subs.filter(s => s.status === statusF);
   const activeCount = subs.filter(s => s.status === "active").length;
 
-  const remove = (id: string) => {
-    setSubs(prev => prev.filter(s => s.id !== id));
-    toast.success("Suscriptor eliminado");
+  const remove = async (id: string) => {
+    try {
+      await newsletterRepository.delete(id);
+      setSubs(prev => prev.filter(s => s.id !== id));
+      toast.success("Suscriptor eliminado");
+    } catch {
+      toast.error("Error al eliminar suscriptor");
+    }
   };
 
   return (
@@ -73,10 +93,10 @@ export function AdminNewsletter() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total suscriptores", value: subs.length,                                      icon: Users      },
-          { label: "Activos",            value: activeCount,                                       icon: Check      },
-          { label: "Bajas",              value: subs.filter(s => s.status === "unsubscribed").length, icon: X      },
-          { label: "Tasa de activos",    value: `${Math.round((activeCount / subs.length) * 100)}%`, icon: TrendingUp },
+          { label: "Total suscriptores", value: subs.length, icon: Users },
+          { label: "Activos", value: activeCount, icon: Check },
+          { label: "Bajas", value: subs.filter(s => s.status === "unsubscribed").length, icon: X },
+          { label: "Tasa de activos", value: `${Math.round((activeCount / subs.length) * 100)}%`, icon: TrendingUp },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">
@@ -110,13 +130,13 @@ export function AdminNewsletter() {
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
         <div className="grid grid-cols-[2fr_1.5fr_1fr_1fr_1fr_0.7fr_72px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
           {[
-            { label: "Suscriptor",  cls: "text-left"   },
-            { label: "Email",       cls: "text-left"   },
-            { label: "Fuente",      cls: "text-left"   },
-            { label: "Suscrito",    cls: "text-center" },
-            { label: "Etiquetas",   cls: "text-left"   },
-            { label: "Estado",      cls: "text-left"   },
-            { label: "",            cls: "text-right"  },
+            { label: "Suscriptor", cls: "text-left" },
+            { label: "Email", cls: "text-left" },
+            { label: "Fuente", cls: "text-left" },
+            { label: "Suscrito", cls: "text-center" },
+            { label: "Etiquetas", cls: "text-left" },
+            { label: "Estado", cls: "text-left" },
+            { label: "", cls: "text-right" },
           ].map(h => (
             <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}

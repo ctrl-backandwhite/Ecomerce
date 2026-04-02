@@ -4,6 +4,7 @@
  */
 import { getAccessToken, getRefreshToken, storeTokens, clearTokens, getTokenType } from "./token";
 import type { TokenResponse } from "./token";
+import { getSessionId } from "./sessionId";
 
 const GATEWAY_URL = import.meta.env.VITE_GATEWAY_URL as string;
 const CLIENT_ID = import.meta.env.VITE_OAUTH2_CLIENT_ID as string;
@@ -65,21 +66,35 @@ export async function authFetch(
     const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
     const shouldSkip = SKIP_AUTH_PATHS.some((p) => url.includes(p));
 
-    function attachToken(options?: RequestInit): RequestInit {
-        if (shouldSkip) return options ?? {};
-        const token = getAccessToken();
-        if (!token) return options ?? {};
+    function attachHeaders(options?: RequestInit): RequestInit {
         const headers = new Headers(options?.headers);
-        headers.set("Authorization", `${getTokenType()} ${token}`);
+
+        // Always attach session id for guest cart support
+        headers.set("X-Session-Id", getSessionId());
+
+        // Propagate current locale
+        const lang = localStorage.getItem("nexa-locale") || navigator.language || "es";
+        headers.set("Accept-Language", lang);
+
+        // Gateway authentication token
+        headers.set("X-nx036-auth", `NX036.${btoa(`${CLIENT_ID}:${Date.now()}`)}`);
+
+        if (!shouldSkip) {
+            const token = getAccessToken();
+            if (token) {
+                headers.set("Authorization", `${getTokenType()} ${token}`);
+            }
+        }
+
         return { ...options, headers };
     }
 
-    const response = await fetch(input, attachToken(init));
+    const response = await fetch(input, attachHeaders(init));
 
     if (response.status === 401 && !shouldSkip) {
         const refreshed = await refreshOnce();
         if (refreshed) {
-            return fetch(input, attachToken(init));
+            return fetch(input, attachHeaders(init));
         }
         // Refresh failed — clear tokens; AuthContext will detect and redirect
         clearTokens();

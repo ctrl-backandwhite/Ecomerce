@@ -18,37 +18,37 @@ import type { PaymentMethod } from "../context/UserContext";
 
 /* ── Mock crypto addresses ───────────────────────────────── */
 const MOCK_USDT_ADDRESS = "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE";
-const MOCK_BTC_ADDRESS  = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
+const MOCK_BTC_ADDRESS = "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh";
 
 /* ── Delivery type helpers ───────────────────────────────── */
 type DeliveryType = "home" | "store" | "pickup";
 
 const deliveryMeta: Record<DeliveryType, { label: string; icon: React.ReactNode; color: string; bg: string; border: string }> = {
-  home:   { label: "Envío a domicilio",  icon: <Truck    className="w-4 h-4" strokeWidth={1.5} />, color: "text-blue-600",   bg: "bg-blue-50",   border: "border-blue-200"   },
-  store:  { label: "Recogida en tienda", icon: <Store    className="w-4 h-4" strokeWidth={1.5} />, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200" },
-  pickup: { label: "Punto de entrega",   icon: <Package2 className="w-4 h-4" strokeWidth={1.5} />, color: "text-emerald-600",bg: "bg-emerald-50",border: "border-emerald-200"},
+  home: { label: "Envío a domicilio", icon: <Truck className="w-4 h-4" strokeWidth={1.5} />, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+  store: { label: "Recogida en tienda", icon: <Store className="w-4 h-4" strokeWidth={1.5} />, color: "text-violet-600", bg: "bg-violet-50", border: "border-violet-200" },
+  pickup: { label: "Punto de entrega", icon: <Package2 className="w-4 h-4" strokeWidth={1.5} />, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
 };
 
 /* ── Mock store locations ──────────────────────────────────── */
 const storeLocations = [
-  { id: "store-1", name: "NX036 Manhattan – Fifth Ave",   address: "350 Fifth Avenue, New York, NY 10118",  hours: "Mon–Sat 9am–9pm · Sun 11am–7pm",  distance: "0.8 mi" },
-  { id: "store-2", name: "NX036 Brooklyn – Atlantic Ave", address: "530 Atlantic Ave, Brooklyn, NY 11217",  hours: "Mon–Sat 10am–8pm · Sun 12pm–6pm", distance: "3.2 mi" },
-  { id: "store-3", name: "NX036 Queens – Jamaica Center", address: "168-16 Jamaica Ave, Queens, NY 11432",  hours: "Mon–Sun 9am–9pm",                  distance: "7.4 mi" },
-  { id: "store-4", name: "NX036 London – Oxford Street",  address: "374 Oxford Street, London W1C 1JX, UK", hours: "Mon–Sat 9am–8pm · Sun 12pm–6pm",  distance: "—"      },
+  { id: "store-1", name: "NX036 Manhattan – Fifth Ave", address: "350 Fifth Avenue, New York, NY 10118", hours: "Mon–Sat 9am–9pm · Sun 11am–7pm", distance: "0.8 mi" },
+  { id: "store-2", name: "NX036 Brooklyn – Atlantic Ave", address: "530 Atlantic Ave, Brooklyn, NY 11217", hours: "Mon–Sat 10am–8pm · Sun 12pm–6pm", distance: "3.2 mi" },
+  { id: "store-3", name: "NX036 Queens – Jamaica Center", address: "168-16 Jamaica Ave, Queens, NY 11432", hours: "Mon–Sun 9am–9pm", distance: "7.4 mi" },
+  { id: "store-4", name: "NX036 London – Oxford Street", address: "374 Oxford Street, London W1C 1JX, UK", hours: "Mon–Sat 9am–8pm · Sun 12pm–6pm", distance: "—" },
 ];
 
 /* ── Mock pickup points ──────────────────────────────────── */
 const pickupPoints = [
-  { id: "pp-1", name: "InPost Locker – Penn Station",   address: "2 Penn Plaza, New York, NY 10121",       hours: "24/7",                            distance: "0.3 mi", type: "Locker"       },
-  { id: "pp-2", name: "UPS Access Point – Midtown",     address: "410 Lexington Ave, New York, NY 10017",  hours: "Mon–Fri 8am–8pm · Sat 9am–5pm",  distance: "1.1 mi", type: "Access Point" },
-  { id: "pp-3", name: "InPost Locker – Grand Central",  address: "89 E 42nd St, New York, NY 10017",       hours: "24/7",                            distance: "1.4 mi", type: "Locker"       },
-  { id: "pp-4", name: "FedEx Drop Box – Herald Square", address: "1 Herald Square, New York, NY 10001",    hours: "Mon–Fri 8am–6pm",                 distance: "0.9 mi", type: "Drop Box"     },
-  { id: "pp-5", name: "UPS Access Point – Chelsea",     address: "185 Seventh Ave, New York, NY 10011",    hours: "Mon–Fri 8am–8pm · Sat 9am–5pm",  distance: "1.8 mi", type: "Access Point" },
+  { id: "pp-1", name: "InPost Locker – Penn Station", address: "2 Penn Plaza, New York, NY 10121", hours: "24/7", distance: "0.3 mi", type: "Locker" },
+  { id: "pp-2", name: "UPS Access Point – Midtown", address: "410 Lexington Ave, New York, NY 10017", hours: "Mon–Fri 8am–8pm · Sat 9am–5pm", distance: "1.1 mi", type: "Access Point" },
+  { id: "pp-3", name: "InPost Locker – Grand Central", address: "89 E 42nd St, New York, NY 10017", hours: "24/7", distance: "1.4 mi", type: "Locker" },
+  { id: "pp-4", name: "FedEx Drop Box – Herald Square", address: "1 Herald Square, New York, NY 10001", hours: "Mon–Fri 8am–6pm", distance: "0.9 mi", type: "Drop Box" },
+  { id: "pp-5", name: "UPS Access Point – Chelsea", address: "185 Seventh Ave, New York, NY 10011", hours: "Mon–Fri 8am–8pm · Sat 9am–5pm", distance: "1.8 mi", type: "Access Point" },
 ];
 
 function labelIcon(label: string) {
   const l = label.toLowerCase();
-  if (l === "home" || l === "casa")      return <Home      className="w-3.5 h-3.5" strokeWidth={1.5} />;
+  if (l === "home" || l === "casa") return <Home className="w-3.5 h-3.5" strokeWidth={1.5} />;
   if (l === "office" || l === "trabajo") return <Briefcase className="w-3.5 h-3.5" strokeWidth={1.5} />;
   return <MapPin className="w-3.5 h-3.5" strokeWidth={1.5} />;
 }
@@ -56,11 +56,10 @@ function labelIcon(label: string) {
 /* ── Step indicator ──────────────────────────────────────── */
 function StepBadge({ n, active, done }: { n: number; active: boolean; done: boolean }) {
   return (
-    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs transition-colors ${
-      done   ? "bg-gray-600 text-white"
-      : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
-      : "bg-gray-100 text-gray-400"
-    }`}>
+    <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs transition-colors ${done ? "bg-gray-600 text-white"
+        : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
+          : "bg-gray-100 text-gray-400"
+      }`}>
       {done ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : n}
     </div>
   );
@@ -131,8 +130,8 @@ export function Checkout() {
   /* Totals */
   const subtotal = getTotalPrice();
   const shipping = subtotal > 100 ? 0 : 15;
-  const tax      = subtotal * 0.1;
-  const total    = subtotal + shipping + tax;
+  const tax = subtotal * 0.1;
+  const total = subtotal + shipping + tax;
 
   /* Derived selected address */
   const selectedAddr = selectedAddrId !== "new"
@@ -140,7 +139,7 @@ export function Checkout() {
     : null;
 
   /* Derived "new" selection labels for sidebar */
-  const selectedStore  = storeLocations.find((s) => s.id === selectedStoreId);
+  const selectedStore = storeLocations.find((s) => s.id === selectedStoreId);
   const selectedPickup = pickupPoints.find((p) => p.id === selectedPickupId);
 
   /* Derived selected payment method */
@@ -173,25 +172,25 @@ export function Checkout() {
         : selectedAddr.locationName ?? "";
     }
     if (newMode === "home" && manualAddr.street) return `${manualAddr.street}, ${manualAddr.city}`;
-    if (newMode === "store" && selectedStore)    return `${selectedStore.name} · ${selectedStore.address}`;
-    if (newMode === "pickup" && selectedPickup)  return `${selectedPickup.name} · ${selectedPickup.address}`;
+    if (newMode === "store" && selectedStore) return `${selectedStore.name} · ${selectedStore.address}`;
+    if (newMode === "pickup" && selectedPickup) return `${selectedPickup.name} · ${selectedPickup.address}`;
     return "";
   }
 
   /* Payment collapsed summary */
   function paymentSummaryLabel() {
     if (selectedPm) {
-      if (selectedPm.type === "card")   return `${selectedPm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${selectedPm.cardLast4}`;
+      if (selectedPm.type === "card") return `${selectedPm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${selectedPm.cardLast4}`;
       if (selectedPm.type === "paypal") return `PayPal · ${selectedPm.paypalEmail}`;
-      if (selectedPm.type === "usdt")   return `USDT · ${selectedPm.cryptoNetwork}`;
-      if (selectedPm.type === "btc")    return `Bitcoin · ${selectedPm.cryptoNetwork}`;
+      if (selectedPm.type === "usdt") return `USDT · ${selectedPm.cryptoNetwork}`;
+      if (selectedPm.type === "btc") return `Bitcoin · ${selectedPm.cryptoNetwork}`;
     }
     if (selectedPmId === "new") {
       if (payMethod === "card" && payment.cardNumber)
         return `•••• •••• •••• ${payment.cardNumber.replace(/\s/g, "").slice(-4)}`;
       if (payMethod === "paypal") return `PayPal · ${paypalEmail}`;
-      if (payMethod === "usdt")   return "USDT (TRC-20)";
-      if (payMethod === "btc")    return "Bitcoin (BTC)";
+      if (payMethod === "usdt") return "USDT (TRC-20)";
+      if (payMethod === "btc") return "Bitcoin (BTC)";
     }
     return "";
   }
@@ -217,7 +216,7 @@ export function Checkout() {
   /* ── Order confirmed screen ── */
   if (orderComplete) {
     const today = new Date().toISOString().slice(0, 10);
-    const due   = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
+    const due = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
     const invoiceData = {
       invoiceNumber: invoiceId,
       orderNumber: orderId,
@@ -225,17 +224,17 @@ export function Checkout() {
       dueDate: due,
       status: "paid" as const,
       customer: {
-        name:    `${user.firstName} ${user.lastName}`,
-        email:   contact.email,
-        phone:   contact.phone,
+        name: `${user.firstName} ${user.lastName}`,
+        email: contact.email,
+        phone: contact.phone,
         address: deliverySummary() || undefined,
       },
       lines: orderSnapshot.map(item => ({
-        name:      item.name,
-        sku:       item.sku,
-        quantity:  item.quantity,
+        name: item.name,
+        sku: item.sku,
+        quantity: item.quantity,
         unitPrice: item.price,
-        total:     item.price * item.quantity,
+        total: item.price * item.quantity,
       })),
       subtotal,
       shipping,
@@ -287,8 +286,8 @@ export function Checkout() {
 
   /* ── New address mode tabs ── */
   const newModeTabs: { id: DeliveryType; label: string; icon: React.ReactNode }[] = [
-    { id: "home",   label: "Domicilio",     icon: <Truck    className="w-4 h-4" strokeWidth={1.5} /> },
-    { id: "store",  label: "Tienda NX036",   icon: <Store    className="w-4 h-4" strokeWidth={1.5} /> },
+    { id: "home", label: "Domicilio", icon: <Truck className="w-4 h-4" strokeWidth={1.5} /> },
+    { id: "store", label: "Tienda NX036", icon: <Store className="w-4 h-4" strokeWidth={1.5} /> },
     { id: "pickup", label: "Punto entrega", icon: <Package2 className="w-4 h-4" strokeWidth={1.5} /> },
   ];
 
@@ -361,9 +360,8 @@ export function Checkout() {
                     <button
                       onClick={() => step1Valid && setStep(2)}
                       disabled={!step1Valid}
-                      className={`inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${
-                        step1Valid ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-gray-100 text-gray-300 cursor-not-allowed"
-                      }`}
+                      className={`inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${step1Valid ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                        }`}
                     >
                       Continuar
                       <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
@@ -405,13 +403,11 @@ export function Checkout() {
                               key={addr.id}
                               type="button"
                               onClick={() => setSelectedAddrId(addr.id)}
-                              className={`w-full text-left rounded-xl border-2 overflow-hidden transition-all ${
-                                isSelected ? "border-gray-500" : "border-gray-100 hover:border-gray-300"
-                              }`}
+                              className={`w-full text-left rounded-xl border-2 overflow-hidden transition-all ${isSelected ? "border-gray-500" : "border-gray-100 hover:border-gray-300"
+                                }`}
                             >
-                              <div className={`flex items-center gap-2 px-4 py-1.5 border-b ${
-                                isSelected ? "bg-gray-100 border-gray-200" : `${dt.bg} border-gray-100`
-                              }`}>
+                              <div className={`flex items-center gap-2 px-4 py-1.5 border-b ${isSelected ? "bg-gray-100 border-gray-200" : `${dt.bg} border-gray-100`
+                                }`}>
                                 <span className={isSelected ? "text-gray-700" : dt.color}>{dt.icon}</span>
                                 <span className={`text-xs ${isSelected ? "text-gray-600" : dt.color}`}>{dt.label}</span>
                                 {addr.isDefault && (
@@ -422,9 +418,8 @@ export function Checkout() {
                               </div>
                               <div className={`px-4 py-3 flex items-start justify-between gap-4 ${isSelected ? "bg-gray-50" : "bg-white"}`}>
                                 <div className="flex items-start gap-3 min-w-0">
-                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                                    isSelected ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-500"
-                                  }`}>
+                                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-500"
+                                    }`}>
                                     {labelIcon(addr.label)}
                                   </div>
                                   <div className="min-w-0">
@@ -444,9 +439,8 @@ export function Checkout() {
                                     )}
                                   </div>
                                 </div>
-                                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                                  isSelected ? "border-gray-500 bg-gray-500" : "border-gray-200"
-                                }`}>
+                                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${isSelected ? "border-gray-500 bg-gray-500" : "border-gray-200"
+                                  }`}>
                                   {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                                 </div>
                               </div>
@@ -457,28 +451,24 @@ export function Checkout() {
                     )}
 
                     {/* ── Other delivery options ── */}
-                    <div className={`rounded-xl border-2 overflow-hidden transition-all ${
-                      selectedAddrId === "new" ? "border-gray-900" : "border-dashed border-gray-200 hover:border-gray-300"
-                    }`}>
+                    <div className={`rounded-xl border-2 overflow-hidden transition-all ${selectedAddrId === "new" ? "border-gray-900" : "border-dashed border-gray-200 hover:border-gray-300"
+                      }`}>
                       <button
                         type="button"
                         onClick={() => setSelectedAddrId("new")}
-                        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${
-                          selectedAddrId === "new" ? "bg-gray-50" : "bg-white hover:bg-gray-50"
-                        }`}
+                        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${selectedAddrId === "new" ? "bg-gray-50" : "bg-white hover:bg-gray-50"
+                          }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          selectedAddrId === "new" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-400"
-                        }`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedAddrId === "new" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-400"
+                          }`}>
                           <Plus className="w-4 h-4" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm text-gray-700">Usar otra dirección de entrega</p>
                           <p className="text-xs text-gray-400">Domicilio, tienda NX036 o punto de entrega</p>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                          selectedAddrId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
-                        }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${selectedAddrId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
+                          }`}>
                           {selectedAddrId === "new" && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                         </div>
                       </button>
@@ -495,11 +485,10 @@ export function Checkout() {
                                   key={id}
                                   type="button"
                                   onClick={() => setNewMode(id)}
-                                  className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs transition-all ${
-                                    active
+                                  className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs transition-all ${active
                                       ? `border-gray-900 bg-white ${meta.color}`
                                       : "border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600"
-                                  }`}
+                                    }`}
                                 >
                                   <span className={active ? meta.color : "text-gray-400"}>{icon}</span>
                                   {label}
@@ -597,13 +586,11 @@ export function Checkout() {
                                     key={store.id}
                                     type="button"
                                     onClick={() => setSelectedStoreId(store.id)}
-                                    className={`w-full text-left rounded-xl border-2 px-4 py-3 flex items-start gap-3 transition-all ${
-                                      isSelected ? "border-violet-500 bg-violet-50/40" : "border-gray-200 bg-white hover:border-violet-300"
-                                    }`}
+                                    className={`w-full text-left rounded-xl border-2 px-4 py-3 flex items-start gap-3 transition-all ${isSelected ? "border-violet-500 bg-violet-50/40" : "border-gray-200 bg-white hover:border-violet-300"
+                                      }`}
                                   >
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                                      isSelected ? "bg-violet-500 text-white" : "bg-violet-50 text-violet-400"
-                                    }`}>
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${isSelected ? "bg-violet-500 text-white" : "bg-violet-50 text-violet-400"
+                                      }`}>
                                       <Store className="w-4 h-4" strokeWidth={1.5} />
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -625,9 +612,8 @@ export function Checkout() {
                                         )}
                                       </div>
                                     </div>
-                                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                                      isSelected ? "border-violet-500 bg-violet-500" : "border-gray-200"
-                                    }`}>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${isSelected ? "border-violet-500 bg-violet-500" : "border-gray-200"
+                                      }`}>
                                       {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                                     </div>
                                   </button>
@@ -647,23 +633,20 @@ export function Checkout() {
                                     key={point.id}
                                     type="button"
                                     onClick={() => setSelectedPickupId(point.id)}
-                                    className={`w-full text-left rounded-xl border-2 px-4 py-3 flex items-start gap-3 transition-all ${
-                                      isSelected ? "border-emerald-500 bg-emerald-50/40" : "border-gray-200 bg-white hover:border-emerald-300"
-                                    }`}
+                                    className={`w-full text-left rounded-xl border-2 px-4 py-3 flex items-start gap-3 transition-all ${isSelected ? "border-emerald-500 bg-emerald-50/40" : "border-gray-200 bg-white hover:border-emerald-300"
+                                      }`}
                                   >
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${
-                                      isSelected ? "bg-emerald-500 text-white" : "bg-emerald-50 text-emerald-400"
-                                    }`}>
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 ${isSelected ? "bg-emerald-500 text-white" : "bg-emerald-50 text-emerald-400"
+                                      }`}>
                                       <Package2 className="w-4 h-4" strokeWidth={1.5} />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2">
                                         <p className="text-sm text-gray-900">{point.name}</p>
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
-                                          isSelected
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${isSelected
                                             ? "text-emerald-700 bg-emerald-100 border-emerald-200"
                                             : "text-gray-400 bg-gray-50 border-gray-200"
-                                        }`}>
+                                          }`}>
                                           {point.type}
                                         </span>
                                       </div>
@@ -682,9 +665,8 @@ export function Checkout() {
                                         </div>
                                       </div>
                                     </div>
-                                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${
-                                      isSelected ? "border-emerald-500 bg-emerald-500" : "border-gray-200"
-                                    }`}>
+                                    <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors ${isSelected ? "border-emerald-500 bg-emerald-500" : "border-gray-200"
+                                      }`}>
                                       {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                                     </div>
                                   </button>
@@ -702,9 +684,8 @@ export function Checkout() {
                     <button
                       onClick={() => step2Valid && setStep(3)}
                       disabled={!step2Valid}
-                      className={`inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${
-                        step2Valid ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-gray-100 text-gray-300 cursor-not-allowed"
-                      }`}
+                      className={`inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${step2Valid ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                        }`}
                     >
                       Continuar
                       <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
@@ -741,39 +722,37 @@ export function Checkout() {
                         {user.paymentMethods.map((pm) => {
                           const isSelected = selectedPmId === pm.id;
                           const accentMap: Record<string, { border: string; strip: string; stripTxt: string }> = {
-                            card:   { border: "border-gray-500",   strip: isSelected ? "bg-gray-500"    : "bg-gray-50",     stripTxt: isSelected ? "text-white" : "text-gray-500"   },
-                            paypal: { border: "border-[#179BD7]",  strip: isSelected ? "bg-[#179BD7]"   : "bg-sky-50",      stripTxt: isSelected ? "text-white" : "text-[#179BD7]" },
-                            usdt:   { border: "border-[#26A17B]",  strip: isSelected ? "bg-[#26A17B]"   : "bg-emerald-50",  stripTxt: isSelected ? "text-white" : "text-[#26A17B]" },
-                            btc:    { border: "border-[#F7931A]",  strip: isSelected ? "bg-[#F7931A]"   : "bg-orange-50",   stripTxt: isSelected ? "text-white" : "text-[#F7931A]" },
+                            card: { border: "border-gray-500", strip: isSelected ? "bg-gray-500" : "bg-gray-50", stripTxt: isSelected ? "text-white" : "text-gray-500" },
+                            paypal: { border: "border-[#179BD7]", strip: isSelected ? "bg-[#179BD7]" : "bg-sky-50", stripTxt: isSelected ? "text-white" : "text-[#179BD7]" },
+                            usdt: { border: "border-[#26A17B]", strip: isSelected ? "bg-[#26A17B]" : "bg-emerald-50", stripTxt: isSelected ? "text-white" : "text-[#26A17B]" },
+                            btc: { border: "border-[#F7931A]", strip: isSelected ? "bg-[#F7931A]" : "bg-orange-50", stripTxt: isSelected ? "text-white" : "text-[#F7931A]" },
                           };
                           const ac = accentMap[pm.type];
                           const typeLabel = { card: "Tarjeta", paypal: "PayPal", usdt: "USDT", btc: "Bitcoin" }[pm.type];
-                          const detail = pm.type === "card"   ? `${pm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${pm.cardLast4} · Vence ${pm.cardExpiry}`
-                                       : pm.type === "paypal" ? pm.paypalEmail
-                                       : pm.type === "usdt"   ? `${pm.cryptoNetwork}`
-                                       : `${pm.cryptoNetwork}`;
+                          const detail = pm.type === "card" ? `${pm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${pm.cardLast4} · Vence ${pm.cardExpiry}`
+                            : pm.type === "paypal" ? pm.paypalEmail
+                              : pm.type === "usdt" ? `${pm.cryptoNetwork}`
+                                : `${pm.cryptoNetwork}`;
                           return (
                             <button
                               key={pm.id}
                               type="button"
                               onClick={() => { setSelectedPmId(pm.id); setSavedCardCvv(""); }}
-                              className={`w-full text-left rounded-xl border-2 overflow-hidden transition-all ${
-                                isSelected ? ac.border : "border-gray-100 hover:border-gray-300"
-                              }`}
+                              className={`w-full text-left rounded-xl border-2 overflow-hidden transition-all ${isSelected ? ac.border : "border-gray-100 hover:border-gray-300"
+                                }`}
                             >
                               {/* Type strip */}
                               <div className={`flex items-center gap-2 px-4 py-1.5 border-b border-gray-100 ${ac.strip}`}>
                                 <span className={ac.stripTxt}>
-                                  {pm.type === "card"   ? (pm.cardBrand === "mastercard" ? <MastercardLogo className="h-4 w-auto" /> : <VisaLogo className="h-3.5 w-auto" />) :
-                                   pm.type === "paypal" ? <PayPalLogo className="h-4 w-auto" /> :
-                                   pm.type === "usdt"   ? <USDTLogo size={16} /> :
-                                   <BTCLogo size={16} />}
+                                  {pm.type === "card" ? (pm.cardBrand === "mastercard" ? <MastercardLogo size={18} /> : <VisaLogo size={16} />) :
+                                    pm.type === "paypal" ? <PayPalLogo size={18} /> :
+                                      pm.type === "usdt" ? <USDTLogo size={16} /> :
+                                        <BTCLogo size={16} />}
                                 </span>
                                 <span className={`text-xs ${ac.stripTxt}`}>{typeLabel}</span>
                                 {pm.isDefault && (
-                                  <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full border ${
-                                    isSelected ? "text-white/70 bg-white/10 border-white/20" : "text-gray-500 bg-white border-gray-200"
-                                  }`}>Predeterminado</span>
+                                  <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full border ${isSelected ? "text-white/70 bg-white/10 border-white/20" : "text-gray-500 bg-white border-gray-200"
+                                    }`}>Predeterminado</span>
                                 )}
                               </div>
                               {/* Body */}
@@ -782,9 +761,8 @@ export function Checkout() {
                                   <p className="text-sm text-gray-900">{pm.label}</p>
                                   <p className="text-xs text-gray-400 mt-0.5">{detail}</p>
                                 </div>
-                                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                                  isSelected ? `${ac.border} bg-gray-500` : "border-gray-200"
-                                }`}>
+                                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${isSelected ? `${ac.border} bg-gray-500` : "border-gray-200"
+                                  }`}>
                                   {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                                 </div>
                               </div>
@@ -815,28 +793,24 @@ export function Checkout() {
                     )}
 
                     {/* ── Use a different method ── */}
-                    <div className={`rounded-xl border-2 overflow-hidden transition-all ${
-                      selectedPmId === "new" ? "border-gray-500" : "border-dashed border-gray-200 hover:border-gray-300"
-                    }`}>
+                    <div className={`rounded-xl border-2 overflow-hidden transition-all ${selectedPmId === "new" ? "border-gray-500" : "border-dashed border-gray-200 hover:border-gray-300"
+                      }`}>
                       <button
                         type="button"
                         onClick={() => setSelectedPmId("new")}
-                        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${
-                          selectedPmId === "new" ? "bg-gray-50" : "bg-white hover:bg-gray-50"
-                        }`}
+                        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${selectedPmId === "new" ? "bg-gray-50" : "bg-white hover:bg-gray-50"
+                          }`}
                       >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                          selectedPmId === "new" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-400"
-                        }`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedPmId === "new" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-400"
+                          }`}>
                           <Plus className="w-4 h-4" strokeWidth={1.5} />
                         </div>
                         <div className="flex-1">
                           <p className="text-sm text-gray-700">Usar otro método de pago</p>
                           <p className="text-xs text-gray-400">Tarjeta nueva, PayPal, USDT o Bitcoin</p>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                          selectedPmId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
-                        }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${selectedPmId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
+                          }`}>
                           {selectedPmId === "new" && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
                         </div>
                       </button>
@@ -846,18 +820,17 @@ export function Checkout() {
                           {/* Method type tabs */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4 mb-5">
                             {([
-                              { id: "card",   logo: <div className="flex items-center gap-1.5"><VisaLogo className="h-3.5 w-auto" /><MastercardLogo className="h-5 w-auto" /></div>, label: "Tarjeta" },
-                              { id: "paypal", logo: <PayPalLogo className="h-4 w-auto" />,  label: "PayPal"  },
-                              { id: "usdt",   logo: <USDTLogo size={22} />,                  label: "USDT"    },
-                              { id: "btc",    logo: <BTCLogo  size={22} />,                  label: "Bitcoin" },
+                              { id: "card", logo: <div className="flex items-center gap-1.5"><VisaLogo size={16} /><MastercardLogo size={22} /></div>, label: "Tarjeta" },
+                              { id: "paypal", logo: <PayPalLogo size={18} />, label: "PayPal" },
+                              { id: "usdt", logo: <USDTLogo size={22} />, label: "USDT" },
+                              { id: "btc", logo: <BTCLogo size={22} />, label: "Bitcoin" },
                             ] as const).map(({ id, logo, label }) => (
                               <button
                                 key={id}
                                 type="button"
                                 onClick={() => setPayMethod(id)}
-                                className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 transition-all ${
-                                  payMethod === id ? "border-gray-500 bg-white" : "border-gray-200 bg-white hover:border-gray-300"
-                                }`}
+                                className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 transition-all ${payMethod === id ? "border-gray-500 bg-white" : "border-gray-200 bg-white hover:border-gray-300"
+                                  }`}
                               >
                                 <div className="h-6 flex items-center">{logo}</div>
                                 <span className="text-[11px] text-gray-500">{label}</span>
@@ -872,238 +845,235 @@ export function Checkout() {
 
                           {/* New card form */}
                           {payMethod === "card" && (
-                    <div className="space-y-4">
-                      {/* Accepted cards bar */}
-                      <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                        <span className="text-[11px] text-gray-400 flex-shrink-0">Aceptamos:</span>
-                        <VisaLogo className="h-4 w-auto" />
-                        <MastercardLogo className="h-5 w-auto" />
-                        <span className="ml-auto">
-                          <Lock className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                        </span>
-                      </div>
+                            <div className="space-y-4">
+                              {/* Accepted cards bar */}
+                              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                                <span className="text-[11px] text-gray-400 flex-shrink-0">Aceptamos:</span>
+                                <VisaLogo size={18} />
+                                <MastercardLogo size={22} />
+                                <span className="ml-auto">
+                                  <Lock className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                                </span>
+                              </div>
 
-                      {/* Card number */}
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1.5">Número de tarjeta</label>
-                        <div className="relative">
-                          <input
-                            value={payment.cardNumber}
-                            onChange={(e) => {
-                              const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
-                              const fmt = raw.match(/.{1,4}/g)?.join(" ") ?? raw;
-                              setPayment((p) => ({ ...p, cardNumber: fmt }));
-                            }}
-                            className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-28 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono tracking-widest"
-                            placeholder="1234 5678 9012 3456"
-                            maxLength={19}
-                          />
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                            <VisaLogo className="h-3.5 w-auto opacity-50" />
-                            <MastercardLogo className="h-5 w-auto opacity-50" />
-                          </div>
-                        </div>
-                      </div>
+                              {/* Card number */}
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1.5">Número de tarjeta</label>
+                                <div className="relative">
+                                  <input
+                                    value={payment.cardNumber}
+                                    onChange={(e) => {
+                                      const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+                                      const fmt = raw.match(/.{1,4}/g)?.join(" ") ?? raw;
+                                      setPayment((p) => ({ ...p, cardNumber: fmt }));
+                                    }}
+                                    className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-28 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono tracking-widest"
+                                    placeholder="1234 5678 9012 3456"
+                                    maxLength={19}
+                                  />
+                                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-50">
+                                    <VisaLogo size={16} />
+                                    <MastercardLogo size={22} />
+                                  </div>
+                                </div>
+                              </div>
 
-                      {/* Card name */}
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1.5">Nombre en la tarjeta</label>
-                        <input
-                          value={payment.cardName}
-                          onChange={(e) => setPayment((p) => ({ ...p, cardName: e.target.value.toUpperCase() }))}
-                          className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 uppercase tracking-wider"
-                          placeholder="FIRST LAST"
-                        />
-                      </div>
+                              {/* Card name */}
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1.5">Nombre en la tarjeta</label>
+                                <input
+                                  value={payment.cardName}
+                                  onChange={(e) => setPayment((p) => ({ ...p, cardName: e.target.value.toUpperCase() }))}
+                                  className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 uppercase tracking-wider"
+                                  placeholder="FIRST LAST"
+                                />
+                              </div>
 
-                      {/* Expiry + CVV */}
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-xs text-gray-400 mb-1.5">Vencimiento</label>
-                          <input
-                            value={payment.expiry}
-                            onChange={(e) => {
-                              let v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                              if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
-                              setPayment((p) => ({ ...p, expiry: v }));
-                            }}
-                            className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
-                            placeholder="MM/YY"
-                            maxLength={5}
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs text-gray-400 mb-1.5">CVV</label>
-                          <div className="relative">
-                            <input
-                              value={payment.cvv}
-                              onChange={(e) => setPayment((p) => ({ ...p, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
-                              className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-10 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
-                              placeholder="•••"
-                              maxLength={4}
-                              type="password"
-                            />
-                            <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" strokeWidth={1.5} />
-                          </div>
-                        </div>
-                      </div>
+                              {/* Expiry + CVV */}
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-1.5">Vencimiento</label>
+                                  <input
+                                    value={payment.expiry}
+                                    onChange={(e) => {
+                                      let v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                                      if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+                                      setPayment((p) => ({ ...p, expiry: v }));
+                                    }}
+                                    className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
+                                    placeholder="MM/YY"
+                                    maxLength={5}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-1.5">CVV</label>
+                                  <div className="relative">
+                                    <input
+                                      value={payment.cvv}
+                                      onChange={(e) => setPayment((p) => ({ ...p, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                                      className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-10 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
+                                      placeholder="•••"
+                                      maxLength={4}
+                                      type="password"
+                                    />
+                                    <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" strokeWidth={1.5} />
+                                  </div>
+                                </div>
+                              </div>
 
-                      <div className="flex items-center gap-2 pt-1">
-                        <Lock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                        <p className="text-xs text-gray-400">Todos tus datos de pago están encriptados y seguros.</p>
-                      </div>
-                    </div>
-                  )}
+                              <div className="flex items-center gap-2 pt-1">
+                                <Lock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                                <p className="text-xs text-gray-400">Todos tus datos de pago están encriptados y seguros.</p>
+                              </div>
+                            </div>
+                          )}
 
-                  {/* ══ PayPal form ══ */}
-                  {payMethod === "paypal" && (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-3 px-4 py-3.5 bg-sky-50/40 rounded-xl border border-sky-100">
-                        <PayPalLogo className="h-5 w-auto flex-shrink-0" />
-                        <p className="text-xs text-gray-500 leading-relaxed">
-                          Serás redirigido a PayPal para completar tu pago de forma segura. No compartimos tus datos bancarios.
-                        </p>
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1.5">
-                          <Mail className="inline w-3 h-3 mr-1" strokeWidth={1.5} />
-                          Email de tu cuenta PayPal
-                        </label>
-                        <input
-                          type="email"
-                          value={paypalEmail}
-                          onChange={(e) => setPaypalEmail(e.target.value)}
-                          className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#179BD7]/60 placeholder-gray-300"
-                          placeholder="your@paypal.com"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 pt-1">
-                        <Shield className="w-3.5 h-3.5 text-[#179BD7] flex-shrink-0" strokeWidth={1.5} />
-                        <p className="text-xs text-gray-400">PayPal protege tus datos bancarios con cifrado de extremo a extremo.</p>
-                      </div>
-                    </div>
-                  )}
+                          {/* ══ PayPal form ══ */}
+                          {payMethod === "paypal" && (
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3 px-4 py-3.5 bg-sky-50/40 rounded-xl border border-sky-100">
+                                <PayPalLogo size={22} />
+                                <p className="text-xs text-gray-500 leading-relaxed">
+                                  Serás redirigido a PayPal para completar tu pago de forma segura. No compartimos tus datos bancarios.
+                                </p>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1.5">
+                                  <Mail className="inline w-3 h-3 mr-1" strokeWidth={1.5} />
+                                  Email de tu cuenta PayPal
+                                </label>
+                                <input
+                                  type="email"
+                                  value={paypalEmail}
+                                  onChange={(e) => setPaypalEmail(e.target.value)}
+                                  className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#179BD7]/60 placeholder-gray-300"
+                                  placeholder="your@paypal.com"
+                                />
+                              </div>
+                              <div className="flex items-center gap-2 pt-1">
+                                <Shield className="w-3.5 h-3.5 text-[#179BD7] flex-shrink-0" strokeWidth={1.5} />
+                                <p className="text-xs text-gray-400">PayPal protege tus datos bancarios con cifrado de extremo a extremo.</p>
+                              </div>
+                            </div>
+                          )}
 
-                  {/* ══ USDT form ══ */}
-                  {payMethod === "usdt" && (
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3 px-4 py-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100">
-                        <USDTLogo size={20} />
-                        <p className="text-xs text-gray-500 leading-relaxed">
-                          Envía <span className="text-gray-800">exactamente</span> el importe indicado en USDT a la dirección de abajo. El pedido se procesará tras <span className="text-gray-800">1 confirmación</span> en red.
-                        </p>
-                      </div>
+                          {/* ══ USDT form ══ */}
+                          {payMethod === "usdt" && (
+                            <div className="space-y-4">
+                              <div className="flex items-start gap-3 px-4 py-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                                <USDTLogo size={20} />
+                                <p className="text-xs text-gray-500 leading-relaxed">
+                                  Envía <span className="text-gray-800">exactamente</span> el importe indicado en USDT a la dirección de abajo. El pedido se procesará tras <span className="text-gray-800">1 confirmación</span> en red.
+                                </p>
+                              </div>
 
-                      {/* Network selector */}
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1.5">Red de pago</label>
-                        <div className="flex gap-2 flex-wrap">
-                          {[
-                            { label: "TRC-20 (TRON)", active: true },
-                            { label: "ERC-20 (Ethereum)", active: false },
-                            { label: "BEP-20 (BSC)", active: false },
-                          ].map(({ label, active }) => (
-                            <button
-                              key={label}
-                              type="button"
-                              className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${
-                                active
-                                  ? "bg-emerald-600 text-white border-emerald-600"
-                                  : "text-gray-400 border-gray-200 hover:border-gray-300"
-                              }`}
-                            >
-                              {label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                              {/* Network selector */}
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1.5">Red de pago</label>
+                                <div className="flex gap-2 flex-wrap">
+                                  {[
+                                    { label: "TRC-20 (TRON)", active: true },
+                                    { label: "ERC-20 (Ethereum)", active: false },
+                                    { label: "BEP-20 (BSC)", active: false },
+                                  ].map(({ label, active }) => (
+                                    <button
+                                      key={label}
+                                      type="button"
+                                      className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${active
+                                          ? "bg-emerald-600 text-white border-emerald-600"
+                                          : "text-gray-400 border-gray-200 hover:border-gray-300"
+                                        }`}
+                                    >
+                                      {label}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
 
-                      {/* Amount */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <span className="text-xs text-gray-400">Importe exacto a enviar</span>
-                        <span className="text-sm text-gray-900 font-mono">{total.toFixed(2)} USDT</span>
-                      </div>
+                              {/* Amount */}
+                              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <span className="text-xs text-gray-400">Importe exacto a enviar</span>
+                                <span className="text-sm text-gray-900 font-mono">{total.toFixed(2)} USDT</span>
+                              </div>
 
-                      {/* Address */}
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1.5">Dirección de wallet USDT (TRC-20)</label>
-                        <div className="flex gap-2">
-                          <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                            <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_USDT_ADDRESS}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(MOCK_USDT_ADDRESS)}
-                            className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${
-                              copiedAddr
-                                ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                                : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
-                            }`}
-                          >
-                            {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                            {copiedAddr ? "Copiado" : "Copiar"}
-                          </button>
-                        </div>
-                      </div>
+                              {/* Address */}
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1.5">Dirección de wallet USDT (TRC-20)</label>
+                                <div className="flex gap-2">
+                                  <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                                    <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_USDT_ADDRESS}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(MOCK_USDT_ADDRESS)}
+                                    className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${copiedAddr
+                                        ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                        : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
+                                      }`}
+                                  >
+                                    {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                                    {copiedAddr ? "Copiado" : "Copiar"}
+                                  </button>
+                                </div>
+                              </div>
 
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                        <p className="text-xs text-gray-400">
-                          Envía únicamente <strong className="text-gray-600">USDT en red TRC-20</strong>. Envíos en otras redes o de otras monedas pueden perderse permanentemente.
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                                <p className="text-xs text-gray-400">
+                                  Envía únicamente <strong className="text-gray-600">USDT en red TRC-20</strong>. Envíos en otras redes o de otras monedas pueden perderse permanentemente.
+                                </p>
+                              </div>
+                            </div>
+                          )}
 
-                  {/* ══ BTC form ══ */}
-                  {payMethod === "btc" && (
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3 px-4 py-3.5 bg-orange-50/40 rounded-xl border border-orange-100">
-                        <BTCLogo size={20} />
-                        <p className="text-xs text-gray-500 leading-relaxed">
-                          Envía <span className="text-gray-800">exactamente</span> el importe indicado en BTC a la dirección de abajo. El pedido se procesará tras <span className="text-gray-800">2 confirmaciones</span> en la blockchain.
-                        </p>
-                      </div>
+                          {/* ══ BTC form ══ */}
+                          {payMethod === "btc" && (
+                            <div className="space-y-4">
+                              <div className="flex items-start gap-3 px-4 py-3.5 bg-orange-50/40 rounded-xl border border-orange-100">
+                                <BTCLogo size={20} />
+                                <p className="text-xs text-gray-500 leading-relaxed">
+                                  Envía <span className="text-gray-800">exactamente</span> el importe indicado en BTC a la dirección de abajo. El pedido se procesará tras <span className="text-gray-800">2 confirmaciones</span> en la blockchain.
+                                </p>
+                              </div>
 
-                      {/* BTC amount */}
-                      <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
-                        <span className="text-xs text-gray-400">Importe exacto a enviar</span>
-                        <div className="text-right">
-                          <p className="text-sm text-gray-900 font-mono">{(total / 68500).toFixed(6)} BTC</p>
-                          <p className="text-[11px] text-gray-400">≈ ${total.toFixed(2)} USD · 1 BTC ≈ $68,500</p>
-                        </div>
-                      </div>
+                              {/* BTC amount */}
+                              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
+                                <span className="text-xs text-gray-400">Importe exacto a enviar</span>
+                                <div className="text-right">
+                                  <p className="text-sm text-gray-900 font-mono">{(total / 68500).toFixed(6)} BTC</p>
+                                  <p className="text-[11px] text-gray-400">≈ ${total.toFixed(2)} USD · 1 BTC ≈ $68,500</p>
+                                </div>
+                              </div>
 
-                      {/* Address */}
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1.5">Dirección Bitcoin (Native SegWit · bc1q…)</label>
-                        <div className="flex gap-2">
-                          <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                            <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_BTC_ADDRESS}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(MOCK_BTC_ADDRESS)}
-                            className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${
-                              copiedAddr
-                                ? "bg-orange-50 text-orange-600 border-orange-200"
-                                : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
-                            }`}
-                          >
-                            {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                            {copiedAddr ? "Copiado" : "Copiar"}
-                          </button>
-                        </div>
-                      </div>
+                              {/* Address */}
+                              <div>
+                                <label className="block text-xs text-gray-400 mb-1.5">Dirección Bitcoin (Native SegWit · bc1q…)</label>
+                                <div className="flex gap-2">
+                                  <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                                    <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_BTC_ADDRESS}</span>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyToClipboard(MOCK_BTC_ADDRESS)}
+                                    className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${copiedAddr
+                                        ? "bg-orange-50 text-orange-600 border-orange-200"
+                                        : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
+                                      }`}
+                                  >
+                                    {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                                    {copiedAddr ? "Copiado" : "Copiar"}
+                                  </button>
+                                </div>
+                              </div>
 
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                        <p className="text-xs text-gray-400">
-                          Envía únicamente <strong className="text-gray-600">Bitcoin (BTC)</strong> a esta dirección. No envíes BCH, BSV ni ninguna otra criptomoneda.
-                        </p>
-                      </div>
-                    </div>
-                  )}
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                                <p className="text-xs text-gray-400">
+                                  Envía únicamente <strong className="text-gray-600">Bitcoin (BTC)</strong> a esta dirección. No envíes BCH, BSV ni ninguna otra criptomoneda.
+                                </p>
+                              </div>
+                            </div>
+                          )}
 
                         </div>
                       )}
@@ -1118,18 +1088,18 @@ export function Checkout() {
                     const btnColor = !step3Valid || isProcessing
                       ? "bg-gray-100 text-gray-300 cursor-not-allowed"
                       : activeType === "paypal" ? "bg-[#179BD7] text-white hover:bg-[#1589be]"
-                      : activeType === "usdt"   ? "bg-[#26A17B] text-white hover:bg-[#1e8a69]"
-                      : activeType === "btc"    ? "bg-[#F7931A] text-white hover:bg-[#e07f0a]"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300";
+                        : activeType === "usdt" ? "bg-[#26A17B] text-white hover:bg-[#1e8a69]"
+                          : activeType === "btc" ? "bg-[#F7931A] text-white hover:bg-[#e07f0a]"
+                            : "bg-gray-200 text-gray-700 hover:bg-gray-300";
                     const btnLabel = activePm
                       ? activePm.type === "paypal" ? `Pagar con PayPal · $${total.toFixed(2)}`
                         : activePm.type === "usdt" ? `Confirmar pago · ${total.toFixed(2)} USDT`
-                        : activePm.type === "btc"  ? `Confirmar pago · ${(total / 68500).toFixed(6)} BTC`
-                        : `Confirmar pedido · $${total.toFixed(2)}`
+                          : activePm.type === "btc" ? `Confirmar pago · ${(total / 68500).toFixed(6)} BTC`
+                            : `Confirmar pedido · $${total.toFixed(2)}`
                       : payMethod === "paypal" ? `Pagar con PayPal · $${total.toFixed(2)}`
-                        : payMethod === "usdt"  ? `Confirmar pago · ${total.toFixed(2)} USDT`
-                        : payMethod === "btc"   ? `Confirmar pago · ${(total / 68500).toFixed(6)} BTC`
-                        : `Confirmar pedido · $${total.toFixed(2)}`;
+                        : payMethod === "usdt" ? `Confirmar pago · ${total.toFixed(2)} USDT`
+                          : payMethod === "btc" ? `Confirmar pago · ${(total / 68500).toFixed(6)} BTC`
+                            : `Confirmar pedido · $${total.toFixed(2)}`;
                     return (
                       <button
                         onClick={handleSubmit}
@@ -1183,7 +1153,7 @@ export function Checkout() {
                       {/* Variant attributes selected */}
                       {(item as any).selectedAttrs && Object.keys((item as any).selectedAttrs).length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-1">
-                          {Object.entries((item as any).selectedAttrs as Record<string,string>).map(([k, v]) => (
+                          {Object.entries((item as any).selectedAttrs as Record<string, string>).map(([k, v]) => (
                             <span key={k} className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-px rounded">
                               {k}: {v}
                             </span>
@@ -1252,7 +1222,7 @@ export function Checkout() {
                       <p className="text-[10px] text-gray-400 mb-0.5 uppercase tracking-wider">
                         {selectedAddrId === "new" && newMode === "store" ? "Recogida en tienda"
                           : selectedAddrId === "new" && newMode === "pickup" ? "Punto de entrega"
-                          : "Entrega en"}
+                            : "Entrega en"}
                       </p>
                       <p className="text-xs text-gray-600">{deliverySummary()}</p>
                     </div>

@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import type { Product } from "../data/products";
+import type { Product } from "../types/product";
 
-const KEY   = "nexa_recently_viewed";
-const MAX   = 8;
+const KEY = "nexa_recently_viewed";
+const MAX = 8;
 
 interface RecentlyViewedContextType {
   viewed: Product[];

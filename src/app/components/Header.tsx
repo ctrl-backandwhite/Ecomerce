@@ -73,7 +73,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-500 rounded flex items-center justify-center sm:flex hidden">
+            <div className="w-8 h-8 bg-gray-500 rounded hidden sm:flex items-center justify-center">
               <ShoppingCart className="w-5 h-5 text-white" />
             </div>
             <span className="text-xl tracking-tight">NX036</span>

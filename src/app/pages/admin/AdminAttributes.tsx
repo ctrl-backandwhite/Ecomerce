@@ -1,25 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search, Plus, Pencil, Trash2, X, Check,
   ChevronDown, Tag, Palette, Type, List,
 } from "lucide-react";
-import { type Attribute, type AttributeValue } from "../../data/attributes";
+import { type Attribute, type AttributeValue, attributeRepository } from "../../repositories/AttributeRepository";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
-import { useStore } from "../../context/StoreContext";
 
 const TYPE_LABELS: Record<Attribute["type"], string> = {
-  color: "Color",
-  text: "Texto",
-  size: "Talla",
-  select: "Selección",
+  COLOR: "Color",
+  TEXT: "Texto",
+  SIZE: "Talla",
+  SELECT: "Selección",
 };
 
 const TYPE_ICONS: Record<Attribute["type"], typeof Tag> = {
-  color: Palette,
-  text: Type,
-  size: Tag,
-  select: List,
+  COLOR: Palette,
+  TEXT: Type,
+  SIZE: Tag,
+  SELECT: List,
 };
 
 /* ── Attribute Modal ──────────────────────────────────────── */
@@ -33,7 +32,7 @@ function AttributeModal({
   const isNew = !attribute.id;
   const [name, setName] = useState(attribute.name ?? "");
   const [slug, setSlug] = useState(attribute.slug ?? "");
-  const [type, setType] = useState<Attribute["type"]>(attribute.type ?? "text");
+  const [type, setType] = useState<Attribute["type"]>(attribute.type ?? "TEXT");
   const [values, setValues] = useState<AttributeValue[]>(attribute.values ?? []);
   const [newValue, setNewValue] = useState("");
   const [newColor, setNewColor] = useState("#6B7280");
@@ -54,7 +53,7 @@ function AttributeModal({
     const val: AttributeValue = {
       id: `val-${Date.now()}`,
       value: newValue.trim(),
-      ...(type === "color" ? { color: newColor } : {}),
+      ...(type === "COLOR" ? { color: newColor } : {}),
     };
     setValues((prev) => [...prev, val]);
     setNewValue("");
@@ -74,6 +73,8 @@ function AttributeModal({
       type,
       values,
       usedInProducts: attribute.usedInProducts ?? 0,
+      createdAt: attribute.createdAt ?? new Date().toISOString(),
+      updatedAt: attribute.updatedAt ?? null,
     });
   }
 
@@ -105,10 +106,10 @@ function AttributeModal({
               <label className={lbl}>Tipo</label>
               <div className="relative">
                 <select value={type} onChange={(e) => setType(e.target.value as Attribute["type"])} className={`${field} appearance-none pr-8`}>
-                  <option value="text">Texto</option>
-                  <option value="color">Color</option>
-                  <option value="size">Talla</option>
-                  <option value="select">Selección</option>
+                  <option value="TEXT">Texto</option>
+                  <option value="COLOR">Color</option>
+                  <option value="SIZE">Talla</option>
+                  <option value="SELECT">Selección</option>
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" strokeWidth={1.5} />
               </div>
@@ -125,7 +126,7 @@ function AttributeModal({
           <div>
             <label className={lbl}>Valores ({values.length})</label>
             <div className="flex gap-2 mb-3">
-              {type === "color" && (
+              {type === "COLOR" && (
                 <input type="color" value={newColor} onChange={(e) => setNewColor(e.target.value)} className="h-10 w-12 border border-gray-200 rounded-xl cursor-pointer p-1 flex-shrink-0" />
               )}
               <input
@@ -133,7 +134,7 @@ function AttributeModal({
                 onChange={(e) => setNewValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addValue()}
                 className={`${field} flex-1`}
-                placeholder={type === "color" ? "Ej: Rojo" : "Ej: XL"}
+                placeholder={type === "COLOR" ? "Ej: Rojo" : "Ej: XL"}
               />
               <button
                 onClick={addValue}
@@ -155,7 +156,7 @@ function AttributeModal({
                     key={v.id}
                     className="inline-flex items-center gap-2 bg-white border border-gray-200 text-gray-700 text-xs rounded-lg px-3 py-1.5"
                   >
-                    {type === "color" && v.color && (
+                    {type === "COLOR" && v.color && (
                       <span className="w-3.5 h-3.5 rounded-full border border-gray-300 flex-shrink-0" style={{ backgroundColor: v.color }} />
                     )}
                     <span>{v.value}</span>
@@ -189,14 +190,23 @@ function AttributeModal({
 
 /* ── Main ────────────────────────────────────────────────── */
 export function AdminAttributes() {
-  const { attributes: list, saveAttribute, deleteAttribute } = useStore();
-
-  const [search, setSearch]     = useState("");
-  const [modal, setModal]       = useState<Partial<Attribute> | null>(null);
+  const [list, setList] = useState<Attribute[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [modal, setModal] = useState<Partial<Attribute> | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [page, setPage]         = useState(1);
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
+
+  const loadAttributes = useCallback(async () => {
+    setLoading(true);
+    try { setList(await attributeRepository.findAll()); }
+    catch { toast.error("Error al cargar los atributos"); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { loadAttributes(); }, [loadAttributes]);
 
   const filtered = list.filter((a) =>
     a.name.toLowerCase().includes(search.toLowerCase())
@@ -205,17 +215,27 @@ export function AdminAttributes() {
   useEffect(() => setPage(1), [search]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  function handleSave(a: Attribute) {
-    saveAttribute(a);
-    toast.success(modal?.id ? "Atributo actualizado" : "Atributo creado");
+  async function handleSave(a: Attribute) {
+    try {
+      if (modal?.id) {
+        await attributeRepository.update(a.id, { name: a.name, slug: a.slug, type: a.type, values: a.values.map(v => ({ value: v.value, color: v.color ?? undefined })) });
+      } else {
+        await attributeRepository.create({ name: a.name, slug: a.slug, type: a.type, values: a.values.map(v => ({ value: v.value, color: v.color ?? undefined })) });
+      }
+      await loadAttributes();
+      toast.success(modal?.id ? "Atributo actualizado" : "Atributo creado");
+    } catch { toast.error("Error al guardar el atributo"); }
     setModal(null);
   }
 
-  function handleDelete(id: string) {
-    deleteAttribute(id);
-    toast.success("Atributo eliminado");
+  async function handleDelete(id: string) {
+    try {
+      await attributeRepository.delete(id);
+      await loadAttributes();
+      toast.success("Atributo eliminado");
+    } catch { toast.error("Error al eliminar el atributo"); }
     setDeleteId(null);
   }
 
@@ -285,16 +305,16 @@ export function AdminAttributes() {
 
                 {/* Preview of first 4 values */}
                 <div className="hidden sm:flex items-center gap-1.5 flex-shrink-0">
-                  {attr.type === "color"
+                  {attr.type === "COLOR"
                     ? attr.values.slice(0, 6).map((v) => (
-                        <span key={v.id} className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: v.color }} title={v.value} />
-                      ))
+                      <span key={v.id} className="w-4 h-4 rounded-full border border-gray-200" style={{ backgroundColor: v.color ?? undefined }} title={v.value} />
+                    ))
                     : attr.values.slice(0, 4).map((v) => (
-                        <span key={v.id} className="text-[10px] bg-gray-100 text-gray-600 rounded px-1.5 py-0.5">{v.value}</span>
-                      ))
+                      <span key={v.id} className="text-[10px] bg-gray-100 text-gray-600 rounded px-1.5 py-0.5">{v.value}</span>
+                    ))
                   }
-                  {attr.values.length > (attr.type === "color" ? 6 : 4) && (
-                    <span className="text-[10px] text-gray-400">+{attr.values.length - (attr.type === "color" ? 6 : 4)}</span>
+                  {attr.values.length > (attr.type === "COLOR" ? 6 : 4) && (
+                    <span className="text-[10px] text-gray-400">+{attr.values.length - (attr.type === "COLOR" ? 6 : 4)}</span>
                   )}
                 </div>
 
@@ -328,7 +348,7 @@ export function AdminAttributes() {
                   <div className="flex flex-wrap gap-2">
                     {attr.values.map((v) => (
                       <div key={v.id} className="inline-flex items-center gap-2 bg-gray-50 border border-gray-200 text-gray-700 text-xs rounded-lg px-3 py-1.5">
-                        {attr.type === "color" && v.color && (
+                        {attr.type === "COLOR" && v.color && (
                           <span className="w-3.5 h-3.5 rounded-full border border-gray-300" style={{ backgroundColor: v.color }} />
                         )}
                         <span>{v.value}</span>

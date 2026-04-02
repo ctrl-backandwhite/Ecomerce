@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Mail, Pencil, Send, Eye, Plus, X, Check,
   Trash2, AlertTriangle, ChevronDown, Copy,
@@ -6,6 +6,10 @@ import {
   Gift, Star, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  type EmailTemplate as ApiEmailTemplate, type EmailTemplatePayload,
+  emailTemplateRepository,
+} from "../../repositories/CmsRepository";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type EmailCategory = "transactional" | "marketing" | "system";
@@ -28,30 +32,30 @@ interface EmailTemplate {
 
 // ── Catálogos ─────────────────────────────────────────────────────────────────
 const TRIGGERS = [
-  { group: "Pedidos",       items: ["Al confirmar pedido", "Al despachar pedido", "Al marcar como entregado", "Al cancelar pedido"] },
-  { group: "Devoluciones",  items: ["Al aprobar devolución", "Al rechazar devolución", "Al completar reembolso"] },
-  { group: "Facturación",   items: ["Al generar factura"] },
-  { group: "Usuario",       items: ["Al registrarse", "Al solicitar reset de contraseña", "Al cambiar email"] },
-  { group: "Marketing",     items: ["Al suscribirse al newsletter", "1h después de abandono de carrito", "3 días tras entrega"] },
-  { group: "Fidelización",  items: ["Al acumular 500 puntos", "Al canjear puntos", "Al recibir gift card"] },
+  { group: "Pedidos", items: ["Al confirmar pedido", "Al despachar pedido", "Al marcar como entregado", "Al cancelar pedido"] },
+  { group: "Devoluciones", items: ["Al aprobar devolución", "Al rechazar devolución", "Al completar reembolso"] },
+  { group: "Facturación", items: ["Al generar factura"] },
+  { group: "Usuario", items: ["Al registrarse", "Al solicitar reset de contraseña", "Al cambiar email"] },
+  { group: "Marketing", items: ["Al suscribirse al newsletter", "1h después de abandono de carrito", "3 días tras entrega"] },
+  { group: "Fidelización", items: ["Al acumular 500 puntos", "Al canjear puntos", "Al recibir gift card"] },
   { group: "Personalizado", items: ["Envío manual / Campaña"] },
 ];
 
 const VARIABLES: { group: string; icon: React.ElementType; vars: { key: string; label: string }[] }[] = [
-  { group: "Cliente",    icon: User,        vars: [{ key: "{{customer.firstName}}", label: "Nombre" }, { key: "{{customer.lastName}}", label: "Apellido" }, { key: "{{customer.email}}", label: "Email" }] },
-  { group: "Pedido",     icon: ShoppingBag, vars: [{ key: "{{order.id}}", label: "ID pedido" }, { key: "{{order.total}}", label: "Total" }, { key: "{{order.date}}", label: "Fecha" }, { key: "{{order.trackingCode}}", label: "Tracking" }] },
-  { group: "Factura",    icon: FileText,    vars: [{ key: "{{invoice.id}}", label: "ID factura" }, { key: "{{invoice.total}}", label: "Total" }] },
-  { group: "Devolución", icon: RotateCcw,   vars: [{ key: "{{return.id}}", label: "ID devolución" }, { key: "{{return.amount}}", label: "Importe" }] },
-  { group: "Cupón",      icon: Tag,         vars: [{ key: "{{coupon.code}}", label: "Código" }, { key: "{{coupon.discount}}", label: "Descuento" }] },
-  { group: "Puntos",     icon: Star,        vars: [{ key: "{{loyalty.points}}", label: "Puntos" }, { key: "{{loyalty.reward}}", label: "Premio" }] },
-  { group: "Gift Card",  icon: Gift,        vars: [{ key: "{{giftcard.code}}", label: "Código" }, { key: "{{giftcard.balance}}", label: "Saldo" }] },
-  { group: "Tienda",     icon: Zap,         vars: [{ key: "{{store.name}}", label: "Nombre tienda" }, { key: "{{store.url}}", label: "URL tienda" }] },
+  { group: "Cliente", icon: User, vars: [{ key: "{{customer.firstName}}", label: "Nombre" }, { key: "{{customer.lastName}}", label: "Apellido" }, { key: "{{customer.email}}", label: "Email" }] },
+  { group: "Pedido", icon: ShoppingBag, vars: [{ key: "{{order.id}}", label: "ID pedido" }, { key: "{{order.total}}", label: "Total" }, { key: "{{order.date}}", label: "Fecha" }, { key: "{{order.trackingCode}}", label: "Tracking" }] },
+  { group: "Factura", icon: FileText, vars: [{ key: "{{invoice.id}}", label: "ID factura" }, { key: "{{invoice.total}}", label: "Total" }] },
+  { group: "Devolución", icon: RotateCcw, vars: [{ key: "{{return.id}}", label: "ID devolución" }, { key: "{{return.amount}}", label: "Importe" }] },
+  { group: "Cupón", icon: Tag, vars: [{ key: "{{coupon.code}}", label: "Código" }, { key: "{{coupon.discount}}", label: "Descuento" }] },
+  { group: "Puntos", icon: Star, vars: [{ key: "{{loyalty.points}}", label: "Puntos" }, { key: "{{loyalty.reward}}", label: "Premio" }] },
+  { group: "Gift Card", icon: Gift, vars: [{ key: "{{giftcard.code}}", label: "Código" }, { key: "{{giftcard.balance}}", label: "Saldo" }] },
+  { group: "Tienda", icon: Zap, vars: [{ key: "{{store.name}}", label: "Nombre tienda" }, { key: "{{store.url}}", label: "URL tienda" }] },
 ];
 
 const CATEGORY_META: Record<EmailCategory, { label: string; bg: string; text: string }> = {
-  transactional: { label: "Transaccional", bg: "bg-blue-50",   text: "text-blue-700"   },
-  marketing:     { label: "Marketing",     bg: "bg-violet-50", text: "text-violet-700" },
-  system:        { label: "Sistema",       bg: "bg-gray-100",  text: "text-gray-600"   },
+  transactional: { label: "Transaccional", bg: "bg-blue-50", text: "text-blue-700" },
+  marketing: { label: "Marketing", bg: "bg-violet-50", text: "text-violet-700" },
+  system: { label: "Sistema", bg: "bg-gray-100", text: "text-gray-600" },
 };
 
 // ── Mock body ─────────────────────────────────────────────────────────────────
@@ -75,18 +79,33 @@ const DEFAULT_BODY = [
 ].join("\n");
 
 // ── Initial data ──────────────────────────────────────────────────────────────
-const initTemplates: EmailTemplate[] = [
-  { id: "e1",  name: "Confirmación de pedido",   category: "transactional", trigger: "Al confirmar pedido",              subject: "✅ Tu pedido #{ORDER_ID} ha sido confirmado — NX036",       body: DEFAULT_BODY, fromName: "NX036", fromEmail: "pedidos@nx036.com", replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 4821, openRate: 87 },
-  { id: "e2",  name: "Pedido enviado",            category: "transactional", trigger: "Al despachar pedido",              subject: "📦 Tu pedido está en camino — Sigue tu envío",             body: DEFAULT_BODY, fromName: "NX036", fromEmail: "pedidos@nx036.com", replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 3942, openRate: 79 },
-  { id: "e3",  name: "Pedido entregado",          category: "transactional", trigger: "Al marcar como entregado",         subject: "🎉 ¡Tu pedido ha llegado! Cuéntanos qué te pareció",       body: DEFAULT_BODY, fromName: "NX036", fromEmail: "pedidos@nx036.com", replyTo: "",                  active: true,  lastSent: "12/03/2026", sentCount: 3711, openRate: 73 },
-  { id: "e4",  name: "Devolución aprobada",       category: "transactional", trigger: "Al aprobar devolución",            subject: "✅ Devolución #{RET_ID} aprobada — Reembolso en camino",   body: DEFAULT_BODY, fromName: "NX036", fromEmail: "soporte@nx036.com", replyTo: "soporte@nx036.com", active: true,  lastSent: "10/03/2026", sentCount: 189,  openRate: 91 },
-  { id: "e5",  name: "Factura disponible",        category: "transactional", trigger: "Al generar factura",               subject: "📄 Tu factura #{INV_ID} está disponible — NX036",           body: DEFAULT_BODY, fromName: "NX036", fromEmail: "facturas@nx036.com", replyTo: "",                 active: true,  lastSent: "13/03/2026", sentCount: 4812, openRate: 68 },
-  { id: "e6",  name: "Newsletter bienvenida",     category: "marketing",     trigger: "Al suscribirse al newsletter",     subject: "🎁 ¡Bienvenido/a a NX036! Aquí tienes tu cupón -10%",       body: DEFAULT_BODY, fromName: "NX036 Store", fromEmail: "hola@nx036.com",   replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 2301, openRate: 82 },
-  { id: "e7",  name: "Recuperar carrito",         category: "marketing",     trigger: "1h después de abandono de carrito",subject: "🛒 Olvidaste algo en tu carrito — ¡Aún está disponible!",  body: DEFAULT_BODY, fromName: "NX036 Store", fromEmail: "hola@nx036.com",   replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 1082, openRate: 44 },
-  { id: "e8",  name: "Reseña post-compra",        category: "marketing",     trigger: "3 días tras entrega",              subject: "⭐ ¿Qué tal tu compra? Déjanos tu opinión",                body: DEFAULT_BODY, fromName: "NX036 Store", fromEmail: "hola@nx036.com",   replyTo: "",                  active: true,  lastSent: "11/03/2026", sentCount: 2910, openRate: 38 },
-  { id: "e9",  name: "Recuperación contraseña",   category: "system",        trigger: "Al solicitar reset de contraseña", subject: "🔐 Restablece tu contraseña de NX036",                      body: DEFAULT_BODY, fromName: "NX036",       fromEmail: "no-reply@nx036.com",replyTo: "",                  active: true,  lastSent: "13/03/2026", sentCount: 342,  openRate: 95 },
-  { id: "e10", name: "Puntos de fidelidad",       category: "marketing",     trigger: "Al acumular 500 puntos",           subject: "🏆 ¡Tienes suficientes puntos para un descuento!",          body: DEFAULT_BODY, fromName: "NX036 Store", fromEmail: "hola@nx036.com",   replyTo: "",                  active: false, lastSent: undefined,    sentCount: 0,    openRate: 0  },
-];
+// Removed: data is now loaded from the API.
+
+function mapApiToUi(t: ApiEmailTemplate): EmailTemplate {
+  return {
+    id: t.id,
+    name: t.name,
+    category: "transactional",
+    trigger: t.name,
+    subject: t.subject,
+    body: t.htmlBody,
+    fromName: "NX036",
+    fromEmail: "no-reply@nx036.com",
+    replyTo: "",
+    active: true,
+    sentCount: 0,
+    openRate: 0,
+  };
+}
+
+function uiToPayload(t: EmailTemplate): EmailTemplatePayload {
+  return {
+    name: t.name,
+    subject: t.subject,
+    htmlBody: t.body,
+    variables: [],
+  };
+}
 
 const emptyTemplate: Omit<EmailTemplate, "id" | "lastSent" | "sentCount" | "openRate"> = {
   name: "", category: "transactional", trigger: "", subject: "",
@@ -95,8 +114,8 @@ const emptyTemplate: Omit<EmailTemplate, "id" | "lastSent" | "sentCount" | "open
 };
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
-const inp  = "w-full h-7 px-2.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400 transition-colors placeholder:text-gray-300";
-const lbl  = "block text-[11px] text-gray-500 mb-1";
+const inp = "w-full h-7 px-2.5 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400 transition-colors placeholder:text-gray-300";
+const lbl = "block text-[11px] text-gray-500 mb-1";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Variable picker component (shared by new & edit panels)
@@ -159,22 +178,22 @@ interface NewTemplatePanelProps {
 }
 
 function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
-  const [form, setForm]             = useState({ ...emptyTemplate });
+  const [form, setForm] = useState({ ...emptyTemplate });
   const [triggerOpen, setTriggerOpen] = useState(false);
-  const [activeTab, setActiveTab]   = useState<"content" | "sender" | "settings">("content");
+  const [activeTab, setActiveTab] = useState<"content" | "sender" | "settings">("content");
 
   const set = (field: keyof typeof form, value: any) =>
     setForm(prev => ({ ...prev, [field]: value }));
 
   // Insert variable into subject or body
   const insertIntoSubject = (v: string) => set("subject", form.subject + v);
-  const insertIntoBody    = (v: string) => set("body", form.body + v);
+  const insertIntoBody = (v: string) => set("body", form.body + v);
 
   const handleSubmit = () => {
-    if (!form.name.trim())    { toast.error("El nombre es obligatorio");   return; }
-    if (!form.trigger.trim()) { toast.error("Selecciona un trigger");      return; }
-    if (!form.subject.trim()) { toast.error("El asunto es obligatorio");   return; }
-    if (!form.body.trim())    { toast.error("El cuerpo no puede estar vacío"); return; }
+    if (!form.name.trim()) { toast.error("El nombre es obligatorio"); return; }
+    if (!form.trigger.trim()) { toast.error("Selecciona un trigger"); return; }
+    if (!form.subject.trim()) { toast.error("El asunto es obligatorio"); return; }
+    if (!form.body.trim()) { toast.error("El cuerpo no puede estar vacío"); return; }
     if (!form.fromEmail.trim()) { toast.error("El email del remitente es obligatorio"); return; }
     onSave(form);
   };
@@ -367,21 +386,20 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                 <p className={lbl}>Remitentes comunes</p>
                 <div className="grid grid-cols-1 gap-2">
                   {[
-                    { label: "Pedidos",     from: "pedidos@nx036.com",   name: "NX036 Pedidos"  },
-                    { label: "Soporte",     from: "soporte@nx036.com",   name: "NX036 Soporte"  },
-                    { label: "Marketing",   from: "hola@nx036.com",      name: "NX036 Store"    },
-                    { label: "Facturación", from: "facturas@nx036.com",  name: "NX036 Facturas" },
-                    { label: "No-reply",    from: "no-reply@nx036.com",  name: "NX036"          },
+                    { label: "Pedidos", from: "pedidos@nx036.com", name: "NX036 Pedidos" },
+                    { label: "Soporte", from: "soporte@nx036.com", name: "NX036 Soporte" },
+                    { label: "Marketing", from: "hola@nx036.com", name: "NX036 Store" },
+                    { label: "Facturación", from: "facturas@nx036.com", name: "NX036 Facturas" },
+                    { label: "No-reply", from: "no-reply@nx036.com", name: "NX036" },
                   ].map(s => (
                     <button
                       key={s.from}
                       type="button"
                       onClick={() => { set("fromEmail", s.from); set("fromName", s.name); }}
-                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-colors ${
-                        form.fromEmail === s.from
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-colors ${form.fromEmail === s.from
                           ? "border-gray-900 bg-gray-50"
                           : "border-gray-200 hover:border-gray-300"
-                      }`}
+                        }`}
                     >
                       <div>
                         <p className="text-xs text-gray-900">{s.name}</p>
@@ -410,11 +428,10 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                         key={key}
                         type="button"
                         onClick={() => set("category", key)}
-                        className={`px-3 py-2.5 rounded-xl border text-center transition-all ${
-                          form.category === key
+                        className={`px-3 py-2.5 rounded-xl border text-center transition-all ${form.category === key
                             ? "border-gray-900 bg-gray-50"
                             : "border-gray-200 hover:border-gray-300"
-                        }`}
+                          }`}
                       >
                         <span className={`inline-flex text-[11px] px-2 py-0.5 rounded-full ${meta.bg} ${meta.text} mb-1`}>
                           {meta.label}
@@ -422,7 +439,7 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                         <p className="text-[10px] text-gray-400 leading-tight">
                           {key === "transactional" ? "Responde a acciones del usuario"
                             : key === "marketing" ? "Campañas y automatizaciones"
-                            : "Técnicos del sistema"}
+                              : "Técnicos del sistema"}
                         </p>
                       </button>
                     ),
@@ -438,9 +455,8 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                 <button
                   type="button"
                   onClick={() => set("active", !form.active)}
-                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${
-                    form.active ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"
-                  }`}
+                  className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${form.active ? "border-green-200 bg-green-50" : "border-gray-200 bg-gray-50"
+                    }`}
                 >
                   <div
                     className={`relative rounded-full flex-shrink-0 transition-colors ${form.active ? "bg-green-400" : "bg-gray-200"}`}
@@ -534,13 +550,13 @@ interface EditPanelProps {
 }
 
 function EditPanel({ template, mode: initMode, onSave, onClose }: EditPanelProps) {
-  const [mode, setMode]   = useState(initMode);
-  const [form, setForm]   = useState({ ...template });
+  const [mode, setMode] = useState(initMode);
+  const [form, setForm] = useState({ ...template });
   const set = (field: keyof EmailTemplate, value: any) =>
     setForm(prev => ({ ...prev, [field]: value }));
 
   const insertIntoSubject = (v: string) => set("subject", form.subject + v);
-  const insertIntoBody    = (v: string) => set("body", form.body + v);
+  const insertIntoBody = (v: string) => set("body", form.body + v);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -688,23 +704,44 @@ function DeleteDialog({ name, onConfirm, onClose }: { name: string; onConfirm: (
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminEmails() {
-  const [templates, setTemplates] = useState<EmailTemplate[]>(initTemplates);
-  const [showNew, setShowNew]     = useState(false);
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [showNew, setShowNew] = useState(false);
   const [editTarget, setEditTarget] = useState<{ t: EmailTemplate; mode: "edit" | "preview" } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [filterCat, setFilterCat] = useState<EmailCategory | "all">("all");
 
+  const loadTemplates = useCallback(async () => {
+    try {
+      const data = await emailTemplateRepository.findAll();
+      setTemplates(data.map(mapApiToUi));
+    } catch {
+      toast.error("Error al cargar plantillas");
+    }
+  }, []);
+
+  useEffect(() => { loadTemplates(); }, [loadTemplates]);
+
   const visible = filterCat === "all" ? templates : templates.filter(t => t.category === filterCat);
 
-  /* ── CRUD ─────────────────────────────────────────────── */
-  const handleCreate = (data: Omit<EmailTemplate, "id" | "lastSent" | "sentCount" | "openRate">) => {
-    setTemplates(prev => [...prev, { ...data, id: `e-${Date.now()}`, sentCount: 0, openRate: 0 }]);
-    toast.success("Plantilla creada");
-    setShowNew(false);
+  /* ── CRUD ────────────────────────────────────────────────── */
+  const handleCreate = async (data: Omit<EmailTemplate, "id" | "lastSent" | "sentCount" | "openRate">) => {
+    try {
+      const created = await emailTemplateRepository.create(uiToPayload(data as EmailTemplate));
+      setTemplates(prev => [...prev, mapApiToUi(created)]);
+      toast.success("Plantilla creada");
+      setShowNew(false);
+    } catch {
+      toast.error("Error al crear plantilla");
+    }
   };
 
-  const handleSave = (updated: EmailTemplate) => {
-    setTemplates(prev => prev.map(t => t.id === updated.id ? updated : t));
+  const handleSave = async (updated: EmailTemplate) => {
+    try {
+      await emailTemplateRepository.update(updated.id, uiToPayload(updated));
+      setTemplates(prev => prev.map(t => t.id === updated.id ? updated : t));
+    } catch {
+      toast.error("Error al guardar plantilla");
+    }
   };
 
   const toggleActive = (id: string) => {
@@ -712,11 +749,16 @@ export function AdminEmails() {
     toast.success("Estado actualizado");
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!deleteTarget) return;
-    setTemplates(prev => prev.filter(t => t.id !== deleteTarget.id));
-    toast.success("Plantilla eliminada");
-    setDeleteTarget(null);
+    try {
+      await emailTemplateRepository.delete(deleteTarget.id);
+      setTemplates(prev => prev.filter(t => t.id !== deleteTarget.id));
+      toast.success("Plantilla eliminada");
+      setDeleteTarget(null);
+    } catch {
+      toast.error("Error al eliminar plantilla");
+    }
   };
 
   /* ── Render ───────────────────────────────────────────── */
@@ -741,9 +783,9 @@ export function AdminEmails() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Plantillas",          value: templates.length },
-          { label: "Activas",             value: templates.filter(t => t.active).length },
-          { label: "Emails enviados",     value: templates.reduce((s, t) => s + t.sentCount, 0).toLocaleString() },
+          { label: "Plantillas", value: templates.length },
+          { label: "Activas", value: templates.filter(t => t.active).length },
+          { label: "Emails enviados", value: templates.reduce((s, t) => s + t.sentCount, 0).toLocaleString() },
           { label: "Tasa apertura media", value: `${Math.round(templates.filter(t => t.sentCount > 0).reduce((s, t) => s + t.openRate, 0) / templates.filter(t => t.sentCount > 0).length)}%` },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">

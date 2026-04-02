@@ -1,13 +1,13 @@
-import { X, Star, ShoppingCart, Heart, ExternalLink, Check, BarChart2, Quote } from "lucide-react";
+import { X, Star, ShoppingCart, Heart, ExternalLink, Check, BarChart2 } from "lucide-react";
 import { Link } from "react-router";
 import { createPortal } from "react-dom";
-import type { Product } from "../data/products";
+import type { Product } from "../types/product";
 import { useCart } from "../context/CartContext";
 import { useCompare } from "../context/CompareContext";
-import { getBestReview, getReviewStats } from "../data/reviewSynthesizer";
+import { useUser } from "../context/UserContext";
+import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
-import { useMemo } from "react";
 
 interface Props {
   product: Product | null;
@@ -17,16 +17,9 @@ interface Props {
 export function QuickViewModal({ product: p, onClose }: Props) {
   const { addToCart } = useCart();
   const { add, has } = useCompare();
-
-  const featuredReview = useMemo(() =>
-    p ? getBestReview(p.id, p.name, p.category) : null,
-    [p?.id, p?.name, p?.category]
-  );
-
-  const reviewStats = useMemo(() =>
-    p ? getReviewStats(p.id, p.name, p.category) : { avgRating: 0, count: 0 },
-    [p?.id, p?.name, p?.category]
-  );
+  const { toggleFavorite, isFavorite } = useUser();
+  const { isAuthenticated } = useAuth();
+  const liked = p ? isFavorite(p.id) : false;
 
   const discount = p?.originalPrice
     ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
@@ -83,12 +76,14 @@ export function QuickViewModal({ product: p, onClose }: Props) {
                   </div>
 
                   {/* Rating */}
-                  <div className="flex items-center gap-1.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(reviewStats.avgRating) ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
-                    ))}
-                    <span className="text-xs text-gray-500 ml-1">{reviewStats.avgRating} ({reviewStats.count} reseñas)</span>
-                  </div>
+                  {p.rating > 0 && (
+                    <div className="flex items-center gap-1.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star key={i} className={`w-3.5 h-3.5 ${i < Math.floor(p.rating) ? "fill-amber-400 text-amber-400" : "text-gray-200"}`} />
+                      ))}
+                      <span className="text-xs text-gray-500 ml-1">{p.rating} ({p.reviews} reseñas)</span>
+                    </div>
+                  )}
 
                   {/* Price */}
                   <div className="flex items-baseline gap-2">
@@ -98,19 +93,6 @@ export function QuickViewModal({ product: p, onClose }: Props) {
 
                   {/* Short description */}
                   <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">{p.shortDescription || p.description}</p>
-
-                  {/* Featured review */}
-                  {featuredReview && (
-                    <div className="flex items-start gap-2 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">
-                      <Quote className="w-3 h-3 text-gray-300 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                      <div className="min-w-0">
-                        <p className="text-[11px] text-gray-500 leading-snug italic line-clamp-2">
-                          {featuredReview.body.slice(0, 110)}{featuredReview.body.length > 110 ? "…" : ""}
-                        </p>
-                        <p className="text-[10px] text-gray-400 mt-1">— {featuredReview.author}</p>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Stock */}
                   <div className="flex items-center gap-1.5">
@@ -135,8 +117,15 @@ export function QuickViewModal({ product: p, onClose }: Props) {
                     >
                       {has(p.id) ? <Check className="w-4 h-4" /> : <BarChart2 className="w-4 h-4" strokeWidth={1.5} />}
                     </button>
-                    <button className="w-9 h-9 flex items-center justify-center rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
-                      <Heart className="w-4 h-4" strokeWidth={1.5} />
+                    <button
+                      onClick={() => {
+                        if (!isAuthenticated) { toast.error("Inicia sesión para agregar favoritos"); return; }
+                        if (p) toggleFavorite(p.id);
+                      }}
+                      className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-colors ${liked ? "border-red-200 bg-red-50 text-red-500" : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                        }`}
+                    >
+                      <Heart className={`w-4 h-4 ${liked ? "fill-red-500 text-red-500" : ""}`} strokeWidth={1.5} />
                     </button>
                   </div>
 

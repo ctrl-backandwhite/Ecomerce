@@ -81,7 +81,6 @@ export const router = createBrowserRouter([
           { path: "producto/:id", Component: ProductDetail },
           { path: "carrito", Component: Cart },
           { path: "checkout", Component: Checkout },
-          { path: "cuenta", Component: UserProfile },
           { path: "tarjetas-regalo", Component: GiftCardPurchase },
           { path: "nosotros", Component: AboutPage },
           { path: "contacto", Component: ContactPage },
@@ -92,6 +91,19 @@ export const router = createBrowserRouter([
           { path: "comparar", Component: ComparePage },
           { path: "marca/:slug", Component: BrandPage },
           { path: "*", Component: NotFound },
+        ],
+      },
+      {
+        // Protected user pages — requires authentication
+        Component: AuthGuard,
+        children: [
+          {
+            path: "/",
+            Component: Layout,
+            children: [
+              { path: "cuenta", Component: UserProfile },
+            ],
+          },
         ],
       },
       {
