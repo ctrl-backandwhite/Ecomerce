@@ -69,6 +69,8 @@ export const router = createBrowserRouter([
     children: [
       // OAuth2 callback
       { path: "/auth/callback", Component: AuthCallback },
+      // Standalone pages — no Header / Footer
+      { path: "/gift-cards", Component: GiftCardPurchase },
       {
         // Public pages — no login required
         path: "/",
@@ -82,7 +84,6 @@ export const router = createBrowserRouter([
           { path: "product/:id", Component: ProductDetail },
           { path: "cart", Component: Cart },
           { path: "checkout", Component: Checkout },
-          { path: "gift-cards", Component: GiftCardPurchase },
           { path: "about", Component: AboutPage },
           { path: "contact", Component: ContactPage },
           { path: "faq", Component: FAQPage },
