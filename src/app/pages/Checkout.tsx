@@ -1,9 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import type { CartItem } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
 import { InvoiceDocument } from "../components/InvoiceDocument";
 import { useNavigate } from "react-router";
+import { orderRepository } from "../repositories/OrderRepository";
+import type { Order } from "../repositories/OrderRepository";
+import { paymentRepository } from "../repositories/PaymentRepository";
+import { shippingRepository } from "../repositories/ShippingRepository";
+import type { ShippingOption } from "../repositories/ShippingRepository";
+import { taxRepository } from "../repositories/TaxRepository";
+import type { TaxCalculation } from "../repositories/TaxRepository";
+import { couponRepository } from "../repositories/CouponRepository";
+import type { CouponValidation } from "../repositories/CouponRepository";
+import { invoiceRepository } from "../repositories/InvoiceRepository";
+import type { Invoice } from "../repositories/InvoiceRepository";
 import {
   CreditCard, Truck, CheckCircle2, ArrowLeft, Lock,
   MapPin, Store, Package2, Plus, Check, ChevronRight,
@@ -57,8 +68,8 @@ function labelIcon(label: string) {
 function StepBadge({ n, active, done }: { n: number; active: boolean; done: boolean }) {
   return (
     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs transition-colors ${done ? "bg-gray-600 text-white"
-        : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
-          : "bg-gray-100 text-gray-400"
+      : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
+        : "bg-gray-100 text-gray-400"
       }`}>
       {done ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : n}
     </div>
@@ -86,9 +97,12 @@ export function Checkout() {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
-  const [orderId] = useState(`ORD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`);
-  const [invoiceId] = useState(`FAC-${new Date().getFullYear()}-${Math.floor(Math.random() * 9000 + 1000)}`);
   const [orderSnapshot, setOrderSnapshot] = useState<CartItem[]>([]);
+
+  /* Backend-generated order / invoice data */
+  const [createdOrder, setCreatedOrder] = useState<Order | null>(null);
+  const [backendInvoice, setBackendInvoice] = useState<Invoice | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   /* Contact */
   const [contact, setContact] = useState({ email: user.email, phone: user.phone });
@@ -127,11 +141,118 @@ export function Checkout() {
   /* CVV confirm for saved cards */
   const [savedCardCvv, setSavedCardCvv] = useState("");
 
+  /* ── Sync from user profile when it loads asynchronously ── */
+  const profileSynced = useRef(false);
+  useEffect(() => {
+    if (profileSynced.current || !user.id) return;
+    profileSynced.current = true;
+
+    // Contact
+    setContact((c) => ({
+      email: c.email || user.email,
+      phone: c.phone || user.phone,
+    }));
+
+    // Default address
+    const addr = user.addresses.find((a) => a.isDefault) ?? user.addresses[0];
+    if (addr) setSelectedAddrId((prev) => (prev === "new" ? addr.id : prev));
+
+    // Default payment method
+    const pm = user.paymentMethods.find((p) => p.isDefault) ?? user.paymentMethods[0];
+    if (pm) setSelectedPmId((prev) => (prev === "new" ? pm.id : prev));
+
+    // Manual address name
+    const fullName = `${user.firstName} ${user.lastName}`.trim();
+    if (fullName) setManualAddr((m) => ({ ...m, name: m.name || fullName }));
+
+    // PayPal email & card name
+    setPaypalEmail((e) => e || user.email);
+    setPayment((p) => ({
+      ...p,
+      cardName: p.cardName || fullName.toUpperCase(),
+    }));
+  }, [user]);
+
+  /* ── Dynamic shipping / tax / coupon ── */
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedShippingId, setSelectedShippingId] = useState<string | null>(null);
+  const [shippingLoading, setShippingLoading] = useState(false);
+
+  const [taxCalc, setTaxCalc] = useState<TaxCalculation | null>(null);
+  const [taxLoading, setTaxLoading] = useState(false);
+
+  const [couponCode, setCouponCode] = useState("");
+  const [couponResult, setCouponResult] = useState<CouponValidation | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
   /* Totals */
   const subtotal = getTotalPrice();
-  const shipping = subtotal > 100 ? 0 : 15;
-  const tax = subtotal * 0.1;
-  const total = subtotal + shipping + tax;
+  const selectedShipping = shippingOptions.find((o) => o.id === selectedShippingId);
+  const shipping = selectedShipping?.price ?? (shippingOptions[0]?.price ?? 0);
+  const tax = taxCalc?.taxAmount ?? subtotal * 0.1; // fallback 10 %
+  const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
+  const total = Math.max(0, subtotal + shipping + tax - couponDiscount);
+
+  /* ── Fetch shipping options on mount ── */
+  useEffect(() => {
+    let cancelled = false;
+    setShippingLoading(true);
+    shippingRepository
+      .getOptions()
+      .then((opts) => {
+        if (cancelled) return;
+        setShippingOptions(opts);
+        if (opts.length > 0) setSelectedShippingId(opts[0].id);
+      })
+      .catch(() => { /* fallback: keep empty options */ })
+      .finally(() => { if (!cancelled) setShippingLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  /* ── Recalculate tax when subtotal or address changes ── */
+  const taxTimer = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    clearTimeout(taxTimer.current);
+    if (subtotal === 0) return;
+
+    // Determine country/state from selected address
+    let country = "US";
+    let state: string | undefined;
+    if (selectedAddr) {
+      country = selectedAddr.country ?? "US";
+      state = selectedAddr.state ?? undefined;
+    } else if (selectedAddrId === "new" && newMode === "home" && manualAddr.country) {
+      country = manualAddr.country;
+      state = manualAddr.state || undefined;
+    }
+
+    taxTimer.current = setTimeout(() => {
+      setTaxLoading(true);
+      taxRepository
+        .calculate({ subtotal, country, state })
+        .then((tc) => setTaxCalc(tc))
+        .catch(() => setTaxCalc(null))
+        .finally(() => setTaxLoading(false));
+    }, 400); // debounce
+    return () => clearTimeout(taxTimer.current);
+  }, [subtotal, selectedAddrId, manualAddr.country, manualAddr.state]);
+
+  /* ── Coupon validation ── */
+  const applyCoupon = useCallback(async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    try {
+      const res = await couponRepository.validate(couponCode.trim(), subtotal);
+      setCouponResult(res);
+      if (!res.valid) toast.error(res.message ?? "Cupón no válido");
+      else toast.success(`Cupón aplicado: -$${(res.discount ?? 0).toFixed(2)}`);
+    } catch {
+      toast.error("No se pudo validar el cupón");
+      setCouponResult(null);
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [couponCode, subtotal]);
 
   /* Derived selected address */
   const selectedAddr = selectedAddrId !== "new"
@@ -205,43 +326,113 @@ export function Checkout() {
   const handleSubmit = async () => {
     if (!step1Valid || !step2Valid || !step3Valid) return;
     setIsProcessing(true);
+    setOrderError(null);
     setOrderSnapshot([...items]);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsProcessing(false);
-    setOrderComplete(true);
-    clearCart();
-    toast.success("¡Pedido realizado con éxito!");
+
+    try {
+      /* 1 ─ Determine shippingAddressId & paymentMethodId */
+      const shippingAddressId =
+        selectedAddrId !== "new" ? selectedAddrId
+          : newMode === "store" ? (selectedStoreId ?? "new")
+            : newMode === "pickup" ? (selectedPickupId ?? "new")
+              : "new";
+
+      const paymentMethodId = selectedPmId !== "new" ? selectedPmId : "new";
+
+      /* 2 ─ Create order via backend */
+      const order = await orderRepository.createOrder({
+        shippingAddressId,
+        paymentMethodId,
+        couponCode: couponResult?.valid ? couponCode.trim() : undefined,
+        notes: undefined,
+      });
+      setCreatedOrder(order);
+
+      /* 3 ─ Process payment */
+      const activePm = selectedPm;
+      const activeType = activePm ? activePm.type : payMethod;
+
+      const methodMap: Record<string, "STRIPE" | "PAYPAL" | "CRYPTO"> = {
+        card: "STRIPE",
+        paypal: "PAYPAL",
+        usdt: "CRYPTO",
+        btc: "CRYPTO",
+      };
+
+      await paymentRepository.processPayment({
+        orderId: order.id,
+        method: methodMap[activeType] ?? "STRIPE",
+        returnUrl: `${window.location.origin}/account?tab=orders`,
+      });
+
+      /* 4 ─ Try to fetch the backend invoice */
+      try {
+        const inv = await invoiceRepository.findByOrderId(order.id);
+        setBackendInvoice(inv);
+      } catch {
+        /* Invoice might not be generated yet — that's fine */
+      }
+
+      /* 5 ─ Done */
+      setIsProcessing(false);
+      setOrderComplete(true);
+      clearCart();
+      toast.success("¡Pedido realizado con éxito!");
+    } catch (err: unknown) {
+      setIsProcessing(false);
+      const msg = err instanceof Error ? err.message : "Error al procesar el pedido";
+      setOrderError(msg);
+      toast.error(msg);
+    }
   };
 
   /* ── Order confirmed screen ── */
   if (orderComplete) {
+    const orderId = createdOrder?.orderNumber ?? createdOrder?.id ?? "N/A";
     const today = new Date().toISOString().slice(0, 10);
     const due = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10);
-    const invoiceData = {
-      invoiceNumber: invoiceId,
-      orderNumber: orderId,
-      date: today,
-      dueDate: due,
-      status: "paid" as const,
-      customer: {
-        name: `${user.firstName} ${user.lastName}`,
-        email: contact.email,
-        phone: contact.phone,
-        address: deliverySummary() || undefined,
-      },
-      lines: orderSnapshot.map(item => ({
-        name: item.name,
-        sku: item.sku,
-        quantity: item.quantity,
-        unitPrice: item.price,
-        total: item.price * item.quantity,
-      })),
-      subtotal,
-      shipping,
-      tax,
-      total,
-      paymentMethod: paymentSummaryLabel() || undefined,
-    };
+
+    // Use backend invoice if available, otherwise build from order data
+    const invoiceData = backendInvoice
+      ? {
+        invoiceNumber: backendInvoice.invoiceNumber,
+        orderNumber: backendInvoice.orderNumber,
+        date: backendInvoice.date,
+        dueDate: backendInvoice.dueDate,
+        status: backendInvoice.status.toLowerCase() as "paid",
+        customer: backendInvoice.customer,
+        lines: backendInvoice.lines,
+        subtotal: backendInvoice.subtotal,
+        shipping: backendInvoice.shipping,
+        tax: backendInvoice.tax,
+        total: backendInvoice.total,
+        paymentMethod: backendInvoice.paymentMethod,
+      }
+      : {
+        invoiceNumber: `FAC-${orderId}`,
+        orderNumber: orderId,
+        date: today,
+        dueDate: due,
+        status: "paid" as const,
+        customer: {
+          name: `${user.firstName} ${user.lastName}`,
+          email: contact.email,
+          phone: contact.phone,
+          address: deliverySummary() || undefined,
+        },
+        lines: orderSnapshot.map((item) => ({
+          name: item.name,
+          sku: item.sku,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          total: item.price * item.quantity,
+        })),
+        subtotal,
+        shipping,
+        tax,
+        total,
+        paymentMethod: paymentSummaryLabel() || undefined,
+      };
 
     return (
       <div className="min-h-screen bg-gray-50">
@@ -254,7 +445,7 @@ export function Checkout() {
               </div>
               <div>
                 <p className="text-sm text-gray-900">¡Pedido confirmado!</p>
-                <p className="text-xs text-gray-400 mt-0.5">Recibirás un correo de confirmación en breve · <span className="font-mono">{orderId}</span></p>
+                <p className="text-xs text-gray-400 mt-0.5">Recibirás un correo de confirmación en breve · <span className="font-mono">{createdOrder?.orderNumber ?? orderId}</span></p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -486,8 +677,8 @@ export function Checkout() {
                                   type="button"
                                   onClick={() => setNewMode(id)}
                                   className={`flex-1 flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border-2 text-xs transition-all ${active
-                                      ? `border-gray-900 bg-white ${meta.color}`
-                                      : "border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600"
+                                    ? `border-gray-900 bg-white ${meta.color}`
+                                    : "border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600"
                                     }`}
                                 >
                                   <span className={active ? meta.color : "text-gray-400"}>{icon}</span>
@@ -644,8 +835,8 @@ export function Checkout() {
                                       <div className="flex items-center gap-2">
                                         <p className="text-sm text-gray-900">{point.name}</p>
                                         <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${isSelected
-                                            ? "text-emerald-700 bg-emerald-100 border-emerald-200"
-                                            : "text-gray-400 bg-gray-50 border-gray-200"
+                                          ? "text-emerald-700 bg-emerald-100 border-emerald-200"
+                                          : "text-gray-400 bg-gray-50 border-gray-200"
                                           }`}>
                                           {point.type}
                                         </span>
@@ -980,8 +1171,8 @@ export function Checkout() {
                                       key={label}
                                       type="button"
                                       className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${active
-                                          ? "bg-emerald-600 text-white border-emerald-600"
-                                          : "text-gray-400 border-gray-200 hover:border-gray-300"
+                                        ? "bg-emerald-600 text-white border-emerald-600"
+                                        : "text-gray-400 border-gray-200 hover:border-gray-300"
                                         }`}
                                     >
                                       {label}
@@ -1007,8 +1198,8 @@ export function Checkout() {
                                     type="button"
                                     onClick={() => copyToClipboard(MOCK_USDT_ADDRESS)}
                                     className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${copiedAddr
-                                        ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                                        : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
+                                      ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                      : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
                                       }`}
                                   >
                                     {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
@@ -1056,8 +1247,8 @@ export function Checkout() {
                                     type="button"
                                     onClick={() => copyToClipboard(MOCK_BTC_ADDRESS)}
                                     className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${copiedAddr
-                                        ? "bg-orange-50 text-orange-600 border-orange-200"
-                                        : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
+                                      ? "bg-orange-50 text-orange-600 border-orange-200"
+                                      : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
                                       }`}
                                   >
                                     {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
@@ -1172,17 +1363,25 @@ export function Checkout() {
                   <div className="relative flex-1">
                     <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                     <input
+                      value={couponCode}
+                      onChange={(e) => { setCouponCode(e.target.value); setCouponResult(null); }}
                       placeholder="Código de descuento"
                       className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:border-gray-400 placeholder-gray-300"
                     />
                   </div>
                   <button
-                    onClick={() => toast.info("Cupón no válido")}
-                    className="text-xs text-gray-700 border border-gray-200 rounded-lg px-3 py-2 hover:border-gray-400 hover:bg-gray-50 transition-colors flex-shrink-0"
+                    onClick={applyCoupon}
+                    disabled={couponLoading || !couponCode.trim()}
+                    className="text-xs text-gray-700 border border-gray-200 rounded-lg px-3 py-2 hover:border-gray-400 hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-40"
                   >
-                    Aplicar
+                    {couponLoading ? "…" : "Aplicar"}
                   </button>
                 </div>
+                {couponResult?.valid && (
+                  <p className="text-xs text-green-600 mt-1.5">
+                    Descuento aplicado: -${couponDiscount.toFixed(2)}
+                  </p>
+                )}
               </div>
 
               {/* Totals */}
@@ -1192,15 +1391,21 @@ export function Checkout() {
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>Envío</span>
+                  <span>Envío{selectedShipping ? ` · ${selectedShipping.name}` : ""}</span>
                   <span className={shipping === 0 ? "text-green-600" : ""}>
                     {shipping === 0 ? "Gratis" : `$${shipping.toFixed(2)}`}
                   </span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>Impuestos (10%)</span>
+                  <span>Impuestos{taxCalc ? "" : " (est.)"}{taxLoading ? " …" : ""}</span>
                   <span>${tax.toFixed(2)}</span>
                 </div>
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-xs text-green-600">
+                    <span>Cupón ({couponCode})</span>
+                    <span>-${couponDiscount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm text-gray-900 pt-2.5 border-t border-gray-100">
                   <span>Total</span>
                   <span>${total.toFixed(2)}</span>

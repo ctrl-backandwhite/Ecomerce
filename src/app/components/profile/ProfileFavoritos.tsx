@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
+import { useCart } from "../../context/CartContext";
 import { nexaProductRepository, type NexaProduct } from "../../repositories/NexaProductRepository";
+import { mapNexaProduct } from "../../mappers/NexaProductMapper";
 import {
   Heart,
   Trash2,
@@ -8,6 +10,8 @@ import {
   Package,
   ChevronRight,
   ExternalLink,
+  ShoppingCart,
+  Check,
 } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -127,9 +131,29 @@ function ProductModal({
 /* ── Main component ───────────────────────────────────────── */
 export function ProfileFavoritos() {
   const { user, toggleFavorite } = useUser();
+  const { addToCart, items: cartItems } = useCart();
   const [selected, setSelected] = useState<Product | null>(null);
   const [favorites, setFavorites] = useState<NexaProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+
+  /** Check if a product is already in the cart */
+  const isInCart = useCallback(
+    (productId: string) => addedIds.has(productId) || cartItems.some((ci) => (ci.productId ?? ci.id) === productId),
+    [cartItems, addedIds]
+  );
+
+  /** Add favorite product to cart */
+  const handleAddToCart = useCallback(
+    (product: NexaProduct) => {
+      const mapped = mapNexaProduct(product);
+      addToCart(mapped, { quantity: 1 });
+      setAddedIds((prev) => new Set(prev).add(product.id));
+      toast.success(`"${pName(product)}" agregado al carrito`);
+      setTimeout(() => setAddedIds((prev) => { const next = new Set(prev); next.delete(product.id); return next; }), 1500);
+    },
+    [addToCart]
+  );
 
   /* Fetch real product data for each favoriteId */
   const loadFavorites = useCallback(async () => {
@@ -236,13 +260,29 @@ export function ProfileFavoritos() {
                     <p className="text-sm text-gray-900">${price.toFixed(2)}</p>
                   </div>
 
+                  {/* Add to cart */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
+                    className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all flex-shrink-0 ${isInCart(product.id)
+                        ? "border-green-200 bg-green-50 text-green-500"
+                        : "border-gray-200 hover:border-gray-300 bg-white text-gray-400 hover:text-gray-600"
+                      }`}
+                    title={isInCart(product.id) ? "Ya en el carrito" : "Agregar al carrito"}
+                    disabled={isInCart(product.id)}
+                  >
+                    {isInCart(product.id)
+                      ? <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      : <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    }
+                  </button>
+
                   {/* Remove */}
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRemove(product.id, name); }}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
+                    className="w-8 h-8 rounded-full border border-gray-200 hover:border-red-300 bg-white hover:bg-red-50 flex items-center justify-center transition-all flex-shrink-0"
                     title="Eliminar de favoritos"
                   >
-                    <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    <Trash2 className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
                   </button>
 
                   <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0 group-hover:text-gray-400 transition-colors" />

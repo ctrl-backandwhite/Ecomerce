@@ -1,11 +1,13 @@
 import { useCart } from "../context/CartContext";
+import { useUser } from "../context/UserContext";
 import { Button } from "../components/ui/button";
 import { Link, useNavigate } from "react-router";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Heart } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 
 export function Cart() {
   const { items, removeFromCart, updateQuantity, getTotalPrice } = useCart();
+  const { toggleFavorite, isFavorite } = useUser();
   const navigate = useNavigate();
 
   if (items.length === 0) {
@@ -29,9 +31,6 @@ export function Cart() {
   }
 
   const subtotal = getTotalPrice();
-  const shipping = subtotal > 100 ? 0 : 15;
-  const tax = subtotal * 0.1;
-  const total = subtotal + shipping + tax;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,9 +67,11 @@ export function Cart() {
                             {item.name}
                           </h3>
                         </Link>
-                        <Badge variant="secondary" className="mt-1">
-                          {item.category}
-                        </Badge>
+                        {item.category && !/^[0-9a-f-]{36}$/i.test(item.category) && (
+                          <Badge variant="secondary" className="mt-1">
+                            {item.category}
+                          </Badge>
+                        )}
                         {/* Variant attributes selected */}
                         {item.selectedAttrs && Object.keys(item.selectedAttrs).length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1.5">
@@ -82,14 +83,35 @@ export function Cart() {
                           </div>
                         )}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => removeFromCart(item.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </Button>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button
+                          title={isFavorite(item.productId ?? item.id) ? "Quitar de favoritos" : "Mover a favoritos"}
+                          onClick={async () => {
+                            const wasAlreadyFavorite = isFavorite(item.productId ?? item.id);
+                            await toggleFavorite(item.productId ?? item.id);
+                            // Solo mover (eliminar del carrito) si se está AGREGANDO a favoritos desde el carrito
+                            if (!wasAlreadyFavorite) {
+                              removeFromCart(item.id);
+                            }
+                          }}
+                          className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isFavorite(item.productId ?? item.id)
+                              ? "border-red-200 bg-red-50"
+                              : "border-gray-200 hover:border-gray-300 bg-white"
+                            }`}
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 ${isFavorite(item.productId ?? item.id) ? "fill-red-500 text-red-500" : "text-gray-400"}`}
+                            strokeWidth={1.5}
+                          />
+                        </button>
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          title="Eliminar del carrito"
+                          className="w-8 h-8 rounded-full border border-gray-200 hover:border-red-300 bg-white hover:bg-red-50 flex items-center justify-center transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" strokeWidth={1.5} />
+                        </button>
+                      </div>
                     </div>
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mt-4">
@@ -118,10 +140,9 @@ export function Cart() {
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              Math.min(item.stock, item.quantity + 1)
+                              item.quantity + 1
                             )
                           }
-                          disabled={item.quantity >= item.stock}
                         >
                           <Plus className="w-4 h-4" />
                         </Button>
@@ -153,34 +174,26 @@ export function Cart() {
                   <span>Subtotal</span>
                   <span>${subtotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
+                <div className="flex justify-between text-xs text-gray-400">
                   <span>Envío</span>
-                  <span>
-                    {shipping === 0 ? (
-                      <Badge variant="secondary" className="text-green-600">
-                        Gratis
-                      </Badge>
-                    ) : (
-                      `$${shipping.toFixed(2)}`
-                    )}
-                  </span>
+                  <span>Calculado en el checkout</span>
                 </div>
-                <div className="flex justify-between text-gray-600">
-                  <span>Impuestos (10%)</span>
-                  <span>${tax.toFixed(2)}</span>
+                <div className="flex justify-between text-xs text-gray-400">
+                  <span>Impuestos</span>
+                  <span>Calculados en el checkout</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">
-                  <span className="text-sm text-gray-900">Total</span>
+                  <span className="text-sm text-gray-900">Subtotal</span>
                   <span className="text-lg text-gray-900">
-                    ${total.toFixed(2)}
+                    ${subtotal.toFixed(2)}
                   </span>
                 </div>
               </div>
 
-              {shipping > 0 && (
+              {subtotal > 0 && subtotal < 100 && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
                   <p>
-                    ¡Agrega ${(100 - subtotal).toFixed(2)} más para envío
+                    ¡Agrega ${(100 - subtotal).toFixed(2)} más para posible envío
                     gratis!
                   </p>
                 </div>

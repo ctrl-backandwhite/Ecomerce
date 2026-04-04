@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { Search, Package, Truck, CheckCircle2, Clock, MapPin, AlertCircle } from "lucide-react";
+import { Search, Package, Truck, CheckCircle2, Clock, MapPin, AlertCircle, Loader2 } from "lucide-react";
+import { orderRepository } from "../repositories/OrderRepository";
+import { trackingRepository } from "../repositories/TrackingRepository";
+import type { TrackingEvent } from "../repositories/TrackingRepository";
+import type { Order } from "../repositories/OrderRepository";
 
 type OrderStatus = "preparing" | "shipped" | "in_transit" | "delivered" | "returned";
 
@@ -20,68 +24,114 @@ interface TrackResult {
   events: TrackEvent[];
 }
 
-const MOCK_RESULTS: Record<string, TrackResult> = {
-  "ORD-2024-001": {
-    orderNumber: "ORD-2024-001", status: "delivered", carrier: "NX036 Express",
-    trackingCode: "NEX-2026-A77821", estimatedDelivery: "Entregado el 13 mar 2026",
-    product: "Apple iPhone 15 Pro Max · 2 artículos",
-    events: [
-      { date: "13/03/2026", time: "11:24", description: "Paquete entregado",          location: "350 Fifth Avenue, New York" },
-      { date: "13/03/2026", time: "08:10", description: "En reparto con mensajero",   location: "Centro logístico Manhattan" },
-      { date: "12/03/2026", time: "22:45", description: "Paquete en centro de reparto", location: "JFK Air Cargo, New York" },
-      { date: "12/03/2026", time: "09:30", description: "Paquete recogido por transportista", location: "Almacén NX036 Madrid" },
-      { date: "11/03/2026", time: "18:02", description: "Pedido preparado y embalado", location: "Almacén NX036 Madrid" },
-      { date: "11/03/2026", time: "14:15", description: "Pago confirmado, en preparación", location: "—" },
-    ],
-  },
-  "ORD-2024-002": {
-    orderNumber: "ORD-2024-002", status: "in_transit", carrier: "UPS International",
-    trackingCode: "1Z999AA10123456784", estimatedDelivery: "Est. 15 mar 2026",
-    product: "Samsung Galaxy S24 Ultra · 1 artículo",
-    events: [
-      { date: "13/03/2026", time: "07:30", description: "En tránsito internacional", location: "Hub UPS, Frankfurt" },
-      { date: "12/03/2026", time: "23:55", description: "Salida del país de origen",  location: "Aeropuerto Madrid-Barajas" },
-      { date: "12/03/2026", time: "15:00", description: "Tramitación aduanera OK",    location: "Aduana Madrid" },
-      { date: "11/03/2026", time: "12:00", description: "Paquete recogido por UPS",   location: "Almacén NX036 Madrid" },
-    ],
-  },
-  "ORD-2024-004": {
-    orderNumber: "ORD-2024-004", status: "preparing", carrier: "FedEx",
-    trackingCode: "Pendiente de asignación", estimatedDelivery: "Est. 17–18 mar 2026",
-    product: "Dell XPS 15 · 1 artículo",
-    events: [
-      { date: "10/03/2026", time: "16:30", description: "Pago confirmado, en preparación", location: "—" },
-    ],
-  },
-};
+/* ── Map backend order status → local display status ── */
+function mapOrderStatus(backendStatus: string): OrderStatus {
+  const map: Record<string, OrderStatus> = {
+    PENDING: "preparing",
+    PROCESSING: "preparing",
+    SHIPPED: "shipped",
+    DELIVERED: "delivered",
+    CANCELLED: "returned",
+  };
+  return map[backendStatus] ?? "preparing";
+}
+
+/* ── Map TrackingEvent[] → TrackEvent[] ── */
+function mapTrackingEvents(events: TrackingEvent[]): TrackEvent[] {
+  return events
+    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    .map((ev) => {
+      const d = new Date(ev.timestamp);
+      return {
+        date: d.toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }),
+        time: d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }),
+        description: ev.description,
+        location: ev.location ?? "—",
+      };
+    });
+}
+
+/* ── Build TrackResult from backend data ── */
+function buildResult(order: Order, events: TrackingEvent[]): TrackResult {
+  const itemsCount = order.items.reduce((s, i) => s + i.quantity, 0);
+  const productLabel = order.items.length > 0
+    ? `${order.items[0].name} · ${itemsCount} artículo${itemsCount !== 1 ? "s" : ""}`
+    : `${itemsCount} artículo${itemsCount !== 1 ? "s" : ""}`;
+
+  return {
+    orderNumber: order.orderNumber,
+    status: mapOrderStatus(order.status),
+    carrier: "NX036 Express",
+    trackingCode: order.trackingCode ?? "Pendiente de asignación",
+    estimatedDelivery: order.status === "DELIVERED"
+      ? `Entregado el ${new Date(order.updatedAt ?? order.createdAt).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}`
+      : "Consulta tu email para la fecha estimada",
+    product: productLabel,
+    events: mapTrackingEvents(events),
+  };
+}
 
 const STATUS_META: Record<OrderStatus, { label: string; color: string; bg: string }> = {
-  preparing:  { label: "En preparación",  color: "text-amber-700",  bg: "bg-amber-50"  },
-  shipped:    { label: "Despachado",      color: "text-blue-700",   bg: "bg-blue-50"   },
-  in_transit: { label: "En tránsito",     color: "text-violet-700", bg: "bg-violet-50" },
-  delivered:  { label: "Entregado",       color: "text-green-700",  bg: "bg-green-50"  },
-  returned:   { label: "Devuelto",        color: "text-gray-600",   bg: "bg-gray-100"  },
+  preparing: { label: "En preparación", color: "text-amber-700", bg: "bg-amber-50" },
+  shipped: { label: "Despachado", color: "text-blue-700", bg: "bg-blue-50" },
+  in_transit: { label: "En tránsito", color: "text-violet-700", bg: "bg-violet-50" },
+  delivered: { label: "Entregado", color: "text-green-700", bg: "bg-green-50" },
+  returned: { label: "Devuelto", color: "text-gray-600", bg: "bg-gray-100" },
 };
 
 const STEPS: { key: OrderStatus; label: string; icon: typeof Package }[] = [
-  { key: "preparing",  label: "Preparación", icon: Clock       },
-  { key: "shipped",    label: "Enviado",      icon: Package     },
-  { key: "in_transit", label: "En tránsito",  icon: Truck       },
-  { key: "delivered",  label: "Entregado",    icon: CheckCircle2},
+  { key: "preparing", label: "Preparación", icon: Clock },
+  { key: "shipped", label: "Enviado", icon: Package },
+  { key: "in_transit", label: "En tránsito", icon: Truck },
+  { key: "delivered", label: "Entregado", icon: CheckCircle2 },
 ];
 
 const statusOrder: OrderStatus[] = ["preparing", "shipped", "in_transit", "delivered"];
 
 export function OrderTracking() {
-  const [query,  setQuery]  = useState("");
+  const [query, setQuery] = useState("");
   const [result, setResult] = useState<TrackResult | null>(null);
-  const [error,  setError]  = useState(false);
+  const [error, setError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    const r = MOCK_RESULTS[query.trim().toUpperCase()];
-    if (r) { setResult(r); setError(false); }
-    else   { setResult(null); setError(true); }
+    const q = query.trim();
+    if (!q) return;
+
+    setLoading(true);
+    setError(false);
+    setResult(null);
+
+    try {
+      // Try fetching the order by order number. The backend uses the order id
+      // in the URL but many UIs search by orderNumber. We'll try getMyOrder first
+      // (which works by id). If that fails, we do a search via getMyOrders and filter.
+      let order: Order | null = null;
+
+      // Attempt 1: direct lookup by id
+      try { order = await orderRepository.getMyOrder(q); } catch { /* not found */ }
+
+      // Attempt 2: search in user's orders by order number
+      if (!order) {
+        const page = await orderRepository.getMyOrders(0, 100);
+        order = page.content.find(
+          (o) => o.orderNumber.toUpperCase() === q.toUpperCase() || o.id === q,
+        ) ?? null;
+      }
+
+      if (!order) { setError(true); setLoading(false); return; }
+
+      // Fetch tracking events
+      let events: TrackingEvent[] = [];
+      try { events = await trackingRepository.getByOrderId(order.id); } catch { /* no events */ }
+
+      setResult(buildResult(order, events));
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const stepIndex = result ? statusOrder.indexOf(result.status) : -1;
@@ -102,11 +152,12 @@ export function OrderTracking() {
               className="w-full h-10 pl-10 pr-3 text-sm text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 placeholder-gray-300"
             />
           </div>
-          <button type="submit" className="h-10 px-5 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">
+          <button type="submit" disabled={loading} className="h-10 px-5 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors disabled:opacity-50 inline-flex items-center gap-2">
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
             Rastrear
           </button>
         </form>
-        <p className="text-xs text-gray-400 mt-3">Prueba con: ORD-2024-001 · ORD-2024-002 · ORD-2024-004</p>
+        <p className="text-xs text-gray-400 mt-3">Introduce tu número de pedido para consultar el estado del envío</p>
       </section>
 
       <div className="py-12 px-4 max-w-3xl mx-auto">
@@ -160,13 +211,12 @@ export function OrderTracking() {
                 />
 
                 {STEPS.map((s, i) => {
-                  const done   = i <= stepIndex;
+                  const done = i <= stepIndex;
                   const active = i === stepIndex;
                   return (
                     <div key={s.key} className="relative z-10 flex flex-col items-center gap-2 flex-1">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
-                        done ? "bg-gray-600 text-white" : "bg-white border border-gray-200 text-gray-300"
-                      } ${active ? "ring-4 ring-gray-600/10" : ""}`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${done ? "bg-gray-600 text-white" : "bg-white border border-gray-200 text-gray-300"
+                        } ${active ? "ring-4 ring-gray-600/10" : ""}`}>
                         <s.icon className="w-3.5 h-3.5" strokeWidth={active ? 2 : 1.5} />
                       </div>
                       <p className={`text-xs text-center ${done ? "text-gray-900" : "text-gray-400"}`}>{s.label}</p>

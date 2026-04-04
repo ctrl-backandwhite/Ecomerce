@@ -25,19 +25,20 @@ export interface CartItemDto {
     id: string;
     productId: string;
     variantId: string | null;
-    name: string;
-    image: string | null;
-    price: number;
+    productName: string;
+    productImage: string | null;
+    unitPrice: number;
     quantity: number;
     selectedAttrs: Record<string, string> | null;
+    createdAt: string | null;
 }
 
 export interface Cart {
     id: string;
     userId: string;
     items: CartItemDto[];
-    totalItems: number;
-    totalPrice: number;
+    itemCount: number;
+    subtotal: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -46,6 +47,9 @@ export interface AddItemPayload {
     productId: string;
     variantId?: string;
     quantity: number;
+    unitPrice: number;
+    productName: string;
+    productImage?: string;
     selectedAttrs?: Record<string, string>;
 }
 
