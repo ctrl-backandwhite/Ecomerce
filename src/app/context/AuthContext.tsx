@@ -18,7 +18,7 @@ import {
     storeReturnUrl,
 } from "../lib/token";
 import type { TokenResponse } from "../lib/token";
-import { nxFetch } from "../lib/nxFetch";
+import { authFetch } from "../lib/authFetch";
 import {
     generateCodeVerifier,
     generateCodeChallenge,
@@ -214,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const logout = useCallback(async () => {
         try {
-            await nxFetch(`${GATEWAY_URL}/api/v1/auth/logout`, {
+            await authFetch(`${GATEWAY_URL}/api/v1/auth/logout`, {
                 method: "POST",
                 credentials: "include",
             });
