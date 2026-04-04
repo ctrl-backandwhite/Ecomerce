@@ -71,6 +71,11 @@ export function ProfileSeguridad() {
   const [savingNotif, setSavingNotif] = useState(false);
   const [pwChangedLabel, setPwChangedLabel] = useState(getPwChangedLabel);
 
+  // Sync local toggle state when user data loads from API
+  useEffect(() => {
+    setNotif(user.notifications);
+  }, [user.notifications.email, user.notifications.sms, user.notifications.promotions, user.notifications.orderUpdates]);
+
   // ── Password change state ──────────────────────────────────────
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
@@ -531,7 +536,6 @@ export function ProfileSeguridad() {
               <Bell className="w-4.5 h-4.5 text-gray-600" strokeWidth={1.5} />
             </div>
             <h2 className="text-base text-gray-900">Notificaciones</h2>
-            <p className="text-xs text-gray-400">Elige cómo quieres recibir actualizaciones</p>
           </div>
 
           <div className="px-6 py-6">

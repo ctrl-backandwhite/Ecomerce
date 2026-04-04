@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { giftCardRepository } from "../repositories/GiftCardRepository";
 import {
-  Gift, Mail, Check, ChevronRight, ChevronLeft,
+  Gift, Mail, Check, ChevronRight, ChevronLeft, ChevronDown,
   User, MessageSquare, Calendar, CreditCard,
   Lock, Sparkles, ArrowRight, Copy, Download,
-  Clock, Send, X,
+  Clock, Send, X, Plus, Shield, LogIn,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router";
@@ -13,6 +13,12 @@ import {
   GIFT_CARD_AMOUNTS,
   type GiftCardDesign,
 } from "../types/giftcard";
+import { useUser } from "../context/UserContext";
+import { useAuth } from "../context/AuthContext";
+import type { PaymentMethod } from "../context/UserContext";
+import {
+  VisaLogo, MastercardLogo, PayPalLogo, USDTLogo, BTCLogo,
+} from "../components/PaymentLogos";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -159,6 +165,9 @@ const lbl = "block text-xs text-gray-500 mb-1.5";
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function GiftCardPurchase() {
+  const { isAuthenticated, login } = useAuth();
+  const { user } = useUser();
+
   const [step, setStep] = useState<Step>(1);
   const [generatedCode, setGeneratedCode] = useState("");
   const [copied, setCopied] = useState(false);
@@ -179,6 +188,38 @@ export function GiftCardPurchase() {
     cardHolder: "",
   });
 
+  /* --- Saved payment methods --- */
+  const hasSavedMethods = isAuthenticated && user.paymentMethods.length > 0;
+  const defaultPm = user.paymentMethods.find(p => p.isDefault) ?? user.paymentMethods[0] ?? null;
+  const [selectedPmId, setSelectedPmId] = useState<string | "new">(defaultPm?.id ?? "new");
+  const [savedCardCvv, setSavedCardCvv] = useState("");
+  const [pmDropdownOpen, setPmDropdownOpen] = useState(false);
+
+  const selectedPm: PaymentMethod | undefined = selectedPmId !== "new"
+    ? user.paymentMethods.find(p => p.id === selectedPmId)
+    : undefined;
+
+  // Sync default when paymentMethods load async
+  useEffect(() => {
+    if (hasSavedMethods && selectedPmId === "new") {
+      const def = user.paymentMethods.find(p => p.isDefault) ?? user.paymentMethods[0];
+      if (def) setSelectedPmId(def.id);
+    }
+  }, [user.paymentMethods, hasSavedMethods]);
+
+  // Helper: get logo for a payment method
+  function pmLogo(pm: PaymentMethod) {
+    if (pm.type === "card") return pm.cardBrand === "mastercard" ? <MastercardLogo size={18} /> : <VisaLogo size={16} />;
+    if (pm.type === "paypal") return <PayPalLogo size={18} />;
+    if (pm.type === "usdt") return <USDTLogo size={16} />;
+    return <BTCLogo size={16} />;
+  }
+  function pmDetail(pm: PaymentMethod) {
+    if (pm.type === "card") return `${pm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${pm.cardLast4} · Vence ${pm.cardExpiry}`;
+    if (pm.type === "paypal") return pm.paypalEmail ?? "";
+    return pm.cryptoNetwork ?? "";
+  }
+
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(prev => ({ ...prev, [k]: v }));
 
@@ -193,8 +234,9 @@ export function GiftCardPurchase() {
     form.fromName.trim() !== "";
 
   // Validate step 3
-  const step3Valid =
-    form.cardHolder.trim() !== "" &&
+  const step3Valid = selectedPmId !== "new"
+    ? selectedPm?.type === "card" ? savedCardCvv.length >= 3 : true
+    : form.cardHolder.trim() !== "" &&
     form.cardNumber.replace(/\s/g, "").length === 16 &&
     form.cardExpiry.length === 5 &&
     form.cardCvv.length === 3;
@@ -557,78 +599,196 @@ export function GiftCardPurchase() {
                 </div>
               </div>
 
-              {/* Card form */}
-              <div className="bg-white border border-gray-100 rounded-xl p-5 space-y-4">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Tarjeta de crédito / débito</p>
-                  <div className="flex gap-1">
-                    {["VISA", "MC", "AMEX"].map(b => (
-                      <span key={b} className="text-[9px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{b}</span>
-                    ))}
+              {/* Login prompt when not authenticated */}
+              {!isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => login("/gift-cards")}
+                  className="w-full flex items-center gap-3 px-4 py-3.5 bg-white border border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                    <LogIn className="w-4 h-4 text-gray-500" strokeWidth={1.5} />
                   </div>
-                </div>
-
-                <div>
-                  <label className={lbl}>Titular de la tarjeta</label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                    <input
-                      className={`${inp} pl-9 uppercase`}
-                      placeholder="NOMBRE APELLIDO"
-                      value={form.cardHolder}
-                      onChange={e => set("cardHolder", e.target.value.toUpperCase())}
-                    />
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-700">Inicia sesión para usar tus métodos guardados</p>
+                    <p className="text-xs text-gray-400">Accede a tus tarjetas, PayPal y criptomonedas</p>
                   </div>
-                </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" strokeWidth={1.5} />
+                </button>
+              )}
 
-                <div>
-                  <label className={lbl}>Número de tarjeta</label>
-                  <div className="relative">
-                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                    <input
-                      className={`${inp} pl-9 font-mono tracking-widest`}
-                      placeholder="1234 5678 9012 3456"
-                      value={form.cardNumber}
-                      onChange={e => set("cardNumber", formatCard(e.target.value))}
-                      maxLength={19}
-                    />
-                  </div>
-                </div>
+              {/* Payment method selector */}
+              <div className="bg-white border border-gray-100 rounded-xl">
+                <p className="text-xs text-gray-500 uppercase tracking-wider px-5 pt-5 pb-3">Método de pago</p>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={lbl}>Caducidad</label>
+                {/* ── Saved method selector (dropdown) ── */}
+                {hasSavedMethods && selectedPmId !== "new" && selectedPm && (
+                  <div className="px-5 pb-4 space-y-3">
+                    {/* Selected method display + dropdown trigger */}
                     <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                      <input
-                        className={`${inp} pl-9`}
-                        placeholder="MM/AA"
-                        value={form.cardExpiry}
-                        onChange={e => set("cardExpiry", formatExpiry(e.target.value))}
-                        maxLength={5}
-                      />
+                      <button
+                        type="button"
+                        onClick={() => setPmDropdownOpen(prev => !prev)}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-gray-400 transition-colors text-left"
+                      >
+                        <span className="flex-shrink-0">{pmLogo(selectedPm)}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900 truncate">{selectedPm.label}</p>
+                          <p className="text-xs text-gray-400 truncate">{pmDetail(selectedPm)}</p>
+                        </div>
+                        {selectedPm.isDefault && (
+                          <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex-shrink-0">Predeterminado</span>
+                        )}
+                        <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${pmDropdownOpen ? "rotate-180" : ""}`} strokeWidth={1.5} />
+                      </button>
+
+                      {/* Dropdown list */}
+                      {pmDropdownOpen && (
+                        <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-72 overflow-y-auto">
+                          {user.paymentMethods.map((pm) => (
+                            <button
+                              key={pm.id}
+                              type="button"
+                              onClick={() => { setSelectedPmId(pm.id); setSavedCardCvv(""); setPmDropdownOpen(false); }}
+                              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 ${pm.id === selectedPmId ? "bg-gray-50" : ""}`}
+                            >
+                              <span className="flex-shrink-0">{pmLogo(pm)}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900 truncate">{pm.label}</p>
+                                <p className="text-xs text-gray-400 truncate">{pmDetail(pm)}</p>
+                              </div>
+                              {pm.id === selectedPmId && <Check className="w-4 h-4 text-gray-500 flex-shrink-0" strokeWidth={2} />}
+                            </button>
+                          ))}
+                          {/* Option to add new card */}
+                          <button
+                            type="button"
+                            onClick={() => { setSelectedPmId("new"); setPmDropdownOpen(false); }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-left border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                          >
+                            <div className="w-[18px] h-[18px] rounded flex items-center justify-center bg-gray-100 flex-shrink-0">
+                              <Plus className="w-3 h-3 text-gray-500" strokeWidth={2} />
+                            </div>
+                            <p className="text-sm text-gray-600">Usar otra tarjeta</p>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CVV for saved cards */}
+                    {selectedPm.type === "card" && (
+                      <div>
+                        <label className="block text-xs text-gray-400 mb-1.5">
+                          <Shield className="inline w-3 h-3 mr-1" strokeWidth={1.5} />
+                          Confirma tu CVV para continuar
+                        </label>
+                        <div className="relative w-32">
+                          <input
+                            type="password"
+                            value={savedCardCvv}
+                            onChange={(e) => setSavedCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                            className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2 pr-9 focus:outline-none focus:border-gray-400 font-mono placeholder-gray-300"
+                            placeholder="•••"
+                            maxLength={4}
+                          />
+                          <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                      <Lock className="w-3 h-3" strokeWidth={1.5} />
+                      Pago 100% seguro con cifrado SSL de 256 bits
                     </div>
                   </div>
-                  <div>
-                    <label className={lbl}>CVV</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                      <input
-                        type="password"
-                        className={`${inp} pl-9`}
-                        placeholder="•••"
-                        value={form.cardCvv}
-                        onChange={e => set("cardCvv", e.target.value.replace(/\D/g, "").slice(0, 3))}
-                        maxLength={3}
-                      />
+                )}
+
+                {/* ── New card form ── */}
+                {(selectedPmId === "new" || !hasSavedMethods) && (
+                  <div className="px-5 pb-5 space-y-4">
+                    {/* Link back to saved methods */}
+                    {hasSavedMethods && (
+                      <button
+                        type="button"
+                        onClick={() => { const def = user.paymentMethods.find(p => p.isDefault) ?? user.paymentMethods[0]; if (def) setSelectedPmId(def.id); }}
+                        className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors mb-1"
+                      >
+                        <ChevronLeft className="w-3 h-3" strokeWidth={1.5} />
+                        Volver a mis métodos guardados
+                      </button>
+                    )}
+
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-gray-500 uppercase tracking-wider">Tarjeta de crédito / débito</p>
+                      <div className="flex items-center gap-2">
+                        <VisaLogo size={16} />
+                        <MastercardLogo size={20} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={lbl}>Titular de la tarjeta</label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                        <input
+                          className={`${inp} pl-9 uppercase`}
+                          placeholder="NOMBRE APELLIDO"
+                          value={form.cardHolder}
+                          onChange={e => set("cardHolder", e.target.value.toUpperCase())}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={lbl}>Número de tarjeta</label>
+                      <div className="relative">
+                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                        <input
+                          className={`${inp} pl-9 font-mono tracking-widest`}
+                          placeholder="1234 5678 9012 3456"
+                          value={form.cardNumber}
+                          onChange={e => set("cardNumber", formatCard(e.target.value))}
+                          maxLength={19}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={lbl}>Caducidad</label>
+                        <div className="relative">
+                          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                          <input
+                            className={`${inp} pl-9`}
+                            placeholder="MM/AA"
+                            value={form.cardExpiry}
+                            onChange={e => set("cardExpiry", formatExpiry(e.target.value))}
+                            maxLength={5}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className={lbl}>CVV</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                          <input
+                            type="password"
+                            className={`${inp} pl-9`}
+                            placeholder="•••"
+                            value={form.cardCvv}
+                            onChange={e => set("cardCvv", e.target.value.replace(/\D/g, "").slice(0, 3))}
+                            maxLength={3}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-1">
+                      <Lock className="w-3 h-3" strokeWidth={1.5} />
+                      Pago 100% seguro con cifrado SSL de 256 bits
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-[11px] text-gray-400 mt-1">
-                  <Lock className="w-3 h-3" strokeWidth={1.5} />
-                  Pago 100% seguro con cifrado SSL de 256 bits
-                </div>
+                )}
               </div>
 
               <div className="flex gap-3">
@@ -738,7 +898,7 @@ export function GiftCardPurchase() {
 
             <div className="flex flex-col sm:flex-row gap-3">
               <button
-                onClick={() => { setStep(1); setForm(prev => ({ ...prev, toName: "", toEmail: "", message: "", cardNumber: "", cardExpiry: "", cardCvv: "", cardHolder: "" })); }}
+                onClick={() => { setStep(1); setSavedCardCvv(""); setForm(prev => ({ ...prev, toName: "", toEmail: "", message: "", cardNumber: "", cardExpiry: "", cardCvv: "", cardHolder: "" })); }}
                 className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors"
               >
                 <Gift className="w-4 h-4" strokeWidth={1.5} />
