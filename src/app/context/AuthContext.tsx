@@ -222,10 +222,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Best-effort logout on server
         }
         clearTokens();
-        setIsAuthenticated(false);
-        setRoles([]);
-        setUser(null);
-        // Redirect to ecommerce home
+        // Redirect immediately — full page reload resets React state naturally.
+        // Do NOT call setIsAuthenticated(false) before redirect: it triggers
+        // AuthGuard's useEffect which redirects to OAuth2 login first.
         window.location.href = "/";
     }, []);
 
