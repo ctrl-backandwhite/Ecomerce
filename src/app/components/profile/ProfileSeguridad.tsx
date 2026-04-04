@@ -47,11 +47,29 @@ function PwField({
   );
 }
 
+const PW_CHANGED_KEY = "nexa-pw-changed-at";
+
+function getPwChangedLabel(): string {
+  const raw = localStorage.getItem(PW_CHANGED_KEY);
+  if (!raw) return "";
+  const ms = Date.now() - new Date(raw).getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "Ahora mismo";
+  if (mins < 60) return `Hace ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Hace ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `Hace ${days} día${days > 1 ? "s" : ""}`;
+  const months = Math.floor(days / 30);
+  return `Hace ${months} mes${months > 1 ? "es" : ""}`;
+}
+
 export function ProfileSeguridad() {
   const { user, saveNotificationPrefs } = useUser();
   const { user: authUser } = useAuth();
   const [notif, setNotif] = useState(user.notifications);
   const [savingNotif, setSavingNotif] = useState(false);
+  const [pwChangedLabel, setPwChangedLabel] = useState(getPwChangedLabel);
 
   // ── Password change state ──────────────────────────────────────
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
@@ -174,6 +192,8 @@ export function ProfileSeguridad() {
 
     try {
       await profileRepository.confirmPasswordChange({ code });
+      localStorage.setItem(PW_CHANGED_KEY, new Date().toISOString());
+      setPwChangedLabel(getPwChangedLabel());
       setPwStep("success");
       toast.success("Contraseña actualizada correctamente");
       // Reset everything after short delay
@@ -360,19 +380,19 @@ export function ProfileSeguridad() {
 
         {/* ── Change Password ──────────────────────────────────────── */}
         <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-          <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
+          <div className="flex flex-col items-center gap-1 px-6 py-5 border-b border-gray-100">
             <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
               <Shield className="w-4.5 h-4.5 text-gray-600" strokeWidth={1.5} />
             </div>
-            <div>
-              <h2 className="text-base text-gray-900">Cambiar Contraseña</h2>
-              <p className="text-xs text-gray-400">Última actualización: hace 3 meses</p>
-            </div>
+            <h2 className="text-base text-gray-900">Cambiar Contraseña</h2>
+            {pwChangedLabel && (
+              <p className="text-xs text-gray-400">Última actualización: {pwChangedLabel}</p>
+            )}
           </div>
 
-          <div className="px-6 py-6">
+          <div className="px-6 py-6 flex justify-center">
             {pwStep === "form" && (
-              <div className="max-w-md space-y-4">
+              <div className="max-w-md w-full space-y-4">
                 <PwField label="Contraseña actual" field="current" value={pwForm.current} show={showPw.current} onChange={(v) => setPwForm((f) => ({ ...f, current: v }))} onToggle={() => togglePwVis("current")} />
                 <PwField label="Nueva contraseña" field="next" value={pwForm.next} show={showPw.next} onChange={(v) => setPwForm((f) => ({ ...f, next: v }))} onToggle={() => togglePwVis("next")} />
                 <PwField label="Confirmar contraseña" field="confirm" value={pwForm.confirm} show={showPw.confirm} onChange={(v) => setPwForm((f) => ({ ...f, confirm: v }))} onToggle={() => togglePwVis("confirm")} />
@@ -413,7 +433,7 @@ export function ProfileSeguridad() {
                 <button
                   onClick={handlePwRequest}
                   disabled={pwLoading}
-                  className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors disabled:opacity-50"
+                  className="w-full inline-flex items-center justify-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors disabled:opacity-50"
                 >
                   {pwLoading
                     ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
@@ -425,7 +445,7 @@ export function ProfileSeguridad() {
             )}
 
             {pwStep === "code" && (
-              <div className="max-w-md space-y-5">
+              <div className="max-w-md w-full space-y-5 text-center">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">
                     Ingresa el código de 6 dígitos enviado a tu correo electrónico.
@@ -439,7 +459,7 @@ export function ProfileSeguridad() {
                 </div>
 
                 {/* 6-digit code inputs */}
-                <div className="flex gap-3 justify-start" onPaste={handleCodePaste}>
+                <div className="flex gap-3 justify-center" onPaste={handleCodePaste}>
                   {codeDigits.map((digit, idx) => (
                     <input
                       key={idx}
@@ -462,7 +482,7 @@ export function ProfileSeguridad() {
                   </p>
                 )}
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center gap-3">
                   <button
                     onClick={handleCodeConfirm}
                     disabled={pwLoading || codeDigits.join("").length !== 6 || secondsLeft === 0}
@@ -491,7 +511,7 @@ export function ProfileSeguridad() {
             )}
 
             {pwStep === "success" && (
-              <div className="max-w-md flex items-center gap-3 py-4">
+              <div className="max-w-md w-full flex items-center justify-center gap-3 py-4">
                 <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
                   <Check className="w-5 h-5 text-green-600" strokeWidth={2} />
                 </div>
@@ -506,14 +526,12 @@ export function ProfileSeguridad() {
 
         {/* ── Notifications ────────────────────────────────────────── */}
         <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-          <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-100">
+          <div className="flex flex-col items-center gap-1 px-6 py-5 border-b border-gray-100">
             <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
               <Bell className="w-4.5 h-4.5 text-gray-600" strokeWidth={1.5} />
             </div>
-            <div>
-              <h2 className="text-base text-gray-900">Notificaciones</h2>
-              <p className="text-xs text-gray-400">Elige cómo quieres recibir actualizaciones</p>
-            </div>
+            <h2 className="text-base text-gray-900">Notificaciones</h2>
+            <p className="text-xs text-gray-400">Elige cómo quieres recibir actualizaciones</p>
           </div>
 
           <div className="px-6 py-6">
@@ -616,8 +634,8 @@ export function ProfileSeguridad() {
         )}
 
         {sessionStep === "code" && (
-          <div className="px-6 py-6">
-            <div className="max-w-md space-y-5">
+          <div className="px-6 py-10 flex justify-center">
+            <div className="max-w-md space-y-5 text-center">
               <div>
                 <p className="text-sm text-gray-600 mb-1">
                   Ingresa el código de 6 dígitos enviado a tu correo electrónico para cerrar esta sesión.
@@ -630,7 +648,7 @@ export function ProfileSeguridad() {
                 </p>
               </div>
 
-              <div className="flex gap-3 justify-start" onPaste={handleSessionCodePaste}>
+              <div className="flex gap-3 justify-center" onPaste={handleSessionCodePaste}>
                 {sessionCodeDigits.map((digit, idx) => (
                   <input
                     key={idx}
@@ -647,13 +665,13 @@ export function ProfileSeguridad() {
               </div>
 
               {sessionError && (
-                <p className="text-xs text-red-500 flex items-center gap-1.5">
+                <p className="text-xs text-red-500 flex items-center justify-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
                   {sessionError}
                 </p>
               )}
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center gap-3">
                 <button
                   onClick={handleSessionCodeConfirm}
                   disabled={sessionLoading || sessionCodeDigits.join("").length !== 6 || sessionSecondsLeft === 0}

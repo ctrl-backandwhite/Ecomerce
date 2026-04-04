@@ -57,6 +57,45 @@ export function ProfileOverview({ onTabChange }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-4">
+        {/* Stat: Favoritos */}
+        <button
+          onClick={() => onTabChange("favorites")}
+          className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-left hover:border-gray-300 transition-all group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center mb-4">
+            <Heart className="w-4.5 h-4.5 text-red-400" strokeWidth={1.5} />
+          </div>
+          <p className="text-2xl text-gray-900 mb-0.5">{user.favoriteIds.length}</p>
+          <p className="text-xs text-gray-400">Favoritos</p>
+          <p className="text-xs text-gray-400 mt-3 group-hover:text-gray-600 transition-colors">Ver lista →</p>
+        </button>
+
+        {/* Stat: Direcciones */}
+        <button
+          onClick={() => onTabChange("addresses")}
+          className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-left hover:border-gray-300 transition-all group"
+        >
+          <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center mb-4">
+            <MapPin className="w-4.5 h-4.5 text-blue-400" strokeWidth={1.5} />
+          </div>
+          <p className="text-2xl text-gray-900 mb-0.5">{user.addresses.length}</p>
+          <p className="text-xs text-gray-400">Direcciones</p>
+          <p className="text-xs text-gray-400 mt-3 group-hover:text-gray-600 transition-colors">Gestionar →</p>
+        </button>
+
+        {/* Stat: Pedidos totales */}
+        <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
+          <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center mb-4">
+            <ShoppingBag className="w-4.5 h-4.5 text-gray-500" strokeWidth={1.5} />
+          </div>
+          <p className="text-2xl text-gray-900 mb-0.5">{user.totalOrders}</p>
+          <p className="text-xs text-gray-400">Pedidos totales</p>
+          <p className="text-xs text-gray-400 mt-3">Desde {memberDate}</p>
+        </div>
+      </div>
+
       {/* Último pedido */}
       <button
         onClick={() => onTabChange("orders")}
@@ -110,42 +149,6 @@ export function ProfileOverview({ onTabChange }: Props) {
           </div>
         )}
       </button>
-
-      {/* Stat: Favoritos */}
-      <button
-        onClick={() => onTabChange("favorites")}
-        className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-left hover:border-gray-300 transition-all group"
-      >
-        <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center mb-4">
-          <Heart className="w-4.5 h-4.5 text-red-400" strokeWidth={1.5} />
-        </div>
-        <p className="text-2xl text-gray-900 mb-0.5">{user.favoriteIds.length}</p>
-        <p className="text-xs text-gray-400">Favoritos</p>
-        <p className="text-xs text-gray-400 mt-3 group-hover:text-gray-600 transition-colors">Ver lista →</p>
-      </button>
-
-      {/* Stat: Direcciones */}
-      <button
-        onClick={() => onTabChange("addresses")}
-        className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-left hover:border-gray-300 transition-all group"
-      >
-        <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center mb-4">
-          <MapPin className="w-4.5 h-4.5 text-blue-400" strokeWidth={1.5} />
-        </div>
-        <p className="text-2xl text-gray-900 mb-0.5">{user.addresses.length}</p>
-        <p className="text-xs text-gray-400">Direcciones</p>
-        <p className="text-xs text-gray-400 mt-3 group-hover:text-gray-600 transition-colors">Gestionar →</p>
-      </button>
-
-      {/* Stat: Pedidos totales */}
-      <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm">
-        <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center mb-4">
-          <ShoppingBag className="w-4.5 h-4.5 text-gray-500" strokeWidth={1.5} />
-        </div>
-        <p className="text-2xl text-gray-900 mb-0.5">{user.totalOrders}</p>
-        <p className="text-xs text-gray-400">Pedidos totales</p>
-        <p className="text-xs text-gray-400 mt-3">Desde {memberDate}</p>
-      </div>
     </div>
   );
 }

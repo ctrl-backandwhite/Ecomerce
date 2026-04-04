@@ -2,7 +2,7 @@
  * Authenticated fetch wrapper.
  * Adds Authorization header and handles 401 with token refresh.
  */
-import { getAccessToken, getRefreshToken, storeTokens, clearTokens, getTokenType } from "./token";
+import { getAccessToken, getRefreshToken, storeTokens, clearTokens, getTokenType, isTokenExpired } from "./token";
 import type { TokenResponse } from "./token";
 import { getSessionId } from "./sessionId";
 
@@ -87,6 +87,13 @@ export async function authFetch(
         }
 
         return { ...options, headers };
+    }
+
+    // Proactively refresh expired tokens before the request.
+    // The gateway is pass-through: an expired JWT won't return 401, it just
+    // drops the auth headers, so downstream services return empty data.
+    if (!shouldSkip && getAccessToken() && isTokenExpired()) {
+        await refreshOnce();
     }
 
     const response = await fetch(input, attachHeaders(init));
