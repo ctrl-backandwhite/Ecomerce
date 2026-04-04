@@ -19,12 +19,12 @@ interface SimpleOrder {
 }
 
 function mapApiOrder(api: ApiOrder): SimpleOrder {
-  const sMap: Record<string, OrderStatus> = { PENDING: "processing", PROCESSING: "processing", SHIPPED: "shipped", DELIVERED: "delivered", CANCELLED: "cancelled" };
+  const sMap: Record<string, OrderStatus> = { PENDING: "processing", CONFIRMED: "processing", PROCESSING: "processing", SHIPPED: "shipped", IN_TRANSIT: "shipped", DELIVERED: "delivered", CANCELLED: "cancelled", REFUNDED: "cancelled" };
   return {
     id: api.orderNumber || api.id,
-    date: api.date,
+    date: api.createdAt,
     status: sMap[api.status] ?? "processing",
-    items: api.items.map((i) => ({ id: i.id, name: i.name, image: i.image ?? "" })),
+    items: api.items.map((i) => ({ id: i.id, name: i.productName, image: i.productImage ?? "" })),
     total: api.total,
   };
 }

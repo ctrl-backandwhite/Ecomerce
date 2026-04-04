@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
 import { orderRepository, type Order as ApiOrder } from "../../repositories/OrderRepository";
 import { useCart } from "../../context/CartContext";
@@ -56,31 +57,55 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; bg: stri
   cancelled: { label: "Cancelado", color: "text-red-500", bg: "bg-red-50", dot: "bg-red-500" },
 };
 
+const fmtPrice = (n: number) =>
+  "$" + n.toLocaleString("es-CL", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+const IMG_FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' rx='8' fill='%23f3f4f6'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' font-size='20' fill='%23d1d5db'%3E%F0%9F%93%A6%3C/text%3E%3C/svg%3E";
+
 function mapApiOrder(api: ApiOrder): Order {
   const statusMap: Record<string, OrderStatus> = {
     PENDING: "processing",
+    CONFIRMED: "processing",
     PROCESSING: "processing",
     SHIPPED: "shipped",
+    IN_TRANSIT: "shipped",
     DELIVERED: "delivered",
     CANCELLED: "cancelled",
+    REFUNDED: "cancelled",
   };
+
+  // Format shippingAddress object into a readable string
+  const addr = api.shippingAddress;
+  let addressStr = "";
+  if (addr && typeof addr === "object") {
+    const parts = [
+      addr.street,
+      addr.city,
+      addr.region,
+      addr.postalCode,
+      addr.country,
+    ].filter(Boolean);
+    addressStr = parts.join(", ") as string;
+    if (addr.fullName) addressStr = `${addr.fullName} — ${addressStr}`;
+  }
+
   return {
     id: api.orderNumber || api.id,
-    date: api.date,
+    date: api.createdAt,
     status: statusMap[api.status] ?? "processing",
     items: api.items.map((item) => ({
       id: item.id,
-      name: item.name,
-      image: item.image ?? "",
-      price: item.price,
+      name: item.productName,
+      image: item.productImage ?? "",
+      price: item.unitPrice,
       quantity: item.quantity,
-      category: item.category ?? "",
+      category: "",
     })),
     subtotal: api.subtotal,
-    shipping: api.shipping,
+    shipping: api.shippingCost,
     total: api.total,
-    address: api.shippingAddress ?? "",
-    trackingCode: api.trackingCode ?? undefined,
+    address: addressStr,
+    trackingCode: undefined,
   };
 }
 
@@ -222,7 +247,7 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 {order.items.map((item) => (
                   <div key={item.id} className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
-                    <img src={item.image} alt={item.name} className="w-7 h-7 rounded-lg object-cover" />
+                    <img src={item.image || IMG_FALLBACK} alt={item.name} className="w-7 h-7 rounded-lg object-cover" onError={(e) => { e.currentTarget.src = IMG_FALLBACK; }} />
                     <span className="text-xs text-gray-600 max-w-[100px] truncate">{item.name}</span>
                     <div className="flex items-center gap-0.5">
                       {[1, 2, 3, 4, 5].map((s) => (
@@ -254,13 +279,14 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
                   {/* Product info */}
                   <div className="flex items-center gap-3 p-4 bg-gray-50 border-b border-gray-100">
                     <img
-                      src={item.image}
+                      src={item.image || IMG_FALLBACK}
                       alt={item.name}
                       className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-100"
+                      onError={(e) => { e.currentTarget.src = IMG_FALLBACK; }}
                     />
                     <div className="min-w-0">
                       <p className="text-sm text-gray-900 truncate">{item.name}</p>
-                      <p className="text-xs text-gray-400">{item.category} · x{item.quantity}</p>
+                      <p className="text-xs text-gray-400">{item.category ? `${item.category} · ` : ""}x{item.quantity}</p>
                     </div>
                   </div>
 
@@ -360,7 +386,7 @@ function OrderModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="bg-white rounded-2xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden">
+      <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
@@ -388,9 +414,8 @@ function OrderModal({
         </div>
 
         {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-6 py-6 space-y-6">
+        <div className="overflow-y-auto flex-1 px-6 py-5 space-y-5">
 
-          {/* Tracking */}
           {isCancelled ? (
             <div className="rounded-xl border border-red-100 bg-red-50 p-5 flex items-center gap-4">
               <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
@@ -402,136 +427,147 @@ function OrderModal({
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-gray-100 bg-gray-50 p-5">
-              <p className="text-xs text-gray-400 mb-5 uppercase tracking-wider">Seguimiento del pedido</p>
+            /* ── Two-column layout: tracking left, products right ── */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-              {order.trackingCode && (
-                <div className="flex items-center gap-2 mb-6">
-                  <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                  <span className="text-xs text-gray-400">Código de seguimiento:</span>
-                  <span className="text-xs font-mono text-gray-900 bg-white border border-gray-200 px-2 py-0.5 rounded">
-                    {order.trackingCode}
-                  </span>
-                  <button
-                    onClick={handleCopyTracking}
-                    className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-gray-600 hover:bg-white transition-colors"
-                    title="Copiar código"
-                  >
-                    <Copy className="w-3 h-3" />
-                  </button>
-                </div>
-              )}
+              {/* Tracking */}
+              <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-xs text-gray-400 mb-4 uppercase tracking-wider">Seguimiento del pedido</p>
 
-              {/* Progress bar + truck */}
-              <div className="relative mb-8 px-2">
-                <div className="h-1 bg-gray-200 rounded-full relative">
-                  <div
-                    className="h-full bg-gray-600 rounded-full transition-all duration-700"
-                    style={{ width: `${truckPercent}%` }}
-                  />
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-all duration-700"
-                    style={{ left: `${truckPercent}%` }}
-                  >
-                    <div className="relative">
-                      {order.status !== "delivered" && (
-                        <span className="absolute inset-0 rounded-full bg-gray-600/20 animate-ping scale-150" />
-                      )}
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center shadow-md border-2 border-white ${order.status === "delivered" ? "bg-green-500" : "bg-gray-600"}`}>
-                        <Truck className="w-4 h-4 text-white" strokeWidth={1.5} />
+                {order.trackingCode && (
+                  <div className="flex items-center gap-2 mb-5">
+                    <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                    <span className="text-xs text-gray-400">Código:</span>
+                    <span className="text-xs font-mono text-gray-900 bg-white border border-gray-200 px-2 py-0.5 rounded">
+                      {order.trackingCode}
+                    </span>
+                    <button
+                      onClick={handleCopyTracking}
+                      className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-gray-600 hover:bg-white transition-colors"
+                      title="Copiar código"
+                    >
+                      <Copy className="w-3 h-3" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Progress bar + truck */}
+                <div className="relative mb-5 px-2">
+                  <div className="h-1 bg-gray-200 rounded-full relative">
+                    <div
+                      className="h-full bg-gray-600 rounded-full transition-all duration-700"
+                      style={{ width: `${truckPercent}%` }}
+                    />
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 transition-all duration-700"
+                      style={{ left: `${truckPercent}%` }}
+                    >
+                      <div className="relative">
+                        {order.status !== "delivered" && (
+                          <span className="absolute inset-0 rounded-full bg-gray-600/20 animate-ping scale-150" />
+                        )}
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shadow-md border-2 border-white ${order.status === "delivered" ? "bg-green-500" : "bg-gray-600"}`}>
+                          <Truck className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
+                        </div>
                       </div>
                     </div>
                   </div>
+                  <div className="flex justify-between mt-1">
+                    {allSteps.map((_, i) => (
+                      <div key={i} className={`w-1.5 h-1.5 rounded-full -mt-[16px] transition-colors ${i <= completedStep ? "bg-gray-600" : "bg-gray-200"}`} />
+                    ))}
+                  </div>
                 </div>
-                <div className="flex justify-between mt-1">
-                  {allSteps.map((_, i) => (
-                    <div key={i} className={`w-2 h-2 rounded-full -mt-[18px] transition-colors ${i <= completedStep ? "bg-gray-600" : "bg-gray-200"}`} />
-                  ))}
+
+                {/* Step list */}
+                <div className="space-y-0">
+                  {allSteps.map((step, i) => {
+                    const done = i <= completedStep;
+                    const active = i === completedStep;
+                    return (
+                      <div key={step.key} className="flex items-start gap-2.5">
+                        <div className="flex flex-col items-center">
+                          <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${done && !active ? "bg-gray-600 text-white"
+                            : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
+                              : "bg-gray-100 text-gray-300"
+                            }`}>
+                            {done && !active
+                              ? <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.5} />
+                              : active ? step.icon
+                                : <CircleDot className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                          </div>
+                          {i < allSteps.length - 1 && (
+                            <div className={`w-px flex-1 my-0.5 min-h-[12px] transition-colors ${i < completedStep ? "bg-gray-600" : "bg-gray-200"}`} />
+                          )}
+                        </div>
+                        <div className="pb-1.5 pt-0.5 min-w-0">
+                          <p className={`text-xs ${done ? "text-gray-900" : "text-gray-300"}`}>
+                            {step.label}
+                            {active && (
+                              <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">
+                                <Clock className="w-2.5 h-2.5" />
+                                En curso
+                              </span>
+                            )}
+                          </p>
+                          <p className={`text-[11px] mt-0.5 ${done ? "text-gray-400" : "text-gray-200"}`}>{step.sublabel}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Step list */}
-              <div className="space-y-0">
-                {allSteps.map((step, i) => {
-                  const done = i <= completedStep;
-                  const active = i === completedStep;
-                  return (
-                    <div key={step.key} className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${done && !active ? "bg-gray-600 text-white"
-                          : active ? "bg-gray-600 text-white ring-4 ring-gray-600/10"
-                            : "bg-gray-100 text-gray-300"
-                          }`}>
-                          {done && !active
-                            ? <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />
-                            : active ? step.icon
-                              : <CircleDot className="w-4 h-4" strokeWidth={1.5} />}
-                        </div>
-                        {i < allSteps.length - 1 && (
-                          <div className={`w-px flex-1 my-1 min-h-[20px] transition-colors ${i < completedStep ? "bg-gray-600" : "bg-gray-200"}`} />
-                        )}
+              {/* Products (right column) */}
+              <div>
+                <p className="text-xs text-gray-400 mb-3 uppercase tracking-wider">Productos</p>
+                <div className="space-y-2">
+                  {order.items.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 hover:bg-gray-50 transition-colors">
+                      <img src={item.image || IMG_FALLBACK} alt={item.name} className="w-11 h-11 rounded-lg object-cover flex-shrink-0 border border-gray-100" onError={(e) => { e.currentTarget.src = IMG_FALLBACK; }} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900 truncate">{item.name}</p>
+                        <p className="text-xs text-gray-400">{item.category ? `${item.category} · ` : ""}x{item.quantity}</p>
                       </div>
-                      <div className="pb-4 pt-1.5 min-w-0">
-                        <p className={`text-sm ${done ? "text-gray-900" : "text-gray-300"}`}>
-                          {step.label}
-                          {active && (
-                            <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">
-                              <Clock className="w-2.5 h-2.5" />
-                              En curso
-                            </span>
-                          )}
-                        </p>
-                        <p className={`text-xs mt-0.5 ${done ? "text-gray-400" : "text-gray-200"}`}>{step.sublabel}</p>
-                      </div>
+                      <p className="text-sm text-gray-900 flex-shrink-0">{fmtPrice(item.price)}</p>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Items */}
-          <div>
-            <p className="text-xs text-gray-400 mb-3 uppercase tracking-wider">Productos</p>
-            <div className="space-y-2">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 hover:bg-gray-50 transition-colors">
-                  <img src={item.image} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0 border border-gray-100" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 truncate">{item.name}</p>
-                    <p className="text-xs text-gray-400">{item.category} · x{item.quantity}</p>
-                  </div>
-                  <p className="text-sm text-gray-900 flex-shrink-0">${item.price.toLocaleString()}</p>
+          {/* Totals + Address */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Totals */}
+            <div className="border border-gray-100 rounded-xl overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-50 bg-gray-50">
+                <p className="text-xs text-gray-400 uppercase tracking-wider">Resumen</p>
+              </div>
+              <div className="px-4 py-3 space-y-2">
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Subtotal</span><span>{fmtPrice(order.subtotal)}</span>
                 </div>
-              ))}
+                <div className="flex justify-between text-xs text-gray-500">
+                  <span>Envío</span>
+                  <span className={order.shipping === 0 ? "text-green-600" : ""}>
+                    {order.shipping === 0 ? "Gratis" : fmtPrice(order.shipping)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-900 pt-2 border-t border-gray-100">
+                  <span>Total</span><span>{fmtPrice(order.total)}</span>
+                </div>
+              </div>
             </div>
-          </div>
 
-          {/* Totals */}
-          <div className="border border-gray-100 rounded-xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-50 bg-gray-50">
-              <p className="text-xs text-gray-400 uppercase tracking-wider">Resumen</p>
-            </div>
-            <div className="px-4 py-3 space-y-2">
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Subtotal</span><span>${order.subtotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-xs text-gray-500">
-                <span>Envío</span>
-                <span className={order.shipping === 0 ? "text-green-600" : ""}>
-                  {order.shipping === 0 ? "Gratis" : `$${order.shipping}`}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm text-gray-900 pt-2 border-t border-gray-100">
-                <span>Total</span><span>${order.total.toLocaleString()}</span>
+            {/* Address */}
+            <div className="border border-gray-100 rounded-xl p-4">
+              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">Dirección de envío</p>
+              <div className="flex items-start gap-2">
+                <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={1.5} />
+                <p className="text-xs text-gray-500">{order.address || "Sin dirección"}</p>
               </div>
             </div>
-          </div>
-
-          {/* Address */}
-          <div className="flex items-start gap-2">
-            <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={1.5} />
-            <p className="text-xs text-gray-500">{order.address}</p>
           </div>
         </div>
 
@@ -615,18 +651,20 @@ export function ProfilePedidos() {
 
   return (
     <>
-      {/* Rating modal (z-60, on top of order modal) */}
-      {rating && (
-        <RatingModal order={rating} onClose={() => setRating(null)} />
+      {/* Rating modal (z-60, on top of order modal) — portal to escape parent overflow/transform */}
+      {rating && createPortal(
+        <RatingModal order={rating} onClose={() => setRating(null)} />,
+        document.body,
       )}
 
-      {/* Order modal */}
-      {selected && !rating && (
+      {/* Order modal — portal to escape parent overflow/transform */}
+      {selected && !rating && createPortal(
         <OrderModal
           order={selected}
           onClose={() => setSelected(null)}
           onRate={() => setRating(selected)}
-        />
+        />,
+        document.body,
       )}
 
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
@@ -681,9 +719,10 @@ export function ProfilePedidos() {
                     {order.items.slice(0, 2).map((item) => (
                       <img
                         key={item.id}
-                        src={item.image}
+                        src={item.image || IMG_FALLBACK}
                         alt={item.name}
                         className="w-10 h-10 rounded-lg object-cover border-2 border-white shadow-sm"
+                        onError={(e) => { e.currentTarget.src = IMG_FALLBACK; }}
                       />
                     ))}
                   </div>
@@ -717,7 +756,7 @@ export function ProfilePedidos() {
                   {/* Amount */}
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right">
-                      <p className="text-sm text-gray-900">${order.total.toLocaleString()}</p>
+                      <p className="text-sm text-gray-900">{fmtPrice(order.total)}</p>
                       <p className="text-[10px] text-gray-400">{order.items.length} ítem{order.items.length !== 1 ? "s" : ""}</p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />

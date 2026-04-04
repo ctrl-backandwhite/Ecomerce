@@ -28,12 +28,12 @@ export type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "
 export interface OrderItem {
     id: string;
     productId: string;
-    variantId: string | null;
-    name: string;
-    image: string | null;
-    price: number;
+    sku: string;
+    productName: string;
+    productImage: string | null;
     quantity: number;
-    category: string | null;
+    unitPrice: number;
+    totalPrice: number;
 }
 
 export interface Order {
@@ -43,14 +43,16 @@ export interface Order {
     status: OrderStatus;
     items: OrderItem[];
     subtotal: number;
-    shipping: number;
-    tax: number;
+    shippingCost: number;
+    taxAmount: number;
+    discountAmount: number;
     total: number;
-    shippingAddress: string | null;
-    trackingCode: string | null;
-    couponCode: string | null;
+    shippingAddress: Record<string, unknown> | null;
+    billingAddress: Record<string, unknown> | null;
     paymentMethod: string | null;
-    date: string;
+    paymentRef: string | null;
+    notes: string | null;
+    couponId: string | null;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -67,8 +69,9 @@ export interface AdminOrder {
 }
 
 export interface CreateOrderPayload {
-    shippingAddressId: string;
-    paymentMethodId: string;
+    shippingAddress: Record<string, unknown>;
+    billingAddress?: Record<string, unknown>;
+    paymentMethod: string;
     couponCode?: string;
     notes?: string;
 }

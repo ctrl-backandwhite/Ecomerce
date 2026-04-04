@@ -55,14 +55,14 @@ function mapTrackingEvents(events: TrackingEvent[]): TrackEvent[] {
 function buildResult(order: Order, events: TrackingEvent[]): TrackResult {
   const itemsCount = order.items.reduce((s, i) => s + i.quantity, 0);
   const productLabel = order.items.length > 0
-    ? `${order.items[0].name} · ${itemsCount} artículo${itemsCount !== 1 ? "s" : ""}`
+    ? `${order.items[0].productName} · ${itemsCount} artículo${itemsCount !== 1 ? "s" : ""}`
     : `${itemsCount} artículo${itemsCount !== 1 ? "s" : ""}`;
 
   return {
     orderNumber: order.orderNumber,
     status: mapOrderStatus(order.status),
     carrier: "NX036 Express",
-    trackingCode: order.trackingCode ?? "Pendiente de asignación",
+    trackingCode: "Pendiente de asignación",
     estimatedDelivery: order.status === "DELIVERED"
       ? `Entregado el ${new Date(order.updatedAt ?? order.createdAt).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}`
       : "Consulta tu email para la fecha estimada",
