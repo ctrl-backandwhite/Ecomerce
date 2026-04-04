@@ -109,7 +109,7 @@ function ProductModal({
                 Eliminar de favoritos
               </button>
               <Link
-                to={`/producto/${product.id}`}
+                to={`/product/${product.id}`}
                 onClick={onClose}
                 className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors"
                 title="Ver página del producto"

@@ -37,9 +37,9 @@ export function Footer() {
               <li><Link to="/?category=Electrónica" className="text-gray-500 hover:text-gray-900 transition-colors">Electrónica</Link></li>
               <li><Link to="/?category=Calzado" className="text-gray-500 hover:text-gray-900 transition-colors">Calzado</Link></li>
               <li><Link to="/?category=Audio" className="text-gray-500 hover:text-gray-900 transition-colors">Audio</Link></li>
-              <li><Link to="/comparar" className="text-gray-500 hover:text-gray-900 transition-colors">Comparar productos</Link></li>
+              <li><Link to="/compare" className="text-gray-500 hover:text-gray-900 transition-colors">Comparar productos</Link></li>
               <li>
-                <Link to="/tarjetas-regalo" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors">
+                <Link to="/gift-cards" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors">
                   <Gift className="w-3 h-3" strokeWidth={1.5} />
                   Tarjetas regalo
                 </Link>
@@ -51,12 +51,12 @@ export function Footer() {
           <div>
             <h3 className="text-sm mb-4">Mi cuenta</h3>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/cuenta" className="text-gray-500 hover:text-gray-900 transition-colors">Mi perfil</Link></li>
-              <li><Link to="/cuenta?tab=pedidos" className="text-gray-500 hover:text-gray-900 transition-colors">Mis pedidos</Link></li>
-              <li><Link to="/cuenta?tab=favoritos" className="text-gray-500 hover:text-gray-900 transition-colors">Favoritos</Link></li>
-              <li><Link to="/cuenta?tab=giftcards" className="text-gray-500 hover:text-gray-900 transition-colors">Tarjetas regalo</Link></li>
-              <li><Link to="/seguimiento" className="text-gray-500 hover:text-gray-900 transition-colors">Rastrear pedido</Link></li>
-              <li><Link to="/carrito" className="text-gray-500 hover:text-gray-900 transition-colors">Mi carrito</Link></li>
+              <li><Link to="/account" className="text-gray-500 hover:text-gray-900 transition-colors">Mi perfil</Link></li>
+              <li><Link to="/account?tab=orders" className="text-gray-500 hover:text-gray-900 transition-colors">Mis pedidos</Link></li>
+              <li><Link to="/account?tab=favorites" className="text-gray-500 hover:text-gray-900 transition-colors">Favoritos</Link></li>
+              <li><Link to="/account?tab=giftcards" className="text-gray-500 hover:text-gray-900 transition-colors">Tarjetas regalo</Link></li>
+              <li><Link to="/tracking" className="text-gray-500 hover:text-gray-900 transition-colors">Rastrear pedido</Link></li>
+              <li><Link to="/cart" className="text-gray-500 hover:text-gray-900 transition-colors">Mi carrito</Link></li>
             </ul>
           </div>
 
@@ -65,9 +65,9 @@ export function Footer() {
             <h3 className="text-sm mb-4">Ayuda</h3>
             <ul className="space-y-2.5 text-sm">
               <li><Link to="/faq" className="text-gray-500 hover:text-gray-900 transition-colors">Preguntas frecuentes</Link></li>
-              <li><Link to="/envios" className="text-gray-500 hover:text-gray-900 transition-colors">Información de envíos</Link></li>
-              <li><Link to="/contacto" className="text-gray-500 hover:text-gray-900 transition-colors">Contacto</Link></li>
-              <li><Link to="/nosotros" className="text-gray-500 hover:text-gray-900 transition-colors">Sobre nosotros</Link></li>
+              <li><Link to="/shipping" className="text-gray-500 hover:text-gray-900 transition-colors">Información de envíos</Link></li>
+              <li><Link to="/contact" className="text-gray-500 hover:text-gray-900 transition-colors">Contacto</Link></li>
+              <li><Link to="/about" className="text-gray-500 hover:text-gray-900 transition-colors">Sobre nosotros</Link></li>
             </ul>
           </div>
 

@@ -259,7 +259,7 @@ export function Checkout() {
             </div>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => navigate("/cuenta?tab=pedidos")}
+                onClick={() => navigate("/account?tab=orders")}
                 className="h-8 px-4 text-xs text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
               >
                 Mis pedidos
@@ -282,7 +282,7 @@ export function Checkout() {
     );
   }
 
-  if (items.length === 0) { navigate("/carrito"); return null; }
+  if (items.length === 0) { navigate("/cart"); return null; }
 
   /* ── New address mode tabs ── */
   const newModeTabs: { id: DeliveryType; label: string; icon: React.ReactNode }[] = [
@@ -297,7 +297,7 @@ export function Checkout() {
 
         {/* Back */}
         <button
-          onClick={() => navigate("/carrito")}
+          onClick={() => navigate("/cart")}
           className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-700 mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
@@ -565,7 +565,7 @@ export function Checkout() {
                                   Para guardar esta dirección,{" "}
                                   <button
                                     type="button"
-                                    onClick={() => navigate("/cuenta?tab=direcciones")}
+                                    onClick={() => navigate("/account?tab=addresses")}
                                     className="underline hover:text-gray-600 transition-colors"
                                   >
                                     ve a Mis Direcciones

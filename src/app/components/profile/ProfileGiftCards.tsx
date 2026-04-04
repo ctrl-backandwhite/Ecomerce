@@ -17,6 +17,7 @@ import {
   toReceivedGiftCard,
   toSentGiftCard,
 } from "../../repositories/GiftCardRepository";
+import { ApiError } from "../../lib/AppError";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getDesign(id: string) {
@@ -82,8 +83,14 @@ function ActivateModal({ onClose, onActivate }: {
     setActivating(true);
     try {
       await onActivate(clean);
-    } catch {
-      setError("Código no válido o tarjeta no encontrada");
+    } catch (err) {
+      if (err instanceof ApiError && err.message.includes("already activated")) {
+        setError("Esta tarjeta ya fue activada");
+      } else if (err instanceof ApiError && err.statusCode === 422) {
+        setError("Esta tarjeta ya no está disponible");
+      } else {
+        setError("Código no válido o tarjeta no encontrada");
+      }
     } finally {
       setActivating(false);
     }
@@ -367,8 +374,14 @@ export function ProfileGiftCards() {
         toast.success(`Tarjeta activada — Saldo de ${card.balance}€ disponible`);
       }
       setShowActivate(false);
-    } catch {
-      toast.error("Código no válido o tarjeta no encontrada");
+    } catch (err) {
+      if (err instanceof ApiError && err.message.includes("already activated")) {
+        toast.error("Esta tarjeta ya fue activada");
+      } else if (err instanceof ApiError && err.statusCode === 422) {
+        toast.error("Esta tarjeta ya no está disponible");
+      } else {
+        toast.error("Código no válido o tarjeta no encontrada");
+      }
     }
   }
 
@@ -395,48 +408,46 @@ export function ProfileGiftCards() {
             {sentCards.length} enviada{sentCards.length !== 1 ? "s" : ""}
           </div>
         </div>
-        {totalBalance > 0 && (
-          <Link
-            to="/checkout"
-            className="absolute right-5 bottom-5 flex items-center gap-1.5 text-[11px] text-white/80 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full px-3 py-1.5 transition-colors"
-          >
-            Usar saldo <ArrowRight className="w-3 h-3" />
-          </Link>
-        )}
       </div>
 
-      {/* Action buttons */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Action buttons + Tabs — single row */}
+      <div className="flex items-center gap-2">
         <button
           onClick={() => setShowActivate(true)}
-          className="flex items-center justify-center gap-2 h-11 text-sm text-gray-700 bg-white border border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all"
+          className="flex items-center justify-center gap-2 h-10 px-4 text-sm text-gray-700 bg-white border border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all whitespace-nowrap"
         >
           <Tag className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
           Activar tarjeta
         </button>
         <Link
-          to="/tarjetas-regalo"
-          className="flex items-center justify-center gap-2 h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
+          to="/checkout"
+          className="flex items-center justify-center gap-2 h-10 px-4 text-sm text-gray-700 bg-white border border-gray-200 rounded-xl hover:border-gray-400 hover:bg-gray-50 transition-all whitespace-nowrap"
         >
-          <Plus className="w-4 h-4" strokeWidth={1.5} />
-          Comprar y enviar
+          <ArrowRight className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
+          Usar saldo
         </Link>
-      </div>
+        <Link
+          to="/gift-cards"
+          className="flex items-center justify-center gap-2 h-10 px-4 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors whitespace-nowrap"
+        >
+          <Gift className="w-4 h-4" strokeWidth={1.5} />
+          Regalar
+        </Link>
 
-      {/* Tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
-        <button
-          onClick={() => setActiveTab("received")}
-          className={`flex-1 h-8 text-xs rounded-lg transition-colors ${activeTab === "received" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-        >
-          Recibidas ({receivedCards.length})
-        </button>
-        <button
-          onClick={() => setActiveTab("sent")}
-          className={`flex-1 h-8 text-xs rounded-lg transition-colors ${activeTab === "sent" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-        >
-          Enviadas ({sentCards.length})
-        </button>
+        <div className="ml-auto flex gap-1 bg-gray-100 rounded-xl p-1">
+          <button
+            onClick={() => setActiveTab("received")}
+            className={`h-8 px-4 text-xs rounded-lg transition-colors whitespace-nowrap ${activeTab === "received" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            Recibidas ({receivedCards.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("sent")}
+            className={`h-8 px-4 text-xs rounded-lg transition-colors whitespace-nowrap ${activeTab === "sent" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+          >
+            Enviadas ({sentCards.length})
+          </button>
+        </div>
       </div>
 
       {/* Loading state */}
@@ -474,7 +485,7 @@ export function ProfileGiftCards() {
                     <Send className="w-6 h-6 text-gray-300" strokeWidth={1} />
                   </div>
                   <p className="text-sm text-gray-500 mb-1">Aún no has enviado ninguna tarjeta</p>
-                  <Link to="/tarjetas-regalo" className="text-xs text-gray-900 underline">Enviar mi primera tarjeta regalo</Link>
+                  <Link to="/gift-cards" className="text-xs text-gray-900 underline">Enviar mi primera tarjeta regalo</Link>
                 </div>
               ) : (
                 sentCards.map(c => (
@@ -485,21 +496,6 @@ export function ProfileGiftCards() {
           )}
         </>
       )}
-
-      {/* Promo */}
-      <div className="flex items-center gap-3 bg-gradient-to-r from-gray-50 to-white border border-gray-100 rounded-xl p-4">
-        <Sparkles className="w-5 h-5 text-amber-400 flex-shrink-0" strokeWidth={1.5} />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs text-gray-900">¿Conoces a alguien que merece un regalo especial?</p>
-          <p className="text-[11px] text-gray-400 mt-0.5">Envía una tarjeta NX036 directamente a su email</p>
-        </div>
-        <Link
-          to="/tarjetas-regalo"
-          className="flex items-center gap-1 text-xs text-gray-700 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors flex-shrink-0"
-        >
-          Regalar <ArrowRight className="w-3 h-3" />
-        </Link>
-      </div>
 
       {/* Modals */}
       {showActivate && (

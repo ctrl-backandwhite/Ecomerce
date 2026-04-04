@@ -157,9 +157,10 @@ function statusToFrontend(s: GCApiStatus): "active" | "used" | "expired" {
     return "expired";
 }
 
-function sentStatus(s: GCApiStatus): "delivered" | "pending" | "redeemed" {
+function sentStatus(s: GCApiStatus, activatedAt: string | null): "delivered" | "pending" | "redeemed" {
     if (s === "USED") return "redeemed";
-    return "delivered";
+    if (activatedAt) return "delivered";
+    return "pending";
 }
 
 import type { ReceivedGiftCard, SentGiftCard } from "../types/giftcard";
@@ -192,6 +193,6 @@ export function toSentGiftCard(dto: GiftCardApiDto): SentGiftCard {
         sentDate: instantToSlash(dto.createdAt),
         scheduledDate: dto.sendDate ? isoToSlash(dto.sendDate) : undefined,
         designId: dto.designId ?? "classic",
-        status: sentStatus(dto.status),
+        status: sentStatus(dto.status, dto.activatedAt),
     };
 }

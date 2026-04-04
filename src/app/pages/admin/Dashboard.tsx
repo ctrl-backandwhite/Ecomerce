@@ -68,12 +68,12 @@ const WEEKLY_ORDERS = [
 ];
 
 const QUICK_ACTIONS = [
-  { label: "Nuevo producto", icon: Package, to: "/admin/productos", accent: true },
-  { label: "Gestionar órdenes", icon: ShoppingBag, to: "/admin/ordenes", accent: false },
-  { label: "Ver reportes", icon: BarChart2, to: "/admin/reportes", accent: false },
-  { label: "Cupones", icon: Tag, to: "/admin/cupones", accent: false },
-  { label: "Gift cards", icon: Gift, to: "/admin/regalo", accent: false },
-  { label: "Clientes", icon: Users, to: "/admin/clientes", accent: false },
+  { label: "Nuevo producto", icon: Package, to: "/admin/products", accent: true },
+  { label: "Gestionar órdenes", icon: ShoppingBag, to: "/admin/orders", accent: false },
+  { label: "Ver reportes", icon: BarChart2, to: "/admin/reports", accent: false },
+  { label: "Cupones", icon: Tag, to: "/admin/coupons", accent: false },
+  { label: "Gift cards", icon: Gift, to: "/admin/gift-cards", accent: false },
+  { label: "Clientes", icon: Users, to: "/admin/customers", accent: false },
 ];
 
 /* ═══════════════════════════════════════════════════════════════
@@ -220,14 +220,14 @@ export function Dashboard() {
             <div className="flex items-center gap-2 px-3.5 py-2 bg-amber-50 border border-amber-100 rounded-xl">
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" strokeWidth={1.5} />
               <span className="text-xs text-amber-700"><strong>{lowStock} productos</strong> con stock bajo</span>
-              <Link to="/admin/productos" className="text-[11px] text-amber-600 underline ml-1">Revisar</Link>
+              <Link to="/admin/products" className="text-[11px] text-amber-600 underline ml-1">Revisar</Link>
             </div>
           )}
           {pendingOrders > 0 && (
             <div className="flex items-center gap-2 px-3.5 py-2 bg-blue-50 border border-blue-100 rounded-xl">
               <Clock className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" strokeWidth={1.5} />
               <span className="text-xs text-blue-700"><strong>{pendingOrders} órdenes</strong> pendientes</span>
-              <Link to="/admin/ordenes" className="text-[11px] text-blue-600 underline ml-1">Gestionar</Link>
+              <Link to="/admin/orders" className="text-[11px] text-blue-600 underline ml-1">Gestionar</Link>
             </div>
           )}
         </div>
@@ -463,7 +463,7 @@ export function Dashboard() {
         <div className="bg-white border border-gray-100 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <p className="text-sm text-gray-900">Estado de órdenes</p>
-            <Link to="/admin/ordenes" className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-1">
+            <Link to="/admin/orders" className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-1">
               Ver <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
             </Link>
           </div>
@@ -505,7 +505,7 @@ export function Dashboard() {
               <p className="text-sm text-gray-900">Órdenes recientes</p>
               <p className="text-[11px] text-gray-400 mt-0.5">{totalOrders} en total</p>
             </div>
-            <Link to="/admin/ordenes" className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1 transition-colors">
+            <Link to="/admin/orders" className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1 transition-colors">
               Ver todo <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
             </Link>
           </div>
@@ -536,7 +536,7 @@ export function Dashboard() {
             })}
           </div>
           <div className="px-5 py-2.5 border-t border-gray-50">
-            <Link to="/admin/ordenes" className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1 transition-colors">
+            <Link to="/admin/orders" className="text-xs text-gray-400 hover:text-gray-700 flex items-center gap-1 transition-colors">
               Ver todas las órdenes <ArrowRight className="w-3 h-3" strokeWidth={1.5} />
             </Link>
           </div>

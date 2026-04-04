@@ -40,7 +40,7 @@ export function AboutPage() {
             de primera categoría con la experiencia de compra más fluida posible.
           </p>
           <Link
-            to="/contacto"
+            to="/contact"
             className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 px-6 py-3 rounded-xl hover:bg-gray-300 transition-colors"
           >
             Contáctanos <ArrowRight className="w-4 h-4" />

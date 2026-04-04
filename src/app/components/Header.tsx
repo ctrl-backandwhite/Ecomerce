@@ -95,11 +95,11 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/cuenta?tab=favoritos" className="p-2 text-gray-700 hover:text-gray-900 transition-colors" title={t("nav.favorites")}>
+            <Link to="/account?tab=favorites" className="p-2 text-gray-700 hover:text-gray-900 transition-colors" title={t("nav.favorites")}>
               <Heart className="w-5 h-5" />
             </Link>
 
-            <Link to="/carrito" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
+            <Link to="/cart" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">
               <ShoppingCart className="w-5 h-5" />
               {getTotalItems() > 0 && (
                 <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
@@ -149,7 +149,7 @@ export function Header() {
                       {/* Opciones principales */}
                       <div className="py-1.5">
                         <Link
-                          to="/cuenta"
+                          to="/account"
                           onClick={() => setIsUserDropdownOpen(false)}
                           className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                         >
@@ -218,10 +218,10 @@ export function Header() {
           {/* Mobile menu button */}
           <div className="flex items-center gap-1 md:hidden">
             {/* Gift card icon — mobile only */}
-            <Link to="/tarjetas-regalo" className="p-2 text-gray-500 hover:text-gray-900 transition-colors">
+            <Link to="/gift-cards" className="p-2 text-gray-500 hover:text-gray-900 transition-colors">
               <Gift className="w-5 h-5" strokeWidth={1.5} />
             </Link>
-            <Link to="/carrito" className="relative p-2">
+            <Link to="/cart" className="relative p-2">
               <ShoppingCart className="w-5 h-5" />
               {getTotalItems() > 0 && (
                 <span className="absolute -top-1 -right-1 bg-gray-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
@@ -269,7 +269,7 @@ export function Header() {
 
             <nav className="flex flex-col gap-1">
               <Link
-                to="/cuenta?tab=favoritos"
+                to="/account?tab=favorites"
                 onClick={() => setIsMenuOpen(false)}
                 className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
               >
@@ -291,7 +291,7 @@ export function Header() {
                       </div>
                     </div>
                     <Link
-                      to="/cuenta"
+                      to="/account"
                       onClick={() => setIsMenuOpen(false)}
                       className="px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors flex items-center gap-2"
                     >

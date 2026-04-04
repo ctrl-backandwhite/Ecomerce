@@ -14,7 +14,7 @@ function MiniProductCard({ product }: { product: Product }) {
     : null;
   return (
     <Link
-      to={`/producto/${product.id}`}
+      to={`/product/${product.id}`}
       className="group flex-shrink-0 w-44 sm:w-48 bg-white border border-gray-100 rounded-lg overflow-hidden hover:border-gray-300 hover:shadow-md transition-all duration-200"
     >
       <div className="relative aspect-square overflow-hidden bg-gray-50">

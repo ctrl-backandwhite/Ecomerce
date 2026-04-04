@@ -238,22 +238,6 @@ export function ProfileDatos() {
           )}
         </div>
 
-        {/* Name + member since centered */}
-        <div className="px-6 py-6 border-b border-gray-100 flex flex-col items-center text-center flex-shrink-0">
-          <p className="text-sm text-gray-900 mb-1">{authUser?.firstName ?? user.firstName} {authUser?.lastName ?? user.lastName}</p>
-          <p className="text-xs text-gray-400">
-            Miembro desde{" "}
-            {new Date(user.memberSince).toLocaleDateString("es-CL", {
-              month: "long", year: "numeric",
-            })}
-          </p>
-          {editing && (
-            <button className="mt-3 text-xs text-gray-700 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
-              Cambiar foto
-            </button>
-          )}
-        </div>
-
         {/* Form fields */}
         <div className="px-6 py-4 flex-1 overflow-y-auto">
           {/* ── Documento de identidad ─────────────────── */}
@@ -269,6 +253,7 @@ export function ProfileDatos() {
                     onChange={handleChange}
                     className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-gray-400 bg-white transition-colors"
                   >
+                    <option value="">Seleccionar…</option>
                     {docTypes.map((dt) => (
                       <option key={dt.value} value={dt.value}>{dt.label}</option>
                     ))}

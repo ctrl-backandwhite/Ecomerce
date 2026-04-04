@@ -79,7 +79,7 @@ export function ComparePage() {
                     </button>
                     <img src={p.image} alt={p.name} className="w-full h-36 object-contain rounded-xl bg-gray-50 p-2 mb-3" />
                     <p className="text-xs text-gray-400 mb-1">{p.brand}</p>
-                    <Link to={`/producto/${p.id}`} className="text-sm text-gray-900 leading-snug hover:underline line-clamp-2 block mb-2">
+                    <Link to={`/product/${p.id}`} className="text-sm text-gray-900 leading-snug hover:underline line-clamp-2 block mb-2">
                       {p.name}
                     </Link>
                     <div className="flex items-center gap-1 mb-3">

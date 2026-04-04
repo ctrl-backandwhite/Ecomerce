@@ -12,74 +12,98 @@ import { ProfilePagos } from "../components/profile/ProfilePagos";
 import { ProfileGiftCards } from "../components/profile/ProfileGiftCards";
 import {
   User, ShoppingBag, Heart, MapPin, Shield, LogOut,
-  ChevronRight, LayoutDashboard, Store, CreditCard, Gift,
+  ChevronRight, LayoutDashboard, Store, CreditCard, Gift, ArrowLeft, Camera,
 } from "lucide-react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, Link } from "react-router";
+import { AvatarPicker } from "../components/profile/AvatarPicker";
+import { profileRepository } from "../repositories/ProfileRepository";
+import { resolveAvatar } from "../lib/avatars";
+import { toast } from "sonner";
 
-type Tab = "resumen" | "datos" | "pedidos" | "favoritos" | "direcciones" | "pagos" | "giftcards" | "tienda" | "seguridad";
+type Tab = "overview" | "details" | "orders" | "favorites" | "addresses" | "payments" | "giftcards" | "shop" | "security";
 
 const tabs: { id: Tab; label: string; icon: typeof User; sellerOnly?: boolean }[] = [
-  { id: "resumen", label: "Resumen", icon: LayoutDashboard },
-  { id: "datos", label: "Mis Datos", icon: User },
-  { id: "pedidos", label: "Mis Pedidos", icon: ShoppingBag },
-  { id: "favoritos", label: "Favoritos", icon: Heart },
-  { id: "direcciones", label: "Direcciones", icon: MapPin },
-  { id: "pagos", label: "Métodos de Pago", icon: CreditCard },
+  { id: "overview", label: "Resumen", icon: LayoutDashboard },
+  { id: "details", label: "Mis Datos", icon: User },
+  { id: "orders", label: "Mis Pedidos", icon: ShoppingBag },
+  { id: "favorites", label: "Favoritos", icon: Heart },
+  { id: "addresses", label: "Direcciones", icon: MapPin },
+  { id: "payments", label: "Métodos de Pago", icon: CreditCard },
   { id: "giftcards", label: "Tarjetas Regalo", icon: Gift },
-  { id: "tienda", label: "Mi Tienda", icon: Store, sellerOnly: true },
-  { id: "seguridad", label: "Seguridad", icon: Shield },
+  { id: "shop", label: "Mi Tienda", icon: Store, sellerOnly: true },
+  { id: "security", label: "Seguridad", icon: Shield },
 ];
 
 export function UserProfile() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const initialTab = (searchParams.get("tab") as Tab) || "resumen";
+  const initialTab = (searchParams.get("tab") as Tab) || "overview";
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
-  const { user } = useUser();
+  const { user, updateProfile } = useUser();
   const { user: authUser, logout } = useAuth();
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
 
   const displayFirst = authUser?.firstName ?? user.firstName;
   const displayLast = authUser?.lastName ?? user.lastName;
   const displayEmail = authUser?.email ?? user.email;
   const initials = `${displayFirst[0]}${displayLast[0]}`;
+  const avatarSrc = resolveAvatar(user.avatar);
 
   const contentMap: Record<Tab, JSX.Element> = {
-    resumen: <ProfileOverview onTabChange={setActiveTab as any} />,
-    datos: <ProfileDatos />,
-    pedidos: <ProfilePedidos />,
-    favoritos: <ProfileFavoritos />,
-    direcciones: <ProfileDirecciones />,
-    pagos: <ProfilePagos />,
+    overview: <ProfileOverview onTabChange={setActiveTab as any} />,
+    details: <ProfileDatos />,
+    orders: <ProfilePedidos />,
+    favorites: <ProfileFavoritos />,
+    addresses: <ProfileDirecciones />,
+    payments: <ProfilePagos />,
     giftcards: <ProfileGiftCards />,
-    tienda: <ProfileTienda />,
-    seguridad: <ProfileSeguridad />,
+    shop: <ProfileTienda />,
+    security: <ProfileSeguridad />,
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-full flex flex-col overflow-hidden">
 
-      {/* ── Page header ─────────────────────────────────────────── */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center gap-2 text-sm text-gray-400 mb-3">
+      {/* ── Breadcrumb ──────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-200 flex-shrink-0">
+        <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-xs text-gray-400">
             <span>Inicio</span>
-            <ChevronRight className="w-3.5 h-3.5" />
+            <ChevronRight className="w-3 h-3" />
             <span className="text-gray-900">Mi Cuenta</span>
           </div>
-          <h1 className="text-2xl tracking-tight text-gray-900">Mi Cuenta</h1>
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Volver a la tienda
+          </Link>
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
+      <div className="flex-1 overflow-hidden px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col lg:flex-row gap-8 h-full">
 
           {/* ── LEFT SIDEBAR ────────────────────────────────────── */}
-          <aside className="w-full lg:w-72 flex-shrink-0 space-y-4">
+          <aside className="w-full lg:w-72 flex-shrink-0 space-y-4 overflow-y-auto">
 
             {/* Profile card */}
             <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm">
               <div className="flex flex-col items-center text-center mb-6">
-                <div className="w-20 h-20 rounded-full bg-gray-500 flex items-center justify-center mb-4 text-white text-xl tracking-widest">
-                  {initials}
+                <div className="relative mb-4">
+                  <div className="w-20 h-20 rounded-full bg-gray-500 flex items-center justify-center text-white text-xl tracking-widest overflow-hidden">
+                    {avatarSrc ? (
+                      <img src={avatarSrc} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      initials
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setShowAvatarPicker(true)}
+                    className="absolute -bottom-1 -right-1 w-7 h-7 bg-white border border-gray-200 rounded-full flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors"
+                  >
+                    <Camera className="w-3.5 h-3.5 text-gray-600" />
+                  </button>
                 </div>
                 <p className="text-base text-gray-900">{displayFirst} {displayLast}</p>
                 <p className="text-xs text-gray-400 mt-1">{displayEmail}</p>
@@ -111,6 +135,22 @@ export function UserProfile() {
               </div>
             </div>
 
+            {showAvatarPicker && (
+              <AvatarPicker
+                currentAvatar={user.avatar}
+                onSelect={async (url) => {
+                  try {
+                    await profileRepository.updateAvatarUrl(url);
+                    updateProfile({ avatar: url });
+                    toast.success("Foto de perfil actualizada");
+                  } catch {
+                    toast.error("Error al actualizar la foto");
+                  }
+                }}
+                onClose={() => setShowAvatarPicker(false)}
+              />
+            )}
+
             {/* Navigation */}
             <div className="hidden lg:block bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
               <nav>
@@ -126,15 +166,15 @@ export function UserProfile() {
                     <Icon className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
                     {label}
                     {/* Badge: payment methods count */}
-                    {id === "pagos" && user.paymentMethods.length > 0 && (
+                    {id === "payments" && user.paymentMethods.length > 0 && (
                       <span className="ml-auto text-[10px] bg-gray-100 text-gray-500 rounded-full px-1.5 py-0.5">
                         {user.paymentMethods.length}
                       </span>
                     )}
-                    {activeTab === id && id !== "pagos" && (
+                    {activeTab === id && id !== "payments" && (
                       <ChevronRight className="w-3.5 h-3.5 ml-auto text-gray-400" />
                     )}
-                    {activeTab === id && id === "pagos" && (
+                    {activeTab === id && id === "payments" && (
                       <ChevronRight className="w-3.5 h-3.5 ml-1 text-gray-400" />
                     )}
                   </button>
@@ -154,7 +194,7 @@ export function UserProfile() {
           </aside>
 
           {/* ── MAIN CONTENT ─────────────────────────────────────── */}
-          <main className="flex-1 min-w-0">
+          <main className="flex-1 min-w-0 overflow-y-auto">
             {/* Mobile tab selector */}
             <div className="lg:hidden mb-6">
               <select

@@ -15,13 +15,13 @@ export function slugify(text: string): string {
 
 export const urls = {
   home: () => "/",
-  store: () => "/tienda",
-  category: (name: string) => `/tienda/${slugify(name)}`,
+  store: () => "/store",
+  category: (name: string) => `/store/${slugify(name)}`,
   subcategory: (catName: string, subName: string) =>
-    `/tienda/${slugify(catName)}/${slugify(subName)}`,
-  product: (id: string | number) => `/producto/${id}`,
-  search: (query: string) => `/buscar/${encodeURIComponent(query.trim())}`,
-  brand: (slug: string) => `/marca/${slug}`,
-  cart: () => "/carrito",
+    `/store/${slugify(catName)}/${slugify(subName)}`,
+  product: (id: string | number) => `/product/${id}`,
+  search: (query: string) => `/search/${encodeURIComponent(query.trim())}`,
+  brand: (slug: string) => `/brand/${slug}`,
+  cart: () => "/cart",
   checkout: () => "/checkout",
 };

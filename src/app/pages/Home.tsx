@@ -331,7 +331,7 @@ export function Home() {
               ))}
             </div>
             <Link
-              to="/tarjetas-regalo"
+              to="/gift-cards"
               className="flex items-center gap-2 h-10 px-5 text-sm text-gray-900 bg-white rounded-xl hover:bg-gray-100 transition-colors whitespace-nowrap"
             >
               Regalar ahora

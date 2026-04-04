@@ -58,7 +58,7 @@ export function CompareBar() {
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
               <Link
-                to="/comparar"
+                to="/compare"
                 className="h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors flex items-center"
               >
                 Comparar

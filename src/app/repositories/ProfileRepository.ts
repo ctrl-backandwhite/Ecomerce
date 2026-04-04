@@ -136,6 +136,23 @@ export interface NotificationPrefs {
     smsPromos: boolean;
 }
 
+export interface ChangePasswordRequest {
+    currentPassword: string;
+    newPassword: string;
+    confirmPassword: string;
+}
+
+export interface ConfirmPasswordChange {
+    code: string;
+}
+
+export interface OperationResponse {
+    code: string;
+    message: string;
+    details: string[];
+    dateTime: string;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function handleRes<R>(res: Response): Promise<R> {
@@ -194,6 +211,17 @@ class ProfileRepository {
             const res = await authFetch(`${API_BASE}/api/v1/profile/me/avatar`, {
                 method: "PUT",
                 body: form,
+            });
+            return handleRes<UserProfile>(res);
+        } catch (err) { wrapErr(err, "No se pudo actualizar el avatar"); }
+    }
+
+    async updateAvatarUrl(avatarUrl: string): Promise<UserProfile> {
+        try {
+            const res = await authFetch(`${API_BASE}/api/v1/profile/me/avatar`, {
+                method: "PUT",
+                headers: { "Content-Type": "text/plain" },
+                body: avatarUrl,
             });
             return handleRes<UserProfile>(res);
         } catch (err) { wrapErr(err, "No se pudo actualizar el avatar"); }
@@ -342,6 +370,30 @@ class ProfileRepository {
             });
             return handleRes<NotificationPrefs>(res);
         } catch (err) { wrapErr(err, "No se pudieron actualizar las preferencias de notificación"); }
+    }
+
+    // ── Password Change ────────────────────────────────────────────
+
+    async requestPasswordChange(data: ChangePasswordRequest): Promise<OperationResponse> {
+        try {
+            const res = await authFetch(`${API_BASE}/api/v1/users/change-password/request`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            return handleRes<OperationResponse>(res);
+        } catch (err) { wrapErr(err, "No se pudo solicitar el cambio de contraseña"); }
+    }
+
+    async confirmPasswordChange(data: ConfirmPasswordChange): Promise<OperationResponse> {
+        try {
+            const res = await authFetch(`${API_BASE}/api/v1/users/change-password/confirm`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            return handleRes<OperationResponse>(res);
+        } catch (err) { wrapErr(err, "No se pudo confirmar el cambio de contraseña"); }
     }
 }
 

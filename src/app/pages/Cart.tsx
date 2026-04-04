@@ -49,7 +49,7 @@ export function Cart() {
                 <div className="flex gap-4">
                   {/* Image */}
                   <Link
-                    to={`/producto/${item.productId ?? item.id}`}
+                    to={`/product/${item.productId ?? item.id}`}
                     className="flex-shrink-0"
                   >
                     <img
@@ -63,7 +63,7 @@ export function Cart() {
                   <div className="flex-1 min-w-0">
                     <div className="flex justify-between items-start mb-2">
                       <div className="flex-1 min-w-0 pr-4">
-                        <Link to={`/producto/${item.productId ?? item.id}`}>
+                        <Link to={`/product/${item.productId ?? item.id}`}>
                           <h3 className="text-sm text-gray-900 hover:text-gray-600 transition-colors line-clamp-2">
                             {item.name}
                           </h3>

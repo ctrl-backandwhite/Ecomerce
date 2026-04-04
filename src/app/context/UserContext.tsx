@@ -66,7 +66,7 @@ export interface UserProfile {
   addresses: Address[];
   paymentMethods: PaymentMethod[];
   favoriteIds: string[];
-  documentType: "dni" | "passport" | "ce" | "other";
+  documentType: "DNI" | "PASSPORT" | "NIE" | "CIF" | "OTHER" | "";
   documentNumber: string;
   isSeller: boolean;
   faceVerified: boolean;
@@ -220,7 +220,7 @@ const emptyUser: UserProfile = {
   totalOrders: 0,
   totalSpent: 0,
   loyaltyPoints: 0,
-  documentType: "dni",
+  documentType: "",
   documentNumber: "",
   isSeller: false,
   faceVerified: false,
@@ -289,7 +289,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           next.phone = p.phone ?? "";
           next.birthDate = p.birthDate ?? "";
           next.avatar = p.avatarUrl ?? "";
-          next.documentType = (p.documentType?.toLowerCase() ?? "dni") as UserProfile["documentType"];
+          next.documentType = (p.documentType ?? "") as UserProfile["documentType"];
           next.documentNumber = p.documentNumber ?? "";
           next.memberSince = p.memberSince;
           next.loyaltyPoints = p.loyaltyPoints;

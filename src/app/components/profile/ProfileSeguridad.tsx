@@ -1,26 +1,177 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
-import { Shield, Eye, EyeOff, Bell, Mail, MessageSquare, ShoppingBag, Tag, Check, Save } from "lucide-react";
+import { Shield, Eye, EyeOff, Bell, Mail, MessageSquare, ShoppingBag, Tag, Check, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { profileRepository } from "../../repositories/ProfileRepository";
+import { ApiError } from "../../lib/AppError";
+
+type PwStep = "form" | "code" | "success";
+
+/* ── Extracted so React keeps a stable component identity across re-renders ── */
+function PwField({
+  label, field, value, show, onChange, onToggle,
+}: {
+  label: string;
+  field: string;
+  value: string;
+  show: boolean;
+  onChange: (v: string) => void;
+  onToggle: () => void;
+}) {
+  return (
+    <div>
+      <label className="block text-xs text-gray-400 mb-1.5">{label}</label>
+      <div className="relative">
+        <input
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg pl-4 pr-10 py-2.5 focus:outline-none focus:border-gray-400 bg-white"
+          placeholder="••••••••"
+        />
+        <button
+          type="button"
+          onClick={onToggle}
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+        >
+          {show
+            ? <EyeOff className="w-4 h-4" strokeWidth={1.5} />
+            : <Eye className="w-4 h-4" strokeWidth={1.5} />
+          }
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export function ProfileSeguridad() {
   const { user, saveNotificationPrefs } = useUser();
   const [notif, setNotif] = useState(user.notifications);
   const [savingNotif, setSavingNotif] = useState(false);
 
+  // ── Password change state ──────────────────────────────────────
   const [pwForm, setPwForm] = useState({ current: "", next: "", confirm: "" });
   const [showPw, setShowPw] = useState({ current: false, next: false, confirm: false });
   const [pwError, setPwError] = useState("");
+  const [pwStep, setPwStep] = useState<PwStep>("form");
+  const [pwLoading, setPwLoading] = useState(false);
+
+  // Verification code (6 individual inputs)
+  const [codeDigits, setCodeDigits] = useState(["", "", "", "", "", ""]);
+  const codeRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  // Countdown timer (180 seconds = 3 minutes)
+  const [secondsLeft, setSecondsLeft] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const togglePwVis = (field: keyof typeof showPw) =>
     setShowPw((p) => ({ ...p, [field]: !p[field] }));
 
-  const handlePwChange = () => {
+  // Start countdown
+  const startCountdown = useCallback(() => {
+    setSecondsLeft(180);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  // Step 1: Request password change
+  const handlePwRequest = async () => {
     if (pwForm.next.length < 8) { setPwError("La contraseña debe tener al menos 8 caracteres"); return; }
     if (pwForm.next !== pwForm.confirm) { setPwError("Las contraseñas no coinciden"); return; }
+    if (!pwForm.current) { setPwError("Ingresa tu contraseña actual"); return; }
     setPwError("");
-    setPwForm({ current: "", next: "", confirm: "" });
-    toast.success("Contraseña actualizada correctamente");
+    setPwLoading(true);
+
+    try {
+      await profileRepository.requestPasswordChange({
+        currentPassword: pwForm.current,
+        newPassword: pwForm.next,
+        confirmPassword: pwForm.confirm,
+      });
+      setPwStep("code");
+      startCountdown();
+      toast.info("Se envió un código de verificación a tu correo");
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Error al solicitar el cambio";
+      setPwError(msg);
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  // Step 2: Confirm with code
+  const handleCodeConfirm = async () => {
+    const code = codeDigits.join("");
+    if (code.length !== 6) { setPwError("Ingresa los 6 dígitos del código"); return; }
+    setPwError("");
+    setPwLoading(true);
+
+    try {
+      await profileRepository.confirmPasswordChange({ code });
+      setPwStep("success");
+      toast.success("Contraseña actualizada correctamente");
+      // Reset everything after short delay
+      setTimeout(() => {
+        setPwStep("form");
+        setPwForm({ current: "", next: "", confirm: "" });
+        setCodeDigits(["", "", "", "", "", ""]);
+        setSecondsLeft(0);
+      }, 2000);
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Código inválido o expirado";
+      setPwError(msg);
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
+  // Back to form
+  const handleBackToForm = () => {
+    setPwStep("form");
+    setPwError("");
+    setCodeDigits(["", "", "", "", "", ""]);
+    setSecondsLeft(0);
+    if (timerRef.current) clearInterval(timerRef.current);
+  };
+
+  // Handle individual digit input
+  const handleCodeDigit = (index: number, value: string) => {
+    if (!/^\d*$/.test(value)) return; // only digits
+    const newDigits = [...codeDigits];
+    newDigits[index] = value.slice(-1);
+    setCodeDigits(newDigits);
+    // Auto-focus next
+    if (value && index < 5) {
+      codeRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleCodeKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !codeDigits[index] && index > 0) {
+      codeRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleCodePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    const newDigits = [...codeDigits];
+    for (let i = 0; i < 6; i++) newDigits[i] = pasted[i] || "";
+    setCodeDigits(newDigits);
+    const focusIdx = Math.min(pasted.length, 5);
+    codeRefs.current[focusIdx]?.focus();
   };
 
   const handleNotifSave = async () => {
@@ -34,36 +185,6 @@ export function ProfileSeguridad() {
       setSavingNotif(false);
     }
   };
-
-  const PwField = ({
-    label, field,
-  }: {
-    label: string;
-    field: keyof typeof pwForm;
-  }) => (
-    <div>
-      <label className="block text-xs text-gray-400 mb-1.5">{label}</label>
-      <div className="relative">
-        <input
-          type={showPw[field] ? "text" : "password"}
-          value={pwForm[field]}
-          onChange={(e) => setPwForm((f) => ({ ...f, [field]: e.target.value }))}
-          className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg pl-4 pr-10 py-2.5 focus:outline-none focus:border-gray-400 bg-white"
-          placeholder="••••••••"
-        />
-        <button
-          type="button"
-          onClick={() => togglePwVis(field)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-        >
-          {showPw[field]
-            ? <EyeOff className="w-4 h-4" strokeWidth={1.5} />
-            : <Eye className="w-4 h-4" strokeWidth={1.5} />
-          }
-        </button>
-      </div>
-    </div>
-  );
 
   const Toggle = ({
     checked, onChange,
@@ -102,52 +223,136 @@ export function ProfileSeguridad() {
         </div>
 
         <div className="px-6 py-6">
-          <div className="max-w-md space-y-4">
-            <PwField label="Contraseña actual" field="current" />
-            <PwField label="Nueva contraseña" field="next" />
-            <PwField label="Confirmar contraseña" field="confirm" />
+          {pwStep === "form" && (
+            <div className="max-w-md space-y-4">
+              <PwField label="Contraseña actual" field="current" value={pwForm.current} show={showPw.current} onChange={(v) => setPwForm((f) => ({ ...f, current: v }))} onToggle={() => togglePwVis("current")} />
+              <PwField label="Nueva contraseña" field="next" value={pwForm.next} show={showPw.next} onChange={(v) => setPwForm((f) => ({ ...f, next: v }))} onToggle={() => togglePwVis("next")} />
+              <PwField label="Confirmar contraseña" field="confirm" value={pwForm.confirm} show={showPw.confirm} onChange={(v) => setPwForm((f) => ({ ...f, confirm: v }))} onToggle={() => togglePwVis("confirm")} />
 
-            {pwError && (
-              <p className="text-xs text-red-500 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                {pwError}
-              </p>
-            )}
+              {pwError && (
+                <p className="text-xs text-red-500 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  {pwError}
+                </p>
+              )}
 
-            {/* Password strength */}
-            {pwForm.next && (
-              <div>
-                <div className="flex gap-1 mb-1">
-                  {[1, 2, 3, 4].map((i) => {
-                    const strength = Math.min(Math.floor(pwForm.next.length / 3), 4);
-                    return (
-                      <div
-                        key={i}
-                        className={`h-1 flex-1 rounded-full transition-colors ${i <= strength
+              {/* Password strength */}
+              {pwForm.next && (
+                <div>
+                  <div className="flex gap-1 mb-1">
+                    {[1, 2, 3, 4].map((i) => {
+                      const strength = Math.min(Math.floor(pwForm.next.length / 3), 4);
+                      return (
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded-full transition-colors ${i <= strength
                             ? strength <= 1 ? "bg-red-400"
                               : strength <= 2 ? "bg-amber-400"
                                 : strength <= 3 ? "bg-blue-400"
                                   : "bg-green-400"
                             : "bg-gray-200"
-                          }`}
-                      />
-                    );
-                  })}
+                            }`}
+                        />
+                      );
+                    })}
+                  </div>
+                  <p className="text-xs text-gray-400">
+                    {pwForm.next.length < 6 ? "Muy débil" : pwForm.next.length < 9 ? "Débil" : pwForm.next.length < 12 ? "Moderada" : "Fuerte"}
+                  </p>
                 </div>
+              )}
+
+              <button
+                onClick={handlePwRequest}
+                disabled={pwLoading}
+                className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors disabled:opacity-50"
+              >
+                {pwLoading
+                  ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                  : <Save className="w-4 h-4" strokeWidth={1.5} />
+                }
+                {pwLoading ? "Enviando código..." : "Cambiar contraseña"}
+              </button>
+            </div>
+          )}
+
+          {pwStep === "code" && (
+            <div className="max-w-md space-y-5">
+              <div>
+                <p className="text-sm text-gray-600 mb-1">
+                  Ingresa el código de 6 dígitos enviado a tu correo electrónico.
+                </p>
                 <p className="text-xs text-gray-400">
-                  {pwForm.next.length < 6 ? "Muy débil" : pwForm.next.length < 9 ? "Débil" : pwForm.next.length < 12 ? "Moderada" : "Fuerte"}
+                  El código expira en{" "}
+                  <span className={`font-medium ${secondsLeft <= 30 ? "text-red-500" : "text-gray-600"}`}>
+                    {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
+                  </span>
                 </p>
               </div>
-            )}
 
-            <button
-              onClick={handlePwChange}
-              className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors"
-            >
-              <Save className="w-4 h-4" strokeWidth={1.5} />
-              Guardar contraseña
-            </button>
-          </div>
+              {/* 6-digit code inputs */}
+              <div className="flex gap-3 justify-start" onPaste={handleCodePaste}>
+                {codeDigits.map((digit, idx) => (
+                  <input
+                    key={idx}
+                    ref={(el) => { codeRefs.current[idx] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleCodeDigit(idx, e.target.value)}
+                    onKeyDown={(e) => handleCodeKeyDown(idx, e)}
+                    className="w-11 h-12 text-center text-lg font-medium text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 bg-white"
+                  />
+                ))}
+              </div>
+
+              {pwError && (
+                <p className="text-xs text-red-500 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                  {pwError}
+                </p>
+              )}
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleCodeConfirm}
+                  disabled={pwLoading || codeDigits.join("").length !== 6 || secondsLeft === 0}
+                  className="inline-flex items-center gap-2 text-sm text-white bg-gray-700 rounded-lg px-5 py-2.5 hover:bg-gray-800 transition-colors disabled:opacity-50"
+                >
+                  {pwLoading
+                    ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                    : <Check className="w-4 h-4" strokeWidth={1.5} />
+                  }
+                  {pwLoading ? "Verificando..." : "Confirmar"}
+                </button>
+                <button
+                  onClick={handleBackToForm}
+                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+
+              {secondsLeft === 0 && (
+                <p className="text-xs text-red-500">
+                  El código ha expirado. Vuelve a intentarlo.
+                </p>
+              )}
+            </div>
+          )}
+
+          {pwStep === "success" && (
+            <div className="max-w-md flex items-center gap-3 py-4">
+              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                <Check className="w-5 h-5 text-green-600" strokeWidth={2} />
+              </div>
+              <div>
+                <p className="text-sm text-gray-900 font-medium">Contraseña actualizada</p>
+                <p className="text-xs text-gray-400">Tu contraseña ha sido cambiada correctamente.</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

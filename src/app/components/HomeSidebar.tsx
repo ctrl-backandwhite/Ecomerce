@@ -69,7 +69,7 @@ function TopRated() {
       {top.map((p) => (
         <Link
           key={p.id}
-          to={`/producto/${p.id}`}
+          to={`/product/${p.id}`}
           state={{ from: window.location.pathname + window.location.search }}
           className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors group"
         >

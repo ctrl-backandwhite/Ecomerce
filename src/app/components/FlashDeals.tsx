@@ -130,7 +130,7 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
             >
               {/* Image */}
               <Link
-                to={`/producto/${p.id}`}
+                to={`/product/${p.id}`}
                 className="block relative aspect-square bg-gray-50 overflow-hidden"
               >
                 <img
@@ -152,7 +152,7 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
 
               {/* Info */}
               <div className="p-3">
-                <Link to={`/producto/${p.id}`}>
+                <Link to={`/product/${p.id}`}>
                   <p className="text-[11px] text-gray-400 uppercase tracking-wider mb-0.5 truncate">
                     {p.brand}
                   </p>

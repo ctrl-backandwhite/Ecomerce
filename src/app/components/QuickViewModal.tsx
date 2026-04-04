@@ -131,7 +131,7 @@ export function QuickViewModal({ product: p, onClose }: Props) {
 
                   {/* Full detail link */}
                   <Link
-                    to={`/producto/${p.id}`}
+                    to={`/product/${p.id}`}
                     onClick={onClose}
                     className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors mt-1"
                   >

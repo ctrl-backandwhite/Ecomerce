@@ -23,24 +23,24 @@ export interface AppNotification {
 
 /* ── Default notifications (initial state) ──────────────────── */
 export const DEFAULT_NOTIFICATIONS: AppNotification[] = [
-  { id: "n01", type: "venta", title: "Nueva orden recibida", body: "#NX-001284 · Laura Gómez · $1,899", time: "hace 8 min", read: false, link: "/admin/ordenes" },
-  { id: "n02", type: "venta", title: "Pago confirmado", body: "#NX-001283 · Andrés Ruiz · $349 via tarjeta", time: "hace 22 min", read: false, link: "/admin/ordenes" },
-  { id: "n03", type: "alerta", title: "Stock crítico", body: "Sony WH-1000XM5 · solo 3 unidades restantes", time: "hace 35 min", read: false, link: "/admin/productos" },
-  { id: "n04", type: "cliente", title: "Nuevo cliente VIP", body: "Carlos Mendoza alcanzó nivel Premium", time: "hace 1 h", read: false, link: "/admin/clientes" },
-  { id: "n05", type: "reseña", title: "Reseña negativa recibida", body: "iPhone 15 Pro · 2 estrellas · \"Llegó dañado\"", time: "hace 1 h", read: false, link: "/admin/resenas" },
-  { id: "n06", type: "venta", title: "Orden completada", body: "#NX-001281 · Carlos Mendoza · $4,299", time: "hace 2 h", read: true, link: "/admin/ordenes" },
-  { id: "n07", type: "devolucion", title: "Solicitud de devolución", body: "#NX-001270 · Isabel Herrera · $1,599 pendiente", time: "hace 2 h", read: false, link: "/admin/devoluciones" },
+  { id: "n01", type: "venta", title: "Nueva orden recibida", body: "#NX-001284 · Laura Gómez · $1,899", time: "hace 8 min", read: false, link: "/admin/orders" },
+  { id: "n02", type: "venta", title: "Pago confirmado", body: "#NX-001283 · Andrés Ruiz · $349 via tarjeta", time: "hace 22 min", read: false, link: "/admin/orders" },
+  { id: "n03", type: "alerta", title: "Stock crítico", body: "Sony WH-1000XM5 · solo 3 unidades restantes", time: "hace 35 min", read: false, link: "/admin/products" },
+  { id: "n04", type: "cliente", title: "Nuevo cliente VIP", body: "Carlos Mendoza alcanzó nivel Premium", time: "hace 1 h", read: false, link: "/admin/customers" },
+  { id: "n05", type: "reseña", title: "Reseña negativa recibida", body: "iPhone 15 Pro · 2 estrellas · \"Llegó dañado\"", time: "hace 1 h", read: false, link: "/admin/reviews" },
+  { id: "n06", type: "venta", title: "Orden completada", body: "#NX-001281 · Carlos Mendoza · $4,299", time: "hace 2 h", read: true, link: "/admin/orders" },
+  { id: "n07", type: "devolucion", title: "Solicitud de devolución", body: "#NX-001270 · Isabel Herrera · $1,599 pendiente", time: "hace 2 h", read: false, link: "/admin/returns" },
   { id: "n08", type: "sistema", title: "Copia de seguridad completada", body: "Backup automático realizado correctamente", time: "hace 3 h", read: true },
-  { id: "n09", type: "alerta", title: "Certificado SSL por vencer", body: "El certificado vence en 14 días · renovar ahora", time: "hace 4 h", read: true, link: "/admin/configuracion" },
+  { id: "n09", type: "alerta", title: "Certificado SSL por vencer", body: "El certificado vence en 14 días · renovar ahora", time: "hace 4 h", read: true, link: "/admin/settings" },
   { id: "n10", type: "venta", title: "Meta diaria alcanzada", body: "$8,940 recaudados hoy · 100% de la meta", time: "hace 4 h", read: true },
-  { id: "n11", type: "cliente", title: "Pico de registros", body: "8 nuevos clientes en las últimas 6 horas", time: "hace 5 h", read: true, link: "/admin/clientes" },
-  { id: "n12", type: "reseña", title: "12 reseñas 5 estrellas", body: "Sony WH-1000XM5 lidera con 98% satisfacción", time: "hace 6 h", read: true, link: "/admin/resenas" },
+  { id: "n11", type: "cliente", title: "Pico de registros", body: "8 nuevos clientes en las últimas 6 horas", time: "hace 5 h", read: true, link: "/admin/customers" },
+  { id: "n12", type: "reseña", title: "12 reseñas 5 estrellas", body: "Sony WH-1000XM5 lidera con 98% satisfacción", time: "hace 6 h", read: true, link: "/admin/reviews" },
   { id: "n13", type: "sistema", title: "Actualización disponible", body: "NX036 Admin v2.4.1 · mejoras de rendimiento", time: "ayer", read: true },
-  { id: "n14", type: "devolucion", title: "Devolución aprobada", body: "#NX-001263 · Marcos Molina · $699 reembolsado", time: "ayer", read: true, link: "/admin/devoluciones" },
-  { id: "n15", type: "alerta", title: "Tasa devolución alta", body: "Alcanzó 6.1% esta semana · umbral recomendado: 5%", time: "ayer", read: true, link: "/admin/reportes" },
+  { id: "n14", type: "devolucion", title: "Devolución aprobada", body: "#NX-001263 · Marcos Molina · $699 reembolsado", time: "ayer", read: true, link: "/admin/returns" },
+  { id: "n15", type: "alerta", title: "Tasa devolución alta", body: "Alcanzó 6.1% esta semana · umbral recomendado: 5%", time: "ayer", read: true, link: "/admin/reports" },
   { id: "n16", type: "sistema", title: "Nuevo administrador añadido", body: "admin@nx036.com tiene acceso desde hoy", time: "hace 2 días", read: true },
-  { id: "n17", type: "venta", title: "Orden de alto valor", body: "#NX-001257 · Héctor Santos · $7,499", time: "hace 2 días", read: true, link: "/admin/ordenes" },
-  { id: "n18", type: "cliente", title: "Cuenta verificada", body: "Gloria Peña completó verificación de identidad", time: "hace 3 días", read: true, link: "/admin/clientes" },
+  { id: "n17", type: "venta", title: "Orden de alto valor", body: "#NX-001257 · Héctor Santos · $7,499", time: "hace 2 días", read: true, link: "/admin/orders" },
+  { id: "n18", type: "cliente", title: "Cuenta verificada", body: "Gloria Peña completó verificación de identidad", time: "hace 3 días", read: true, link: "/admin/customers" },
 ];
 
 /* ── Type metadata ───────────────────────────────────────────── */

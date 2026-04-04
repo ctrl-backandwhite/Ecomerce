@@ -63,10 +63,10 @@ export function ProductQRModal({
 
   /* ── Computed URL ── */
   const qrValue = (() => {
-    if (urlMode === "store") return `${base}/producto/${product.id}`;
+    if (urlMode === "store") return `${base}/product/${product.id}`;
     if (urlMode === "sku") return product.sku || `SKU-${product.id}`;
     if (urlMode === "barcode") return product.barcode || `BC-${product.id}`;
-    return customUrl.trim() || `${base}/producto/${product.id}`;
+    return customUrl.trim() || `${base}/product/${product.id}`;
   })();
 
   const scheme = COLOR_SCHEMES[qrStyle];
@@ -253,7 +253,7 @@ export function ProductQRModal({
               <p className="text-xs text-gray-400 uppercase tracking-wider mb-2.5">Contenido del QR</p>
               <div className="space-y-1.5">
                 {([
-                  { value: "store", icon: ExternalLink, label: "URL de la tienda", hint: `/producto/${product.id}` },
+                  { value: "store", icon: ExternalLink, label: "URL de la tienda", hint: `/product/${product.id}` },
                   { value: "sku", icon: Tag, label: "Código SKU", hint: product.sku || "SKU" },
                   { value: "barcode", icon: QrCode, label: "Código de barras", hint: product.barcode || "Barcode" },
                   { value: "custom", icon: Package, label: "URL personalizada", hint: "Introduce una URL" },

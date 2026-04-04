@@ -68,7 +68,7 @@ export function ProductCard({ product }: ProductCardProps) {
   return (
     <>
       <Link
-        to={`/producto/${product.id}`}
+        to={`/product/${product.id}`}
         state={{ from: window.location.pathname + window.location.search }}
         className="group"
         style={{ display: "block" }}

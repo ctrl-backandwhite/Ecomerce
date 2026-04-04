@@ -29,7 +29,7 @@ function mapApiOrder(api: ApiOrder): SimpleOrder {
   };
 }
 
-type Tab = "resumen" | "pedidos" | "favoritos" | "direcciones" | "seguridad";
+type Tab = "overview" | "orders" | "favorites" | "addresses" | "security";
 
 interface Props {
   onTabChange: (tab: Tab) => void;
@@ -59,7 +59,7 @@ export function ProfileOverview({ onTabChange }: Props) {
     <div className="flex flex-col gap-4">
       {/* Último pedido */}
       <button
-        onClick={() => onTabChange("pedidos")}
+        onClick={() => onTabChange("orders")}
         className="group bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-left hover:border-gray-300 transition-all"
       >
         {loadingOrder ? (
@@ -113,7 +113,7 @@ export function ProfileOverview({ onTabChange }: Props) {
 
       {/* Stat: Favoritos */}
       <button
-        onClick={() => onTabChange("favoritos")}
+        onClick={() => onTabChange("favorites")}
         className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-left hover:border-gray-300 transition-all group"
       >
         <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center mb-4">
@@ -126,7 +126,7 @@ export function ProfileOverview({ onTabChange }: Props) {
 
       {/* Stat: Direcciones */}
       <button
-        onClick={() => onTabChange("direcciones")}
+        onClick={() => onTabChange("addresses")}
         className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-left hover:border-gray-300 transition-all group"
       >
         <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center mb-4">
