@@ -153,6 +153,22 @@ export interface OperationResponse {
     dateTime: string;
 }
 
+export interface UserSessionInfo {
+    sessionId: string;
+    deviceInfo: string;
+    ipAddress: string;
+    createdAt: string;
+    lastActiveAt: string;
+}
+
+export interface RevokeSessionRequest {
+    sessionId: string;
+}
+
+export interface ConfirmRevokeSession {
+    code: string;
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function handleRes<R>(res: Response): Promise<R> {
@@ -394,6 +410,37 @@ class ProfileRepository {
             });
             return handleRes<OperationResponse>(res);
         } catch (err) { wrapErr(err, "No se pudo confirmar el cambio de contraseña"); }
+    }
+
+    // ── Active Sessions ────────────────────────────────────────────
+
+    async getActiveSessions(): Promise<UserSessionInfo[]> {
+        try {
+            const res = await authFetch(`${API_BASE}/api/v1/users/sessions`);
+            return handleRes<UserSessionInfo[]>(res);
+        } catch (err) { wrapErr(err, "No se pudieron obtener las sesiones activas"); }
+    }
+
+    async requestSessionRevoke(data: RevokeSessionRequest): Promise<OperationResponse> {
+        try {
+            const res = await authFetch(`${API_BASE}/api/v1/users/sessions/revoke/request`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            return handleRes<OperationResponse>(res);
+        } catch (err) { wrapErr(err, "No se pudo solicitar el cierre de sesión"); }
+    }
+
+    async confirmSessionRevoke(data: ConfirmRevokeSession): Promise<OperationResponse> {
+        try {
+            const res = await authFetch(`${API_BASE}/api/v1/users/sessions/revoke/confirm`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            return handleRes<OperationResponse>(res);
+        } catch (err) { wrapErr(err, "No se pudo confirmar el cierre de sesión"); }
     }
 }
 

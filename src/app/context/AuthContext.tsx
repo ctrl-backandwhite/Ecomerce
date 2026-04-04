@@ -37,6 +37,7 @@ const CLIENT_ID = import.meta.env.VITE_OAUTH2_CLIENT_ID as string;
 const REDIRECT_URI = import.meta.env.VITE_OAUTH2_REDIRECT_URI as string;
 
 export interface AuthUser {
+    sid: string;
     id: number;
     firstName: string;
     lastName: string;
@@ -73,6 +74,7 @@ function extractUser(token: string): AuthUser | null {
     const payload = decodeJwtPayload(token);
     if (!payload) return null;
     return {
+        sid: (payload.sid as string) ?? "",
         id: (payload.id as number) ?? 0,
         firstName: (payload.firstName as string) ?? "",
         lastName: (payload.lastName as string) ?? "",
