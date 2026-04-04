@@ -36,8 +36,11 @@ export interface Payment {
 
 export interface ProcessPaymentPayload {
     orderId: string;
-    method: "STRIPE" | "PAYPAL" | "CRYPTO";
-    returnUrl?: string;
+    userId: string;
+    amount: number;
+    currency?: string;
+    paymentMethod: "CARD" | "PAYPAL" | "USDT" | "BTC";
+    idempotencyKey?: string;
 }
 
 export interface Refund {

@@ -23,7 +23,7 @@ const BASE_URL = `${API_BASE}/api/v1/orders`;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type OrderStatus = "PENDING" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+export type OrderStatus = "PENDING" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | "REFUNDED";
 
 export interface OrderItem {
     id: string;
@@ -156,7 +156,24 @@ class OrderRepository {
                 if (v !== undefined && v !== null) params.set(k, String(v));
             }
             const res = await authFetch(`${BASE_URL}?${params}`);
-            return handleRes<Page<AdminOrder>>(res);
+            const raw = await handleRes<Page<Order>>(res);
+            return {
+                ...raw,
+                content: (raw.content ?? []).map((o) => ({
+                    id: o.id,
+                    orderNumber: o.orderNumber ?? o.id,
+                    customer: {
+                        name: (o.shippingAddress as Record<string, string> | null)?.fullName
+                            ?? (o.shippingAddress as Record<string, string> | null)?.name
+                            ?? o.userId ?? "—",
+                        email: (o.shippingAddress as Record<string, string> | null)?.email ?? "—",
+                    },
+                    date: o.createdAt,
+                    status: o.status,
+                    total: o.total ?? 0,
+                    items: Array.isArray(o.items) ? o.items.length : 0,
+                })),
+            };
         } catch (err) { wrapErr(err, "No se pudieron obtener los pedidos"); }
     }
 

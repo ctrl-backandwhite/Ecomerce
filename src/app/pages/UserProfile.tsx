@@ -10,9 +10,11 @@ import { ProfileSeguridad } from "../components/profile/ProfileSeguridad";
 import { ProfileTienda } from "../components/profile/ProfileTienda";
 import { ProfilePagos } from "../components/profile/ProfilePagos";
 import { ProfileGiftCards } from "../components/profile/ProfileGiftCards";
+import { ProfileFacturas } from "../components/profile/ProfileFacturas";
 import {
   User, ShoppingBag, Heart, MapPin, Shield, LogOut,
   ChevronRight, LayoutDashboard, Store, CreditCard, Gift, ArrowLeft, Camera,
+  FileText,
 } from "lucide-react";
 import { useSearchParams, Link } from "react-router";
 import { AvatarPicker } from "../components/profile/AvatarPicker";
@@ -20,12 +22,13 @@ import { profileRepository } from "../repositories/ProfileRepository";
 import { resolveAvatar } from "../lib/avatars";
 import { toast } from "sonner";
 
-type Tab = "overview" | "details" | "orders" | "favorites" | "addresses" | "payments" | "giftcards" | "shop" | "security";
+type Tab = "overview" | "details" | "orders" | "invoices" | "favorites" | "addresses" | "payments" | "giftcards" | "shop" | "security";
 
 const tabs: { id: Tab; label: string; icon: typeof User; sellerOnly?: boolean }[] = [
   { id: "overview", label: "Resumen", icon: LayoutDashboard },
   { id: "details", label: "Mis Datos", icon: User },
   { id: "orders", label: "Mis Pedidos", icon: ShoppingBag },
+  { id: "invoices", label: "Mis Facturas", icon: FileText },
   { id: "favorites", label: "Favoritos", icon: Heart },
   { id: "addresses", label: "Direcciones", icon: MapPin },
   { id: "payments", label: "Métodos de Pago", icon: CreditCard },
@@ -52,6 +55,7 @@ export function UserProfile() {
     overview: <ProfileOverview onTabChange={setActiveTab as any} />,
     details: <ProfileDatos />,
     orders: <ProfilePedidos />,
+    invoices: <ProfileFacturas />,
     favorites: <ProfileFavoritos />,
     addresses: <ProfileDirecciones />,
     payments: <ProfilePagos />,

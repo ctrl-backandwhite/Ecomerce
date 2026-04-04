@@ -26,7 +26,7 @@ function VoidConfirm({ invoice, onConfirm, onCancel }: { invoice: Invoice; onCon
           <Ban className="w-5 h-5 text-red-500" />
         </div>
         <p className="text-sm text-gray-900 mb-1">¿Anular factura?</p>
-        <p className="text-xs text-gray-400 mb-1">{invoice.invoiceNumber} · {invoice.customer.name}</p>
+        <p className="text-xs text-gray-400 mb-1">{invoice.invoiceNumber} · {invoice.customerSnapshot?.name}</p>
         <p className="text-xs text-gray-400 mb-5">Esta acción no se puede deshacer.</p>
         <div className="flex gap-2 justify-center">
           <button onClick={onCancel} className="h-7 px-4 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
@@ -69,8 +69,8 @@ export function AdminInvoices() {
       if (q &&
         !inv.invoiceNumber.toLowerCase().includes(q) &&
         !inv.orderNumber.toLowerCase().includes(q) &&
-        !inv.customer.name.toLowerCase().includes(q) &&
-        !inv.customer.email.toLowerCase().includes(q)
+        !(inv.customerSnapshot?.name ?? "").toLowerCase().includes(q) &&
+        !(inv.customerSnapshot?.email ?? "").toLowerCase().includes(q)
       ) return false;
       return true;
     });
@@ -110,11 +110,22 @@ export function AdminInvoices() {
     return {
       invoiceNumber: inv.invoiceNumber,
       orderNumber: inv.orderNumber,
-      date: inv.date,
+      date: inv.issueDate,
       dueDate: inv.dueDate,
-      status: inv.status,
-      customer: inv.customer,
-      lines: inv.lines,
+      status: inv.status.toLowerCase() as "paid" | "pending" | "overdue" | "void",
+      customer: {
+        name: inv.customerSnapshot?.name ?? "",
+        email: inv.customerSnapshot?.email ?? "",
+        phone: inv.customerSnapshot?.phone,
+        address: inv.customerSnapshot?.address,
+      },
+      lines: (inv.lines ?? []).map((l) => ({
+        name: String(l.name ?? ""),
+        sku: String(l.sku ?? ""),
+        quantity: Number(l.quantity ?? 0),
+        unitPrice: Number(l.unitPrice ?? 0),
+        total: Number(l.total ?? 0),
+      })),
       subtotal: inv.subtotal,
       shipping: inv.shipping,
       tax: inv.tax,
@@ -232,13 +243,13 @@ export function AdminInvoices() {
 
                 {/* Customer */}
                 <div className="min-w-0">
-                  <p className="text-xs text-gray-900 truncate">{inv.customer.name}</p>
-                  <p className="text-[11px] text-gray-400 truncate">{inv.customer.email}</p>
+                  <p className="text-xs text-gray-900 truncate">{inv.customerSnapshot?.name}</p>
+                  <p className="text-[11px] text-gray-400 truncate">{inv.customerSnapshot?.email}</p>
                 </div>
 
                 {/* Emission date */}
                 <p className="text-xs text-gray-500 text-center">
-                  {new Date(inv.date).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" })}
+                  {new Date(inv.issueDate).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "2-digit" })}
                 </p>
 
                 {/* Due date */}

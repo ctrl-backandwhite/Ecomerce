@@ -27,7 +27,7 @@ import { toast } from "sonner";
 
 /* ── Local types (mapped from API) ────────────────────────── */
 
-type OrderStatus = "processing" | "shipped" | "delivered" | "cancelled";
+type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "in_transit" | "delivered" | "cancelled" | "refunded";
 
 interface OrderItem {
   id: string;
@@ -51,10 +51,14 @@ interface Order {
 }
 
 const statusConfig: Record<OrderStatus, { label: string; color: string; bg: string; dot: string }> = {
-  processing: { label: "En proceso", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-600" },
-  shipped: { label: "Enviado", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500" },
+  pending: { label: "Pendiente", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500" },
+  confirmed: { label: "Confirmado", color: "text-cyan-600", bg: "bg-cyan-50", dot: "bg-cyan-500" },
+  processing: { label: "En preparación", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-600" },
+  shipped: { label: "Enviado", color: "text-violet-600", bg: "bg-violet-50", dot: "bg-violet-500" },
+  in_transit: { label: "En tránsito", color: "text-indigo-600", bg: "bg-indigo-50", dot: "bg-indigo-500" },
   delivered: { label: "Entregado", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-500" },
   cancelled: { label: "Cancelado", color: "text-red-500", bg: "bg-red-50", dot: "bg-red-500" },
+  refunded: { label: "Reembolsado", color: "text-orange-500", bg: "bg-orange-50", dot: "bg-orange-500" },
 };
 
 const fmtPrice = (n: number) =>
@@ -64,14 +68,14 @@ const IMG_FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/sv
 
 function mapApiOrder(api: ApiOrder): Order {
   const statusMap: Record<string, OrderStatus> = {
-    PENDING: "processing",
-    CONFIRMED: "processing",
+    PENDING: "pending",
+    CONFIRMED: "confirmed",
     PROCESSING: "processing",
     SHIPPED: "shipped",
-    IN_TRANSIT: "shipped",
+    IN_TRANSIT: "in_transit",
     DELIVERED: "delivered",
     CANCELLED: "cancelled",
-    REFUNDED: "cancelled",
+    REFUNDED: "refunded",
   };
 
   // Format shippingAddress object into a readable string
@@ -92,7 +96,7 @@ function mapApiOrder(api: ApiOrder): Order {
   return {
     id: api.orderNumber || api.id,
     date: api.createdAt,
-    status: statusMap[api.status] ?? "processing",
+    status: statusMap[api.status] ?? "pending",
     items: api.items.map((item) => ({
       id: item.id,
       name: item.productName,
@@ -151,10 +155,14 @@ const allSteps: TrackStep[] = [
 ];
 
 const statusStepMap: Record<OrderStatus, number> = {
+  pending: 0,
+  confirmed: 0,
   processing: 1,
-  shipped: 3,
+  shipped: 2,
+  in_transit: 3,
   delivered: 4,
   cancelled: -1,
+  refunded: -1,
 };
 
 /* ── Star Rating input ───────────────────────────────────── */
@@ -361,7 +369,7 @@ function OrderModal({
   const navigate = useNavigate();
 
   const cfg = statusConfig[order.status];
-  const isCancelled = order.status === "cancelled";
+  const isCancelled = order.status === "cancelled" || order.status === "refunded";
   const completedStep = statusStepMap[order.status];
   const truckPercent = isCancelled ? 0 : (completedStep / (allSteps.length - 1)) * 100;
 
@@ -595,7 +603,7 @@ function OrderModal({
             </>
           )}
 
-          {order.status === "shipped" && (
+          {(order.status === "shipped" || order.status === "in_transit") && (
             <button
               onClick={() => toast.success("Redirigiendo al sitio de rastreo...")}
               className="inline-flex items-center gap-1.5 text-xs bg-gray-200 text-gray-700 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors"
@@ -617,8 +625,11 @@ function OrderModal({
 /* ── Filter tabs ─────────────────────────────────────────── */
 const filterTabs: { id: "all" | OrderStatus; label: string }[] = [
   { id: "all", label: "Todos" },
-  { id: "processing", label: "En proceso" },
+  { id: "pending", label: "Pendientes" },
+  { id: "confirmed", label: "Confirmados" },
+  { id: "processing", label: "En preparación" },
   { id: "shipped", label: "Enviados" },
+  { id: "in_transit", label: "En tránsito" },
   { id: "delivered", label: "Entregados" },
   { id: "cancelled", label: "Cancelados" },
 ];

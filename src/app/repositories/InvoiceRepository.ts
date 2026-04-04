@@ -32,10 +32,10 @@ export interface Invoice {
     invoiceNumber: string;
     orderId: string;
     orderNumber: string;
-    date: string;
+    issueDate: string;
     dueDate: string;
     status: InvoiceStatus;
-    customer: { name: string; email: string; phone: string; address: string };
+    customerSnapshot: { name: string; email?: string; phone?: string; address?: string };
     lines: InvoiceLine[];
     subtotal: number;
     shipping: number;
@@ -81,7 +81,8 @@ class InvoiceRepository {
     async getMyInvoices(): Promise<Invoice[]> {
         try {
             const res = await authFetch(`${BASE_URL}/me`);
-            return handleRes<Invoice[]>(res);
+            const body = await handleRes<Page<Invoice> | Invoice[]>(res);
+            return Array.isArray(body) ? body : (body as Page<Invoice>).content;
         } catch (err) { wrapErr(err, "No se pudieron obtener las facturas"); }
     }
 

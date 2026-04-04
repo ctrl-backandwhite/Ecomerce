@@ -26,10 +26,13 @@ import { ExportMenu } from "../../components/admin/ExportMenu";
 ═══════════════════════════════════════════════════════════════ */
 const STATUS_META: Record<string, { label: string; color: string; dot: string; icon: React.ElementType }> = {
   PENDING: { label: "Pendiente", color: "bg-amber-50 text-amber-700", dot: "bg-amber-400", icon: Clock },
+  CONFIRMED: { label: "Confirmado", color: "bg-cyan-50 text-cyan-700", dot: "bg-cyan-400", icon: CheckCircle2 },
   PROCESSING: { label: "Procesando", color: "bg-blue-50 text-blue-700", dot: "bg-blue-400", icon: RefreshCw },
   SHIPPED: { label: "Enviado", color: "bg-violet-50 text-violet-700", dot: "bg-violet-400", icon: Truck },
+  IN_TRANSIT: { label: "En tránsito", color: "bg-indigo-50 text-indigo-700", dot: "bg-indigo-400", icon: Truck },
   DELIVERED: { label: "Entregado", color: "bg-green-50 text-green-700", dot: "bg-green-400", icon: CheckCircle2 },
   CANCELLED: { label: "Cancelado", color: "bg-red-50 text-red-700", dot: "bg-red-400", icon: XCircle },
+  REFUNDED: { label: "Reembolsado", color: "bg-orange-50 text-orange-700", dot: "bg-orange-400", icon: RefreshCw },
 };
 
 /* ═══════════════════════════════════════════════════════════════
@@ -469,8 +472,8 @@ export function Dashboard() {
           </div>
           <div className="space-y-2.5">
             {(Object.keys(STATUS_META) as Array<keyof typeof STATUS_META>).map(key => {
-              const count = orders.filter(o => o.status === key).length;
-              const pct = Math.round((count / orders.length) * 100) || 0;
+              const count = apiRecentOrders.filter(o => o.status === key).length;
+              const pct = apiRecentOrders.length > 0 ? Math.round((count / apiRecentOrders.length) * 100) : 0;
               const meta = STATUS_META[key];
               const Icon = meta.icon;
               return (

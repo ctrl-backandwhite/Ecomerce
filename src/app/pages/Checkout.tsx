@@ -17,7 +17,7 @@ import { invoiceRepository } from "../repositories/InvoiceRepository";
 import type { Invoice } from "../repositories/InvoiceRepository";
 import {
   CreditCard, Truck, CheckCircle2, ArrowLeft, Lock,
-  MapPin, Store, Package2, Plus, Check, ChevronRight,
+  MapPin, Store, Package2, Plus, Check, ChevronRight, ChevronDown, ChevronLeft,
   Building2, Home, Briefcase, User, Phone, Mail,
   Shield, Tag, AlertCircle, Clock, Navigation, Copy,
 } from "lucide-react";
@@ -104,6 +104,11 @@ export function Checkout() {
   const [backendInvoice, setBackendInvoice] = useState<Invoice | null>(null);
   const [orderError, setOrderError] = useState<string | null>(null);
 
+  /* Snapshot of totals at order time (cart is cleared after checkout) */
+  const [totalsSnapshot, setTotalsSnapshot] = useState<{
+    subtotal: number; shipping: number; tax: number; total: number;
+  } | null>(null);
+
   /* Contact */
   const [contact, setContact] = useState({ email: user.email, phone: user.phone });
 
@@ -140,6 +145,7 @@ export function Checkout() {
 
   /* CVV confirm for saved cards */
   const [savedCardCvv, setSavedCardCvv] = useState("");
+  const [pmDropdownOpen, setPmDropdownOpen] = useState(false);
 
   /* ── Sync from user profile when it loads asynchronously ── */
   const profileSynced = useRef(false);
@@ -316,6 +322,19 @@ export function Checkout() {
     return "";
   }
 
+  // Helper: get logo for a payment method
+  function pmLogo(pm: PaymentMethod) {
+    if (pm.type === "card") return pm.cardBrand === "mastercard" ? <MastercardLogo size={18} /> : <VisaLogo size={16} />;
+    if (pm.type === "paypal") return <PayPalLogo size={18} />;
+    if (pm.type === "usdt") return <USDTLogo size={16} />;
+    return <BTCLogo size={16} />;
+  }
+  function pmDetailLabel(pm: PaymentMethod) {
+    if (pm.type === "card") return `${pm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${pm.cardLast4} · Vence ${pm.cardExpiry}`;
+    if (pm.type === "paypal") return pm.paypalEmail ?? "";
+    return pm.cryptoNetwork ?? "";
+  }
+
   function copyToClipboard(text: string) {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedAddr(true);
@@ -328,44 +347,98 @@ export function Checkout() {
     setIsProcessing(true);
     setOrderError(null);
     setOrderSnapshot([...items]);
+    setTotalsSnapshot({ subtotal, shipping, tax, total });
 
     try {
-      /* 1 ─ Determine shippingAddressId & paymentMethodId */
-      const shippingAddressId =
-        selectedAddrId !== "new" ? selectedAddrId
-          : newMode === "store" ? (selectedStoreId ?? "new")
-            : newMode === "pickup" ? (selectedPickupId ?? "new")
-              : "new";
+      /* 1 ─ Build shippingAddress object */
+      let shippingAddress: Record<string, unknown>;
+      if (selectedAddrId !== "new" && selectedAddr) {
+        shippingAddress = {
+          fullName: selectedAddr.name,
+          street: selectedAddr.street,
+          city: selectedAddr.city,
+          region: selectedAddr.state,
+          postalCode: selectedAddr.zip,
+          country: selectedAddr.country,
+          phone: contact.phone,
+        };
+      } else if (newMode === "store" && selectedStore) {
+        shippingAddress = {
+          fullName: manualAddr.name || `${user.firstName} ${user.lastName}`,
+          street: selectedStore.address,
+          city: "",
+          region: "",
+          postalCode: "",
+          country: "",
+          phone: contact.phone,
+          locationId: selectedStoreId,
+          locationType: "store",
+          locationName: selectedStore.name,
+        };
+      } else if (newMode === "pickup" && selectedPickup) {
+        shippingAddress = {
+          fullName: manualAddr.name || `${user.firstName} ${user.lastName}`,
+          street: selectedPickup.address,
+          city: "",
+          region: "",
+          postalCode: "",
+          country: "",
+          phone: contact.phone,
+          locationId: selectedPickupId,
+          locationType: "pickup",
+          locationName: selectedPickup.name,
+        };
+      } else {
+        shippingAddress = {
+          fullName: manualAddr.name,
+          street: manualAddr.street,
+          city: manualAddr.city,
+          region: manualAddr.state,
+          postalCode: manualAddr.zip,
+          country: manualAddr.country,
+          phone: contact.phone,
+        };
+      }
 
-      const paymentMethodId = selectedPmId !== "new" ? selectedPmId : "new";
+      /* 2 ─ Determine paymentMethod string */
+      const activePmType = selectedPm ? selectedPm.type : payMethod;
+      const paymentMethodMap: Record<string, string> = {
+        card: "CREDIT_CARD",
+        paypal: "PAYPAL",
+        usdt: "CRYPTO_USDT",
+        btc: "CRYPTO_BTC",
+      };
+      const paymentMethodStr = paymentMethodMap[activePmType] ?? "CREDIT_CARD";
 
-      /* 2 ─ Create order via backend */
+      /* 3 ─ Create order via backend */
       const order = await orderRepository.createOrder({
-        shippingAddressId,
-        paymentMethodId,
+        shippingAddress,
+        paymentMethod: paymentMethodStr,
         couponCode: couponResult?.valid ? couponCode.trim() : undefined,
         notes: undefined,
       });
       setCreatedOrder(order);
 
-      /* 3 ─ Process payment */
+      /* 4 ─ Process payment */
       const activePm = selectedPm;
       const activeType = activePm ? activePm.type : payMethod;
 
-      const methodMap: Record<string, "STRIPE" | "PAYPAL" | "CRYPTO"> = {
-        card: "STRIPE",
+      const methodMap: Record<string, "CARD" | "PAYPAL" | "USDT" | "BTC"> = {
+        card: "CARD",
         paypal: "PAYPAL",
-        usdt: "CRYPTO",
-        btc: "CRYPTO",
+        usdt: "USDT",
+        btc: "BTC",
       };
 
       await paymentRepository.processPayment({
         orderId: order.id,
-        method: methodMap[activeType] ?? "STRIPE",
-        returnUrl: `${window.location.origin}/account?tab=orders`,
+        userId: user.id,
+        amount: total,
+        currency: "USD",
+        paymentMethod: methodMap[activeType] ?? "CARD",
       });
 
-      /* 4 ─ Try to fetch the backend invoice */
+      /* 5 ─ Try to fetch the backend invoice */
       try {
         const inv = await invoiceRepository.findByOrderId(order.id);
         setBackendInvoice(inv);
@@ -373,7 +446,7 @@ export function Checkout() {
         /* Invoice might not be generated yet — that's fine */
       }
 
-      /* 5 ─ Done */
+      /* 6 ─ Done */
       setIsProcessing(false);
       setOrderComplete(true);
       clearCart();
@@ -397,11 +470,22 @@ export function Checkout() {
       ? {
         invoiceNumber: backendInvoice.invoiceNumber,
         orderNumber: backendInvoice.orderNumber,
-        date: backendInvoice.date,
+        date: backendInvoice.issueDate,
         dueDate: backendInvoice.dueDate,
         status: backendInvoice.status.toLowerCase() as "paid",
-        customer: backendInvoice.customer,
-        lines: backendInvoice.lines,
+        customer: {
+          name: backendInvoice.customerSnapshot?.name ?? "",
+          email: backendInvoice.customerSnapshot?.email ?? "",
+          phone: backendInvoice.customerSnapshot?.phone,
+          address: backendInvoice.customerSnapshot?.address,
+        },
+        lines: (backendInvoice.lines ?? []).map((l) => ({
+          name: String(l.name ?? ""),
+          sku: String(l.sku ?? ""),
+          quantity: Number(l.quantity ?? 0),
+          unitPrice: Number(l.unitPrice ?? 0),
+          total: Number(l.total ?? 0),
+        })),
         subtotal: backendInvoice.subtotal,
         shipping: backendInvoice.shipping,
         tax: backendInvoice.tax,
@@ -427,10 +511,10 @@ export function Checkout() {
           unitPrice: item.price,
           total: item.price * item.quantity,
         })),
-        subtotal,
-        shipping,
-        tax,
-        total,
+        subtotal: totalsSnapshot?.subtotal ?? subtotal,
+        shipping: totalsSnapshot?.shipping ?? shipping,
+        tax: totalsSnapshot?.tax ?? tax,
+        total: totalsSnapshot?.total ?? total,
         paymentMethod: paymentSummaryLabel() || undefined,
       };
 
@@ -906,369 +990,369 @@ export function Checkout() {
                 <div className="px-6 pb-6 border-t border-gray-50">
                   <div className="pt-5 space-y-3">
 
-                    {/* ── Saved payment methods ── */}
-                    {user.paymentMethods.length > 0 && (
-                      <>
-                        <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Mis métodos guardados</p>
-                        {user.paymentMethods.map((pm) => {
-                          const isSelected = selectedPmId === pm.id;
-                          const accentMap: Record<string, { border: string; strip: string; stripTxt: string }> = {
-                            card: { border: "border-gray-500", strip: isSelected ? "bg-gray-500" : "bg-gray-50", stripTxt: isSelected ? "text-white" : "text-gray-500" },
-                            paypal: { border: "border-[#179BD7]", strip: isSelected ? "bg-[#179BD7]" : "bg-sky-50", stripTxt: isSelected ? "text-white" : "text-[#179BD7]" },
-                            usdt: { border: "border-[#26A17B]", strip: isSelected ? "bg-[#26A17B]" : "bg-emerald-50", stripTxt: isSelected ? "text-white" : "text-[#26A17B]" },
-                            btc: { border: "border-[#F7931A]", strip: isSelected ? "bg-[#F7931A]" : "bg-orange-50", stripTxt: isSelected ? "text-white" : "text-[#F7931A]" },
-                          };
-                          const ac = accentMap[pm.type];
-                          const typeLabel = { card: "Tarjeta", paypal: "PayPal", usdt: "USDT", btc: "Bitcoin" }[pm.type];
-                          const detail = pm.type === "card" ? `${pm.cardBrand === "mastercard" ? "Mastercard" : "Visa"} ···· ${pm.cardLast4} · Vence ${pm.cardExpiry}`
-                            : pm.type === "paypal" ? pm.paypalEmail
-                              : pm.type === "usdt" ? `${pm.cryptoNetwork}`
-                                : `${pm.cryptoNetwork}`;
-                          return (
-                            <button
-                              key={pm.id}
-                              type="button"
-                              onClick={() => { setSelectedPmId(pm.id); setSavedCardCvv(""); }}
-                              className={`w-full text-left rounded-xl border-2 overflow-hidden transition-all ${isSelected ? ac.border : "border-gray-100 hover:border-gray-300"
-                                }`}
-                            >
-                              {/* Type strip */}
-                              <div className={`flex items-center gap-2 px-4 py-1.5 border-b border-gray-100 ${ac.strip}`}>
-                                <span className={ac.stripTxt}>
-                                  {pm.type === "card" ? (pm.cardBrand === "mastercard" ? <MastercardLogo size={18} /> : <VisaLogo size={16} />) :
-                                    pm.type === "paypal" ? <PayPalLogo size={18} /> :
-                                      pm.type === "usdt" ? <USDTLogo size={16} /> :
-                                        <BTCLogo size={16} />}
-                                </span>
-                                <span className={`text-xs ${ac.stripTxt}`}>{typeLabel}</span>
-                                {pm.isDefault && (
-                                  <span className={`ml-auto text-[10px] px-1.5 py-0.5 rounded-full border ${isSelected ? "text-white/70 bg-white/10 border-white/20" : "text-gray-500 bg-white border-gray-200"
-                                    }`}>Predeterminado</span>
-                                )}
-                              </div>
-                              {/* Body */}
-                              <div className={`px-4 py-3 flex items-center justify-between gap-4 ${isSelected ? "bg-gray-50" : "bg-white"}`}>
-                                <div>
-                                  <p className="text-sm text-gray-900">{pm.label}</p>
-                                  <p className="text-xs text-gray-400 mt-0.5">{detail}</p>
-                                </div>
-                                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${isSelected ? `${ac.border} bg-gray-500` : "border-gray-200"
-                                  }`}>
-                                  {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
-                                </div>
-                              </div>
-                              {/* CVV confirm for saved cards */}
-                              {isSelected && pm.type === "card" && (
-                                <div className="px-4 pb-3 bg-gray-50 border-t border-gray-100">
-                                  <label className="block text-xs text-gray-400 mb-1.5 mt-2">
-                                    <Shield className="inline w-3 h-3 mr-1" strokeWidth={1.5} />
-                                    Confirma tu CVV para continuar
-                                  </label>
-                                  <div className="relative w-32">
-                                    <input
-                                      type="password"
-                                      value={savedCardCvv}
-                                      onChange={(e) => setSavedCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                                      className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2 pr-9 focus:outline-none focus:border-gray-400 font-mono placeholder-gray-300"
-                                      placeholder="•••"
-                                      maxLength={4}
-                                    />
-                                    <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Método de pago</p>
+
+                    {/* ── Saved method dropdown ── */}
+                    {user.paymentMethods.length > 0 && selectedPmId !== "new" && selectedPm && (
+                      <div className="space-y-3">
+                        <div className="relative">
+                          <button
+                            type="button"
+                            onClick={() => setPmDropdownOpen(prev => !prev)}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 bg-white hover:border-gray-400 transition-colors text-left"
+                          >
+                            <span className="flex-shrink-0">{pmLogo(selectedPm)}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-gray-900 truncate">{selectedPm.label}</p>
+                              <p className="text-xs text-gray-400 truncate">{pmDetailLabel(selectedPm)}</p>
+                            </div>
+                            {selectedPm.isDefault && (
+                              <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex-shrink-0">Predeterminado</span>
+                            )}
+                            <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${pmDropdownOpen ? "rotate-180" : ""}`} strokeWidth={1.5} />
+                          </button>
+
+                          {pmDropdownOpen && (
+                            <div className="absolute z-20 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-72 overflow-y-auto">
+                              {user.paymentMethods.map((pm) => (
+                                <button
+                                  key={pm.id}
+                                  type="button"
+                                  onClick={() => { setSelectedPmId(pm.id); setSavedCardCvv(""); setPmDropdownOpen(false); }}
+                                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50 ${pm.id === selectedPmId ? "bg-gray-50" : ""}`}
+                                >
+                                  <span className="flex-shrink-0">{pmLogo(pm)}</span>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-gray-900 truncate">{pm.label}</p>
+                                    <p className="text-xs text-gray-400 truncate">{pmDetailLabel(pm)}</p>
                                   </div>
+                                  {pm.id === selectedPmId && <Check className="w-4 h-4 text-gray-500 flex-shrink-0" strokeWidth={2} />}
+                                </button>
+                              ))}
+                              {/* Option to add new method */}
+                              <button
+                                type="button"
+                                onClick={() => { setSelectedPmId("new"); setPmDropdownOpen(false); }}
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left border-t border-gray-100 hover:bg-gray-50 transition-colors"
+                              >
+                                <div className="w-[18px] h-[18px] rounded flex items-center justify-center bg-gray-100 flex-shrink-0">
+                                  <Plus className="w-3 h-3 text-gray-500" strokeWidth={2} />
                                 </div>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </>
+                                <p className="text-sm text-gray-600">Usar otro método de pago</p>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* CVV for saved cards */}
+                        {selectedPm.type === "card" && (
+                          <div>
+                            <label className="block text-xs text-gray-400 mb-1.5">
+                              <Shield className="inline w-3 h-3 mr-1" strokeWidth={1.5} />
+                              Confirma tu CVV para continuar
+                            </label>
+                            <div className="relative w-32">
+                              <input
+                                type="password"
+                                value={savedCardCvv}
+                                onChange={(e) => setSavedCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
+                                className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2 pr-9 focus:outline-none focus:border-gray-400 font-mono placeholder-gray-300"
+                                placeholder="•••"
+                                maxLength={4}
+                              />
+                              <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+                          <Lock className="w-3 h-3" strokeWidth={1.5} />
+                          Pago 100% seguro con cifrado SSL de 256 bits
+                        </div>
+                      </div>
                     )}
 
-                    {/* ── Use a different method ── */}
-                    <div className={`rounded-xl border-2 overflow-hidden transition-all ${selectedPmId === "new" ? "border-gray-500" : "border-dashed border-gray-200 hover:border-gray-300"
-                      }`}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedPmId("new")}
-                        className={`w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors ${selectedPmId === "new" ? "bg-gray-50" : "bg-white hover:bg-gray-50"
-                          }`}
-                      >
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${selectedPmId === "new" ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-400"
-                          }`}>
-                          <Plus className="w-4 h-4" strokeWidth={1.5} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm text-gray-700">Usar otro método de pago</p>
-                          <p className="text-xs text-gray-400">Tarjeta nueva, PayPal, USDT o Bitcoin</p>
-                        </div>
-                        <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${selectedPmId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
-                          }`}>
-                          {selectedPmId === "new" && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
-                        </div>
-                      </button>
-
-                      {selectedPmId === "new" && (
-                        <div className="border-t border-gray-100 bg-gray-50/50 px-4 pb-5">
-                          {/* Method type tabs */}
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4 mb-5">
-                            {([
-                              { id: "card", logo: <div className="flex items-center gap-1.5"><VisaLogo size={16} /><MastercardLogo size={22} /></div>, label: "Tarjeta" },
-                              { id: "paypal", logo: <PayPalLogo size={18} />, label: "PayPal" },
-                              { id: "usdt", logo: <USDTLogo size={22} />, label: "USDT" },
-                              { id: "btc", logo: <BTCLogo size={22} />, label: "Bitcoin" },
-                            ] as const).map(({ id, logo, label }) => (
-                              <button
-                                key={id}
-                                type="button"
-                                onClick={() => setPayMethod(id)}
-                                className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 transition-all ${payMethod === id ? "border-gray-500 bg-white" : "border-gray-200 bg-white hover:border-gray-300"
-                                  }`}
-                              >
-                                <div className="h-6 flex items-center">{logo}</div>
-                                <span className="text-[11px] text-gray-500">{label}</span>
-                                {payMethod === id && (
-                                  <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-gray-500 flex items-center justify-center">
-                                    <Check className="w-2 h-2 text-white" strokeWidth={3} />
-                                  </span>
-                                )}
-                              </button>
-                            ))}
+                    {/* ── New method form ── */}
+                    {(selectedPmId === "new" || user.paymentMethods.length === 0) && (
+                      <div className="rounded-xl border border-gray-100 bg-white overflow-hidden">
+                        {/* Link back to saved methods */}
+                        {user.paymentMethods.length > 0 && (
+                          <div className="px-4 pt-4">
+                            <button
+                              type="button"
+                              onClick={() => { const def = user.paymentMethods.find(p => p.isDefault) ?? user.paymentMethods[0]; if (def) setSelectedPmId(def.id); }}
+                              className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors mb-1"
+                            >
+                              <ChevronLeft className="w-3 h-3" strokeWidth={1.5} />
+                              Volver a mis métodos guardados
+                            </button>
                           </div>
+                        )}
 
-                          {/* New card form */}
-                          {payMethod === "card" && (
-                            <div className="space-y-4">
-                              {/* Accepted cards bar */}
-                              <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                                <span className="text-[11px] text-gray-400 flex-shrink-0">Aceptamos:</span>
-                                <VisaLogo size={18} />
-                                <MastercardLogo size={22} />
-                                <span className="ml-auto">
-                                  <Lock className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                                </span>
-                              </div>
+                        {selectedPmId === "new" && (
+                          <div className="border-t border-gray-100 bg-gray-50/50 px-4 pb-5">
+                            {/* Method type tabs */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4 mb-5">
+                              {([
+                                { id: "card", logo: <div className="flex items-center gap-1.5"><VisaLogo size={16} /><MastercardLogo size={22} /></div>, label: "Tarjeta" },
+                                { id: "paypal", logo: <PayPalLogo size={18} />, label: "PayPal" },
+                                { id: "usdt", logo: <USDTLogo size={22} />, label: "USDT" },
+                                { id: "btc", logo: <BTCLogo size={22} />, label: "Bitcoin" },
+                              ] as const).map(({ id, logo, label }) => (
+                                <button
+                                  key={id}
+                                  type="button"
+                                  onClick={() => setPayMethod(id)}
+                                  className={`relative flex flex-col items-center gap-1.5 rounded-xl border-2 px-2 py-3 transition-all ${payMethod === id ? "border-gray-500 bg-white" : "border-gray-200 bg-white hover:border-gray-300"
+                                    }`}
+                                >
+                                  <div className="h-6 flex items-center">{logo}</div>
+                                  <span className="text-[11px] text-gray-500">{label}</span>
+                                  {payMethod === id && (
+                                    <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 rounded-full bg-gray-500 flex items-center justify-center">
+                                      <Check className="w-2 h-2 text-white" strokeWidth={3} />
+                                    </span>
+                                  )}
+                                </button>
+                              ))}
+                            </div>
 
-                              {/* Card number */}
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-1.5">Número de tarjeta</label>
-                                <div className="relative">
-                                  <input
-                                    value={payment.cardNumber}
-                                    onChange={(e) => {
-                                      const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
-                                      const fmt = raw.match(/.{1,4}/g)?.join(" ") ?? raw;
-                                      setPayment((p) => ({ ...p, cardNumber: fmt }));
-                                    }}
-                                    className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-28 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono tracking-widest"
-                                    placeholder="1234 5678 9012 3456"
-                                    maxLength={19}
-                                  />
-                                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-50">
-                                    <VisaLogo size={16} />
-                                    <MastercardLogo size={22} />
-                                  </div>
+                            {/* New card form */}
+                            {payMethod === "card" && (
+                              <div className="space-y-4">
+                                {/* Accepted cards bar */}
+                                <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
+                                  <span className="text-[11px] text-gray-400 flex-shrink-0">Aceptamos:</span>
+                                  <VisaLogo size={18} />
+                                  <MastercardLogo size={22} />
+                                  <span className="ml-auto">
+                                    <Lock className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
+                                  </span>
                                 </div>
-                              </div>
 
-                              {/* Card name */}
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-1.5">Nombre en la tarjeta</label>
-                                <input
-                                  value={payment.cardName}
-                                  onChange={(e) => setPayment((p) => ({ ...p, cardName: e.target.value.toUpperCase() }))}
-                                  className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 uppercase tracking-wider"
-                                  placeholder="FIRST LAST"
-                                />
-                              </div>
-
-                              {/* Expiry + CVV */}
-                              <div className="grid grid-cols-2 gap-4">
+                                {/* Card number */}
                                 <div>
-                                  <label className="block text-xs text-gray-400 mb-1.5">Vencimiento</label>
-                                  <input
-                                    value={payment.expiry}
-                                    onChange={(e) => {
-                                      let v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                                      if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
-                                      setPayment((p) => ({ ...p, expiry: v }));
-                                    }}
-                                    className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
-                                    placeholder="MM/YY"
-                                    maxLength={5}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-xs text-gray-400 mb-1.5">CVV</label>
+                                  <label className="block text-xs text-gray-400 mb-1.5">Número de tarjeta</label>
                                   <div className="relative">
                                     <input
-                                      value={payment.cvv}
-                                      onChange={(e) => setPayment((p) => ({ ...p, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
-                                      className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-10 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
-                                      placeholder="•••"
-                                      maxLength={4}
-                                      type="password"
+                                      value={payment.cardNumber}
+                                      onChange={(e) => {
+                                        const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
+                                        const fmt = raw.match(/.{1,4}/g)?.join(" ") ?? raw;
+                                        setPayment((p) => ({ ...p, cardNumber: fmt }));
+                                      }}
+                                      className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-28 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono tracking-widest"
+                                      placeholder="1234 5678 9012 3456"
+                                      maxLength={19}
                                     />
-                                    <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" strokeWidth={1.5} />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-50">
+                                      <VisaLogo size={16} />
+                                      <MastercardLogo size={22} />
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
 
-                              <div className="flex items-center gap-2 pt-1">
-                                <Lock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                                <p className="text-xs text-gray-400">Todos tus datos de pago están encriptados y seguros.</p>
-                              </div>
-                            </div>
-                          )}
+                                {/* Card name */}
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-1.5">Nombre en la tarjeta</label>
+                                  <input
+                                    value={payment.cardName}
+                                    onChange={(e) => setPayment((p) => ({ ...p, cardName: e.target.value.toUpperCase() }))}
+                                    className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 uppercase tracking-wider"
+                                    placeholder="FIRST LAST"
+                                  />
+                                </div>
 
-                          {/* ══ PayPal form ══ */}
-                          {payMethod === "paypal" && (
-                            <div className="space-y-4">
-                              <div className="flex items-center gap-3 px-4 py-3.5 bg-sky-50/40 rounded-xl border border-sky-100">
-                                <PayPalLogo size={22} />
-                                <p className="text-xs text-gray-500 leading-relaxed">
-                                  Serás redirigido a PayPal para completar tu pago de forma segura. No compartimos tus datos bancarios.
-                                </p>
-                              </div>
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-1.5">
-                                  <Mail className="inline w-3 h-3 mr-1" strokeWidth={1.5} />
-                                  Email de tu cuenta PayPal
-                                </label>
-                                <input
-                                  type="email"
-                                  value={paypalEmail}
-                                  onChange={(e) => setPaypalEmail(e.target.value)}
-                                  className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#179BD7]/60 placeholder-gray-300"
-                                  placeholder="your@paypal.com"
-                                />
-                              </div>
-                              <div className="flex items-center gap-2 pt-1">
-                                <Shield className="w-3.5 h-3.5 text-[#179BD7] flex-shrink-0" strokeWidth={1.5} />
-                                <p className="text-xs text-gray-400">PayPal protege tus datos bancarios con cifrado de extremo a extremo.</p>
-                              </div>
-                            </div>
-                          )}
+                                {/* Expiry + CVV */}
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <label className="block text-xs text-gray-400 mb-1.5">Vencimiento</label>
+                                    <input
+                                      value={payment.expiry}
+                                      onChange={(e) => {
+                                        let v = e.target.value.replace(/\D/g, "").slice(0, 4);
+                                        if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
+                                        setPayment((p) => ({ ...p, expiry: v }));
+                                      }}
+                                      className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
+                                      placeholder="MM/YY"
+                                      maxLength={5}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-xs text-gray-400 mb-1.5">CVV</label>
+                                    <div className="relative">
+                                      <input
+                                        value={payment.cvv}
+                                        onChange={(e) => setPayment((p) => ({ ...p, cvv: e.target.value.replace(/\D/g, "").slice(0, 4) }))}
+                                        className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-10 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
+                                        placeholder="•••"
+                                        maxLength={4}
+                                        type="password"
+                                      />
+                                      <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" strokeWidth={1.5} />
+                                    </div>
+                                  </div>
+                                </div>
 
-                          {/* ══ USDT form ══ */}
-                          {payMethod === "usdt" && (
-                            <div className="space-y-4">
-                              <div className="flex items-start gap-3 px-4 py-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100">
-                                <USDTLogo size={20} />
-                                <p className="text-xs text-gray-500 leading-relaxed">
-                                  Envía <span className="text-gray-800">exactamente</span> el importe indicado en USDT a la dirección de abajo. El pedido se procesará tras <span className="text-gray-800">1 confirmación</span> en red.
-                                </p>
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Lock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                                  <p className="text-xs text-gray-400">Todos tus datos de pago están encriptados y seguros.</p>
+                                </div>
                               </div>
+                            )}
 
-                              {/* Network selector */}
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-1.5">Red de pago</label>
-                                <div className="flex gap-2 flex-wrap">
-                                  {[
-                                    { label: "TRC-20 (TRON)", active: true },
-                                    { label: "ERC-20 (Ethereum)", active: false },
-                                    { label: "BEP-20 (BSC)", active: false },
-                                  ].map(({ label, active }) => (
+                            {/* ══ PayPal form ══ */}
+                            {payMethod === "paypal" && (
+                              <div className="space-y-4">
+                                <div className="flex items-center gap-3 px-4 py-3.5 bg-sky-50/40 rounded-xl border border-sky-100">
+                                  <PayPalLogo size={22} />
+                                  <p className="text-xs text-gray-500 leading-relaxed">
+                                    Serás redirigido a PayPal para completar tu pago de forma segura. No compartimos tus datos bancarios.
+                                  </p>
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-1.5">
+                                    <Mail className="inline w-3 h-3 mr-1" strokeWidth={1.5} />
+                                    Email de tu cuenta PayPal
+                                  </label>
+                                  <input
+                                    type="email"
+                                    value={paypalEmail}
+                                    onChange={(e) => setPaypalEmail(e.target.value)}
+                                    className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-[#179BD7]/60 placeholder-gray-300"
+                                    placeholder="your@paypal.com"
+                                  />
+                                </div>
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Shield className="w-3.5 h-3.5 text-[#179BD7] flex-shrink-0" strokeWidth={1.5} />
+                                  <p className="text-xs text-gray-400">PayPal protege tus datos bancarios con cifrado de extremo a extremo.</p>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* ══ USDT form ══ */}
+                            {payMethod === "usdt" && (
+                              <div className="space-y-4">
+                                <div className="flex items-start gap-3 px-4 py-3.5 bg-emerald-50/40 rounded-xl border border-emerald-100">
+                                  <USDTLogo size={20} />
+                                  <p className="text-xs text-gray-500 leading-relaxed">
+                                    Envía <span className="text-gray-800">exactamente</span> el importe indicado en USDT a la dirección de abajo. El pedido se procesará tras <span className="text-gray-800">1 confirmación</span> en red.
+                                  </p>
+                                </div>
+
+                                {/* Network selector */}
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-1.5">Red de pago</label>
+                                  <div className="flex gap-2 flex-wrap">
+                                    {[
+                                      { label: "TRC-20 (TRON)", active: true },
+                                      { label: "ERC-20 (Ethereum)", active: false },
+                                      { label: "BEP-20 (BSC)", active: false },
+                                    ].map(({ label, active }) => (
+                                      <button
+                                        key={label}
+                                        type="button"
+                                        className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${active
+                                          ? "bg-emerald-600 text-white border-emerald-600"
+                                          : "text-gray-400 border-gray-200 hover:border-gray-300"
+                                          }`}
+                                      >
+                                        {label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+
+                                {/* Amount */}
+                                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
+                                  <span className="text-xs text-gray-400">Importe exacto a enviar</span>
+                                  <span className="text-sm text-gray-900 font-mono">{total.toFixed(2)} USDT</span>
+                                </div>
+
+                                {/* Address */}
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-1.5">Dirección de wallet USDT (TRC-20)</label>
+                                  <div className="flex gap-2">
+                                    <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                                      <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_USDT_ADDRESS}</span>
+                                    </div>
                                     <button
-                                      key={label}
                                       type="button"
-                                      className={`text-[11px] px-3 py-1.5 rounded-full border transition-colors ${active
-                                        ? "bg-emerald-600 text-white border-emerald-600"
-                                        : "text-gray-400 border-gray-200 hover:border-gray-300"
+                                      onClick={() => copyToClipboard(MOCK_USDT_ADDRESS)}
+                                      className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${copiedAddr
+                                        ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                                        : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
                                         }`}
                                     >
-                                      {label}
+                                      {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                                      {copiedAddr ? "Copiado" : "Copiar"}
                                     </button>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {/* Amount */}
-                              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
-                                <span className="text-xs text-gray-400">Importe exacto a enviar</span>
-                                <span className="text-sm text-gray-900 font-mono">{total.toFixed(2)} USDT</span>
-                              </div>
-
-                              {/* Address */}
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-1.5">Dirección de wallet USDT (TRC-20)</label>
-                                <div className="flex gap-2">
-                                  <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                                    <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_USDT_ADDRESS}</span>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(MOCK_USDT_ADDRESS)}
-                                    className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${copiedAddr
-                                      ? "bg-emerald-50 text-emerald-600 border-emerald-200"
-                                      : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
-                                      }`}
-                                  >
-                                    {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                                    {copiedAddr ? "Copiado" : "Copiar"}
-                                  </button>
+                                </div>
+
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                                  <p className="text-xs text-gray-400">
+                                    Envía únicamente <strong className="text-gray-600">USDT en red TRC-20</strong>. Envíos en otras redes o de otras monedas pueden perderse permanentemente.
+                                  </p>
                                 </div>
                               </div>
+                            )}
 
-                              <div className="flex items-start gap-2">
-                                <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                                <p className="text-xs text-gray-400">
-                                  Envía únicamente <strong className="text-gray-600">USDT en red TRC-20</strong>. Envíos en otras redes o de otras monedas pueden perderse permanentemente.
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* ══ BTC form ══ */}
-                          {payMethod === "btc" && (
-                            <div className="space-y-4">
-                              <div className="flex items-start gap-3 px-4 py-3.5 bg-orange-50/40 rounded-xl border border-orange-100">
-                                <BTCLogo size={20} />
-                                <p className="text-xs text-gray-500 leading-relaxed">
-                                  Envía <span className="text-gray-800">exactamente</span> el importe indicado en BTC a la dirección de abajo. El pedido se procesará tras <span className="text-gray-800">2 confirmaciones</span> en la blockchain.
-                                </p>
-                              </div>
-
-                              {/* BTC amount */}
-                              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
-                                <span className="text-xs text-gray-400">Importe exacto a enviar</span>
-                                <div className="text-right">
-                                  <p className="text-sm text-gray-900 font-mono">{(total / 68500).toFixed(6)} BTC</p>
-                                  <p className="text-[11px] text-gray-400">≈ ${total.toFixed(2)} USD · 1 BTC ≈ $68,500</p>
+                            {/* ══ BTC form ══ */}
+                            {payMethod === "btc" && (
+                              <div className="space-y-4">
+                                <div className="flex items-start gap-3 px-4 py-3.5 bg-orange-50/40 rounded-xl border border-orange-100">
+                                  <BTCLogo size={20} />
+                                  <p className="text-xs text-gray-500 leading-relaxed">
+                                    Envía <span className="text-gray-800">exactamente</span> el importe indicado en BTC a la dirección de abajo. El pedido se procesará tras <span className="text-gray-800">2 confirmaciones</span> en la blockchain.
+                                  </p>
                                 </div>
-                              </div>
 
-                              {/* Address */}
-                              <div>
-                                <label className="block text-xs text-gray-400 mb-1.5">Dirección Bitcoin (Native SegWit · bc1q…)</label>
-                                <div className="flex gap-2">
-                                  <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
-                                    <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_BTC_ADDRESS}</span>
+                                {/* BTC amount */}
+                                <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
+                                  <span className="text-xs text-gray-400">Importe exacto a enviar</span>
+                                  <div className="text-right">
+                                    <p className="text-sm text-gray-900 font-mono">{(total / 68500).toFixed(6)} BTC</p>
+                                    <p className="text-[11px] text-gray-400">≈ ${total.toFixed(2)} USD · 1 BTC ≈ $68,500</p>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => copyToClipboard(MOCK_BTC_ADDRESS)}
-                                    className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${copiedAddr
-                                      ? "bg-orange-50 text-orange-600 border-orange-200"
-                                      : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
-                                      }`}
-                                  >
-                                    {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                                    {copiedAddr ? "Copiado" : "Copiar"}
-                                  </button>
+                                </div>
+
+                                {/* Address */}
+                                <div>
+                                  <label className="block text-xs text-gray-400 mb-1.5">Dirección Bitcoin (Native SegWit · bc1q…)</label>
+                                  <div className="flex gap-2">
+                                    <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
+                                      <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_BTC_ADDRESS}</span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => copyToClipboard(MOCK_BTC_ADDRESS)}
+                                      className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-2.5 rounded-lg border transition-all ${copiedAddr
+                                        ? "bg-orange-50 text-orange-600 border-orange-200"
+                                        : "text-gray-500 border-gray-200 hover:border-gray-400 hover:bg-gray-50"
+                                        }`}
+                                    >
+                                      {copiedAddr ? <Check className="w-3.5 h-3.5" strokeWidth={2.5} /> : <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                                      {copiedAddr ? "Copiado" : "Copiar"}
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                                  <p className="text-xs text-gray-400">
+                                    Envía únicamente <strong className="text-gray-600">Bitcoin (BTC)</strong> a esta dirección. No envíes BCH, BSV ni ninguna otra criptomoneda.
+                                  </p>
                                 </div>
                               </div>
+                            )}
 
-                              <div className="flex items-start gap-2">
-                                <AlertCircle className="w-3.5 h-3.5 text-amber-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                                <p className="text-xs text-gray-400">
-                                  Envía únicamente <strong className="text-gray-600">Bitcoin (BTC)</strong> a esta dirección. No envíes BCH, BSV ni ninguna otra criptomoneda.
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                        </div>
-                      )}
-                    </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                   </div>
 

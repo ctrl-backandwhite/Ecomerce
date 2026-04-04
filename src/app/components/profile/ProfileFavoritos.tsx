@@ -11,7 +11,6 @@ import {
   ChevronRight,
   ExternalLink,
   ShoppingCart,
-  Check,
 } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
@@ -131,28 +130,21 @@ function ProductModal({
 /* ── Main component ───────────────────────────────────────── */
 export function ProfileFavoritos() {
   const { user, toggleFavorite } = useUser();
-  const { addToCart, items: cartItems } = useCart();
+  const { addToCart } = useCart();
   const [selected, setSelected] = useState<Product | null>(null);
   const [favorites, setFavorites] = useState<NexaProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
-  /** Check if a product is already in the cart */
-  const isInCart = useCallback(
-    (productId: string) => addedIds.has(productId) || cartItems.some((ci) => (ci.productId ?? ci.id) === productId),
-    [cartItems, addedIds]
-  );
-
-  /** Add favorite product to cart */
+  /** Add favorite product to cart and remove from favorites */
   const handleAddToCart = useCallback(
-    (product: NexaProduct) => {
+    async (product: NexaProduct) => {
       const mapped = mapNexaProduct(product);
       addToCart(mapped, { quantity: 1 });
-      setAddedIds((prev) => new Set(prev).add(product.id));
-      toast.success(`"${pName(product)}" agregado al carrito`);
-      setTimeout(() => setAddedIds((prev) => { const next = new Set(prev); next.delete(product.id); return next; }), 1500);
+      await toggleFavorite(product.id);
+      setFavorites((prev) => prev.filter((p) => p.id !== product.id));
+      toast.success(`"${pName(product)}" movido al carrito`);
     },
-    [addToCart]
+    [addToCart, toggleFavorite]
   );
 
   /* Fetch real product data for each favoriteId */
@@ -204,6 +196,13 @@ export function ProfileFavoritos() {
             <h2 className="text-base text-gray-900">Favoritos</h2>
             <p className="text-xs text-gray-400 mt-0.5">{favorites.length} producto{favorites.length !== 1 ? "s" : ""} guardado{favorites.length !== 1 ? "s" : ""}</p>
           </div>
+          <Link
+            to="/cart"
+            className="w-8 h-8 rounded-full border border-gray-200 hover:border-gray-300 bg-white flex items-center justify-center transition-all text-gray-400 hover:text-gray-600"
+            title="Ir al carrito"
+          >
+            <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
+          </Link>
         </div>
 
         {/* Loading state */}
@@ -260,20 +259,13 @@ export function ProfileFavoritos() {
                     <p className="text-sm text-gray-900">${price.toFixed(2)}</p>
                   </div>
 
-                  {/* Add to cart */}
+                  {/* Move to cart */}
                   <button
                     onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
-                    className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all flex-shrink-0 ${isInCart(product.id)
-                        ? "border-green-200 bg-green-50 text-green-500"
-                        : "border-gray-200 hover:border-gray-300 bg-white text-gray-400 hover:text-gray-600"
-                      }`}
-                    title={isInCart(product.id) ? "Ya en el carrito" : "Agregar al carrito"}
-                    disabled={isInCart(product.id)}
+                    className="w-8 h-8 rounded-full border border-gray-200 hover:border-gray-300 bg-white text-gray-400 hover:text-gray-600 flex items-center justify-center transition-all flex-shrink-0"
+                    title="Mover al carrito"
                   >
-                    {isInCart(product.id)
-                      ? <Check className="w-3.5 h-3.5" strokeWidth={1.5} />
-                      : <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    }
+                    <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
 
                   {/* Remove */}

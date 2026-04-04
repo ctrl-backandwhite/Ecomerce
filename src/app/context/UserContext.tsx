@@ -378,13 +378,31 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // ── Favorites ────────────────────────────────────────────────────────────
 
   const toggleFavorite = async (productId: string) => {
-    if (user.favoriteIds.includes(productId)) {
-      await profileRepository.removeFavorite(productId);
-    } else {
-      await profileRepository.addFavorite(productId);
+    const removing = user.favoriteIds.includes(productId);
+    // Optimistic local update
+    setUser((prev) => ({
+      ...prev,
+      favoriteIds: removing
+        ? prev.favoriteIds.filter((id) => id !== productId)
+        : [...prev.favoriteIds, productId],
+    }));
+    try {
+      if (removing) {
+        await profileRepository.removeFavorite(productId);
+      } else {
+        await profileRepository.addFavorite(productId);
+      }
+      const fresh = await profileRepository.getFavorites();
+      setUser((prev) => ({ ...prev, favoriteIds: fresh }));
+    } catch {
+      // Revert on error
+      setUser((prev) => ({
+        ...prev,
+        favoriteIds: removing
+          ? [...prev.favoriteIds, productId]
+          : prev.favoriteIds.filter((id) => id !== productId),
+      }));
     }
-    const fresh = await profileRepository.getFavorites();
-    setUser((prev) => ({ ...prev, favoriteIds: fresh }));
   };
 
   const isFavorite = (productId: string) => {

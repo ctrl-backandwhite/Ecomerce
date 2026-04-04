@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Search, X, Eye, Filter, ChevronDown, Check, Truck,
   Clock, CheckCircle2, XCircle, ArrowUpDown, Calendar, Package,
-  ShoppingCart, DollarSign,
+  ShoppingCart, DollarSign, ThumbsUp, Navigation, RotateCcw,
 } from "lucide-react";
 import { type AdminOrder, type OrderStatus, orderRepository } from "../../repositories/OrderRepository";
 import { toast } from "sonner";
@@ -13,13 +13,16 @@ type Status = OrderStatus;
 
 const STATUS_META: Record<Status, { label: string; dot: string; bg: string; text: string; icon: React.ElementType }> = {
   PENDING: { label: "Pendiente", dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-700", icon: Clock },
+  CONFIRMED: { label: "Confirmado", dot: "bg-cyan-400", bg: "bg-cyan-50", text: "text-cyan-700", icon: ThumbsUp },
   PROCESSING: { label: "Procesando", dot: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-700", icon: Package },
   SHIPPED: { label: "Enviado", dot: "bg-violet-400", bg: "bg-violet-50", text: "text-violet-700", icon: Truck },
+  IN_TRANSIT: { label: "En tránsito", dot: "bg-indigo-400", bg: "bg-indigo-50", text: "text-indigo-700", icon: Navigation },
   DELIVERED: { label: "Entregado", dot: "bg-green-400", bg: "bg-green-50", text: "text-green-700", icon: CheckCircle2 },
   CANCELLED: { label: "Cancelado", dot: "bg-red-400", bg: "bg-red-50", text: "text-red-700", icon: XCircle },
+  REFUNDED: { label: "Reembolsado", dot: "bg-orange-400", bg: "bg-orange-50", text: "text-orange-700", icon: RotateCcw },
 };
 
-const STATUS_FLOW: Status[] = ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED"];
+const STATUS_FLOW: Status[] = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
 
 function StatusBadge({ status }: { status: Status }) {
   const m = STATUS_META[status];
@@ -127,8 +130,8 @@ function OrderDrawer({
           <div>
             <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Cliente</p>
             <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-1.5">
-              <p className="text-sm text-gray-900">{order.customer.name}</p>
-              <p className="text-xs text-gray-400">{order.customer.email}</p>
+              <p className="text-sm text-gray-900">{order.customer?.name ?? "—"}</p>
+              <p className="text-xs text-gray-400">{order.customer?.email ?? "—"}</p>
             </div>
           </div>
 
@@ -184,7 +187,7 @@ export function AdminOrders() {
 
   const filtered = useMemo(() => {
     let l = [...list];
-    if (search) l = l.filter((o) => o.orderNumber.toLowerCase().includes(search.toLowerCase()) || o.customer.name.toLowerCase().includes(search.toLowerCase()));
+    if (search) l = l.filter((o) => o.orderNumber?.toLowerCase().includes(search.toLowerCase()) || o.customer?.name?.toLowerCase().includes(search.toLowerCase()));
     if (statusFilter !== "all") l = l.filter((o) => o.status === statusFilter);
     l.sort((a, b) =>
       sortDir === "desc"
@@ -203,7 +206,7 @@ export function AdminOrders() {
   }
 
   const totalRevenue = filtered.reduce((s, o) => s + o.total, 0);
-  const statuses: (Status | "all")[] = ["all", "PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"];
+  const statuses: (Status | "all")[] = ["all", "PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED", "REFUNDED"];
 
   useEffect(() => setPage(1), [search, statusFilter, sortDir]);
 
@@ -304,16 +307,16 @@ export function AdminOrders() {
                 <tr key={order.id} className="hover:bg-gray-50/50 transition-colors">
                   <td className="px-5 py-3.5">
                     <p className="text-xs text-gray-900 font-mono">{order.orderNumber}</p>
-                    <p className="text-[11px] text-gray-400 sm:hidden">{order.customer.name}</p>
+                    <p className="text-[11px] text-gray-400 sm:hidden">{order.customer?.name ?? "—"}</p>
                   </td>
                   <td className="px-4 py-3.5 hidden sm:table-cell">
-                    <p className="text-xs text-gray-700">{order.customer.name}</p>
-                    <p className="text-[11px] text-gray-400">{order.customer.email}</p>
+                    <p className="text-xs text-gray-700">{order.customer?.name ?? "—"}</p>
+                    <p className="text-[11px] text-gray-400">{order.customer?.email ?? "—"}</p>
                   </td>
                   <td className="px-4 py-3.5 text-center text-xs text-gray-400 hidden md:table-cell">{order.date}</td>
                   <td className="px-4 py-3.5"><StatusBadge status={order.status} /></td>
                   <td className="px-4 py-3.5 text-right text-xs text-gray-500 hidden sm:table-cell tabular-nums">{order.items}</td>
-                  <td className="px-5 py-3.5 text-right text-xs text-gray-900 tabular-nums">${order.total.toLocaleString()}</td>
+                  <td className="px-5 py-3.5 text-right text-xs text-gray-900 tabular-nums">${(order.total ?? 0).toLocaleString()}</td>
                   <td className="px-5 py-3.5 text-right">
                     <button
                       onClick={() => setSelOrder(order)}
