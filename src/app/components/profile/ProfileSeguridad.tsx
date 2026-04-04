@@ -569,15 +569,13 @@ export function ProfileSeguridad() {
 
       {/* ── Sessions ─────────────────────────────────────────────── */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-          <div>
-            <h2 className="text-base text-gray-900">Sesiones activas</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Dispositivos con sesión iniciada</p>
-          </div>
+        <div className="relative flex flex-col items-center px-6 py-5 border-b border-gray-100">
+          <h2 className="text-base text-gray-900">Sesiones activas</h2>
+          <p className="text-xs text-gray-400 mt-0.5">Dispositivos con sesión iniciada</p>
           {sessionStep !== "list" && (
             <button
               onClick={handleSessionBackToList}
-              className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
+              className="absolute right-6 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
             >
               <X className="w-3.5 h-3.5" strokeWidth={1.5} />
               Cancelar
