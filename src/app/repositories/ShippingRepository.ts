@@ -10,7 +10,7 @@
 import { authFetch } from "../lib/authFetch";
 import { nxFetch } from "../lib/nxFetch";
 import { ApiError, NetworkError } from "../lib/AppError";
-import type { ApiErrorBody } from "../types/api";
+import type { ApiErrorBody, Page } from "../types/api";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
 const BASE_URL = `${API_BASE}/api/v1/shipping`;
@@ -27,36 +27,45 @@ export interface Carrier {
     id: string;
     name: string;
     code: string;
-    trackingUrl: string | null;
+    logoUrl: string | null;
     active: boolean;
     createdAt: string;
+    updatedAt: string | null;
 }
 
 export interface CarrierPayload {
     name: string;
     code: string;
-    trackingUrl?: string;
+    logoUrl?: string;
     active?: boolean;
 }
 
 export interface ShippingRule {
     id: string;
-    name: string;
-    type: "FREE_OVER" | "FLAT_RATE" | "WEIGHT_BASED" | "ZONE_BASED";
-    value: number;
-    minOrderAmount: number | null;
+    carrierId: string;
     zone: string | null;
-    active: boolean;
+    weightMin: number | null;
+    weightMax: number | null;
+    priceMin: number | null;
+    priceMax: number | null;
+    rate: number;
+    freeAbove: number | null;
+    estimatedDays: number;
+    carrierName: string;
     createdAt: string;
+    updatedAt: string | null;
 }
 
 export interface ShippingRulePayload {
-    name: string;
-    type: "FREE_OVER" | "FLAT_RATE" | "WEIGHT_BASED" | "ZONE_BASED";
-    value: number;
-    minOrderAmount?: number;
+    carrierId: string;
     zone?: string;
-    active?: boolean;
+    weightMin?: number;
+    weightMax?: number;
+    priceMin?: number;
+    priceMax?: number;
+    rate: number;
+    freeAbove?: number;
+    estimatedDays?: number;
 }
 
 async function handleRes<R>(res: Response): Promise<R> {
@@ -88,7 +97,8 @@ class ShippingRepository {
     async findAllCarriers(): Promise<Carrier[]> {
         try {
             const res = await authFetch(`${BASE_URL}/carriers`);
-            return handleRes<Carrier[]>(res);
+            const page = await handleRes<Page<Carrier>>(res);
+            return page.content;
         } catch (err) { wrapErr(err, "No se pudieron obtener los transportistas"); }
     }
 
@@ -132,7 +142,8 @@ class ShippingRepository {
     async findAllRules(): Promise<ShippingRule[]> {
         try {
             const res = await authFetch(`${BASE_URL}/rules`);
-            return handleRes<ShippingRule[]>(res);
+            const page = await handleRes<Page<ShippingRule>>(res);
+            return page.content;
         } catch (err) { wrapErr(err, "No se pudieron obtener las reglas de envío"); }
     }
 

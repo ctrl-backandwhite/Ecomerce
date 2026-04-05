@@ -724,17 +724,22 @@ export const emailTemplateRepository = new EmailTemplateRepository();
 export interface FlowStep {
     id: string;
     flowId: string;
-    name: string;
-    type: string;
-    config: Record<string, unknown>;
     position: number;
+    title: string;
+    description: string;
+    icon: string;
+    slaDays: number;
+    triggerType: string;
+    sendEmail: boolean;
+    sendSms: boolean;
+    createdAt: string;
+    updatedAt: string | null;
 }
 
 export interface Flow {
     id: string;
     name: string;
-    description: string | null;
-    trigger: string;
+    type: string;
     active: boolean;
     steps: FlowStep[];
     createdAt: string;
@@ -743,8 +748,7 @@ export interface Flow {
 
 export interface FlowPayload {
     name: string;
-    description?: string;
-    trigger: string;
+    type: string;
     active?: boolean;
 }
 

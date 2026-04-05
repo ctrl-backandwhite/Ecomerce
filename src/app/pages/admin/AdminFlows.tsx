@@ -157,18 +157,48 @@ const TEMPLATES: Record<FlowType, FlowStep[]> = {
 };
 
 // ── Initial flows ─────────────────────────────────────────────────────────────
+const ICON_MAP: Record<string, StepIconName> = {
+  "check-circle": "check", "package": "package", "truck": "truck",
+  "navigation": "navigation", "home": "home", "clipboard": "clipboard",
+  "rotate": "rotate", "clock": "clock", "wrench": "wrench",
+  "camera": "camera", "phone": "phone", "mappin": "mappin",
+  "bell": "bell", "warehouse": "warehouse", "search": "search",
+  "shield": "shield", "refresh": "refresh",
+};
+
+const TRIGGER_MAP: Record<string, TriggerType> = {
+  AUTOMATIC: "auto", MANUAL: "manual", CARRIER: "carrier", TIMED: "timed",
+};
+
 function mapApiToUi(f: ApiFlow): DeliveryFlow {
   const typeMap: Record<string, FlowType> = {
-    delivery: "delivery", return: "return", exchange: "exchange",
-    quality: "quality", custom: "custom",
+    DELIVERY: "delivery", RETURN: "return", EXCHANGE: "exchange",
+    QUALITY: "quality",
   };
   return {
     id: f.id,
     name: f.name,
-    description: f.description ?? "",
-    type: typeMap[f.trigger?.split(":")[0]] ?? "delivery",
+    description: "",
+    type: typeMap[f.type] ?? "custom",
     shippingMethods: [],
-    steps: (Array.isArray(f.steps) ? f.steps : []) as unknown as FlowStep[],
+    steps: (Array.isArray(f.steps) ? f.steps : []).map((s, i) => ({
+      id: s.id,
+      position: s.position ?? i + 1,
+      name: s.title ?? "",
+      statusLabel: s.title ?? "",
+      icon: ICON_MAP[s.icon] ?? "package" as StepIconName,
+      color: STEP_COLORS[i % STEP_COLORS.length],
+      description: s.description ?? "",
+      slaHours: (s.slaDays ?? 0) * 24,
+      triggerType: TRIGGER_MAP[s.triggerType] ?? "auto" as TriggerType,
+      triggerDelayHours: 0,
+      requiresPhoto: false,
+      requiresSignature: false,
+      sendEmail: s.sendEmail ?? false,
+      emailNote: "",
+      sendSMS: s.sendSms ?? false,
+      isTerminal: i === (f.steps?.length ?? 1) - 1,
+    })),
     active: f.active,
     isDefault: false,
     createdAt: new Date(f.createdAt).toLocaleDateString("es-ES"),
@@ -181,8 +211,7 @@ function uiToPayload(
 ): FlowPayload {
   return {
     name: f.name,
-    description: f.description,
-    trigger: `${f.type}:${f.shippingMethods[0] ?? "standard"}`,
+    type: f.type.toUpperCase(),
     active: f.active,
   };
 }
@@ -913,8 +942,8 @@ export function AdminFlows() {
 
   const loadFlows = useCallback(async () => {
     try {
-      const page = await flowRepository.findAll({ size: 200 });
-      setFlows(page.content.map(mapApiToUi));
+      const all = await flowRepository.findAll();
+      setFlows(all.map(mapApiToUi));
     } catch {
       toast.error("Error al cargar flujos");
     }
@@ -954,7 +983,7 @@ export function AdminFlows() {
     const flow = flows.find(f => f.id === id);
     if (!flow) return;
     try {
-      const updated = await flowRepository.update(id, { name: flow.name, trigger: uiToPayload(flow).trigger, active: !flow.active });
+      const updated = await flowRepository.update(id, { name: flow.name, type: flow.type.toUpperCase(), active: !flow.active });
       setFlows(prev => prev.map(f => f.id === id ? { ...f, active: updated.active } : f));
       toast.success(`Flujo ${updated.active ? "activado" : "pausado"}`);
     } catch {

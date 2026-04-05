@@ -15,22 +15,22 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
 
 export interface TaxRate {
     id: string;
-    name: string;
     country: string;
-    state: string | null;
+    region: string | null;
     rate: number;
     type: "PERCENTAGE" | "FIXED";
     active: boolean;
+    appliesToCategories: string[];
     createdAt: string;
     updatedAt: string | null;
 }
 
 export interface TaxRatePayload {
-    name: string;
     country: string;
-    state?: string;
+    region?: string;
     rate: number;
     type: "PERCENTAGE" | "FIXED";
+    appliesToCategories?: string[];
     active?: boolean;
 }
 

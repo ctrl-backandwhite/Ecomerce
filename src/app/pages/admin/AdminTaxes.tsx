@@ -49,28 +49,60 @@ const TYPE_META: Record<TaxRule["type"], { label: string; bg: string; text: stri
 // ── Datos iniciales ───────────────────────────────────────────────────────────
 // Removed: data is now loaded from the API.
 
+const COUNTRY_NAMES: Record<string, string> = {
+  ES: "España", PT: "Portugal", FR: "Francia", DE: "Alemania",
+  IT: "Italia", NL: "Países Bajos", BE: "Bélgica", AT: "Austria",
+  PL: "Polonia", SE: "Suecia", DK: "Dinamarca", FI: "Finlandia",
+  IE: "Irlanda", GR: "Grecia", CZ: "Rep. Checa", RO: "Rumanía",
+  HU: "Hungría", GB: "Reino Unido", CH: "Suiza", NO: "Noruega",
+  US: "Estados Unidos", CA: "Canadá", MX: "México", BR: "Brasil",
+  AR: "Argentina", CO: "Colombia", CL: "Chile", PE: "Perú",
+  CN: "China", JP: "Japón", KR: "Corea del Sur", AU: "Australia", IN: "India",
+};
+
+function buildTaxName(t: ApiTaxRate): string {
+  const pct = (t.rate * 100).toFixed(t.rate * 100 % 1 === 0 ? 0 : 2);
+  const region = t.region ?? "";
+  const country = COUNTRY_NAMES[t.country] ?? t.country;
+  if (region) return `${region} ${pct}%`;
+  const cats = t.appliesToCategories ?? [];
+  const catLabel = cats.includes("General") ? "General" : cats[0] ?? "";
+  return `IVA ${catLabel} ${country} ${pct}%`.trim();
+}
+
 function mapApiToUi(t: ApiTaxRate): TaxRule {
+  const pct = t.rate * 100;
+  let uiType: TaxRule["type"] = "standard";
+  if (pct === 0) uiType = "zero";
+  else if (pct <= 5) uiType = "super_reduced";
+  else if (pct < 15) uiType = "reduced";
+
   return {
     id: t.id,
-    name: t.name,
-    country: t.country,
-    region: t.state ?? "",
-    rate: t.rate,
-    type: t.type === "FIXED" ? "zero" : "standard",
-    applies: "General",
+    name: buildTaxName(t),
+    country: COUNTRY_NAMES[t.country] ?? t.country,
+    region: t.region ?? "",
+    rate: pct,
+    type: uiType,
+    applies: (t.appliesToCategories ?? []).join(", ") || "General",
     includesShipping: true,
     active: t.active,
     notes: "",
   };
 }
 
+function countryToCode(name: string): string {
+  const entry = Object.entries(COUNTRY_NAMES).find(([, v]) => v === name);
+  return entry ? entry[0] : name;
+}
+
 function uiToPayload(r: TaxRule): TaxRatePayload {
   return {
-    name: r.name,
-    country: r.country,
-    state: r.region || undefined,
-    rate: r.rate,
+    country: countryToCode(r.country),
+    region: r.region || undefined,
+    rate: r.rate / 100,
     type: r.type === "zero" ? "FIXED" : "PERCENTAGE",
+    appliesToCategories: r.applies.split(",").map(s => s.trim()).filter(Boolean),
     active: r.active,
   };
 }
@@ -236,8 +268,8 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
                         if (key === "zero") set("rate", 0);
                       }}
                       className={`flex items-start gap-2 px-3 py-2.5 rounded-xl border text-left transition-all ${form.type === key
-                          ? "border-gray-900 bg-gray-50"
-                          : "border-gray-200 hover:border-gray-300"
+                        ? "border-gray-900 bg-gray-50"
+                        : "border-gray-200 hover:border-gray-300"
                         }`}
                     >
                       <span className={`mt-0.5 inline-flex text-[10px] px-1.5 py-0.5 rounded-full flex-shrink-0 ${meta.bg} ${meta.text}`}>
@@ -281,8 +313,8 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
                       disabled={form.type === "zero"}
                       onClick={() => set("rate", r)}
                       className={`h-6 px-2 text-[11px] rounded-lg border transition-colors disabled:opacity-30 ${form.rate === r
-                          ? "bg-gray-600 text-white border-gray-600"
-                          : "border-gray-200 text-gray-500 hover:border-gray-400"
+                        ? "bg-gray-600 text-white border-gray-600"
+                        : "border-gray-200 text-gray-500 hover:border-gray-400"
                         }`}
                     >
                       {r}%
@@ -318,8 +350,8 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
                     type="button"
                     onClick={() => toggleCat(cat)}
                     className={`h-6 px-2 text-[11px] rounded-lg border transition-colors ${selectedCats.includes(cat)
-                        ? "bg-gray-600 text-white border-gray-600"
-                        : "border-gray-200 text-gray-500 hover:border-gray-400"
+                      ? "bg-gray-600 text-white border-gray-600"
+                      : "border-gray-200 text-gray-500 hover:border-gray-400"
                       }`}
                   >
                     {cat}
@@ -333,8 +365,8 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
               type="button"
               onClick={() => set("includesShipping", !form.includesShipping)}
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${form.includesShipping
-                  ? "border-blue-200 bg-blue-50"
-                  : "border-gray-200 bg-gray-50"
+                ? "border-blue-200 bg-blue-50"
+                : "border-gray-200 bg-gray-50"
                 }`}
             >
               <div
@@ -366,8 +398,8 @@ function TaxModal({ initial, onSave, onClose }: TaxModalProps) {
               type="button"
               onClick={() => set("active", !form.active)}
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${form.active
-                  ? "border-green-200 bg-green-50"
-                  : "border-gray-200 bg-gray-50"
+                ? "border-green-200 bg-green-50"
+                : "border-gray-200 bg-gray-50"
                 }`}
             >
               <div
@@ -493,7 +525,7 @@ export function AdminTaxes() {
 
   const loadRules = useCallback(async () => {
     try {
-      const page = await taxRepository.findAll({ size: 500 });
+      const page = await taxRepository.findPaged({ size: 500 });
       setRules(page.content.map(mapApiToUi));
     } catch {
       toast.error("Error al cargar reglas fiscales");

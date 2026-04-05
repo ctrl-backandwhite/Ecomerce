@@ -51,7 +51,7 @@ function mapCarrierToUi(c: ApiCarrier): Carrier {
     id: c.id,
     name: c.name,
     logo: c.code.slice(0, 2).toUpperCase(),
-    trackingUrl: c.trackingUrl ?? "",
+    trackingUrl: c.logoUrl ?? "",
     zones: "",
     minDays: 1,
     maxDays: 5,
@@ -65,7 +65,7 @@ function carrierToPayload(c: Carrier): CarrierPayload {
   return {
     name: c.name,
     code: c.logo,
-    trackingUrl: c.trackingUrl || undefined,
+    logoUrl: c.trackingUrl || undefined,
     active: c.active,
   };
 }
@@ -74,18 +74,17 @@ function mapRuleToUi(r: ApiShippingRule): ShippingRule {
   return {
     id: r.id,
     zone: r.zone ?? "Global",
-    carrier: r.name,
-    weightFrom: 0,
-    weightTo: 30,
-    price: r.value,
+    carrier: r.carrierName ?? "",
+    weightFrom: r.weightMin ?? 0,
+    weightTo: r.weightMax ?? 30,
+    price: r.rate,
   };
 }
 
 function ruleToPayload(r: ShippingRule): ShippingRulePayload {
   return {
-    name: r.carrier,
-    type: "FLAT_RATE",
-    value: r.price,
+    carrierId: "",
+    rate: r.price,
     zone: r.zone,
   };
 }
@@ -297,8 +296,8 @@ function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
               type="button"
               onClick={() => set("active", !form.active)}
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl border transition-colors text-left ${form.active
-                  ? "border-green-200 bg-green-50"
-                  : "border-gray-200 bg-gray-50"
+                ? "border-green-200 bg-green-50"
+                : "border-gray-200 bg-gray-50"
                 }`}
             >
               <div className={`w-8 h-4.5 rounded-full relative transition-colors flex-shrink-0 ${form.active ? "bg-green-400" : "bg-gray-200"}`}
