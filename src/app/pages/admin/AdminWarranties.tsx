@@ -511,10 +511,22 @@ export function AdminWarranties() {
   }, [warranties, filterType, searchQ]);
 
   /* ── CRUD ─────────────────────────────────────────── */
+  const handleToggleActive = async (w: Warranty) => {
+    try {
+      await warrantyRepository.toggleActive(w.id);
+      toast.success(w.active ? "Garantía desactivada" : "Garantía activada");
+      await loadWarranties();
+    } catch { toast.error("Error al cambiar el estado"); }
+  };
+
   const handleSave = async (data: Omit<Warranty, "id" | "productsCount"> & { id?: string }) => {
     try {
       if (data.id) {
+        const prev = warranties.find(w => w.id === data.id);
         await warrantyRepository.update(data.id, data as any);
+        if (prev && prev.active !== data.active) {
+          await warrantyRepository.toggleActive(data.id);
+        }
         toast.success("Garantía actualizada");
       } else {
         await warrantyRepository.create(data as any);
@@ -666,11 +678,15 @@ export function AdminWarranties() {
                 {w.productsCount}
               </div>
 
-              {/* Status */}
-              <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full w-fit ${w.active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+              {/* Status – clickable toggle */}
+              <button
+                onClick={() => handleToggleActive(w)}
+                className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full w-fit cursor-pointer hover:opacity-80 transition-opacity ${w.active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}
+                title={w.active ? "Clic para desactivar" : "Clic para activar"}
+              >
                 <span className={`w-1.5 h-1.5 rounded-full ${w.active ? "bg-green-400" : "bg-gray-300"}`} />
                 {w.active ? "Activa" : "Inactiva"}
-              </span>
+              </button>
 
               {/* Actions */}
               <div className="flex gap-1 justify-end">

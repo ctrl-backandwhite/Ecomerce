@@ -203,8 +203,8 @@ function UploadModal({
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragActive
-                ? "border-gray-900 bg-gray-50"
-                : "border-gray-200 hover:border-gray-400 hover:bg-gray-50"
+              ? "border-gray-900 bg-gray-50"
+              : "border-gray-200 hover:border-gray-400 hover:bg-gray-50"
               }`}
           >
             <input
@@ -744,8 +744,8 @@ export function AdminMedia() {
             <button
               onClick={() => setViewMode("grid")}
               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${viewMode === "grid"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-400 hover:text-gray-700"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-400 hover:text-gray-700"
                 }`}
             >
               <LayoutGrid className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -753,8 +753,8 @@ export function AdminMedia() {
             <button
               onClick={() => setViewMode("list")}
               className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all ${viewMode === "list"
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-400 hover:text-gray-700"
+                ? "bg-white text-gray-900 shadow-sm"
+                : "text-gray-400 hover:text-gray-700"
                 }`}
             >
               <List className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -920,8 +920,8 @@ export function AdminMedia() {
                     key={p}
                     onClick={() => setCurrentPage(p as number)}
                     className={`w-8 h-8 flex items-center justify-center rounded-lg text-xs transition-colors ${currentPage === p
-                        ? "bg-gray-600 text-white"
-                        : "border border-gray-200 text-gray-600 hover:bg-gray-50"
+                      ? "bg-gray-600 text-white"
+                      : "border border-gray-200 text-gray-600 hover:bg-gray-50"
                       }`}
                   >
                     {p}
