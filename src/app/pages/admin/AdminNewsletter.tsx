@@ -26,9 +26,9 @@ function mapApiToUi(s: ApiSub): Subscriber {
     id: s.id,
     email: s.email,
     name: s.email.split("@")[0],
-    subscribedAt: new Date(s.subscribedAt).toLocaleDateString("es-ES"),
-    status: s.active ? "active" : "unsubscribed",
-    source: "popup",
+    subscribedAt: s.subscribedAt ? new Date(s.subscribedAt).toLocaleDateString("es-ES") : "",
+    status: s.status === "ACTIVE" ? "active" : "unsubscribed",
+    source: (s.source as Subscriber["source"]) ?? "popup",
     tags: [],
   };
 }
@@ -96,7 +96,7 @@ export function AdminNewsletter() {
           { label: "Total suscriptores", value: subs.length, icon: Users },
           { label: "Activos", value: activeCount, icon: Check },
           { label: "Bajas", value: subs.filter(s => s.status === "unsubscribed").length, icon: X },
-          { label: "Tasa de activos", value: `${Math.round((activeCount / subs.length) * 100)}%`, icon: TrendingUp },
+          { label: "Tasa de activos", value: subs.length ? `${Math.round((activeCount / subs.length) * 100)}%` : "0%", icon: TrendingUp },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center">

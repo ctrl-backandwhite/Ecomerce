@@ -126,8 +126,12 @@ export const slideRepository = new SlideRepository();
 export interface NewsletterSubscriber {
     id: string;
     email: string;
+    status: "ACTIVE" | "UNSUBSCRIBED";
     subscribedAt: string;
-    active: boolean;
+    unsubscribedAt: string | null;
+    source: string | null;
+    createdAt: string;
+    updatedAt: string | null;
 }
 
 class NewsletterRepository {

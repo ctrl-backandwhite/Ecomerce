@@ -1,9 +1,10 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { newsletterRepository } from "../repositories/CmsRepository";
 
 interface NewsletterContextType {
   showPopup: boolean;
   dismiss: () => void;
-  subscribe: (email: string) => void;
+  subscribe: (email: string) => Promise<void>;
 }
 
 const Ctx = createContext<NewsletterContextType | undefined>(undefined);
@@ -24,7 +25,10 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("nexa_newsletter_dismissed", "1");
   };
 
-  const subscribe = (_email: string) => {
+  const subscribe = async (email: string) => {
+    try {
+      await newsletterRepository.subscribe(email);
+    } catch { /* popup still dismisses on error */ }
     dismiss();
   };
 

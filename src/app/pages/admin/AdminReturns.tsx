@@ -34,19 +34,19 @@ interface ReturnRequest {
 const API_TO_UI_STATUS: Record<ApiReturnStatus, ReturnStatus> = {
   REQUESTED: "requested",
   REVIEWING: "reviewing",
-  APPROVED:  "approved",
-  REJECTED:  "rejected",
-  RETURNED:  "returned",
-  REFUNDED:  "refunded",
+  APPROVED: "approved",
+  REJECTED: "rejected",
+  RETURNED: "returned",
+  REFUNDED: "refunded",
 };
 
 const UI_TO_API_STATUS: Record<ReturnStatus, ApiReturnStatus> = {
   requested: "REQUESTED",
   reviewing: "REVIEWING",
-  approved:  "APPROVED",
-  rejected:  "REJECTED",
-  returned:  "RETURNED",
-  refunded:  "REFUNDED",
+  approved: "APPROVED",
+  rejected: "REJECTED",
+  returned: "RETURNED",
+  refunded: "REFUNDED",
 };
 
 function mapApiToUi(r: ApiReturn): ReturnRequest {
@@ -70,12 +70,12 @@ function mapApiToUi(r: ApiReturn): ReturnRequest {
 
 /* ── Meta ──────────────────────────────────────────────────── */
 const STATUS_META: Record<ReturnStatus, { label: string; bg: string; text: string; dot: string }> = {
-  requested: { label: "Solicitada",  bg: "bg-blue-50",   text: "text-blue-700",   dot: "bg-blue-400"   },
-  reviewing: { label: "Revisando",   bg: "bg-amber-50",  text: "text-amber-700",  dot: "bg-amber-400"  },
-  approved:  { label: "Aprobada",    bg: "bg-violet-50", text: "text-violet-700", dot: "bg-violet-400" },
-  rejected:  { label: "Rechazada",   bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-400"    },
-  returned:  { label: "Devuelto",    bg: "bg-sky-50",    text: "text-sky-700",    dot: "bg-sky-400"    },
-  refunded:  { label: "Reembolsada", bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-400"  },
+  requested: { label: "Solicitada", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-400" },
+  reviewing: { label: "Revisando", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
+  approved: { label: "Aprobada", bg: "bg-violet-50", text: "text-violet-700", dot: "bg-violet-400" },
+  rejected: { label: "Rechazada", bg: "bg-red-50", text: "text-red-600", dot: "bg-red-400" },
+  returned: { label: "Devuelto", bg: "bg-sky-50", text: "text-sky-700", dot: "bg-sky-400" },
+  refunded: { label: "Reembolsada", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400" },
 };
 
 const STATUS_FLOW: ReturnStatus[] = ["requested", "reviewing", "approved", "returned", "refunded"];
