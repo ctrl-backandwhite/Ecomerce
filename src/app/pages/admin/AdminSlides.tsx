@@ -358,8 +358,8 @@ function DraggableSlideRow({
         {/* Status badge */}
         <div
           className={`text-[10px] px-2 py-1 rounded-lg border ${slide.status === "active"
-              ? "text-green-600 bg-green-50 border-green-100"
-              : "text-gray-400 bg-gray-50 border-gray-100"
+            ? "text-green-600 bg-green-50 border-green-100"
+            : "text-gray-400 bg-gray-50 border-gray-100"
             }`}
         >
           {slide.status === "active" ? "Activo" : "Inactivo"}

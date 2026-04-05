@@ -187,11 +187,10 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
           <div
             key={`overlay-${promo.id}`}
             aria-hidden
-            className={`absolute inset-0 ${
-              isRight
+            className={`absolute inset-0 ${isRight
                 ? "bg-gradient-to-l from-black/80 via-black/55 to-black/10"
                 : "bg-gradient-to-r from-black/80 via-black/55 to-black/10"
-            }`}
+              }`}
             style={{
               opacity: i === current ? 1 : 0,
               transition: `opacity ${TRANSITION_MS}ms cubic-bezier(0.4, 0, 0.2, 1)`,
@@ -290,11 +289,10 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
             key={i}
             onClick={() => goTo(i)}
             aria-label={`Ir a slide ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all duration-500 ${
-              i === current
+            className={`h-1.5 rounded-full transition-all duration-500 ${i === current
                 ? "w-8 bg-white"
                 : "w-2 bg-white/40 hover:bg-white/70"
-            }`}
+              }`}
           />
         ))}
       </div>
