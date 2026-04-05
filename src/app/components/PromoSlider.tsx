@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { slideRepository, type Slide } from "../repositories/CmsRepository";
 
 /* ── Filter params each promo CTA applies ─────────────────── */
 export type PromoFilter = Record<string, string>;
 
 interface Promo {
-  id: number;
+  id: string;
   title: string;
   subtitle: string;
   description: string;
@@ -17,9 +18,42 @@ interface Promo {
   align: "left" | "right";
 }
 
-const promos: Promo[] = [
+/* ── Map API slide → UI promo ─────────────────────────────── */
+function slideToPromo(s: Slide, index: number): Promo {
+  const colors = [
+    "bg-white/20 text-white border-white/30",
+    "bg-rose-500/80 text-white border-rose-400/50",
+    "bg-violet-500/80 text-white border-violet-400/50",
+    "bg-amber-500/80 text-white border-amber-400/50",
+    "bg-emerald-500/80 text-white border-emerald-400/50",
+    "bg-sky-500/80 text-white border-sky-400/50",
+  ];
+  /* parse link as filterParams, e.g. "/?ofertas=true&category=Moda" */
+  const params: PromoFilter = {};
+  if (s.link) {
+    try {
+      const search = s.link.includes("?") ? s.link.split("?")[1] : "";
+      new URLSearchParams(search).forEach((v, k) => { params[k] = v; });
+    } catch { /* ignore */ }
+  }
+  return {
+    id: s.id,
+    title: s.title,
+    subtitle: s.subtitle ?? "",
+    description: "",
+    badge: "",
+    badgeColor: colors[index % colors.length],
+    buttonText: s.buttonText ?? "Ver más",
+    filterParams: params,
+    image: s.imageUrl,
+    align: index % 2 === 0 ? "left" : "right",
+  };
+}
+
+/* ── Fallback static promos (used when API has no active slides) ── */
+const fallbackPromos: Promo[] = [
   {
-    id: 1,
+    id: "fallback-1",
     title: "Descubre los Mejores Productos",
     subtitle: "Tecnología de vanguardia",
     description:
@@ -33,7 +67,7 @@ const promos: Promo[] = [
     align: "left",
   },
   {
-    id: 2,
+    id: "fallback-2",
     title: "Hasta 50% OFF",
     subtitle: "Moda & Tendencias",
     description:
@@ -47,7 +81,7 @@ const promos: Promo[] = [
     align: "right",
   },
   {
-    id: 3,
+    id: "fallback-3",
     title: "Gaming al Siguiente Nivel",
     subtitle: "Setups Épicos",
     description:
@@ -61,7 +95,7 @@ const promos: Promo[] = [
     align: "left",
   },
   {
-    id: 4,
+    id: "fallback-4",
     title: "Electrónica de Alta Gama",
     subtitle: "Innovación sin límites",
     description:
@@ -83,9 +117,27 @@ interface PromoSliderProps {
 }
 
 export function PromoSlider({ onCtaClick }: PromoSliderProps) {
+  const [promos, setPromos] = useState<Promo[]>(fallbackPromos);
   const [current, setCurrent] = useState(0);
   const [contentVisible, setContentVisible] = useState(true);
   const locked = useRef(false);
+
+  /* ── Load active slides from API ── */
+  useEffect(() => {
+    let cancelled = false;
+    slideRepository
+      .findActive()
+      .then((slides) => {
+        if (!cancelled && slides.length > 0) {
+          setPromos(slides.map(slideToPromo));
+          setCurrent(0);
+        }
+      })
+      .catch(() => {
+        /* keep fallback promos on error */
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const goTo = useCallback((index: number) => {
     if (locked.current) return;

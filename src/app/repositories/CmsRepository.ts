@@ -48,7 +48,8 @@ export interface Slide {
     title: string;
     subtitle: string | null;
     imageUrl: string;
-    linkUrl: string | null;
+    link: string | null;
+    buttonText: string | null;
     position: number;
     active: boolean;
     createdAt: string;
@@ -59,7 +60,8 @@ export interface SlidePayload {
     title: string;
     subtitle?: string;
     imageUrl: string;
-    linkUrl?: string;
+    link?: string;
+    buttonText?: string;
     position?: number;
     active?: boolean;
 }
