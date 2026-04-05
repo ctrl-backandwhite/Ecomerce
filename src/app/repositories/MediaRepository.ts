@@ -24,12 +24,16 @@ const BASE_URL = `${API_BASE}/api/v1/media`;
 export interface MediaFile {
     id: string;
     filename: string;
-    originalFilename: string;
-    contentType: string;
-    size: number;
+    originalName: string;
+    mimeType: string;
+    sizeBytes: number;
     url: string;
+    thumbnailUrl: string | null;
+    category: "PRODUCT" | "BRAND" | "SLIDE" | "GENERAL";
+    tags: string[];
     alt: string | null;
-    title: string | null;
+    width: number | null;
+    height: number | null;
     createdAt: string;
     updatedAt: string | null;
 }

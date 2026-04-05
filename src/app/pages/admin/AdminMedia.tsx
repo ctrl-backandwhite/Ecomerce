@@ -23,80 +23,23 @@ interface MediaItem {
 }
 
 /* ── Mock data ────────────────────────────────────────── */
-const INITIAL_MEDIA: MediaItem[] = [
-  {
-    id: "1",
-    url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800",
-    name: "producto-auriculares.jpg",
-    size: 245680,
-    type: "image/jpeg",
-    uploadedAt: new Date("2024-03-10"),
-    width: 1920,
-    height: 1080,
-    category: "productos",
-    tags: ["auriculares", "audio", "electrónica"],
-  },
-  {
-    id: "2",
-    url: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800",
-    name: "reloj-smartwatch.jpg",
-    size: 189234,
-    type: "image/jpeg",
-    uploadedAt: new Date("2024-03-09"),
-    width: 1920,
-    height: 1280,
-    category: "productos",
-    tags: ["reloj", "smartwatch", "wearable"],
-  },
-  {
-    id: "3",
-    url: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800",
-    name: "banner-promo.jpg",
-    size: 512400,
-    type: "image/jpeg",
-    uploadedAt: new Date("2024-03-08"),
-    width: 2560,
-    height: 1440,
-    category: "banners",
-    tags: ["promoción", "descuento", "banner"],
-  },
-  {
-    id: "4",
-    url: "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=800",
-    name: "zapatos-deportivos.jpg",
-    size: 298765,
-    type: "image/jpeg",
-    uploadedAt: new Date("2024-03-07"),
-    width: 1920,
-    height: 1080,
-    category: "productos",
-    tags: ["zapatos", "deporte", "calzado"],
-  },
-  {
-    id: "5",
-    url: "https://images.unsplash.com/photo-1560393464-5c69a73c5770?w=800",
-    name: "mochila-urbana.jpg",
-    size: 156789,
-    type: "image/jpeg",
-    uploadedAt: new Date("2024-03-06"),
-    width: 1600,
-    height: 1200,
-    category: "productos",
-    tags: ["mochila", "accesorios", "viaje"],
-  },
-  {
-    id: "6",
-    url: "https://images.unsplash.com/photo-1585386959984-a4155224a1ad?w=800",
-    name: "perfume-fragancia.jpg",
-    size: 223456,
-    type: "image/jpeg",
-    uploadedAt: new Date("2024-03-05"),
-    width: 1920,
-    height: 1280,
-    category: "productos",
-    tags: ["perfume", "fragancia", "belleza"],
-  },
-];
+const INITIAL_MEDIA: MediaItem[] = [];
+
+/* ── API → UI mapper ──────────────────────────────────── */
+function mapApiToUi(f: MediaFile): MediaItem {
+  return {
+    id: f.id,
+    url: f.url,
+    name: f.originalName || f.filename,
+    size: f.sizeBytes,
+    type: f.mimeType,
+    uploadedAt: new Date(f.createdAt),
+    width: f.width ?? undefined,
+    height: f.height ?? undefined,
+    category: (f.category ?? "GENERAL").toLowerCase(),
+    tags: f.tags ?? [],
+  };
+}
 
 /* ── Utility functions ─────────────────────────────────── */
 function formatFileSize(bytes: number): string {

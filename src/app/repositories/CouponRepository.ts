@@ -14,7 +14,7 @@
 import { BaseRepository } from "./BaseRepository";
 import { authFetch } from "../lib/authFetch";
 import { ApiError, NetworkError } from "../lib/AppError";
-import type { ApiErrorBody } from "../types/api";
+import type { ApiErrorBody, Page } from "../types/api";
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
 
@@ -62,6 +62,19 @@ export interface CouponValidation {
 class CouponRepository extends BaseRepository<Coupon, CouponPayload, CouponPayload> {
     constructor() {
         super("/api/v1/coupons");
+    }
+
+    /** Override: backend returns Page<Coupon>, unwrap .content */
+    async findAll(query: Record<string, unknown> = {}): Promise<Coupon[]> {
+        try {
+            const qs = this.buildParams({ size: 200, ...query });
+            const url = qs ? `${this.baseUrl}?${qs}` : this.baseUrl;
+            const res = await authFetch(url);
+            const page = await this.handleResponse<Page<Coupon>>(res);
+            return page.content;
+        } catch (err) {
+            this.wrapError(err, "No se pudo obtener los cupones");
+        }
     }
 
     async validate(code: string, orderTotal: number): Promise<CouponValidation> {
