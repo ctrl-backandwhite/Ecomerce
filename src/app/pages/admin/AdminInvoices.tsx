@@ -99,7 +99,7 @@ export function AdminInvoices() {
 
   async function handleMarkPaid(id: string) {
     try {
-      await invoiceRepository.update(id, {} as any);
+      await invoiceRepository.markPaid(id);
       setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: "PAID" as InvoiceStatus } : inv));
       toast.success("Factura marcada como pagada");
     } catch { toast.error("Error al marcar como pagada"); }
