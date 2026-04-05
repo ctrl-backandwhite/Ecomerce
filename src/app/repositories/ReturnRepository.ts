@@ -16,7 +16,7 @@ import type { ApiErrorBody, Page } from "../types/api";
 const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
 const BASE_URL = `${API_BASE}/api/v1/returns`;
 
-export type ReturnStatus = "REQUESTED" | "APPROVED" | "REJECTED" | "RECEIVED" | "REFUNDED";
+export type ReturnStatus = "REQUESTED" | "REVIEWING" | "APPROVED" | "REJECTED" | "RETURNED" | "REFUNDED";
 
 export interface Return {
     id: string;
@@ -26,6 +26,7 @@ export interface Return {
     reason: string;
     status: ReturnStatus;
     items: { productId: string; name: string; quantity: number }[];
+    refundAmount: number | null;
     createdAt: string;
     updatedAt: string | null;
 }

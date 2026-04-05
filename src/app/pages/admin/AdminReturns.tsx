@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
   Search, X, Eye, Check, XCircle, RefreshCcw,
   AlertTriangle, Clock, Package, DollarSign,
@@ -6,41 +6,67 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
+import {
+  returnRepository,
+  type Return as ApiReturn,
+  type ReturnStatus as ApiReturnStatus,
+} from "../../repositories/ReturnRepository";
 
 /* ── Types ─────────────────────────────────────────────────── */
-type ReturnStatus = "requested" | "reviewing" | "approved" | "rejected" | "refunded";
-type ReturnReason = "defective" | "wrong_item" | "not_as_described" | "changed_mind" | "damaged" | "other";
+type ReturnStatus = "requested" | "reviewing" | "approved" | "rejected" | "returned" | "refunded";
 
 interface ReturnRequest {
   id: string;
   returnNumber: string;
   orderNumber: string;
-  customer: { name: string; email: string };
+  orderId: string;
+  userId: string;
   productName: string;
-  productSku: string;
   quantity: number;
   amount: number;
-  reason: ReturnReason;
-  reasonDetail: string;
+  reason: string;
   status: ReturnStatus;
   createdAt: string;
   updatedAt: string;
-  refundMethod: "original" | "credit" | "exchange";
 }
 
-/* ── Mock data ─────────────────────────────────────────────── */
-const MOCK_RETURNS: ReturnRequest[] = [
-  { id:"rt1", returnNumber:"RET-001", orderNumber:"ORD-2024-003", customer:{name:"Pedro Sánchez",email:"pedro@email.com"}, productName:"Samsung Galaxy S24 Ultra", productSku:"SAM-S24U-256BLK", quantity:1, amount:1349, reason:"defective", reasonDetail:"La pantalla parpadea intermitentemente desde el segundo día de uso.", status:"reviewing", createdAt:"2026-03-10", updatedAt:"2026-03-11", refundMethod:"original" },
-  { id:"rt2", returnNumber:"RET-002", orderNumber:"ORD-2024-007", customer:{name:"Laura González",email:"laura@email.com"}, productName:"Nike Air Max 270", productSku:"NK-AM270-42BLK", quantity:1, amount:149, reason:"wrong_item", reasonDetail:"Recibí talla 42 pero pedí talla 43.", status:"approved", createdAt:"2026-03-08", updatedAt:"2026-03-09", refundMethod:"exchange" },
-  { id:"rt3", returnNumber:"RET-003", orderNumber:"ORD-2024-012", customer:{name:"Carlos Martín",email:"carlos@email.com"}, productName:"Sony WH-1000XM5", productSku:"SNY-WH1000XM5-BLK", quantity:1, amount:379, reason:"not_as_described", reasonDetail:"La cancelación de ruido no es tan efectiva como se describe.", status:"requested", createdAt:"2026-03-12", updatedAt:"2026-03-12", refundMethod:"original" },
-  { id:"rt4", returnNumber:"RET-004", orderNumber:"ORD-2024-015", customer:{name:"Ana Ruiz",email:"ana@email.com"}, productName:"Canon EOS R10", productSku:"CAN-EOSR10-KIT", quantity:1, amount:899, reason:"changed_mind", reasonDetail:"Decidí comprar un modelo más avanzado.", status:"rejected", createdAt:"2026-03-05", updatedAt:"2026-03-06", refundMethod:"credit" },
-  { id:"rt5", returnNumber:"RET-005", orderNumber:"ORD-2024-019", customer:{name:"Miguel Torres",email:"miguel@email.com"}, productName:"JBL Charge 5", productSku:"JBL-CHG5-BLU", quantity:2, amount:298, reason:"damaged", reasonDetail:"El producto llegó con la caja golpeada y el altavoz con rayaduras.", status:"refunded", createdAt:"2026-03-01", updatedAt:"2026-03-04", refundMethod:"original" },
-  { id:"rt6", returnNumber:"RET-006", orderNumber:"ORD-2024-022", customer:{name:"Sofía López",email:"sofia@email.com"}, productName:"Apple iPhone 15 Pro Max", productSku:"APL-IP15PM-256BLK", quantity:1, amount:1499, reason:"defective", reasonDetail:"El botón de acción no responde correctamente.", status:"reviewing", createdAt:"2026-03-09", updatedAt:"2026-03-10", refundMethod:"original" },
-  { id:"rt7", returnNumber:"RET-007", orderNumber:"ORD-2024-028", customer:{name:"David Fernández",email:"david@email.com"}, productName:"Logitech MX Master 3", productSku:"LOG-MXM3-GRY", quantity:1, amount:109, reason:"defective", reasonDetail:"El scroll horizontal deja de funcionar después de una semana.", status:"approved", createdAt:"2026-03-07", updatedAt:"2026-03-08", refundMethod:"exchange" },
-  { id:"rt8", returnNumber:"RET-008", orderNumber:"ORD-2024-031", customer:{name:"Elena Moreno",email:"elena@email.com"}, productName:"Adidas Ultraboost 23", productSku:"ADI-UB23-42WHT", quantity:1, amount:189, reason:"not_as_described", reasonDetail:"El color real es diferente al de las fotos del producto.", status:"requested", createdAt:"2026-03-13", updatedAt:"2026-03-13", refundMethod:"original" },
-  { id:"rt9", returnNumber:"RET-009", orderNumber:"ORD-2024-035", customer:{name:"Roberto Gil",email:"roberto@email.com"}, productName:"GoPro HERO12 Black", productSku:"GP-HERO12-STD", quantity:1, amount:449, reason:"other", reasonDetail:"No cumple con mis necesidades de grabación submarina.", status:"refunded", createdAt:"2026-02-25", updatedAt:"2026-03-01", refundMethod:"credit" },
-  { id:"rt10",returnNumber:"RET-010", orderNumber:"ORD-2024-040", customer:{name:"Isabel Castro",email:"isabel@email.com"}, productName:"Dell XPS 15 (2024)", productSku:"DELL-XPS15-I7-32", quantity:1, amount:1899, reason:"defective", reasonDetail:"La batería no carga más del 80% desde el día 1.", status:"requested", createdAt:"2026-03-13", updatedAt:"2026-03-13", refundMethod:"original" },
-];
+/* ── API ↔ UI mappers ─────────────────────────────────────── */
+const API_TO_UI_STATUS: Record<ApiReturnStatus, ReturnStatus> = {
+  REQUESTED: "requested",
+  REVIEWING: "reviewing",
+  APPROVED:  "approved",
+  REJECTED:  "rejected",
+  RETURNED:  "returned",
+  REFUNDED:  "refunded",
+};
+
+const UI_TO_API_STATUS: Record<ReturnStatus, ApiReturnStatus> = {
+  requested: "REQUESTED",
+  reviewing: "REVIEWING",
+  approved:  "APPROVED",
+  rejected:  "REJECTED",
+  returned:  "RETURNED",
+  refunded:  "REFUNDED",
+};
+
+function mapApiToUi(r: ApiReturn): ReturnRequest {
+  const firstItem = r.items?.[0];
+  const totalQty = r.items?.reduce((sum, it) => sum + (it.quantity ?? 1), 0) ?? 0;
+  return {
+    id: r.id,
+    returnNumber: `RET-${r.id.slice(-6).toUpperCase()}`,
+    orderNumber: r.orderNumber ?? r.orderId,
+    orderId: r.orderId,
+    userId: r.userId,
+    productName: firstItem?.name ?? "Producto",
+    quantity: totalQty,
+    amount: r.refundAmount ?? 0,
+    reason: r.reason,
+    status: API_TO_UI_STATUS[r.status] ?? "requested",
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt ?? r.createdAt,
+  };
+}
 
 /* ── Meta ──────────────────────────────────────────────────── */
 const STATUS_META: Record<ReturnStatus, { label: string; bg: string; text: string; dot: string }> = {
@@ -48,25 +74,11 @@ const STATUS_META: Record<ReturnStatus, { label: string; bg: string; text: strin
   reviewing: { label: "Revisando",   bg: "bg-amber-50",  text: "text-amber-700",  dot: "bg-amber-400"  },
   approved:  { label: "Aprobada",    bg: "bg-violet-50", text: "text-violet-700", dot: "bg-violet-400" },
   rejected:  { label: "Rechazada",   bg: "bg-red-50",    text: "text-red-600",    dot: "bg-red-400"    },
+  returned:  { label: "Devuelto",    bg: "bg-sky-50",    text: "text-sky-700",    dot: "bg-sky-400"    },
   refunded:  { label: "Reembolsada", bg: "bg-green-50",  text: "text-green-700",  dot: "bg-green-400"  },
 };
 
-const REASON_LABELS: Record<ReturnReason, string> = {
-  defective:        "Producto defectuoso",
-  wrong_item:       "Producto incorrecto",
-  not_as_described: "No coincide con descripción",
-  changed_mind:     "Cambio de opinión",
-  damaged:          "Llegó dañado",
-  other:            "Otro motivo",
-};
-
-const REFUND_LABELS: Record<string, string> = {
-  original: "Método original",
-  credit:   "Crédito en tienda",
-  exchange: "Cambio de producto",
-};
-
-const STATUS_FLOW: ReturnStatus[] = ["requested", "reviewing", "approved", "refunded"];
+const STATUS_FLOW: ReturnStatus[] = ["requested", "reviewing", "approved", "returned", "refunded"];
 
 /* ── Detail drawer ─────────────────────────────────────────── */
 function ReturnDrawer({
@@ -103,7 +115,7 @@ function ReturnDrawer({
               <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
               {sm.label}
             </span>
-            <p className="text-xs text-gray-400">{new Date(ret.createdAt).toLocaleDateString("es-ES", { day:"2-digit", month:"long", year:"numeric" })}</p>
+            <p className="text-xs text-gray-400">{new Date(ret.createdAt).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</p>
           </div>
 
           {/* Progress */}
@@ -111,46 +123,33 @@ function ReturnDrawer({
             <div className="flex items-center gap-1">
               {STATUS_FLOW.map((s, idx) => (
                 <div key={s} className="flex items-center gap-1 flex-1">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] border ${
-                    idx <= currentIdx ? "bg-gray-600 border-gray-600 text-white" : "bg-white border-gray-200 text-gray-300"
-                  }`}>{idx + 1}</div>
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] border ${idx <= currentIdx ? "bg-gray-600 border-gray-600 text-white" : "bg-white border-gray-200 text-gray-300"
+                    }`}>{idx + 1}</div>
                   <div className={`flex-1 h-px ${idx < currentIdx ? "bg-gray-600" : "bg-gray-100"}`} />
                 </div>
               ))}
             </div>
           )}
 
-          {/* Customer */}
+          {/* User */}
           <div className="bg-gray-50 rounded-xl p-4 space-y-2">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Cliente</p>
-            <p className="text-sm text-gray-900">{ret.customer.name}</p>
-            <p className="text-xs text-gray-500">{ret.customer.email}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Usuario</p>
+            <p className="text-sm text-gray-900">{ret.userId}</p>
           </div>
 
           {/* Product */}
           <div className="bg-gray-50 rounded-xl p-4 space-y-1.5">
             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Producto</p>
             <p className="text-sm text-gray-900">{ret.productName}</p>
-            <p className="text-xs text-gray-400 font-mono">{ret.productSku}</p>
             <p className="text-xs text-gray-500">Cantidad: {ret.quantity}</p>
           </div>
 
           {/* Return details */}
           <div className="space-y-3">
             <p className="text-[10px] text-gray-400 uppercase tracking-wider">Detalles de devolución</p>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 mb-1">Motivo</p>
-                <p className="text-xs text-gray-700">{REASON_LABELS[ret.reason]}</p>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-[10px] text-gray-400 mb-1">Reembolso vía</p>
-                <p className="text-xs text-gray-700">{REFUND_LABELS[ret.refundMethod]}</p>
-              </div>
-            </div>
             <div className="bg-gray-50 rounded-xl p-3">
-              <p className="text-[10px] text-gray-400 mb-1.5">Descripción del cliente</p>
-              <p className="text-xs text-gray-600 leading-relaxed">{ret.reasonDetail}</p>
+              <p className="text-[10px] text-gray-400 mb-1.5">Motivo</p>
+              <p className="text-xs text-gray-600 leading-relaxed">{ret.reason}</p>
             </div>
           </div>
 
@@ -195,49 +194,63 @@ function ReturnDrawer({
 
 /* ── Main ──────────────────────────────────────────────────── */
 export function AdminReturns() {
-  const [returns, setReturns]   = useState<ReturnRequest[]>(MOCK_RETURNS);
-  const [search, setSearch]     = useState("");
-  const [statusF, setStatusF]   = useState<"all" | ReturnStatus>("all");
-  const [drawer,  setDrawer]      = useState<ReturnRequest | null>(null);
-  const [page, setPage]           = useState(1);
+  const [returns, setReturns] = useState<ReturnRequest[]>([]);
+  const [search, setSearch] = useState("");
+  const [statusF, setStatusF] = useState<"all" | ReturnStatus>("all");
+  const [drawer, setDrawer] = useState<ReturnRequest | null>(null);
+  const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
+
+  const loadReturns = useCallback(async () => {
+    try {
+      const res = await returnRepository.findAll({ size: 200 });
+      const items = Array.isArray(res) ? res : (res as any).content ?? [];
+      setReturns(items.map(mapApiToUi));
+    } catch { toast.error("Error al cargar las devoluciones"); }
+  }, []);
+
+  useEffect(() => { loadReturns(); }, [loadReturns]);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return returns.filter(r => {
       if (statusF !== "all" && r.status !== statusF) return false;
       if (q && !r.returnNumber.toLowerCase().includes(q) &&
-          !r.customer.name.toLowerCase().includes(q) &&
-          !r.productName.toLowerCase().includes(q) &&
-          !r.orderNumber.toLowerCase().includes(q)) return false;
+        !r.userId.toLowerCase().includes(q) &&
+        !r.productName.toLowerCase().includes(q) &&
+        !r.orderNumber.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [returns, search, statusF]);
 
   const stats = useMemo(() => ({
-    total:     returns.length,
-    pending:   returns.filter(r => r.status === "requested" || r.status === "reviewing").length,
-    approved:  returns.filter(r => r.status === "approved").length,
-    refunded:  returns.filter(r => r.status === "refunded").reduce((s, r) => s + r.amount, 0),
+    total: returns.length,
+    pending: returns.filter(r => r.status === "requested" || r.status === "reviewing").length,
+    approved: returns.filter(r => r.status === "approved").length,
+    refunded: returns.filter(r => r.status === "refunded").reduce((s, r) => s + r.amount, 0),
   }), [returns]);
 
-  function handleStatusChange(id: string, status: ReturnStatus) {
-    setReturns(prev => prev.map(r => r.id === id ? { ...r, status, updatedAt: new Date().toISOString().slice(0,10) } : r));
-    const labels: Record<ReturnStatus, string> = {
-      requested: "Marcada como solicitada",
-      reviewing: "Revisión iniciada",
-      approved:  "Devolución aprobada",
-      rejected:  "Devolución rechazada",
-      refunded:  "Reembolso procesado",
-    };
-    toast.success(labels[status]);
-    if (drawer?.id === id) setDrawer(prev => prev ? { ...prev, status } : null);
+  async function handleStatusChange(id: string, status: ReturnStatus) {
+    try {
+      await returnRepository.updateStatus(id, UI_TO_API_STATUS[status]);
+      setReturns(prev => prev.map(r => r.id === id ? { ...r, status, updatedAt: new Date().toISOString() } : r));
+      const labels: Record<ReturnStatus, string> = {
+        requested: "Marcada como solicitada",
+        reviewing: "Revisión iniciada",
+        approved: "Devolución aprobada",
+        rejected: "Devolución rechazada",
+        returned: "Producto devuelto",
+        refunded: "Reembolso procesado",
+      };
+      toast.success(labels[status]);
+      if (drawer?.id === id) setDrawer(prev => prev ? { ...prev, status } : null);
+    } catch { toast.error("Error al cambiar el estado"); }
   }
 
   useEffect(() => setPage(1), [search, statusF]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   return (
     <div className="flex flex-col gap-5 h-full">
@@ -259,10 +272,10 @@ export function AdminReturns() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Total solicitudes",   value: returns.length,  icon: RotateCcw,    color: "text-gray-700"   },
-          { label: "Pendientes",          value: stats.pending,   icon: Clock,        color: "text-amber-600"  },
-          { label: "Aprobadas",           value: stats.approved,  icon: Check,        color: "text-violet-600" },
-          { label: "Total reembolsado",   value: `$${stats.refunded.toLocaleString()}`, icon: DollarSign, color: "text-green-600" },
+          { label: "Total solicitudes", value: returns.length, icon: RotateCcw, color: "text-gray-700" },
+          { label: "Pendientes", value: stats.pending, icon: Clock, color: "text-amber-600" },
+          { label: "Aprobadas", value: stats.approved, icon: Check, color: "text-violet-600" },
+          { label: "Total reembolsado", value: `$${stats.refunded.toLocaleString()}`, icon: DollarSign, color: "text-green-600" },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
@@ -282,7 +295,7 @@ export function AdminReturns() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" />
           <input
             className="w-full h-7 pl-8 pr-7 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 placeholder-gray-300"
-            placeholder="Buscar por nº devolución, cliente o producto…"
+            placeholder="Buscar por nº devolución, usuario o producto…"
             value={search} onChange={e => setSearch(e.target.value)}
           />
           {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-600"><X className="w-3 h-3" /></button>}
@@ -294,6 +307,7 @@ export function AdminReturns() {
           <option value="reviewing">En revisión</option>
           <option value="approved">Aprobadas</option>
           <option value="rejected">Rechazadas</option>
+          <option value="returned">Devueltas</option>
           <option value="refunded">Reembolsadas</option>
         </select>
         <span className="text-xs text-gray-400 ml-1">{filtered.length} resultado{filtered.length !== 1 ? "s" : ""}</span>
@@ -303,13 +317,13 @@ export function AdminReturns() {
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
         <div className="grid grid-cols-[1fr_1.6fr_1.8fr_1fr_1fr_0.9fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60 flex-shrink-0">
           {[
-            { label: "Nº",       cls: "text-left"  },
-            { label: "Cliente",  cls: "text-left"  },
-            { label: "Producto", cls: "text-left"  },
-            { label: "Motivo",   cls: "text-left"  },
-            { label: "Importe",  cls: "text-right" },
-            { label: "Estado",   cls: "text-left"  },
-            { label: "",         cls: "text-right" },
+            { label: "Nº", cls: "text-left" },
+            { label: "Usuario", cls: "text-left" },
+            { label: "Producto", cls: "text-left" },
+            { label: "Motivo", cls: "text-left" },
+            { label: "Importe", cls: "text-right" },
+            { label: "Estado", cls: "text-left" },
+            { label: "", cls: "text-right" },
           ].map(h => (
             <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
           ))}
@@ -335,11 +349,10 @@ export function AdminReturns() {
                   <p className="text-[11px] text-gray-400">{r.orderNumber}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-900 truncate">{r.customer.name}</p>
-                  <p className="text-[11px] text-gray-400 truncate">{r.customer.email}</p>
+                  <p className="text-xs text-gray-900 truncate">{r.userId}</p>
                 </div>
                 <p className="text-xs text-gray-600 truncate">{r.productName}</p>
-                <p className="text-xs text-gray-500 truncate">{REASON_LABELS[r.reason]}</p>
+                <p className="text-xs text-gray-500 truncate">{r.reason}</p>
                 <p className="text-xs text-gray-900 text-right tabular-nums">${r.amount.toLocaleString()}</p>
                 <span className={`inline-flex items-center gap-1.5 text-[11px] px-2 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${sm.dot}`} />
