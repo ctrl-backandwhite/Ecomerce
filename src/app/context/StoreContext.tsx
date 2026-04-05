@@ -161,10 +161,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       const exists = brands.find((x) => x.id === b.id);
       if (exists) {
-        const updated = await brandRepository.update(b.id, { name: b.name, slug: b.slug, logo: b.logo ?? undefined, website: b.website ?? undefined, description: b.description ?? undefined });
+        const updated = await brandRepository.update(b.id, { name: b.name, slug: b.slug, logoUrl: b.logoUrl ?? undefined, websiteUrl: b.websiteUrl ?? undefined, description: b.description ?? undefined });
         setBrands((prev) => prev.map((x) => (x.id === b.id ? updated : x)));
       } else {
-        const created = await brandRepository.create({ name: b.name, slug: b.slug, logo: b.logo ?? undefined, website: b.website ?? undefined, description: b.description ?? undefined });
+        const created = await brandRepository.create({ name: b.name, slug: b.slug, logoUrl: b.logoUrl ?? undefined, websiteUrl: b.websiteUrl ?? undefined, description: b.description ?? undefined });
         setBrands((prev) => [...prev, created]);
       }
     } catch {

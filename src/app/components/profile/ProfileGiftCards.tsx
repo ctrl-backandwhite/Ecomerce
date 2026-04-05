@@ -369,11 +369,12 @@ export function ProfileGiftCards() {
       const mapped = toReceivedGiftCard(card);
       const alreadyAdded = receivedCards.some(c => c.id === mapped.id);
       if (alreadyAdded) {
-        toast.info("Esta tarjeta ya está en tu lista");
+        // Update existing card in list (status changed PENDING → ACTIVE)
+        setReceivedCards(prev => prev.map(c => c.id === mapped.id ? mapped : c));
       } else {
         setReceivedCards(prev => [mapped, ...prev]);
-        toast.success(`Tarjeta activada — Saldo de ${card.balance}€ disponible`);
       }
+      toast.success(`Tarjeta activada — Saldo de ${card.balance}€ disponible`);
       setShowActivate(false);
     } catch (err) {
       if (err instanceof ApiError && err.message.includes("already activated")) {

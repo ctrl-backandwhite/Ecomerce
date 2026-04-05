@@ -521,49 +521,54 @@ export const campaignRepository = new CampaignRepository();
 // LOYALTY
 // ═══════════════════════════════════════════════════════════════
 
+export type LoyaltyAction = "PURCHASE" | "REVIEW" | "REFERRAL" | "REGISTRATION";
+
 export interface LoyaltyTier {
     id: string;
     name: string;
     minPoints: number;
+    maxPoints: number;
     multiplier: number;
-    benefits: string;
+    benefits: { label: string }[];
     createdAt: string;
+    updatedAt: string;
 }
 
 export interface LoyaltyTierPayload {
     name: string;
     minPoints: number;
+    maxPoints: number;
     multiplier: number;
-    benefits: string;
+    benefits: { label: string }[];
 }
 
 export interface LoyaltyRule {
     id: string;
-    name: string;
-    event: string;
-    points: number;
+    action: LoyaltyAction;
+    pointsPerUnit: number;
     active: boolean;
     createdAt: string;
+    updatedAt: string;
 }
 
 export interface LoyaltyRulePayload {
-    name: string;
-    event: string;
-    points: number;
+    action: LoyaltyAction;
+    pointsPerUnit: number;
     active?: boolean;
 }
 
 export interface LoyaltyBalance {
     userId: string;
-    points: number;
-    tier: string;
+    balance: number;
 }
 
 export interface LoyaltyHistory {
     id: string;
-    type: "EARN" | "REDEEM";
+    userId: string;
+    type: "EARN" | "REDEEM" | "ADJUST" | "EXPIRE";
     points: number;
     description: string;
+    orderId: string | null;
     createdAt: string;
 }
 

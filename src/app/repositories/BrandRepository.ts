@@ -24,8 +24,8 @@ export interface Brand {
     id: string;
     name: string;
     slug: string;
-    logo: string | null;
-    website: string | null;
+    logoUrl: string | null;
+    websiteUrl: string | null;
     description: string | null;
     status: "ACTIVE" | "INACTIVE";
     productCount: number;
@@ -35,9 +35,9 @@ export interface Brand {
 
 export interface BrandPayload {
     name: string;
-    slug?: string;
-    logo?: string;
-    website?: string;
+    slug: string;
+    logoUrl?: string;
+    websiteUrl?: string;
     description?: string;
 }
 
@@ -56,6 +56,19 @@ export interface BrandQuery {
 class BrandRepository extends BaseRepository<Brand, BrandPayload, BrandPayload> {
     constructor() {
         super("/api/v1/brands");
+    }
+
+    /** Override: backend returns a Page<Brand>, we unwrap .content */
+    async findAll(query: Record<string, unknown> = {}): Promise<Brand[]> {
+        try {
+            const qs = this.buildParams({ size: 200, ...query });
+            const url = qs ? `${this.baseUrl}?${qs}` : this.baseUrl;
+            const res = await authFetch(url);
+            const page = await this.handleResponse<Page<Brand>>(res);
+            return page.content;
+        } catch (err) {
+            this.wrapError(err, "No se pudo obtener las marcas");
+        }
     }
 
     async findBySlug(slug: string): Promise<Brand> {

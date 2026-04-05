@@ -8,11 +8,26 @@ import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
 
 const EMPTY: Partial<Brand> = {
-  name: "", slug: "", logo: "", website: "", description: "", productCount: 0, status: "ACTIVE",
+  name: "", slug: "", logoUrl: "", websiteUrl: "", description: "", productCount: 0, status: "ACTIVE",
 };
 
 function slugify(str: string) {
   return str.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+}
+
+/* ── Brand Logo with fallback ────────────────────────────── */
+function BrandLogo({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+  const [failed, setFailed] = useState(false);
+  const initials = name.slice(0, 2).toUpperCase();
+  return (
+    <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+      {logoUrl && !failed ? (
+        <img src={logoUrl} alt={name} className="w-full h-full object-contain p-1" onError={() => setFailed(true)} />
+      ) : (
+        <span className="text-xs font-medium text-gray-500">{initials}</span>
+      )}
+    </div>
+  );
 }
 
 /* ── Brand Modal ─────────────────────────────────────────── */
@@ -27,8 +42,8 @@ function BrandModal({
   const [form, setForm] = useState<Omit<Brand, "id" | "createdAt" | "updatedAt">>({
     name: brand.name ?? "",
     slug: brand.slug ?? "",
-    logo: brand.logo ?? "",
-    website: brand.website ?? "",
+    logoUrl: brand.logoUrl ?? "",
+    websiteUrl: brand.websiteUrl ?? "",
     description: brand.description ?? "",
     productCount: brand.productCount ?? 0,
     status: brand.status ?? "ACTIVE",
@@ -48,7 +63,7 @@ function BrandModal({
 
   function handleSave() {
     if (!validate()) return;
-    onSave({ id: brand.id ?? `brand-${Date.now()}`, ...form, createdAt: brand.createdAt ?? new Date().toISOString(), updatedAt: brand.updatedAt ?? null });
+    onSave({ id: brand.id ?? "", ...form, createdAt: brand.createdAt ?? new Date().toISOString(), updatedAt: brand.updatedAt ?? null });
   }
 
   const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";
@@ -96,7 +111,7 @@ function BrandModal({
           {/* Logo URL */}
           <div>
             <label className={lbl}>URL del logo (opcional)</label>
-            <input value={form.logo ?? ""} onChange={(e) => set("logo", e.target.value)} className={field} placeholder="https://..." />
+            <input value={form.logoUrl ?? ""} onChange={(e) => set("logoUrl", e.target.value)} className={field} placeholder="https://..." />
           </div>
 
           {/* Website */}
@@ -104,7 +119,7 @@ function BrandModal({
             <label className={lbl}>Sitio web (opcional)</label>
             <div className="relative">
               <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-              <input value={form.website ?? ""} onChange={(e) => set("website", e.target.value)} className={`${field} pl-8`} placeholder="https://apple.com" />
+              <input value={form.websiteUrl ?? ""} onChange={(e) => set("websiteUrl", e.target.value)} className={`${field} pl-8`} placeholder="https://apple.com" />
             </div>
           </div>
 
@@ -162,9 +177,9 @@ export function AdminBrands() {
   async function handleSave(b: Brand) {
     try {
       if (modal?.id) {
-        await brandRepository.update(b.id, { name: b.name, slug: b.slug, logo: b.logo ?? undefined, website: b.website ?? undefined, description: b.description ?? undefined });
+        await brandRepository.update(b.id, { name: b.name, slug: b.slug, logoUrl: b.logoUrl ?? undefined, websiteUrl: b.websiteUrl ?? undefined, description: b.description ?? undefined });
       } else {
-        await brandRepository.create({ name: b.name, slug: b.slug, logo: b.logo ?? undefined, website: b.website ?? undefined, description: b.description ?? undefined });
+        await brandRepository.create({ name: b.name, slug: b.slug, logoUrl: b.logoUrl ?? undefined, websiteUrl: b.websiteUrl ?? undefined, description: b.description ?? undefined });
       }
       await loadBrands();
       toast.success(modal?.id ? "Marca actualizada" : "Marca creada");
@@ -236,13 +251,7 @@ export function AdminBrands() {
                 <tr key={brand.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors group">
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 bg-gray-100 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
-                        {brand.logo ? (
-                          <img src={brand.logo} alt={brand.name} className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = "none"; }} />
-                        ) : (
-                          <span className="text-xs text-gray-500">{brand.name.slice(0, 2).toUpperCase()}</span>
-                        )}
-                      </div>
+                      <BrandLogo name={brand.name} logoUrl={brand.logoUrl} />
                       <div>
                         <p className="text-sm text-gray-900">{brand.name}</p>
                         <p className="text-xs text-gray-400 mt-0.5">{brand.slug}</p>
@@ -250,10 +259,10 @@ export function AdminBrands() {
                     </div>
                   </td>
                   <td className="px-5 py-4 hidden md:table-cell">
-                    {brand.website ? (
-                      <a href={brand.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                    {brand.websiteUrl ? (
+                      <a href={brand.websiteUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 transition-colors">
                         <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
-                        {brand.website.replace("https://", "")}
+                        {brand.websiteUrl.replace("https://", "")}
                       </a>
                     ) : (
                       <span className="text-xs text-gray-300">—</span>

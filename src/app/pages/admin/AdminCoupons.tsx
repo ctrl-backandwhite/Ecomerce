@@ -53,7 +53,7 @@ const STATUS_META = {
 /* ── Helpers ─────────────────────────────────────────────── */
 
 function mapApiToUi(a: ApiCoupon): Coupon {
-  const expired = a.endDate ? new Date(a.endDate) < new Date() : false;
+  const expired = a.validUntil ? new Date(a.validUntil) < new Date() : false;
   let status: Coupon["status"] = "active";
   if (expired) status = "expired";
   else if (!a.active) status = "inactive";
@@ -65,23 +65,30 @@ function mapApiToUi(a: ApiCoupon): Coupon {
     minOrder: a.minOrderAmount ?? 0,
     maxUses: a.maxUses ?? null,
     usedCount: a.usedCount ?? 0,
-    expiresAt: a.endDate ?? null,
+    expiresAt: a.validUntil ?? null,
     status,
     description: a.description ?? "",
     createdAt: a.createdAt,
   };
 }
 
+/** Ensure a date string is a valid ISO-8601 Instant (with time+Z). */
+function toInstant(d: string): string {
+  if (d.includes("T")) return d.endsWith("Z") ? d : `${d}Z`;
+  return `${d}T00:00:00Z`;
+}
+
 function uiToPayload(c: Coupon): CouponPayload {
   return {
     code: c.code,
     description: c.description || undefined,
-    type: c.type === "percentage" ? "PERCENTAGE" : "FIXED_AMOUNT",
+    type: c.type === "percentage" ? "PERCENTAGE" : "FIXED",
     value: c.value,
     minOrderAmount: c.minOrder || undefined,
     maxUses: c.maxUses ?? undefined,
-    startDate: c.createdAt ?? new Date().toISOString(),
-    endDate: c.expiresAt ?? new Date(Date.now() + 365 * 86400000).toISOString(),
+    validFrom: toInstant(c.createdAt ?? new Date().toISOString()),
+    validUntil: toInstant(c.expiresAt ?? new Date(Date.now() + 365 * 86400000).toISOString()),
+    active: c.status === "active",
   };
 }
 
@@ -149,7 +156,7 @@ function CouponModal({
     if (form.type === "percentage" && form.value > 100) { toast.error("El porcentaje no puede superar 100"); return; }
 
     const computed: Coupon = {
-      id: coupon.id ?? `coup-${Date.now()}`,
+      id: coupon.id ?? "",
       usedCount: coupon.usedCount ?? 0,
       createdAt: coupon.createdAt ?? new Date().toISOString().slice(0, 10),
       ...form,
@@ -430,7 +437,9 @@ export function AdminCoupons() {
         setCoupons(prev => [mapApiToUi(created), ...prev]);
         toast.success("Cupón creado");
       }
-    } catch { toast.error("Error al guardar el cupón"); }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Error al guardar el cupón");
+    }
     setModal(null);
   }
 

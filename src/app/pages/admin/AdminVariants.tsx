@@ -1055,9 +1055,12 @@ export function AdminVariants() {
                                 </div>
 
                                 {/* Info */}
-                                <button
+                                <div
+                                    role="button"
+                                    tabIndex={0}
                                     onClick={() => setExpandedId(isExpanded ? null : v.vid)}
-                                    className="flex-1 min-w-0 text-left group"
+                                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setExpandedId(isExpanded ? null : v.vid); }}
+                                    className="flex-1 min-w-0 text-left group cursor-pointer"
                                 >
                                     <div className="flex items-center gap-2 flex-wrap">
                                         <p className="text-sm text-gray-900 group-hover:text-gray-700 transition-colors line-clamp-1">
@@ -1106,7 +1109,7 @@ export function AdminVariants() {
                                             <> · {v.inventories.length} inventario{v.inventories.length !== 1 ? "s" : ""}</>
                                         )}
                                     </p>
-                                </button>
+                                </div>
 
                                 {/* View detail */}
                                 <button

@@ -21,15 +21,18 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
 export interface Coupon {
     id: string;
     code: string;
-    description: string | null;
-    type: "PERCENTAGE" | "FIXED_AMOUNT" | "FREE_SHIPPING";
+    description?: string | null;
+    type: "PERCENTAGE" | "FIXED" | "FREE_SHIPPING";
     value: number;
     minOrderAmount: number | null;
     maxUses: number | null;
     usedCount: number;
-    startDate: string;
-    endDate: string;
+    maxUsesPerUser?: number | null;
+    validFrom: string;
+    validUntil: string;
     active: boolean;
+    appliesToCategories?: string[] | null;
+    appliesToProducts?: string[] | null;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -37,12 +40,16 @@ export interface Coupon {
 export interface CouponPayload {
     code: string;
     description?: string;
-    type: "PERCENTAGE" | "FIXED_AMOUNT" | "FREE_SHIPPING";
+    type: "PERCENTAGE" | "FIXED" | "FREE_SHIPPING";
     value: number;
     minOrderAmount?: number;
     maxUses?: number;
-    startDate: string;
-    endDate: string;
+    maxUsesPerUser?: number;
+    validFrom: string;
+    validUntil: string;
+    active: boolean;
+    appliesToCategories?: string[];
+    appliesToProducts?: string[];
 }
 
 export interface CouponValidation {
