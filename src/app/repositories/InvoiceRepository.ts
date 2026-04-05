@@ -158,6 +158,32 @@ class InvoiceRepository {
             return handleRes<Invoice>(res);
         } catch (err) { wrapErr(err, `No se pudo marcar como pagada la factura ${id}`); }
     }
+
+    async markVoid(id: string): Promise<Invoice> {
+        try {
+            const inv = await this.findById(id);
+            const payload = {
+                orderId: inv.orderId,
+                status: "VOID",
+                issueDate: inv.issueDate,
+                dueDate: inv.dueDate,
+                subtotal: inv.subtotal,
+                shipping: inv.shipping,
+                tax: inv.tax,
+                total: inv.total,
+                paymentMethod: inv.paymentMethod,
+                customerSnapshot: inv.customerSnapshot,
+                lines: inv.lines,
+                notes: inv.notes,
+            };
+            const res = await authFetch(`${BASE_URL}/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+            return handleRes<Invoice>(res);
+        } catch (err) { wrapErr(err, `No se pudo anular la factura ${id}`); }
+    }
 }
 
 export const invoiceRepository = new InvoiceRepository();

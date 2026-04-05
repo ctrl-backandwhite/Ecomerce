@@ -51,6 +51,40 @@ const STATUS_META = {
 };
 
 /* ── Helpers ─────────────────────────────────────────────── */
+
+function mapApiToUi(a: ApiCoupon): Coupon {
+  const expired = a.endDate ? new Date(a.endDate) < new Date() : false;
+  let status: Coupon["status"] = "active";
+  if (expired) status = "expired";
+  else if (!a.active) status = "inactive";
+  return {
+    id: a.id,
+    code: a.code,
+    type: a.type === "PERCENTAGE" ? "percentage" : "fixed",
+    value: a.value,
+    minOrder: a.minOrderAmount ?? 0,
+    maxUses: a.maxUses ?? null,
+    usedCount: a.usedCount ?? 0,
+    expiresAt: a.endDate ?? null,
+    status,
+    description: a.description ?? "",
+    createdAt: a.createdAt,
+  };
+}
+
+function uiToPayload(c: Coupon): CouponPayload {
+  return {
+    code: c.code,
+    description: c.description || undefined,
+    type: c.type === "percentage" ? "PERCENTAGE" : "FIXED_AMOUNT",
+    value: c.value,
+    minOrderAmount: c.minOrder || undefined,
+    maxUses: c.maxUses ?? undefined,
+    startDate: c.createdAt ?? new Date().toISOString(),
+    endDate: c.expiresAt ?? new Date(Date.now() + 365 * 86400000).toISOString(),
+  };
+}
+
 function isExpired(expiresAt: string | null) {
   if (!expiresAt) return false;
   return new Date(expiresAt) < new Date();
@@ -353,7 +387,7 @@ export function AdminCoupons() {
   const loadCoupons = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await couponRepository.findAll({ size: 500 } as any);
+      const res = await couponRepository.findPaged({ size: 500 });
       setCoupons(res.content.map(mapApiToUi));
     } catch { toast.error("Error al cargar los cupones"); }
     finally { setLoading(false); }

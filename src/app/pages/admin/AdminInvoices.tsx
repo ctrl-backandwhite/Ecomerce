@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   Search, X, Eye, Ban, Download, FileText,
   CheckCircle2, Clock, AlertTriangle, DollarSign,
-  Printer, Plus,
+  Printer,
 } from "lucide-react";
 import { type Invoice, type InvoiceStatus, invoiceRepository } from "../../repositories/InvoiceRepository";
 import { InvoiceDocument } from "../../components/InvoiceDocument";
@@ -85,12 +85,12 @@ export function AdminInvoices() {
     paid: invoices.filter(i => i.status === "PAID").length,
     pending: invoices.filter(i => i.status === "PENDING").length,
     overdue: invoices.filter(i => i.status === "OVERDUE").length,
-    revenue: invoices.filter(i => i.status === "PAID").reduce((s, i) => s + i.total, 0),
+    revenue: invoices.filter(i => i.status !== "VOID").reduce((s, i) => s + i.total, 0),
   }), [invoices]);
 
   async function handleVoid(id: string) {
     try {
-      await invoiceRepository.update(id, {} as any);
+      await invoiceRepository.markVoid(id);
       setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: "VOID" as InvoiceStatus } : inv));
       toast.success("Factura anulada");
     } catch { toast.error("Error al anular la factura"); }
@@ -144,13 +144,6 @@ export function AdminInvoices() {
           <h1 className="text-xl tracking-tight text-gray-900">Facturas</h1>
           <p className="text-xs text-gray-400 mt-0.5">{invoices.length} facturas en total</p>
         </div>
-        <button
-          onClick={() => toast.info("La factura se genera automáticamente al confirmar un pedido")}
-          className="w-9 h-9 bg-gray-200 text-gray-600 rounded-full hover:bg-gray-300 transition-all flex items-center justify-center shadow-sm hover:shadow-md flex-shrink-0"
-          title="Nueva factura"
-        >
-          <Plus className="w-4 h-4" strokeWidth={1.5} />
-        </button>
       </div>
 
       {/* Stats */}

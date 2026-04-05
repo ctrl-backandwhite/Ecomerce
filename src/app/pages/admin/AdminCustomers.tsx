@@ -44,7 +44,7 @@ function CustomerDrawer({
           {/* Avatar + name */}
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gray-500 rounded-full flex items-center justify-center text-white text-lg tracking-widest flex-shrink-0">
-              {customer.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              {customer.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
             </div>
             <div>
               <p className="text-sm text-gray-900">{customer.name}</p>
@@ -92,8 +92,8 @@ function CustomerDrawer({
               <button
                 onClick={() => { onToggleStatus(customer.id); toast.success("Estado del cliente actualizado"); }}
                 className={`w-full flex items-center gap-2.5 text-xs px-4 py-2.5 rounded-xl border transition-colors ${customer.status === "ACTIVE"
-                    ? "text-red-600 border-red-100 bg-red-50 hover:bg-red-100"
-                    : "text-green-600 border-green-100 bg-green-50 hover:bg-green-100"
+                  ? "text-red-600 border-red-100 bg-red-50 hover:bg-red-100"
+                  : "text-green-600 border-green-100 bg-green-50 hover:bg-green-100"
                   }`}
               >
                 {customer.status === "ACTIVE"
@@ -140,7 +140,7 @@ export function AdminCustomers() {
 
   const filtered = useMemo(() => {
     let l = [...list];
-    if (search) l = l.filter((c) => c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase()));
+    if (search) l = l.filter((c) => (c.name ?? "").toLowerCase().includes(search.toLowerCase()) || (c.email ?? "").toLowerCase().includes(search.toLowerCase()));
     if (statusFilter !== "all") l = l.filter((c) => c.status === statusFilter);
     l.sort((a, b) => {
       const va = a[sortKey] as any;
@@ -248,7 +248,7 @@ export function AdminCustomers() {
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white text-[11px] tracking-widest flex-shrink-0">
-                        {c.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                        {(c.name ?? "").split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || "?"}
                       </div>
                       <div>
                         <p className="text-xs text-gray-900">{c.name}</p>

@@ -62,6 +62,47 @@ export interface ReviewQuery {
     ascending?: boolean;
 }
 
+// ── DTO → Domain mapper ──────────────────────────────────────────────────────
+
+/** Shape returned by the backend (ReviewDtoOut). */
+interface ReviewDto {
+    id: string;
+    productId: string;
+    userId: string;
+    authorName: string;
+    rating: number;
+    title: string;
+    body: string;
+    verified: boolean;
+    status: "PENDING" | "APPROVED" | "REJECTED";
+    helpfulCount: number;
+    images: string[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+function mapDtoToReview(d: ReviewDto): Review {
+    return {
+        id: d.id,
+        productId: d.productId,
+        userId: d.userId,
+        author: d.authorName ?? "Anónimo",
+        avatar: null,
+        rating: d.rating,
+        title: d.title ?? "",
+        body: d.body ?? "",
+        date: d.createdAt ?? "",
+        verified: d.verified ?? false,
+        helpful: d.helpfulCount ?? 0,
+        status: d.status,
+        images: d.images ?? [],
+    };
+}
+
+function mapPage(raw: Page<ReviewDto>): Page<Review> {
+    return { ...raw, content: (raw.content ?? []).map(mapDtoToReview) };
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 async function handleRes<R>(res: Response): Promise<R> {
@@ -92,7 +133,8 @@ class ReviewRepository {
             const res = await nxFetch(
                 `${API_BASE}/api/v1/public/products/${productId}/reviews?${params}`,
             );
-            return handleRes<Page<Review>>(res);
+            const raw = await handleRes<Page<ReviewDto>>(res);
+            return mapPage(raw);
         } catch (err) {
             wrapErr(err, "No se pudieron obtener las reseñas");
         }
@@ -121,7 +163,8 @@ class ReviewRepository {
                     body: JSON.stringify(data),
                 },
             );
-            return handleRes<Review>(res);
+            const raw = await handleRes<ReviewDto>(res);
+            return mapDtoToReview(raw);
         } catch (err) {
             wrapErr(err, "No se pudo crear la reseña");
         }
@@ -148,7 +191,8 @@ class ReviewRepository {
                 if (v !== undefined && v !== null) params.set(k, String(v));
             }
             const res = await authFetch(`${API_BASE}/api/v1/reviews/admin?${params}`);
-            return handleRes<Page<Review>>(res);
+            const raw = await handleRes<Page<ReviewDto>>(res);
+            return mapPage(raw);
         } catch (err) {
             wrapErr(err, "No se pudieron obtener las reseñas");
         }

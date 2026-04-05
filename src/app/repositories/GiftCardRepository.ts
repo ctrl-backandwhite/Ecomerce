@@ -18,7 +18,7 @@ const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type GCApiStatus = "ACTIVE" | "USED" | "EXPIRED" | "VOID";
+export type GCApiStatus = "PENDING" | "ACTIVE" | "USED" | "EXPIRED" | "VOID";
 
 export interface GiftCardApiDto {
     id: string;
@@ -151,7 +151,8 @@ function instantToSlash(instant: string | null): string {
     return isoToSlash(instant.slice(0, 10));
 }
 
-function statusToFrontend(s: GCApiStatus): "active" | "used" | "expired" {
+function statusToFrontend(s: GCApiStatus): "pending" | "active" | "used" | "expired" {
+    if (s === "PENDING") return "pending";
     if (s === "ACTIVE") return "active";
     if (s === "USED") return "used";
     return "expired";

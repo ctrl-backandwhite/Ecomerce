@@ -191,13 +191,17 @@ export interface GiftCard {
     code: string;
     designId: string;
     buyerId: string;
+    recipientName: string | null;
     recipientEmail: string | null;
-    initialBalance: number;
-    currentBalance: number;
+    originalAmount: number;
+    balance: number;
     message: string | null;
-    active: boolean;
-    expiresAt: string | null;
+    status: "PENDING" | "ACTIVE" | "USED" | "EXPIRED" | "VOID";
+    sendDate: string | null;
+    expiryDate: string | null;
+    activatedAt: string | null;
     createdAt: string;
+    updatedAt: string;
 }
 
 export interface GiftCardTransaction {

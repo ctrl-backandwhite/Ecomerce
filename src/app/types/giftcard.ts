@@ -23,7 +23,7 @@ export const GIFT_CARD_DESIGNS: GiftCardDesign[] = [
 /** Preset denomination options. */
 export const GIFT_CARD_AMOUNTS = [25, 50, 75, 100, 150, 200];
 
-export type GCStatus = "active" | "used" | "expired";
+export type GCStatus = "pending" | "active" | "used" | "expired";
 
 export interface ReceivedGiftCard {
     id: string;

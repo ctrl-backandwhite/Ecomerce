@@ -42,6 +42,7 @@ const STATUS_SENT: Record<string, { label: string; dot: string; text: string }> 
   redeemed: { label: "Canjeada", dot: "bg-green-400", text: "text-green-600" },
 };
 const STATUS_RECEIVED: Record<GCStatus, { label: string; dot: string; text: string; bg: string }> = {
+  pending: { label: "Pendiente", dot: "bg-amber-400", text: "text-amber-700", bg: "bg-amber-50" },
   active: { label: "Activa", dot: "bg-green-400", text: "text-green-700", bg: "bg-green-50" },
   used: { label: "Agotada", dot: "bg-gray-300", text: "text-gray-500", bg: "bg-gray-100" },
   expired: { label: "Expirada", dot: "bg-red-300", text: "text-red-500", bg: "bg-red-50" },
