@@ -373,34 +373,30 @@ export const contactRepository = new ContactRepository();
 export interface SeoPage {
     id: string;
     path: string;
-    title: string;
-    description: string;
-    keywords: string | null;
-    ogTitle: string | null;
-    ogDescription: string | null;
-    ogImage: string | null;
-    canonicalUrl: string | null;
+    metaTitle: string;
+    metaDescription: string | null;
+    indexable: boolean;
+    seoScore: number | null;
     createdAt: string;
     updatedAt: string | null;
 }
 
 export interface SeoPagePayload {
     path: string;
-    title: string;
-    description: string;
-    keywords?: string;
-    ogTitle?: string;
-    ogDescription?: string;
-    ogImage?: string;
-    canonicalUrl?: string;
+    metaTitle: string;
+    metaDescription?: string;
+    indexable?: boolean;
+    seoScore?: number;
 }
 
 class SeoPageRepository {
     private url = `${API_BASE}/api/v1/seo`;
 
     async findAll(): Promise<SeoPage[]> {
-        try { return handleRes<SeoPage[]>(await authFetch(this.url)); }
-        catch (err) { wrapErr(err, "No se pudieron obtener las páginas SEO"); }
+        try {
+            const page = await handleRes<Page<SeoPage>>(await authFetch(this.url));
+            return page.content;
+        } catch (err) { wrapErr(err, "No se pudieron obtener las páginas SEO"); }
     }
 
     async findById(id: string): Promise<SeoPage> {

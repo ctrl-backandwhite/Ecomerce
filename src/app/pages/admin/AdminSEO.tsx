@@ -21,18 +21,20 @@ function mapApiToUi(s: ApiSeoPage): SEOEntry {
     id: s.id,
     page: label.charAt(0).toUpperCase() + label.slice(1) || s.path,
     url: s.path,
-    title: s.title,
-    description: s.description,
-    score: 70,
-    indexed: true,
+    title: s.metaTitle,
+    description: s.metaDescription ?? "",
+    score: s.seoScore ?? 0,
+    indexed: s.indexable,
   };
 }
 
 function uiToPayload(e: SEOEntry): SeoPagePayload {
   return {
     path: e.url,
-    title: e.title,
-    description: e.description,
+    metaTitle: e.title,
+    metaDescription: e.description,
+    indexable: e.indexed,
+    seoScore: e.score,
   };
 }
 
@@ -97,7 +99,7 @@ export function AdminSEO() {
     }
   };
 
-  const avg = Math.round(entries.reduce((s, e) => s + e.score, 0) / entries.length);
+  const avg = entries.length ? Math.round(entries.reduce((s, e) => s + e.score, 0) / entries.length) : 0;
 
   return (
     <div className="p-6 space-y-5">
