@@ -439,28 +439,32 @@ export const seoPageRepository = new SeoPageRepository();
 // CAMPAIGNS
 // ═══════════════════════════════════════════════════════════════
 
+export type ApiCampaignType = "PERCENTAGE" | "FIXED" | "FLASH" | "BUNDLE" | "BUY2GET1" | "FREE_SHIPPING";
+
 export interface Campaign {
     id: string;
     name: string;
-    description: string | null;
-    type: "DISCOUNT" | "FLASH_SALE" | "SEASONAL" | "LOYALTY";
+    type: ApiCampaignType;
+    value: number | null;
+    badge: string | null;
     startDate: string;
     endDate: string;
+    appliesToCategories: string[] | null;
+    appliesToProducts: string[] | null;
     active: boolean;
-    bannerUrl: string | null;
-    discount: number | null;
     createdAt: string;
     updatedAt: string | null;
 }
 
 export interface CampaignPayload {
     name: string;
-    description?: string;
-    type: "DISCOUNT" | "FLASH_SALE" | "SEASONAL" | "LOYALTY";
+    type: ApiCampaignType;
+    value: number;
+    badge?: string;
     startDate: string;
     endDate: string;
-    bannerUrl?: string;
-    discount?: number;
+    appliesToCategories?: string[];
+    appliesToProducts?: string[];
     active?: boolean;
 }
 

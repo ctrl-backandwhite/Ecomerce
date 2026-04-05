@@ -9,7 +9,7 @@ import {
 import { toast } from "sonner";
 import { useStore } from "../../context/StoreContext";
 import {
-  type Campaign as ApiCampaign, type CampaignPayload,
+  type Campaign as ApiCampaign, type CampaignPayload, type ApiCampaignType,
   campaignRepository,
 } from "../../repositories/CmsRepository";
 
@@ -80,6 +80,24 @@ const BADGE_COLORS = ["#111827", "#3b82f6", "#ef4444", "#f59e0b", "#10b981", "#8
 // ── Initial data ──────────────────────────────────────────────────────────────
 // Removed: data is now loaded from the API.
 
+const API_TO_UI_TYPE: Record<ApiCampaignType, CampaignType> = {
+  PERCENTAGE: "percentage",
+  FIXED: "fixed",
+  FLASH: "flash",
+  BUNDLE: "bundle",
+  BUY2GET1: "two_for_one",
+  FREE_SHIPPING: "free_shipping",
+};
+
+const UI_TO_API_TYPE: Record<CampaignType, ApiCampaignType> = {
+  percentage: "PERCENTAGE",
+  fixed: "FIXED",
+  flash: "FLASH",
+  bundle: "BUNDLE",
+  two_for_one: "BUY2GET1",
+  free_shipping: "FREE_SHIPPING",
+};
+
 function mapApiToUi(c: ApiCampaign): Campaign {
   const now = new Date().toISOString();
   let status: CampaignStatus = "paused";
@@ -88,27 +106,25 @@ function mapApiToUi(c: ApiCampaign): Campaign {
   } else if (c.endDate < now) {
     status = "ended";
   }
-  let type: CampaignType = "percentage";
-  if (c.type === "FLASH_SALE") type = "flash";
-  else if (c.type === "SEASONAL") type = "bundle";
+  const type: CampaignType = API_TO_UI_TYPE[c.type] ?? "percentage";
   return {
     id: c.id,
     name: c.name,
-    description: c.description ?? "",
+    description: "",
     type,
     status,
-    discountValue: c.discount ?? 0,
+    discountValue: c.value ?? 0,
     minOrder: 0,
     maxDiscount: null,
-    appliesTo: "all",
-    categoryIds: [],
-    productIds: [],
+    appliesTo: c.appliesToCategories?.length ? "categories" : c.appliesToProducts?.length ? "products" : "all",
+    categoryIds: c.appliesToCategories ?? [],
+    productIds: c.appliesToProducts ?? [],
     buyQty: 2,
     getQty: 1,
     startDate: c.startDate.split("T")[0],
     endDate: c.endDate.split("T")[0],
-    isFlash: c.type === "FLASH_SALE",
-    badgeText: "",
+    isFlash: c.type === "FLASH",
+    badgeText: c.badge ?? "",
     badgeColor: "#111827",
     showOnHome: false,
     priority: 3,
@@ -119,16 +135,16 @@ function mapApiToUi(c: ApiCampaign): Campaign {
 }
 
 function uiToPayload(c: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesCount"> & { id?: string }): CampaignPayload {
-  let apiType: CampaignPayload["type"] = "DISCOUNT";
-  if (c.type === "flash") apiType = "FLASH_SALE";
-  else if (c.type === "bundle") apiType = "SEASONAL";
+  const apiType: ApiCampaignType = UI_TO_API_TYPE[c.type] ?? "PERCENTAGE";
   return {
     name: c.name,
-    description: c.description || undefined,
     type: apiType,
-    startDate: c.startDate,
-    endDate: c.endDate,
-    discount: c.discountValue || undefined,
+    value: c.discountValue ?? 0,
+    badge: c.badgeText || undefined,
+    startDate: c.startDate.includes("T") ? c.startDate : `${c.startDate}T00:00:00Z`,
+    endDate: c.endDate.includes("T") ? c.endDate : `${c.endDate}T23:59:59Z`,
+    appliesToCategories: c.appliesTo === "categories" ? c.categoryIds : undefined,
+    appliesToProducts: c.appliesTo === "products" ? c.productIds : undefined,
     active: c.status === "active" || c.status === "scheduled",
   };
 }
