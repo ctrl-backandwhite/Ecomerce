@@ -23,7 +23,7 @@ const BASE_URL = `${API_BASE}/api/v1/orders`;
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
-export type OrderStatus = "PENDING" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | "REFUNDED";
+export type OrderStatus = "DRAFT" | "PENDING" | "CONFIRMED" | "PROCESSING" | "SHIPPED" | "IN_TRANSIT" | "DELIVERED" | "CANCELLED" | "REFUNDED";
 
 export interface OrderItem {
     id: string;
@@ -145,6 +145,13 @@ class OrderRepository {
             const res = await authFetch(`${BASE_URL}/me/${id}/cancel`, { method: "POST" });
             if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`);
         } catch (err) { wrapErr(err, "No se pudo cancelar el pedido"); }
+    }
+
+    async confirmOrder(id: string): Promise<Order> {
+        try {
+            const res = await authFetch(`${BASE_URL}/me/${id}/confirm`, { method: "POST" });
+            return handleRes<Order>(res);
+        } catch (err) { wrapErr(err, "No se pudo confirmar el pedido"); }
     }
 
     // ── Admin ──────────────────────────────────────────────────────

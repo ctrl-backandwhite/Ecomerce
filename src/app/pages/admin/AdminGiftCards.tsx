@@ -3,7 +3,7 @@ import { Plus, Gift, Copy, Ban, Eye, DollarSign, Check, X, User, Mail, Calendar,
 import { toast } from "sonner";
 import {
   type GiftCard as ApiGiftCard, type GiftCardDesign, type GiftCardTransaction,
-  giftCardRepository,
+  adminGiftCardRepository as giftCardRepository,
 } from "../../repositories/CmsRepository";
 
 type GCStatus = "pending" | "active" | "used" | "expired" | "void";

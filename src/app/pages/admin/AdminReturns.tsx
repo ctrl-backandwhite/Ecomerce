@@ -204,8 +204,7 @@ export function AdminReturns() {
   const loadReturns = useCallback(async () => {
     try {
       const res = await returnRepository.findAll({ size: 200 });
-      const items = Array.isArray(res) ? res : (res as any).content ?? [];
-      setReturns(items.map(mapApiToUi));
+      setReturns((res.content ?? []).map(mapApiToUi));
     } catch { toast.error("Error al cargar las devoluciones"); }
   }, []);
 

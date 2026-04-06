@@ -13,7 +13,7 @@ import { type Coupon as ApiCoupon, type CouponPayload, couponRepository } from "
 interface Coupon {
   id: string;
   code: string;
-  type: "percentage" | "fixed";
+  type: "percentage" | "fixed" | "freeShipping";
   value: number;
   minOrder: number;
   maxUses: number | null;
@@ -60,7 +60,7 @@ function mapApiToUi(a: ApiCoupon): Coupon {
   return {
     id: a.id,
     code: a.code,
-    type: a.type === "PERCENTAGE" ? "percentage" : "fixed",
+    type: a.type === "PERCENTAGE" ? "percentage" : a.type === "FREE_SHIPPING" ? "freeShipping" : "fixed",
     value: a.value,
     minOrder: a.minOrderAmount ?? 0,
     maxUses: a.maxUses ?? null,
@@ -82,7 +82,7 @@ function uiToPayload(c: Coupon): CouponPayload {
   return {
     code: c.code,
     description: c.description || undefined,
-    type: c.type === "percentage" ? "PERCENTAGE" : "FIXED",
+    type: c.type === "percentage" ? "PERCENTAGE" : c.type === "freeShipping" ? "FREE_SHIPPING" : "FIXED",
     value: c.value,
     minOrderAmount: c.minOrder || undefined,
     maxUses: c.maxUses ?? undefined,
@@ -154,6 +154,7 @@ function CouponModal({
     if (!form.code.trim()) { toast.error("El código es obligatorio"); return; }
     if (form.value <= 0) { toast.error("El valor debe ser mayor a 0"); return; }
     if (form.type === "percentage" && form.value > 100) { toast.error("El porcentaje no puede superar 100"); return; }
+    if (form.type === "freeShipping") form.value = 0;
 
     const computed: Coupon = {
       id: coupon.id ?? "",
@@ -209,21 +210,21 @@ function CouponModal({
             <div>
               <label className={lbl}>Tipo de descuento</label>
               <div className="flex border border-gray-200 rounded-lg overflow-hidden h-7">
-                {(["percentage", "fixed"] as const).map(t => (
+                {(["percentage", "fixed", "freeShipping"] as const).map(t => (
                   <button
                     key={t}
                     onClick={() => set("type", t)}
                     className={`flex-1 flex items-center justify-center gap-1 text-[11px] transition-colors ${form.type === t ? "bg-gray-600 text-white" : "text-gray-500 hover:bg-gray-50"
                       }`}
                   >
-                    {t === "percentage" ? <Percent className="w-3 h-3" /> : <DollarSign className="w-3 h-3" />}
-                    {t === "percentage" ? "%" : "Fijo"}
+                    {t === "percentage" ? <Percent className="w-3 h-3" /> : t === "freeShipping" ? <Gift className="w-3 h-3" /> : <DollarSign className="w-3 h-3" />}
+                    {t === "percentage" ? "%" : t === "freeShipping" ? "Envío" : "Fijo"}
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <label className={lbl}>{form.type === "percentage" ? "Porcentaje (%)" : "Monto ($)"}</label>
+              <label className={lbl}>{form.type === "percentage" ? "Porcentaje (%)" : form.type === "freeShipping" ? "Valor (no aplica)" : "Monto ($)"}</label>
               <input
                 type="number" min={0} max={form.type === "percentage" ? 100 : undefined}
                 className={inp}
@@ -385,7 +386,7 @@ export function AdminCoupons() {
   const [_loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusF] = useState<"all" | Coupon["status"]>("all");
-  const [typeFilter, setTypeF] = useState<"all" | "percentage" | "fixed">("all");
+  const [typeFilter, setTypeF] = useState<"all" | "percentage" | "fixed" | "freeShipping">("all");
   const [modal, setModal] = useState<{ open: boolean; coupon: Partial<Coupon> } | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
@@ -394,8 +395,8 @@ export function AdminCoupons() {
   const loadCoupons = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await couponRepository.findPaged({ size: 500 });
-      setCoupons(res.content.map(mapApiToUi));
+      const res = await couponRepository.findAll({ size: 500 });
+      setCoupons(res.map(mapApiToUi));
     } catch { toast.error("Error al cargar los cupones"); }
     finally { setLoading(false); }
   }, []);
@@ -550,6 +551,7 @@ export function AdminCoupons() {
           <option value="all">Todos los tipos</option>
           <option value="percentage">Porcentaje</option>
           <option value="fixed">Monto fijo</option>
+          <option value="freeShipping">Envío gratis</option>
         </select>
 
         {/* Result count */}
@@ -603,11 +605,13 @@ export function AdminCoupons() {
 
                 {/* Descuento */}
                 <div className="flex items-center">
-                  <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${c.type === "percentage" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"
+                  <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${c.type === "percentage" ? "bg-blue-50 text-blue-700" : c.type === "freeShipping" ? "bg-green-50 text-green-700" : "bg-violet-50 text-violet-700"
                     }`}>
                     {c.type === "percentage"
                       ? <><Percent className="w-2.5 h-2.5" />{c.value}%</>
-                      : <><DollarSign className="w-2.5 h-2.5" />${c.value}</>}
+                      : c.type === "freeShipping"
+                        ? <><Gift className="w-2.5 h-2.5" />Envío gratis</>
+                        : <><DollarSign className="w-2.5 h-2.5" />${c.value}</>}
                   </span>
                 </div>
 

@@ -51,7 +51,7 @@ class AttributeRepository extends BaseRepository<Attribute, AttributePayload, At
     /** Override: backend returns Page<Attribute>, unwrap .content */
     async findAll(query: Record<string, unknown> = {}): Promise<Attribute[]> {
         try {
-            const qs = this.buildParams({ size: 200, ...query });
+            const qs = this.buildParams({ size: 1000, ...query });
             const url = qs ? `${this.baseUrl}?${qs}` : this.baseUrl;
             const res = await authFetch(url);
             const page = await this.handleResponse<Page<Attribute>>(res);

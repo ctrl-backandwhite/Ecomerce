@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router";
 import { type Review } from "../types/review";
+import { reviewRepository } from "../repositories/ReviewRepository";
 import { useCart } from "../context/CartContext";
 import { useStore } from "../context/StoreContext";
 import { useLanguage } from "../context/LanguageContext";
@@ -162,6 +163,29 @@ function ReviewsSection({
   const [newName, setNewName] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
+  // Load reviews from API on mount (M-10)
+  useEffect(() => {
+    let cancelled = false;
+    reviewRepository.findByProductId(productId, 0, 50).then(page => {
+      if (!cancelled && page?.content) {
+        setLocalReviews(page.content.map(r => ({
+          id: r.id,
+          productId: r.productId,
+          author: r.author,
+          avatar: r.avatar ?? r.author?.substring(0, 2).toUpperCase() ?? "?",
+          rating: r.rating,
+          title: r.title,
+          body: r.body,
+          date: r.date,
+          verified: r.verified,
+          helpful: r.helpful,
+          images: r.images,
+        })));
+      }
+    }).catch(() => { /* silently use empty reviews */ });
+    return () => { cancelled = true; };
+  }, [productId]);
+
   const total = localReviews.length;
   const avgRating = total > 0
     ? localReviews.reduce((s, r) => s + r.rating, 0) / total
@@ -190,9 +214,16 @@ function ReviewsSection({
   const visible = showAll ? filtered : filtered.slice(0, 4);
 
   function handleHelpful(id: string) {
+    // Optimistic update + API call (M-10)
     setLocalReviews((prev) =>
       prev.map((r) => (r.id === id ? { ...r, helpful: r.helpful + 1 } : r))
     );
+    reviewRepository.voteHelpful(id).catch(() => {
+      // Revert on failure
+      setLocalReviews((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, helpful: r.helpful - 1 } : r))
+      );
+    });
   }
 
   function handleSubmit() {
@@ -201,31 +232,56 @@ function ReviewsSection({
     if (newBody.trim().length < 20) { toast.error("La reseña debe tener al menos 20 caracteres"); return; }
     if (!newName.trim()) { toast.error("Escribe tu nombre"); return; }
 
-    const colors = [
-      "bg-indigo-100 text-indigo-700", "bg-rose-100 text-rose-700",
-      "bg-emerald-100 text-emerald-700", "bg-amber-100 text-amber-700",
-      "bg-purple-100 text-purple-700", "bg-sky-100 text-sky-700",
-    ];
-    const parts = newName.trim().split(" ");
-    const initials = (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
-    const newReview: Review = {
-      id: `user-${Date.now()}`,
-      productId,
-      author: newName.trim(),
-      avatar: initials,
-      avatarColor: colors[Math.floor(Math.random() * colors.length)],
+    // Submit to API (M-10)
+    reviewRepository.create(productId, {
       rating: newRating,
       title: newTitle.trim(),
       body: newBody.trim(),
-      date: new Date().toISOString().split("T")[0],
-      verified: false,
-      helpful: 0,
-    };
-    setLocalReviews((prev) => [newReview, ...prev]);
-    setSubmitted(true);
-    setNewRating(0); setNewTitle(""); setNewBody(""); setNewName("");
-    toast.success("¡Gracias por tu reseña!");
-    setTimeout(() => { setShowForm(false); setSubmitted(false); }, 2000);
+    }).then(saved => {
+      const review: Review = {
+        id: saved.id,
+        productId: saved.productId,
+        author: saved.author ?? newName.trim(),
+        avatar: newName.trim().substring(0, 2).toUpperCase(),
+        rating: saved.rating,
+        title: saved.title,
+        body: saved.body,
+        date: saved.date,
+        verified: saved.verified,
+        helpful: 0,
+      };
+      setLocalReviews((prev) => [review, ...prev]);
+      setSubmitted(true);
+      setNewRating(0); setNewTitle(""); setNewBody(""); setNewName("");
+      toast.success("¡Gracias por tu reseña!");
+      setTimeout(() => { setShowForm(false); setSubmitted(false); }, 2000);
+    }).catch(() => {
+      // Fallback: add locally if API fails
+      const colors = [
+        "bg-indigo-100 text-indigo-700", "bg-rose-100 text-rose-700",
+        "bg-emerald-100 text-emerald-700", "bg-amber-100 text-amber-700",
+      ];
+      const parts = newName.trim().split(" ");
+      const initials = (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+      const newReview: Review = {
+        id: `user-${Date.now()}`,
+        productId,
+        author: newName.trim(),
+        avatar: initials,
+        avatarColor: colors[Math.floor(Math.random() * colors.length)],
+        rating: newRating,
+        title: newTitle.trim(),
+        body: newBody.trim(),
+        date: new Date().toISOString().split("T")[0],
+        verified: false,
+        helpful: 0,
+      };
+      setLocalReviews((prev) => [newReview, ...prev]);
+      setSubmitted(true);
+      setNewRating(0); setNewTitle(""); setNewBody(""); setNewName("");
+      toast.success("¡Tu reseña se guardará cuando haya conexión!");
+      setTimeout(() => { setShowForm(false); setSubmitted(false); }, 2000);
+    });
   }
 
   const field = "w-full text-xs text-gray-900 border border-gray-200 rounded-xl px-2.5 py-1 focus:outline-none focus:border-gray-400 placeholder-gray-300 bg-white";

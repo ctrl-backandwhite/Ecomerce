@@ -73,20 +73,30 @@ function toCustomer(u: UserDtoOut, orderStats: Map<string, { count: number; tota
     };
 }
 
-/** Fetch all orders and aggregate count + total per userId */
+/** Fetch all orders (paginated) and aggregate count + total per userId */
 async function fetchOrderStats(): Promise<Map<string, { count: number; total: number }>> {
     const map = new Map<string, { count: number; total: number }>();
     try {
-        const res = await authFetch(`${ORDERS_URL}?size=10000`);
-        if (!res.ok) return map;
-        const data = await res.json();
-        const orders: OrderDtoOut[] = data?.content ?? data ?? [];
-        for (const o of orders) {
-            if (!o.userId) continue;
-            const prev = map.get(o.userId) ?? { count: 0, total: 0 };
-            prev.count += 1;
-            prev.total += o.total ?? 0;
-            map.set(o.userId, prev);
+        let currentPage = 0;
+        let hasMore = true;
+        const batchSize = 200;
+
+        while (hasMore) {
+            const res = await authFetch(`${ORDERS_URL}?page=${currentPage}&size=${batchSize}`);
+            if (!res.ok) break;
+            const data = await res.json();
+            const orders: OrderDtoOut[] = data?.content ?? [];
+
+            for (const o of orders) {
+                if (!o.userId) continue;
+                const prev = map.get(o.userId) ?? { count: 0, total: 0 };
+                prev.count += 1;
+                prev.total += o.total ?? 0;
+                map.set(o.userId, prev);
+            }
+
+            hasMore = data?.hasNext ?? (orders.length === batchSize);
+            currentPage++;
         }
     } catch { /* non‑critical */ }
     return map;
@@ -112,8 +122,10 @@ class CustomerRepository {
                 content: customers,
                 totalElements: customers.length,
                 totalPages: 1,
-                number: 0,
-                size: customers.length,
+                currentPage: 0,
+                pageSize: customers.length,
+                hasNext: false,
+                hasPrevious: false,
             };
         } catch (err) {
             if (err instanceof ApiError) throw err;

@@ -309,7 +309,7 @@ class GiftCardRepository {
     }
 }
 
-export const giftCardRepository = new GiftCardRepository();
+export const adminGiftCardRepository = new GiftCardRepository();
 
 // ═══════════════════════════════════════════════════════════════
 // CONTACT
@@ -527,7 +527,7 @@ export const campaignRepository = new CampaignRepository();
 // LOYALTY
 // ═══════════════════════════════════════════════════════════════
 
-export type LoyaltyAction = "PURCHASE" | "REVIEW" | "REFERRAL" | "REGISTRATION";
+export type LoyaltyAction = "PURCHASE" | "REVIEW" | "REFERRAL" | "REGISTRATION" | "REDEMPTION";
 
 export interface LoyaltyTier {
     id: string;
@@ -643,6 +643,20 @@ class LoyaltyRepository {
     async getBalance(): Promise<LoyaltyBalance> {
         try { return handleRes<LoyaltyBalance>(await authFetch(`${this.url}/balance`)); }
         catch (err) { wrapErr(err, "No se pudo obtener el saldo de puntos"); }
+    }
+
+    async getRedemptionRate(): Promise<{ pointsPerDollar: number }> {
+        try { return handleRes<{ pointsPerDollar: number }>(await authFetch(`${this.url}/redemption-rate`)); }
+        catch (err) { wrapErr(err, "No se pudo obtener la tasa de canjeo"); }
+    }
+
+    async redeemPoints(points: number, description: string, orderId?: string): Promise<LoyaltyHistory> {
+        try {
+            return handleRes<LoyaltyHistory>(await authFetch(`${this.url}/redeem`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ points, description, orderId: orderId ?? null }),
+            }));
+        } catch (err) { wrapErr(err, "No se pudieron canjear los puntos"); }
     }
 
     async getHistory(query: Record<string, unknown> = {}): Promise<Page<LoyaltyHistory>> {

@@ -100,7 +100,7 @@ function dtoToCartItem(dto: CartItemDto): CartItem {
     rating: cached?.rating ?? 0,
     reviews: cached?.reviews ?? 0,
     sku: cached?.sku ?? "",
-    stock: cached?.stock ?? 9999,
+    stock: cached?.stock ?? 0,
     slug: cached?.slug ?? "",
     brand: cached?.brand ?? "",
     shortDescription: cached?.shortDescription ?? "",
@@ -306,8 +306,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         ];
       });
 
-      // Backend sync (fire-and-forget with refresh)
+      // Backend sync with rollback on failure (M-11)
       if (isAuthenticated) {
+        const snapshot = [...items]; // capture pre-update state for rollback
         cartRepository
           .addItem({
             productId: product.id,
@@ -322,8 +323,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             if (cart.items.length > 0) setItems(cart.items.map(dtoToCartItem));
           })
           .catch((err) => {
-            console.warn("[Cart] addItem backend sync failed:", err);
-            // keep optimistic state — localStorage save-effect will persist it
+            console.warn("[Cart] addItem backend sync failed, rolling back:", err);
+            setItems(snapshot); // rollback to pre-update state
           });
       }
     },
@@ -333,7 +334,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* ── Remove from cart ──────────────────────────────────── */
   const removeFromCart = useCallback(
     (cartId: string) => {
-      // Resolve the backend item ID before removing from local state
+      // Capture snapshot for rollback (M-11)
+      const snapshot = [...items];
       let backendId: string | undefined;
       setItems((prev) => {
         const item = prev.find((i) => i.id === cartId);
@@ -346,11 +348,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .removeItem(backendId)
           .then((cart) => setItems(cart.items.map(dtoToCartItem)))
           .catch((err) => {
-            console.warn("[Cart] removeItem backend sync failed:", err);
+            console.warn("[Cart] removeItem backend sync failed, rolling back:", err);
+            setItems(snapshot);
           });
       }
     },
-    [isAuthenticated],
+    [isAuthenticated, items],
   );
 
   /* ── Update quantity ───────────────────────────────────── */
@@ -361,7 +364,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Find the backend item ID from current items
+      // Capture snapshot for rollback (M-11)
+      const snapshot = [...items];
       let backendId: string | undefined;
       setItems((prev) => {
         const item = prev.find((i) => i.id === cartId);
@@ -374,11 +378,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
           .updateItemQuantity(backendId, quantity)
           .then((cart) => setItems(cart.items.map(dtoToCartItem)))
           .catch((err) => {
-            console.warn("[Cart] updateQuantity backend sync failed:", err);
+            console.warn("[Cart] updateQuantity backend sync failed, rolling back:", err);
+            setItems(snapshot);
           });
       }
     },
-    [isAuthenticated, removeFromCart],
+    [isAuthenticated, removeFromCart, items],
   );
 
   /* ── Clear cart ────────────────────────────────────────── */

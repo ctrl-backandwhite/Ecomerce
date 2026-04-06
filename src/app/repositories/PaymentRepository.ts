@@ -37,6 +37,7 @@ export interface Payment {
 export interface ProcessPaymentPayload {
     orderId: string;
     userId: string;
+    email?: string;
     amount: number;
     currency?: string;
     paymentMethod: "CARD" | "PAYPAL" | "USDT" | "BTC";

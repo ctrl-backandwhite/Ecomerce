@@ -288,7 +288,8 @@ export function mapNexaProductDetail(raw: NexaProductDetail): Product {
         v.inventories && v.inventories.length > 0 &&
         v.inventories.some(inv => (inv.totalInventory ?? 0) > 0)
     ) ?? false;
-    const variantFallbackStock = (!hasAnyInventory && raw.listedNum > 0) ? 99 : 0;
+    // Use real inventory data only — no artificial fallback (M-09)
+    const variantFallbackStock = 0;
 
     // ── Build attributes ("Ficha técnica") from detail fields ──
     const attrs: { name: string; value: string }[] = [];

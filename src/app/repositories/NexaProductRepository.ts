@@ -140,6 +140,9 @@ export interface NexaProductPage {
 export interface NexaProductQuery {
     locale: string;
     categoryId?: string;
+    name?: string;
+    sortBy?: string;
+    ascending?: boolean;
     page?: number;
     size?: number;
 }
@@ -157,9 +160,12 @@ class NexaProductRepository {
             const params = new URLSearchParams();
             params.set("locale", query.locale);
             if (query.categoryId) params.set("categoryId", query.categoryId);
+            if (query.name) params.set("name", query.name);
             params.set("status", "PUBLISHED");
             params.set("page", String(query.page ?? 0));
             params.set("size", String(query.size ?? 24));
+            if (query.sortBy) params.set("sortBy", query.sortBy);
+            if (query.ascending !== undefined) params.set("ascending", String(query.ascending));
 
             const url = `${NX036_PRODUCTS_BASE}?${params.toString()}`;
             console.log('[NexaProductRepository] fetch URL:', url);

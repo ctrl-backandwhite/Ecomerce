@@ -61,7 +61,7 @@ class BrandRepository extends BaseRepository<Brand, BrandPayload, BrandPayload> 
     /** Override: backend returns a Page<Brand>, we unwrap .content */
     async findAll(query: Record<string, unknown> = {}): Promise<Brand[]> {
         try {
-            const qs = this.buildParams({ size: 200, ...query });
+            const qs = this.buildParams({ size: 1000, ...query });
             const url = qs ? `${this.baseUrl}?${qs}` : this.baseUrl;
             const res = await authFetch(url);
             const page = await this.handleResponse<Page<Brand>>(res);

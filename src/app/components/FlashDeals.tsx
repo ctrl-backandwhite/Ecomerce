@@ -1,23 +1,29 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Zap, Clock, ShoppingCart, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router";
-import { useStore } from "../context/StoreContext";
 import { useCart } from "../context/CartContext";
+import { useFlashDeals } from "../hooks/useFlashDeals";
 import { toast } from "sonner";
 
-/* ── Countdown until midnight ─────────────────────────────── */
-function getSecondsUntilMidnight(): number {
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setHours(24, 0, 0, 0);
-  return Math.floor((midnight.getTime() - now.getTime()) / 1000);
+/* ── Countdown helpers ────────────────────────────────────── */
+function getSecondsUntil(target: Date | null): number {
+  if (!target) {
+    // Fallback: midnight today
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    return Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
+  }
+  return Math.max(0, Math.floor((target.getTime() - Date.now()) / 1000));
 }
 
 function formatCountdown(secs: number) {
-  const h = Math.floor(secs / 3600);
+  const d = Math.floor(secs / 86400);
+  const h = Math.floor((secs % 86400) / 3600);
   const m = Math.floor((secs % 3600) / 60);
   const s = secs % 60;
   return {
+    d: d > 0 ? String(d) : null,
     h: String(h).padStart(2, "0"),
     m: String(m).padStart(2, "0"),
     s: String(s).padStart(2, "0"),
@@ -31,26 +37,24 @@ interface FlashDealsProps {
 
 /* ── Component ────────────────────────────────────────────── */
 export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
-  const { products } = useStore();
+  const { deals, loading, endDate } = useFlashDeals();
   const { addToCart } = useCart();
-  const [secs, setSecs] = useState(getSecondsUntilMidnight());
+  const [secs, setSecs] = useState(() => getSecondsUntil(endDate));
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  /* Sync countdown target when endDate resolves */
+  useEffect(() => {
+    setSecs(getSecondsUntil(endDate));
+  }, [endDate]);
 
   /* countdown tick */
   useEffect(() => {
-    const id = setInterval(() => setSecs((s) => (s > 0 ? s - 1 : getSecondsUntilMidnight())), 1000);
+    const id = setInterval(
+      () => setSecs((s) => (s > 0 ? s - 1 : getSecondsUntil(endDate))),
+      1000,
+    );
     return () => clearInterval(id);
-  }, []);
-
-  /* top deals — products with originalPrice, sorted by % desc */
-  const deals = products
-    .filter((p) => p.originalPrice && p.originalPrice > p.price)
-    .map((p) => ({
-      ...p,
-      pct: Math.round(((p.originalPrice! - p.price) / p.originalPrice!) * 100),
-    }))
-    .sort((a, b) => b.pct - a.pct)
-    .slice(0, 8);
+  }, [endDate]);
 
   const time = formatCountdown(secs);
 
@@ -60,7 +64,7 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
     el.scrollBy({ left: dir === "right" ? 300 : -300, behavior: "smooth" });
   }, []);
 
-  if (deals.length === 0) return null;
+  if (loading || deals.length === 0) return null;
 
   return (
     <section className="bg-white border-b border-gray-100">
@@ -81,6 +85,14 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
             <div className="hidden sm:flex items-center gap-2 ml-4 pl-4 border-l border-gray-100">
               <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
               <span className="text-[11px] text-gray-400 mr-1">Termina en</span>
+              {time.d && (
+                <span className="flex flex-col items-center">
+                  <span className="tabular-nums text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5 min-w-[32px] text-center">
+                    {time.d}
+                  </span>
+                  <span className="text-[9px] text-gray-400 mt-0.5">D</span>
+                </span>
+              )}
               {([time.h, time.m, time.s] as const).map((val, i) => (
                 <span key={i} className="flex flex-col items-center">
                   <span className="tabular-nums text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5 min-w-[32px] text-center">
@@ -140,7 +152,7 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
                 />
                 {/* Discount badge */}
                 <span className="absolute top-2 left-2 bg-red-500 text-white text-[11px] px-1.5 py-0.5 rounded-md tabular-nums">
-                  -{p.pct}%
+                  {p.campaignBadge || `-${p.pct}%`}
                 </span>
                 {/* Stock warning */}
                 {p.stock < 15 && (

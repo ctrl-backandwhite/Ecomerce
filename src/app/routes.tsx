@@ -83,7 +83,6 @@ export const router = createBrowserRouter([
           { path: "search/:query", Component: Home },
           { path: "product/:id", Component: ProductDetail },
           { path: "cart", Component: Cart },
-          { path: "checkout", Component: Checkout },
           { path: "about", Component: AboutPage },
           { path: "contact", Component: ContactPage },
           { path: "faq", Component: FAQPage },
@@ -99,6 +98,13 @@ export const router = createBrowserRouter([
         // Protected user pages — requires authentication
         Component: AuthGuard,
         children: [
+          {
+            path: "/",
+            Component: Layout,
+            children: [
+              { path: "checkout", Component: Checkout },
+            ],
+          },
           {
             path: "/",
             Component: AccountLayout,

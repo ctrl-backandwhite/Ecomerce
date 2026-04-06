@@ -61,7 +61,7 @@ class WarrantyRepository extends BaseRepository<Warranty, WarrantyPayload, Warra
     /** Override: backend returns Page<Warranty>, unwrap .content */
     async findAll(query: Record<string, unknown> = {}): Promise<Warranty[]> {
         try {
-            const qs = this.buildParams({ size: 200, ...query });
+            const qs = this.buildParams({ size: 1000, ...query });
             const url = qs ? `${this.baseUrl}?${qs}` : this.baseUrl;
             const res = await authFetch(url);
             const page = await this.handleResponse<Page<Warranty>>(res);

@@ -15,11 +15,13 @@ import { couponRepository } from "../repositories/CouponRepository";
 import type { CouponValidation } from "../repositories/CouponRepository";
 import { invoiceRepository } from "../repositories/InvoiceRepository";
 import type { Invoice } from "../repositories/InvoiceRepository";
+import { loyaltyRepository } from "../repositories/CmsRepository";
+import { adminGiftCardRepository as giftCardRepository } from "../repositories/CmsRepository";
 import {
   CreditCard, Truck, CheckCircle2, ArrowLeft, Lock,
   MapPin, Store, Package2, Plus, Check, ChevronRight, ChevronDown, ChevronLeft,
   Building2, Home, Briefcase, User, Phone, Mail,
-  Shield, Tag, AlertCircle, Clock, Navigation, Copy,
+  Shield, Tag, AlertCircle, Clock, Navigation, Copy, Star, Gift,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -191,13 +193,31 @@ export function Checkout() {
   const [couponResult, setCouponResult] = useState<CouponValidation | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
+  /* Loyalty */
+  const [loyaltyBalance, setLoyaltyBalance] = useState(0);
+  const [loyaltyRate, setLoyaltyRate] = useState(100); // points per $1
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0); // points user chose to redeem
+
+  /* Gift card */
+  const [giftCardCode, setGiftCardCode] = useState("");
+  const [giftCardBalance, setGiftCardBalance] = useState<number | null>(null);
+  const [giftCardLoading, setGiftCardLoading] = useState(false);
+  const [giftCardError, setGiftCardError] = useState<string | null>(null);
+
+  /* BTC real-time rate */
+  const [btcRate, setBtcRate] = useState(68500); // fallback
+
   /* Totals */
   const subtotal = getTotalPrice();
   const selectedShipping = shippingOptions.find((o) => o.id === selectedShippingId);
   const shipping = selectedShipping?.price ?? (shippingOptions[0]?.price ?? 0);
   const tax = taxCalc?.taxAmount ?? subtotal * 0.1; // fallback 10 %
   const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
-  const total = Math.max(0, subtotal + shipping + tax - couponDiscount);
+  const loyaltyDiscount = loyaltyRate > 0 ? loyaltyPoints / loyaltyRate : 0;
+  const giftCardDiscount = giftCardBalance !== null
+    ? Math.min(giftCardBalance, subtotal + shipping + tax - couponDiscount - loyaltyDiscount)
+    : 0;
+  const total = Math.max(0, subtotal + shipping + tax - couponDiscount - loyaltyDiscount - giftCardDiscount);
 
   /* ── Fetch shipping options on mount ── */
   useEffect(() => {
@@ -212,6 +232,33 @@ export function Checkout() {
       })
       .catch(() => { /* fallback: keep empty options */ })
       .finally(() => { if (!cancelled) setShippingLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  /* ── Fetch loyalty balance + redemption rate ── */
+  useEffect(() => {
+    if (!user.id) return;
+    let cancelled = false;
+    Promise.all([
+      loyaltyRepository.getBalance().catch(() => null),
+      loyaltyRepository.getRedemptionRate().catch(() => null),
+    ]).then(([bal, rate]) => {
+      if (cancelled) return;
+      if (bal) setLoyaltyBalance(bal.balance);
+      if (rate) setLoyaltyRate(rate.pointsPerDollar);
+    });
+    return () => { cancelled = true; };
+  }, [user.id]);
+
+  /* ── Fetch BTC rate from CoinGecko ── */
+  useEffect(() => {
+    let cancelled = false;
+    fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!cancelled && data?.bitcoin?.usd) setBtcRate(data.bitcoin.usd);
+      })
+      .catch(() => { /* keep fallback */ });
     return () => { cancelled = true; };
   }, []);
 
@@ -259,6 +306,29 @@ export function Checkout() {
       setCouponLoading(false);
     }
   }, [couponCode, subtotal]);
+
+  /* ── Gift card validation ── */
+  const applyGiftCard = useCallback(async () => {
+    const code = giftCardCode.trim();
+    if (!code) return;
+    setGiftCardLoading(true);
+    setGiftCardError(null);
+    try {
+      const { balance } = await giftCardRepository.getBalance(code);
+      if (balance <= 0) {
+        setGiftCardError("Esta tarjeta no tiene saldo disponible");
+        setGiftCardBalance(null);
+      } else {
+        setGiftCardBalance(balance);
+        toast.success(`Tarjeta aplicada · saldo $${balance.toFixed(2)}`);
+      }
+    } catch {
+      setGiftCardError("Tarjeta no válida o expirada");
+      setGiftCardBalance(null);
+    } finally {
+      setGiftCardLoading(false);
+    }
+  }, [giftCardCode]);
 
   /* Derived selected address */
   const selectedAddr = selectedAddrId !== "new"
@@ -410,7 +480,7 @@ export function Checkout() {
       };
       const paymentMethodStr = paymentMethodMap[activePmType] ?? "CREDIT_CARD";
 
-      /* 3 ─ Create order via backend */
+      /* 3 ─ Create order via backend (DRAFT status — no stock deducted yet) */
       const order = await orderRepository.createOrder({
         shippingAddress,
         paymentMethod: paymentMethodStr,
@@ -430,15 +500,48 @@ export function Checkout() {
         btc: "BTC",
       };
 
-      await paymentRepository.processPayment({
-        orderId: order.id,
-        userId: user.id,
-        amount: total,
-        currency: "USD",
-        paymentMethod: methodMap[activeType] ?? "CARD",
-      });
+      try {
+        await paymentRepository.processPayment({
+          orderId: order.id,
+          userId: user.id,
+          email: contact.email || user.email,
+          amount: total,
+          currency: "USD",
+          paymentMethod: methodMap[activeType] ?? "CARD",
+        });
+      } catch (payErr) {
+        // Payment failed → cancel the DRAFT order
+        try { await orderRepository.cancelOrder(order.id); } catch { /* best-effort */ }
+        throw payErr;
+      }
 
-      /* 5 ─ Try to fetch the backend invoice */
+      /* 5 ─ Confirm order (DRAFT → PENDING, deducts stock, creates invoice) */
+      const confirmed = await orderRepository.confirmOrder(order.id);
+      setCreatedOrder(confirmed);
+
+      /* 5b ─ Redeem loyalty points (if any) */
+      if (loyaltyPoints > 0) {
+        try {
+          await loyaltyRepository.redeemPoints(
+            loyaltyPoints,
+            `Canjeo en pedido ${confirmed.orderNumber ?? order.id}`,
+            order.id,
+          );
+        } catch { /* best-effort — order is already confirmed */ }
+      }
+
+      /* 5c ─ Redeem gift card (if applied) */
+      if (giftCardDiscount > 0 && giftCardCode.trim()) {
+        try {
+          await giftCardRepository.redeem({
+            code: giftCardCode.trim(),
+            amount: giftCardDiscount,
+            orderId: order.id,
+          });
+        } catch { /* best-effort — order is already confirmed */ }
+      }
+
+      /* 6 ─ Try to fetch the backend invoice */
       try {
         const inv = await invoiceRepository.findByOrderId(order.id);
         setBackendInvoice(inv);
@@ -446,7 +549,7 @@ export function Checkout() {
         /* Invoice might not be generated yet — that's fine */
       }
 
-      /* 6 ─ Done */
+      /* 7 ─ Done */
       setIsProcessing(false);
       setOrderComplete(true);
       clearCart();
@@ -1314,8 +1417,8 @@ export function Checkout() {
                                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
                                   <span className="text-xs text-gray-400">Importe exacto a enviar</span>
                                   <div className="text-right">
-                                    <p className="text-sm text-gray-900 font-mono">{(total / 68500).toFixed(6)} BTC</p>
-                                    <p className="text-[11px] text-gray-400">≈ ${total.toFixed(2)} USD · 1 BTC ≈ $68,500</p>
+                                    <p className="text-sm text-gray-900 font-mono">{(total / btcRate).toFixed(6)} BTC</p>
+                                    <p className="text-[11px] text-gray-400">≈ ${total.toFixed(2)} USD · 1 BTC ≈ ${btcRate.toLocaleString()}</p>
                                   </div>
                                 </div>
 
@@ -1369,11 +1472,11 @@ export function Checkout() {
                     const btnLabel = activePm
                       ? activePm.type === "paypal" ? `Pagar con PayPal · $${total.toFixed(2)}`
                         : activePm.type === "usdt" ? `Confirmar pago · ${total.toFixed(2)} USDT`
-                          : activePm.type === "btc" ? `Confirmar pago · ${(total / 68500).toFixed(6)} BTC`
+                          : activePm.type === "btc" ? `Confirmar pago · ${(total / btcRate).toFixed(6)} BTC`
                             : `Confirmar pedido · $${total.toFixed(2)}`
                       : payMethod === "paypal" ? `Pagar con PayPal · $${total.toFixed(2)}`
                         : payMethod === "usdt" ? `Confirmar pago · ${total.toFixed(2)} USDT`
-                          : payMethod === "btc" ? `Confirmar pago · ${(total / 68500).toFixed(6)} BTC`
+                          : payMethod === "btc" ? `Confirmar pago · ${(total / btcRate).toFixed(6)} BTC`
                             : `Confirmar pedido · $${total.toFixed(2)}`;
                     return (
                       <button
@@ -1468,6 +1571,80 @@ export function Checkout() {
                 )}
               </div>
 
+              {/* Loyalty points redemption */}
+              {loyaltyBalance > 0 && (
+                <div className="px-5 py-3 border-t border-gray-50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star className="w-3.5 h-3.5 text-amber-400" strokeWidth={1.5} />
+                    <span className="text-xs text-gray-600">Puntos de fidelidad</span>
+                    <span className="ml-auto text-xs text-amber-600 tabular-nums">
+                      {loyaltyBalance.toLocaleString()} pts
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      max={Math.min(loyaltyBalance, Math.floor((subtotal + shipping + tax - couponDiscount) * loyaltyRate))}
+                      value={loyaltyPoints || ""}
+                      onChange={(e) => {
+                        const v = Math.max(0, Math.min(
+                          Math.min(loyaltyBalance, Math.floor((subtotal + shipping + tax - couponDiscount) * loyaltyRate)),
+                          parseInt(e.target.value) || 0,
+                        ));
+                        setLoyaltyPoints(v);
+                      }}
+                      placeholder="0"
+                      className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 placeholder-gray-300 tabular-nums"
+                    />
+                    <button
+                      onClick={() => setLoyaltyPoints(
+                        Math.min(loyaltyBalance, Math.floor((subtotal + shipping + tax - couponDiscount) * loyaltyRate)),
+                      )}
+                      className="text-xs text-gray-700 border border-gray-200 rounded-lg px-3 py-2 hover:border-gray-400 hover:bg-gray-50 transition-colors flex-shrink-0"
+                    >
+                      Máx
+                    </button>
+                  </div>
+                  {loyaltyPoints > 0 && (
+                    <p className="text-xs text-amber-600 mt-1.5">
+                      Descuento: -${loyaltyDiscount.toFixed(2)} ({loyaltyPoints} pts × {loyaltyRate} pts/$1)
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Gift card */}
+              <div className="px-5 py-3 border-t border-gray-50">
+                <div className="flex items-center gap-2 mb-2">
+                  <Gift className="w-3.5 h-3.5 text-violet-400" strokeWidth={1.5} />
+                  <span className="text-xs text-gray-600">Tarjeta regalo</span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    value={giftCardCode}
+                    onChange={(e) => { setGiftCardCode(e.target.value.toUpperCase()); setGiftCardBalance(null); setGiftCardError(null); }}
+                    placeholder="GC-XXXX-XXXX-XXXX"
+                    className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
+                  />
+                  <button
+                    onClick={applyGiftCard}
+                    disabled={giftCardLoading || !giftCardCode.trim()}
+                    className="text-xs text-gray-700 border border-gray-200 rounded-lg px-3 py-2 hover:border-gray-400 hover:bg-gray-50 transition-colors flex-shrink-0 disabled:opacity-40"
+                  >
+                    {giftCardLoading ? "…" : "Aplicar"}
+                  </button>
+                </div>
+                {giftCardError && (
+                  <p className="text-xs text-red-500 mt-1.5">{giftCardError}</p>
+                )}
+                {giftCardBalance !== null && giftCardBalance > 0 && (
+                  <p className="text-xs text-violet-600 mt-1.5">
+                    Saldo: ${giftCardBalance.toFixed(2)} · Descuento: -${giftCardDiscount.toFixed(2)}
+                  </p>
+                )}
+              </div>
+
               {/* Totals */}
               <div className="px-5 py-4 border-t border-gray-100 space-y-2.5">
                 <div className="flex justify-between text-xs text-gray-500">
@@ -1488,6 +1665,18 @@ export function Checkout() {
                   <div className="flex justify-between text-xs text-green-600">
                     <span>Cupón ({couponCode})</span>
                     <span>-${couponDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {loyaltyDiscount > 0 && (
+                  <div className="flex justify-between text-xs text-amber-600">
+                    <span>Puntos ({loyaltyPoints} pts)</span>
+                    <span>-${loyaltyDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {giftCardDiscount > 0 && (
+                  <div className="flex justify-between text-xs text-violet-600">
+                    <span>Tarjeta regalo</span>
+                    <span>-${giftCardDiscount.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm text-gray-900 pt-2.5 border-t border-gray-100">

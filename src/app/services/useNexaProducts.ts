@@ -72,7 +72,19 @@ export interface UseNexaProductsResult {
     refetch: () => void;
 }
 
-export function useNexaProducts(categoryId?: string): UseNexaProductsResult {
+export interface UseNexaProductsOptions {
+    categoryId?: string;
+    name?: string;
+    sortBy?: string;
+    ascending?: boolean;
+}
+
+export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptions): UseNexaProductsResult {
+    const opts: UseNexaProductsOptions = typeof optsOrCategoryId === "string"
+        ? { categoryId: optsOrCategoryId }
+        : optsOrCategoryId ?? {};
+    const { categoryId, name, sortBy, ascending } = opts;
+
     const { locale } = useLanguage();
     const apiLocale = locale === "pt" ? "pt-BR" : locale;
 
@@ -113,6 +125,9 @@ export function useNexaProducts(categoryId?: string): UseNexaProductsResult {
                     {
                         locale: apiLocale,
                         categoryId: categoryId || undefined,
+                        name: name || undefined,
+                        sortBy: sortBy || undefined,
+                        ascending,
                         page,
                         size: PAGE_SIZE,
                     },
@@ -176,7 +191,7 @@ export function useNexaProducts(categoryId?: string): UseNexaProductsResult {
                 }
             }
         },
-        [apiLocale, categoryId],
+        [apiLocale, categoryId, name, sortBy, ascending],
     );
 
     // ── Initial fetch + re-fetch on locale/category change ────────────────────
