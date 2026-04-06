@@ -14,6 +14,8 @@ import {
 } from "react";
 import { useLanguage } from "./LanguageContext";
 
+import { logger } from "../lib/logger";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 
 export type Locale = "es" | "en" | "pt";
@@ -104,9 +106,7 @@ function getInitialCountry(): string {
     try {
         const stored = localStorage.getItem("nexa-timezone-country");
         if (stored && COUNTRY_TIMEZONES.find((c) => c.code === stored)) return stored;
-    } catch {
-        /* SSR / privacy */
-    }
+    } catch (err) { logger.warn("Suppressed error", err); }
     return "ES";
 }
 
@@ -122,9 +122,7 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
         if (country) setLocale(country.locale);
         try {
             localStorage.setItem("nexa-timezone-country", code);
-        } catch {
-            /* noop */
-        }
+        } catch (err) { logger.warn("Suppressed error", err); }
     }, [setLocale]);
 
     // Sync locale with the stored country on first mount

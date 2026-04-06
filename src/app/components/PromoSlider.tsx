@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
-import { slideRepository, type Slide } from "../repositories/CmsRepository";
+import { slideRepository, type Slide } from "../repositories/SlideRepository";
+
+import { logger } from "../lib/logger";
 
 /* ── Filter params each promo CTA applies ─────────────────── */
 export type PromoFilter = Record<string, string>;
@@ -34,7 +36,7 @@ function slideToPromo(s: Slide, index: number): Promo {
     try {
       const search = s.link.includes("?") ? s.link.split("?")[1] : "";
       new URLSearchParams(search).forEach((v, k) => { params[k] = v; });
-    } catch { /* ignore */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
   }
   return {
     id: s.id,
@@ -188,8 +190,8 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
             key={`overlay-${promo.id}`}
             aria-hidden
             className={`absolute inset-0 ${isRight
-                ? "bg-gradient-to-l from-black/80 via-black/55 to-black/10"
-                : "bg-gradient-to-r from-black/80 via-black/55 to-black/10"
+              ? "bg-gradient-to-l from-black/80 via-black/55 to-black/10"
+              : "bg-gradient-to-r from-black/80 via-black/55 to-black/10"
               }`}
             style={{
               opacity: i === current ? 1 : 0,
@@ -290,8 +292,8 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
             onClick={() => goTo(i)}
             aria-label={`Ir a slide ${i + 1}`}
             className={`h-1.5 rounded-full transition-all duration-500 ${i === current
-                ? "w-8 bg-white"
-                : "w-2 bg-white/40 hover:bg-white/70"
+              ? "w-8 bg-white"
+              : "w-2 bg-white/40 hover:bg-white/70"
               }`}
           />
         ))}

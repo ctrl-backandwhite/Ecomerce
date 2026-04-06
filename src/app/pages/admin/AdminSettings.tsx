@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { type Setting, settingRepository } from "../../repositories/CmsRepository";
+import { type Setting, settingRepository } from "../../repositories/SettingRepository";
 import {
   Store, Bell, Shield, CreditCard, Globe, Truck,
   Save, Check, ChevronRight, Mail, Phone, MapPin,
@@ -7,6 +7,8 @@ import {
   Percent, DollarSign, Clock, Package,
 } from "lucide-react";
 import { toast } from "sonner";
+
+import { logger } from "../../lib/logger";
 
 type SettingsTab = "general" | "notifications" | "payments" | "shipping" | "security";
 
@@ -97,7 +99,7 @@ function GeneralTab() {
         language: m["general.store.language"] ?? f.language,
         timezone: m["general.store.timezone"] ?? f.timezone,
       }));
-    } catch { /* use defaults */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
   }, []);
 
   useEffect(() => { loadSettings(); }, [loadSettings]);
@@ -238,7 +240,7 @@ function TabNotificaciones() {
       setSettings(s => Object.fromEntries(
         Object.keys(s).map(k => [k, m[`notifications.${k}`] !== undefined ? m[`notifications.${k}`] === "true" : s[k as keyof typeof s]])
       ) as typeof settings);
-    } catch { /* use defaults */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
   }, []);
 
   useEffect(() => { loadSettings(); }, [loadSettings]);
@@ -337,7 +339,7 @@ function PaymentsTab() {
         payoutCycle: m["payments.payoutCycle"] ?? s.payoutCycle,
         taxRate: m["payments.taxRate"] ?? s.taxRate,
       }));
-    } catch { /* use defaults */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
   }, []);
 
   useEffect(() => { loadPayments(); }, [loadPayments]);
@@ -454,7 +456,7 @@ function ShippingTab() {
         internationalEnabled: m["shipping.internationalEnabled"] !== undefined ? m["shipping.internationalEnabled"] === "true" : s.internationalEnabled,
         trackingEnabled: m["shipping.trackingEnabled"] !== undefined ? m["shipping.trackingEnabled"] === "true" : s.trackingEnabled,
       }));
-    } catch { /* use defaults */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
   }, []);
 
   useEffect(() => { loadShipping(); }, [loadShipping]);
@@ -560,7 +562,7 @@ function SecurityTab() {
         lockoutAttempts: m["security.lockoutAttempts"] ?? s.lockoutAttempts,
         dataRetentionDays: m["security.dataRetentionDays"] ?? s.dataRetentionDays,
       }));
-    } catch { /* use defaults */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
   }, []);
 
   useEffect(() => { loadSecurity(); }, [loadSecurity]);
@@ -662,8 +664,8 @@ export function AdminSettings() {
               key={id}
               onClick={() => setActiveTab(id)}
               className={`w-full flex items-center justify-between px-4 py-3.5 text-sm text-left border-l-2 transition-colors ${activeTab === id
-                  ? "border-gray-900 bg-gray-50 text-gray-900"
-                  : "border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900"
+                ? "border-gray-900 bg-gray-50 text-gray-900"
+                : "border-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-900"
                 }`}
             >
               <div className="flex items-center gap-2.5">

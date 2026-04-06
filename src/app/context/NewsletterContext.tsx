@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
-import { newsletterRepository } from "../repositories/CmsRepository";
+import { newsletterRepository } from "../repositories/NewsletterRepository";
+
+import { logger } from "../lib/logger";
 
 interface NewsletterContextType {
   showPopup: boolean;
@@ -28,7 +30,7 @@ export function NewsletterProvider({ children }: { children: ReactNode }) {
   const subscribe = async (email: string) => {
     try {
       await newsletterRepository.subscribe(email);
-    } catch { /* popup still dismisses on error */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
     dismiss();
   };
 

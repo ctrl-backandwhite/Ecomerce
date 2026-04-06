@@ -1,11 +1,13 @@
 import { useParams, Link } from "react-router";
 import { ProductCard } from "../components/ProductCard";
-import { useStore } from "../context/StoreContext";
+import { useNexaProducts } from "../hooks/useNexaProducts";
+import { useBrands } from "../hooks/useBrands";
 import { Package, ArrowLeft } from "lucide-react";
 
 export function BrandPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { products, brands } = useStore();
+  const { products } = useNexaProducts();
+  const { brands } = useBrands();
   const brand = brands.find((b) => b.slug === slug);
 
   if (!brand) {

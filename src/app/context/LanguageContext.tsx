@@ -6,6 +6,8 @@
  */
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 
+import { logger } from "../lib/logger";
+
 // ── Types ────────────────────────────────────────────────────────────────────
 export type Locale = "es" | "en" | "pt";
 
@@ -117,9 +119,7 @@ function getInitialLocale(): Locale {
     try {
         const stored = localStorage.getItem("nexa-locale");
         if (stored && ["es", "en", "pt"].includes(stored)) return stored as Locale;
-    } catch {
-        /* SSR / privacy mode */
-    }
+    } catch (err) { logger.warn("Suppressed error", err); }
     return "en";
 }
 
@@ -128,7 +128,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
     const setLocale = useCallback((l: Locale) => {
         setLocaleState(l);
-        try { localStorage.setItem("nexa-locale", l); } catch { /* noop */ }
+        try { localStorage.setItem("nexa-locale", l); } catch (err) { logger.warn("Suppressed error", err); }
     }, []);
 
     const t = useCallback(

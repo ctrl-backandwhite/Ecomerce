@@ -15,6 +15,8 @@ import {
 import { Link } from "react-router";
 import { toast } from "sonner";
 
+import { logger } from "../../lib/logger";
+
 type Product = NexaProduct;
 
 /* helper: extract a localised name */
@@ -159,9 +161,7 @@ export function ProfileFavoritos() {
         .filter((r): r is PromiseFulfilledResult<NexaProduct> => r.status === "fulfilled")
         .map((r) => r.value);
       setFavorites(loaded);
-    } catch {
-      /* keep whatever we have */
-    } finally {
+    } catch (err) { logger.warn("Suppressed error", err); } finally {
       setLoading(false);
     }
   }, [user.favoriteIds]);

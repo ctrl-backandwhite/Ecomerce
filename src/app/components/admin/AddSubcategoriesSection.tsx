@@ -3,6 +3,8 @@ import {
     X, Loader2, Plus, Trash2, Search, Link2, Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "../../lib/logger";
+
 import {
     nexaCategoryPagedRepository,
     type PagedCategory,
@@ -171,7 +173,7 @@ export function AddSubcategoriesSection({
                 nexaCategoryPagedRepository.findPaged({ size: 300, level: 3 }),
             ]);
             setSubCandidates([...p1.content, ...p2.content, ...p3.content]);
-        } catch { /* silently fail */ }
+        } catch (err) { logger.warn("Suppressed error", err); }
         finally { setLoadingSubs(false); }
     }, []);
 

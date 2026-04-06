@@ -4,6 +4,8 @@ import {
     ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "../../lib/logger";
+
 import {
     nexaCategoryPagedRepository,
     type PagedCategory,
@@ -213,9 +215,7 @@ export function CategoryFormModal({
             });
             const all = [...page1.content, ...page2.content];
             setParentOptions(all.map((c) => ({ id: c.id, name: c.name, level: c.level })));
-        } catch {
-            // silently fail — user can still type
-        } finally {
+        } catch (err) { logger.warn("Suppressed error", err); } finally {
             setLoadingParents(false);
         }
     }, []);
@@ -336,7 +336,7 @@ export function CategoryFormModal({
                                 translations: [{ locale: sub.locale ?? "es", name: sub.name }],
                             });
                         }
-                    } catch { /* primary succeeded, sub failed silently */ }
+                    } catch (err) { logger.warn("Suppressed error", err); }
                 }
             } else {
                 const created = await nexaCategoryPagedRepository.createCategory(payload);
@@ -357,7 +357,7 @@ export function CategoryFormModal({
                                 translations: [{ locale: sub.locale ?? "es", name: sub.name }],
                             });
                         }
-                    } catch { /* primary succeeded, sub failed silently */ }
+                    } catch (err) { logger.warn("Suppressed error", err); }
                 }
             }
             onSaved();

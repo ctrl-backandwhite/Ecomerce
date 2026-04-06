@@ -20,7 +20,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { useNexaFeaturedCategories } from "../services/useNexaFeaturedCategories";
+import { useNexaFeaturedCategories } from "../hooks/useNexaFeaturedCategories";
 import type { NexaCategory } from "../repositories/NexaCategoryRepository";
 
 // ── Icon resolver by category name ───────────────────────────────────────────

@@ -31,8 +31,8 @@ import {
 } from "lucide-react";
 import { priceRanges } from "../config/priceRanges";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
-import { useStore } from "../context/StoreContext";
-import { useNexaCategories } from "../services/useNexaCategories";
+import { useNexaProducts } from "../hooks/useNexaProducts";
+import { useNexaCategories } from "../hooks/useNexaCategories";
 import type { NexaCategory } from "../repositories/NexaCategoryRepository";
 
 interface HomeSidebarProps {
@@ -56,7 +56,7 @@ interface HomeSidebarProps {
 
 /* ── Top rated mini-widget ───────────────────────────────────── */
 function TopRated() {
-  const { products } = useStore();
+  const { products } = useNexaProducts();
   const top = [...products].sort((a, b) => b.rating - a.rating).slice(0, 3);
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
@@ -150,7 +150,7 @@ export function HomeSidebar({
   onSort,
   onReset,
 }: HomeSidebarProps) {
-  const { products } = useStore();
+  const { products } = useNexaProducts();
   const [openCats, setOpenCats] = useState<string[]>(
     selectedCategory !== "Todos" ? [selectedCategory] : []
   );

@@ -16,6 +16,7 @@
 import { BaseRepository } from "./BaseRepository";
 import { authFetch } from "../lib/authFetch";
 import { nxFetch } from "../lib/nxFetch";
+import { API_BASE } from "../config/api";
 import type { Page } from "../types/api";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -88,7 +89,6 @@ class BrandRepository extends BaseRepository<Brand, BrandPayload, BrandPayload> 
     async findPublic(query: BrandQuery = {}): Promise<Brand[]> {
         try {
             const qs = this.buildParams(query);
-            const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
             const url = `${API_BASE}/api/v1/public/brands?${qs}`;
             const res = await nxFetch(url);
             return this.handleResponse<Brand[]>(res);
@@ -101,7 +101,6 @@ class BrandRepository extends BaseRepository<Brand, BrandPayload, BrandPayload> 
     async findProductsByBrand(slug: string, query: Record<string, unknown> = {}): Promise<Page<unknown>> {
         try {
             const qs = this.buildParams(query);
-            const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
             const url = `${API_BASE}/api/v1/public/brands/${slug}/products?${qs}`;
             const res = await nxFetch(url);
             return this.handleResponse<Page<unknown>>(res);

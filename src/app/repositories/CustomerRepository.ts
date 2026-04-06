@@ -9,9 +9,11 @@
 
 import { authFetch } from "../lib/authFetch";
 import { ApiError, NetworkError } from "../lib/AppError";
+import { API_BASE } from "../config/api";
 import type { ApiErrorBody, Page } from "../types/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
+import { logger } from "../lib/logger";
+
 const BASE_URL = `${API_BASE}/api/v1/users`;
 const ORDERS_URL = `${API_BASE}/api/v1/orders`;
 
@@ -98,7 +100,7 @@ async function fetchOrderStats(): Promise<Map<string, { count: number; total: nu
             hasMore = data?.hasNext ?? (orders.length === batchSize);
             currentPage++;
         }
-    } catch { /* non‑critical */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
     return map;
 }
 
@@ -113,7 +115,7 @@ class CustomerRepository {
             ]);
             if (!usersRes.ok) {
                 let msg = `HTTP ${usersRes.status}`;
-                try { const e: ApiErrorBody = await usersRes.json(); msg = e.message || msg; } catch { /* */ }
+                try { const e: ApiErrorBody = await usersRes.json(); msg = e.message || msg; } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(usersRes.status, msg);
             }
             const users: UserDtoOut[] = await usersRes.json();
@@ -141,7 +143,7 @@ class CustomerRepository {
             ]);
             if (!userRes.ok) {
                 let msg = `HTTP ${userRes.status}`;
-                try { const e: ApiErrorBody = await userRes.json(); msg = e.message || msg; } catch { /* */ }
+                try { const e: ApiErrorBody = await userRes.json(); msg = e.message || msg; } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(userRes.status, msg);
             }
             return toCustomer(await userRes.json(), orderStats);

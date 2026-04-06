@@ -6,6 +6,7 @@ import {
 import { type Attribute, type AttributeValue, attributeRepository } from "../../repositories/AttributeRepository";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
+import { slugify } from "../../lib/urls";
 
 const TYPE_LABELS: Record<Attribute["type"], string> = {
   COLOR: "Color",
@@ -36,10 +37,6 @@ function AttributeModal({
   const [values, setValues] = useState<AttributeValue[]>(attribute.values ?? []);
   const [newValue, setNewValue] = useState("");
   const [newColor, setNewColor] = useState("#6B7280");
-
-  function slugify(str: string) {
-    return str.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-  }
 
   function handleNameChange(v: string) {
     setName(v);

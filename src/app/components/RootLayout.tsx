@@ -12,7 +12,6 @@ import { UserProvider } from "../context/UserContext";
 import { CompareProvider } from "../context/CompareContext";
 import { RecentlyViewedProvider } from "../context/RecentlyViewedContext";
 import { NewsletterProvider } from "../context/NewsletterContext";
-import { StoreProvider } from "../context/StoreContext";
 import { LanguageProvider } from "../context/LanguageContext";
 import { TimezoneProvider } from "../context/TimezoneContext";
 import { AuthProvider } from "../context/AuthContext";
@@ -32,7 +31,6 @@ const AllProviders = composeProviders(
   AuthProvider,
   LanguageProvider,
   TimezoneProvider,
-  StoreProvider,
   UserProvider,
   CartProvider,
   CompareProvider,

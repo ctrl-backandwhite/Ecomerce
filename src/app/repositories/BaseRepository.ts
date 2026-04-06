@@ -10,9 +10,10 @@
 
 import { authFetch } from "../lib/authFetch";
 import { ApiError, NetworkError } from "../lib/AppError";
+import { API_BASE } from "../config/api";
 import type { Page, ApiErrorBody, PageQuery } from "../types/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
+import { logger } from "../lib/logger";
 
 export abstract class BaseRepository<T, C = Partial<T>, U = Partial<T>> {
     protected readonly baseUrl: string;
@@ -39,7 +40,7 @@ export abstract class BaseRepository<T, C = Partial<T>, U = Partial<T>> {
             try {
                 const errBody: ApiErrorBody = await res.json();
                 errorMsg = errBody.message || errorMsg;
-            } catch { /* ignore parse error */ }
+            } catch (err) { logger.warn("Suppressed error", err); }
             throw new ApiError(res.status, errorMsg);
         }
         const text = await res.text();
@@ -120,7 +121,7 @@ export abstract class BaseRepository<T, C = Partial<T>, U = Partial<T>> {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -139,7 +140,7 @@ export abstract class BaseRepository<T, C = Partial<T>, U = Partial<T>> {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {

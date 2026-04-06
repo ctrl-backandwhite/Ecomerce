@@ -9,6 +9,8 @@ import type { CartItemDto, AddItemPayload } from "../repositories/CartRepository
 import { nexaProductRepository } from "../repositories/NexaProductRepository";
 import { mapNexaProduct } from "../mappers/NexaProductMapper";
 
+import { logger } from "../lib/logger";
+
 /* ── Public types ─────────────────────────────────────────── */
 
 export interface CartItem extends Product {
@@ -50,18 +52,18 @@ function loadGuestCart(): CartItem[] {
 }
 
 function saveGuestCart(items: CartItem[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch { /* quota */ }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (err) { logger.warn("Suppressed error", err); }
 }
 
 function clearGuestCart() {
   try {
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(AUTH_CART_FLAG);
-  } catch { /* */ }
+  } catch (err) { logger.warn("Suppressed error", err); }
 }
 
 function markCartAsAuth() {
-  try { localStorage.setItem(AUTH_CART_FLAG, "1"); } catch { /* */ }
+  try { localStorage.setItem(AUTH_CART_FLAG, "1"); } catch (err) { logger.warn("Suppressed error", err); }
 }
 
 function isCartFromAuth(): boolean {

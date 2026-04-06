@@ -15,6 +15,9 @@
 
 import { ApiError, NetworkError } from "../lib/AppError";
 import { authFetch } from "../lib/authFetch";
+import { API_CATALOG } from "../config/api";
+import { logger } from "../lib/logger";
+
 import type {
     ProductVariant,
     VariantTranslation,
@@ -25,8 +28,7 @@ import type {
 // Re-export types for convenience
 export type { ProductVariant, VariantTranslation, VariantInventory, BulkImportResult };
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
-const BASE_URL = `${API_BASE}/api/v1/products`;
+const BASE_URL = `${API_CATALOG}/api/v1/products`;
 
 // ── Payload types ────────────────────────────────────────────────────────────
 
@@ -117,7 +119,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as PagedVariantResponse;
@@ -141,7 +143,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as ProductVariant[];
@@ -165,7 +167,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as ProductVariant;
@@ -193,7 +195,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as ProductVariant;
@@ -221,7 +223,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as ProductVariant;
@@ -245,7 +247,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -268,7 +270,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -295,7 +297,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as BulkImportResult;
@@ -323,7 +325,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -350,7 +352,7 @@ class NexaVariantAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Mail, Users, TrendingUp, Send, X, Download, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
-import { type NewsletterSubscriber as ApiSub, newsletterRepository } from "../../repositories/CmsRepository";
+import { type NewsletterSubscriber as ApiSub, newsletterRepository } from "../../repositories/NewsletterRepository";
 
 interface Subscriber {
   id: string;

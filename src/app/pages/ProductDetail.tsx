@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from "react-router";
 import { type Review } from "../types/review";
 import { reviewRepository } from "../repositories/ReviewRepository";
 import { useCart } from "../context/CartContext";
-import { useStore } from "../context/StoreContext";
+import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useLanguage } from "../context/LanguageContext";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
@@ -550,7 +550,7 @@ function resolveColor(name: string): string {
 // ── Main component ────────────────────────────────────────────
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
-  const { products } = useStore();
+  const { products } = useNexaProducts();
   const { locale } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();

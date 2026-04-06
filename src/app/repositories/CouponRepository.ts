@@ -14,9 +14,10 @@
 import { BaseRepository } from "./BaseRepository";
 import { authFetch } from "../lib/authFetch";
 import { ApiError, NetworkError } from "../lib/AppError";
+import { API_BASE } from "../config/api";
 import type { ApiErrorBody, Page } from "../types/api";
 
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
+import { logger } from "../lib/logger";
 
 export interface Coupon {
     id: string;
@@ -86,7 +87,7 @@ class CouponRepository extends BaseRepository<Coupon, CouponPayload, CouponPaylo
             });
             if (!res.ok) {
                 let msg = `HTTP ${res.status}`;
-                try { const e: ApiErrorBody = await res.json(); msg = e.message || msg; } catch { /* */ }
+                try { const e: ApiErrorBody = await res.json(); msg = e.message || msg; } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, msg);
             }
             return (await res.json()) as CouponValidation;

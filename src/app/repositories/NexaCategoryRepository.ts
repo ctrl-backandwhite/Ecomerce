@@ -12,10 +12,12 @@
 import { TTLCache } from "../lib/cache";
 import { ApiError, NetworkError } from "../lib/AppError";
 import { nxFetch } from "../lib/nxFetch";
+import { API_CATALOG } from "../config/api";
+
+import { logger } from "../lib/logger";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
-const NX036_CATEGORIES_BASE = `${API_BASE}/api/v1/categories`;
+const NX036_CATEGORIES_BASE = `${API_CATALOG}/api/v1/categories`;
 
 const CACHE_TTL_MS = 10 * 60_000; // 10 minutes
 
@@ -70,9 +72,7 @@ class NexaCategoryRepository {
                 try {
                     const errBody: NexaCategoryError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -106,9 +106,7 @@ class NexaCategoryRepository {
                 try {
                     const errBody: NexaCategoryError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 

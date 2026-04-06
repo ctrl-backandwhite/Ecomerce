@@ -3,7 +3,9 @@ import { Plus, Image as ImageIcon, Trash2, Pencil, GripVertical, Eye, EyeOff, Ch
 import { toast } from "sonner";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import { type Slide as ApiSlide, type SlidePayload, slideRepository } from "../../repositories/CmsRepository";
+import { type Slide as ApiSlide, type SlidePayload, slideRepository } from "../../repositories/SlideRepository";
+
+import { logger } from "../../lib/logger";
 
 interface Slide {
   id: string;
@@ -499,7 +501,7 @@ export function AdminSlides() {
     setList(reordered);
     try {
       await slideRepository.updatePositions(reordered.map(s => ({ id: s.id, position: s.order })));
-    } catch { /* silently fail and keep UI state */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
   };
 
   return (

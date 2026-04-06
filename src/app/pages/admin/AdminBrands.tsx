@@ -6,14 +6,11 @@ import {
 import { type Brand, brandRepository } from "../../repositories/BrandRepository";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
+import { slugify } from "../../lib/urls";
 
 const EMPTY: Partial<Brand> = {
   name: "", slug: "", logoUrl: "", websiteUrl: "", description: "", productCount: 0, status: "ACTIVE",
 };
-
-function slugify(str: string) {
-  return str.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-}
 
 /* ── Brand Logo with fallback ────────────────────────────── */
 function BrandLogo({ name, logoUrl }: { name: string; logoUrl: string | null }) {

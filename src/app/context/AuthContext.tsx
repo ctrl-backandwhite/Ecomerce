@@ -19,6 +19,8 @@ import {
 } from "../lib/token";
 import type { TokenResponse } from "../lib/token";
 import { authFetch } from "../lib/authFetch";
+import { logger } from "../lib/logger";
+
 import {
     generateCodeVerifier,
     generateCodeChallenge,
@@ -134,9 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                         setIsLoading(false);
                         return;
                     }
-                } catch {
-                    // Refresh failed — will redirect to login
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
             }
 
             clearTokens();
@@ -218,9 +218,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 method: "POST",
                 credentials: "include",
             });
-        } catch {
-            // Best-effort logout on server
-        }
+        } catch (err) { logger.warn("Suppressed error", err); }
         clearTokens();
         // Redirect immediately — full page reload resets React state naturally.
         // Do NOT call setIsAuthenticated(false) before redirect: it triggers

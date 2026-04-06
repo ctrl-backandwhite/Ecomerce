@@ -10,10 +10,12 @@
 
 import { ApiError, NetworkError } from "../lib/AppError";
 import { nxFetch } from "../lib/nxFetch";
+import { API_CATALOG } from "../config/api";
+
+import { logger } from "../lib/logger";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
-const NX036_PRODUCTS_BASE = `${API_BASE}/api/v1/products`;
+const NX036_PRODUCTS_BASE = `${API_CATALOG}/api/v1/products`;
 
 // ── API response types ───────────────────────────────────────────────────────
 
@@ -168,7 +170,7 @@ class NexaProductRepository {
             if (query.ascending !== undefined) params.set("ascending", String(query.ascending));
 
             const url = `${NX036_PRODUCTS_BASE}?${params.toString()}`;
-            console.log('[NexaProductRepository] fetch URL:', url);
+            logger.debug('[NexaProductRepository] fetch URL:', url);
             const res = await nxFetch(url, { signal });
 
             if (!res.ok) {
@@ -176,9 +178,7 @@ class NexaProductRepository {
                 try {
                     const errBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -207,7 +207,7 @@ class NexaProductRepository {
                 try {
                     const errBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -231,7 +231,7 @@ class NexaProductRepository {
         try {
             const params = new URLSearchParams({ locale });
             const url = `${NX036_PRODUCTS_BASE}/detail/${pid}?${params.toString()}`;
-            console.log('[NexaProductRepository] detail URL:', url);
+            logger.debug('[NexaProductRepository] detail URL:', url);
             const res = await nxFetch(url, { signal });
 
             if (!res.ok) {
@@ -239,9 +239,7 @@ class NexaProductRepository {
                 try {
                     const errBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 

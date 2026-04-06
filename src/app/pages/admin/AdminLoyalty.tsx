@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Star, Gift, Pencil, Check, X, Award, Loader2, ShoppingCart, MessageSquare, UserPlus, UserCheck, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "../../lib/logger";
+
 import {
   type LoyaltyRule as ApiLoyaltyRule,
   type LoyaltyTier as ApiLoyaltyTier,
@@ -8,7 +10,7 @@ import {
   type LoyaltyTierPayload,
   type LoyaltyRulePayload,
   loyaltyRepository,
-} from "../../repositories/CmsRepository";
+} from "../../repositories/LoyaltyRepository";
 
 /* ── Action i18n + icons ──────────────────────────────────────── */
 const ACTION_META: Record<LoyaltyAction, { label: string; icon: typeof Star }> = {
@@ -73,9 +75,7 @@ function TierFormModal({ tier, open, onClose, onSave }: {
       };
       await onSave(payload, tier?.id);
       onClose();
-    } catch {
-      /* onSave already shows toast */
-    } finally {
+    } catch (err) { logger.warn("Suppressed error", err); } finally {
       setSaving(false);
     }
   };
@@ -157,7 +157,7 @@ function RuleFormModal({ rule, open, onClose, onSave, existingActions }: {
     try {
       await onSave({ action, pointsPerUnit: Number(pts) || 1, active }, rule?.id);
       onClose();
-    } catch { /* */ } finally { setSaving(false); }
+    } catch (err) { logger.warn("Suppressed error", err); } finally { setSaving(false); }
   };
 
   const availableActions = rule
@@ -221,7 +221,7 @@ function DeleteModal({ open, label, onClose, onConfirm }: {
   if (!open) return null;
   const handleConfirm = async () => {
     setDeleting(true);
-    try { await onConfirm(); onClose(); } catch { /* */ } finally { setDeleting(false); }
+    try { await onConfirm(); onClose(); } catch (err) { logger.warn("Suppressed error", err); } finally { setDeleting(false); }
   };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">

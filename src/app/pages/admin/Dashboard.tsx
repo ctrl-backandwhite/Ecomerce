@@ -16,10 +16,12 @@ import {
 import { Link } from "react-router";
 import { orderRepository, type AdminOrder, type OrderStats } from "../../repositories/OrderRepository";
 import { customerRepository } from "../../repositories/CustomerRepository";
-import { useStore } from "../../context/StoreContext";
+import { useNexaProducts } from "../../hooks/useNexaProducts";
 import { downloadCsv } from "../../utils/exportCsv";
 import { exportToPdf } from "../../utils/exportPdf";
 import { ExportMenu } from "../../components/admin/ExportMenu";
+
+import { logger } from "../../lib/logger";
 
 /* ═══════════════════════════════════════════════════════════════
    STATUS META
@@ -104,7 +106,7 @@ function CustomTooltip({ active, payload, label }: any) {
 ═══════════════════════════════════════════════════════════════ */
 export function Dashboard() {
   // ── Live products from store (same source as /home) ──────
-  const { products } = useStore();
+  const { products } = useNexaProducts();
 
   // ── API state ─────────────────────────────────────────────────────────────
   const [stats, setStats] = useState<OrderStats>({ totalOrders: 0, totalRevenue: 0, pendingOrders: 0, deliveredOrders: 0 });
@@ -121,7 +123,7 @@ export function Dashboard() {
       setStats(orderStats);
       setApiRecentOrders(ordersPage.content);
       setTotalCustomers(customersPage.totalElements);
-    } catch { /* use defaults */ }
+    } catch (err) { logger.warn("Suppressed error", err); }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);

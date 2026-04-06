@@ -5,6 +5,8 @@ import { trackingRepository } from "../repositories/TrackingRepository";
 import type { TrackingEvent } from "../repositories/TrackingRepository";
 import type { Order } from "../repositories/OrderRepository";
 
+import { logger } from "../lib/logger";
+
 type OrderStatus = "preparing" | "shipped" | "in_transit" | "delivered" | "returned";
 
 interface TrackEvent {
@@ -110,7 +112,7 @@ export function OrderTracking() {
       let order: Order | null = null;
 
       // Attempt 1: direct lookup by id
-      try { order = await orderRepository.getMyOrder(q); } catch { /* not found */ }
+      try { order = await orderRepository.getMyOrder(q); } catch (err) { logger.warn("Suppressed error", err); }
 
       // Attempt 2: search in user's orders by order number
       if (!order) {
@@ -124,7 +126,7 @@ export function OrderTracking() {
 
       // Fetch tracking events
       let events: TrackingEvent[] = [];
-      try { events = await trackingRepository.getByOrderId(order.id); } catch { /* no events */ }
+      try { events = await trackingRepository.getByOrderId(order.id); } catch (err) { logger.warn("Suppressed error", err); }
 
       setResult(buildResult(order, events));
     } catch {

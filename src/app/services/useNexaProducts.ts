@@ -18,8 +18,9 @@ import {
 import {
     mapNexaProducts,
 } from "../mappers/NexaProductMapper";
-import { nexaCategoryRepository, type NexaCategory } from "../repositories/NexaCategoryRepository";
+import { nexaCategoryRepository } from "../repositories/NexaCategoryRepository";
 import { useLanguage } from "../context/LanguageContext";
+import { buildCategoryMap } from "../lib/categoryUtils";
 import type { Product } from "../types/product";
 
 const PAGE_SIZE = 24;
@@ -40,15 +41,6 @@ const _cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 5 * 60_000; // 5 minutes
 function cacheKey(categoryId?: string, locale?: string) {
     return `${categoryId ?? "ALL"}|${locale ?? "en"}`;
-}
-
-/** Flatten a NexaCategory tree into a Record<id, name>. */
-function buildCategoryMap(cats: NexaCategory[], map: Record<string, string> = {}): Record<string, string> {
-    for (const c of cats) {
-        map[c.id] = c.name;
-        if (c.subCategories?.length) buildCategoryMap(c.subCategories, map);
-    }
-    return map;
 }
 
 export interface UseNexaProductsResult {

@@ -20,8 +20,8 @@ import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { priceRanges } from "../config/priceRanges";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../config/filters";
-import { useNexaProducts } from "../services/useNexaProducts";
-import { useNexaCategories } from "../services/useNexaCategories";
+import { useNexaProducts } from "../hooks/useNexaProducts";
+import { useNexaCategories } from "../hooks/useNexaCategories";
 import { slugify, urls } from "../lib/urls";
 
 const PAGE_SIZE = 24;

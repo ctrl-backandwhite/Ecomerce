@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { type Flow as ApiFlow, type FlowPayload, flowRepository } from "../../repositories/CmsRepository";
+import { type Flow as ApiFlow, type FlowPayload, flowRepository } from "../../repositories/FlowRepository";
 import {
   Plus, X, Check, Pencil, Trash2, AlertTriangle,
   Package, Truck, Navigation, Home, ClipboardCheck,

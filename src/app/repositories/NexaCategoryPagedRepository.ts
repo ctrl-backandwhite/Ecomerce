@@ -10,10 +10,12 @@
 
 import { ApiError, NetworkError } from "../lib/AppError";
 import { authFetch } from "../lib/authFetch";
+import { API_CATALOG } from "../config/api";
+
+import { logger } from "../lib/logger";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
-const CATEGORIES_URL = `${API_BASE}/api/v1/categories`;
+const CATEGORIES_URL = `${API_CATALOG}/api/v1/categories`;
 const BASE_URL = `${CATEGORIES_URL}/paged`;
 
 // ── API types ────────────────────────────────────────────────────────────────
@@ -123,9 +125,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -152,9 +152,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -179,9 +177,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -205,9 +201,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -241,7 +235,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* not JSON */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -276,7 +270,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* not JSON */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -303,7 +297,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* not JSON */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -328,9 +322,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch {
-                    /* response body was not JSON */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -361,7 +353,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* not JSON */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
 
@@ -390,7 +382,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* not JSON */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -417,7 +409,7 @@ class NexaCategoryPagedRepository {
                 try {
                     const errBody: CategoryApiError = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* not JSON */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {

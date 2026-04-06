@@ -5,7 +5,7 @@ import {
   Loader2, X, Copy, Eye, Plus, Pencil, Trash2, TriangleAlert, Upload,
 } from "lucide-react";
 import { toast } from "sonner";
-import { usePagedCategories } from "../../services/usePagedCategories";
+import { usePagedCategories } from "../../hooks/usePagedCategories";
 import { useLanguage } from "../../context/LanguageContext";
 import { Pagination } from "../../components/admin/Pagination";
 import { CategoryDetailDrawer } from "../../components/admin/CategoryDetailDrawer";

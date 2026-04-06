@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   type EmailTemplate as ApiEmailTemplate, type EmailTemplatePayload,
   emailTemplateRepository,
-} from "../../repositories/CmsRepository";
+} from "../../repositories/EmailTemplateRepository";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type EmailCategory = "transactional" | "marketing" | "system";
@@ -397,8 +397,8 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                       type="button"
                       onClick={() => { set("fromEmail", s.from); set("fromName", s.name); }}
                       className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-colors ${form.fromEmail === s.from
-                          ? "border-gray-900 bg-gray-50"
-                          : "border-gray-200 hover:border-gray-300"
+                        ? "border-gray-900 bg-gray-50"
+                        : "border-gray-200 hover:border-gray-300"
                         }`}
                     >
                       <div>
@@ -429,8 +429,8 @@ function NewTemplatePanel({ onSave, onClose }: NewTemplatePanelProps) {
                         type="button"
                         onClick={() => set("category", key)}
                         className={`px-3 py-2.5 rounded-xl border text-center transition-all ${form.category === key
-                            ? "border-gray-900 bg-gray-50"
-                            : "border-gray-200 hover:border-gray-300"
+                          ? "border-gray-900 bg-gray-50"
+                          : "border-gray-200 hover:border-gray-300"
                           }`}
                       >
                         <span className={`inline-flex text-[11px] px-2 py-0.5 rounded-full ${meta.bg} ${meta.text} mb-1`}>

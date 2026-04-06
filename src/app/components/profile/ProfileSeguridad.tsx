@@ -7,6 +7,8 @@ import { profileRepository } from "../../repositories/ProfileRepository";
 import type { UserSessionInfo } from "../../repositories/ProfileRepository";
 import { ApiError } from "../../lib/AppError";
 
+import { logger } from "../../lib/logger";
+
 type PwStep = "form" | "code" | "success";
 type SessionStep = "list" | "code" | "success";
 
@@ -135,9 +137,7 @@ export function ProfileSeguridad() {
       setSessionsLoading(true);
       const data = await profileRepository.getActiveSessions();
       setSessions(data);
-    } catch {
-      // Silent fail — show empty list
-    } finally {
+    } catch (err) { logger.warn("Suppressed error", err); } finally {
       setSessionsLoading(false);
     }
   }, []);

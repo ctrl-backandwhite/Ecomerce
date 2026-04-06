@@ -8,7 +8,7 @@ import {
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
 import { BulkUploadModal } from "../../components/admin/BulkUploadModal";
-import { useAdminProducts } from "../../services/useAdminProducts";
+import { useAdminProducts } from "../../hooks/useAdminProducts";
 import { useLanguage } from "../../context/LanguageContext";
 import {
     nexaProductAdminRepository,

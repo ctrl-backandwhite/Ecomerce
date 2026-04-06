@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import { ArrowRight, Star } from "lucide-react";
 import type { Product } from "../types/product";
-import { useStore } from "../context/StoreContext";
+import { useNexaProducts } from "../hooks/useNexaProducts";
 
 const CATEGORY_ORDER = [
   "Electrónica", "Moda", "Audio", "Gaming",
@@ -76,7 +76,7 @@ function CategoryRow({ category, products }: { category: string; products: Produ
 }
 
 export function CategoryProducts() {
-  const { products } = useStore();
+  const { products } = useNexaProducts();
   return (
     <section className="py-16 bg-gray-50 border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

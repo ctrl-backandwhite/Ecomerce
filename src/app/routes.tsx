@@ -19,7 +19,7 @@ function lazyPage<T extends Record<string, unknown>>(
 const Home = lazyPage(() => import("./pages/Home"), "Home");
 const ProductDetail = lazyPage(() => import("./pages/ProductDetail"), "ProductDetail");
 const Cart = lazyPage(() => import("./pages/Cart"), "Cart");
-const Checkout = lazyPage(() => import("./pages/Checkout"), "Checkout");
+const Checkout = lazyPage(() => import("./pages/checkout/Checkout"), "Checkout");
 const UserProfile = lazyPage(() => import("./pages/UserProfile"), "UserProfile");
 const GiftCardPurchase = lazyPage(() => import("./pages/GiftCardPurchase"), "GiftCardPurchase");
 const AboutPage = lazyPage(() => import("./pages/AboutPage"), "AboutPage");

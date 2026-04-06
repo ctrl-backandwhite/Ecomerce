@@ -11,10 +11,8 @@
  */
 
 import { authFetch } from "../lib/authFetch";
-import { ApiError, NetworkError } from "../lib/AppError";
-import type { ApiErrorBody } from "../types/api";
-
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:9000";
+import { handleRes, wrapErr } from "../lib/apiHelpers";
+import { API_BASE } from "../config/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -54,26 +52,6 @@ export interface GiftCardPurchasePayload {
     message?: string;
     sendDate?: string;     // "YYYY-MM-DD"
     expiryDate?: string;   // "YYYY-MM-DD"
-}
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-async function handleRes<R>(res: Response): Promise<R> {
-    if (!res.ok) {
-        let errorMsg = `HTTP ${res.status}`;
-        try {
-            const e: ApiErrorBody = await res.json();
-            errorMsg = e.message || errorMsg;
-        } catch { /* */ }
-        throw new ApiError(res.status, errorMsg);
-    }
-    const text = await res.text();
-    return text ? JSON.parse(text) : (undefined as R);
-}
-
-function wrapErr(err: unknown, msg: string): never {
-    if (err instanceof ApiError) throw err;
-    throw new NetworkError(msg, err instanceof Error ? err : undefined);
 }
 
 // ── Repository ────────────────────────────────────────────────────────────────

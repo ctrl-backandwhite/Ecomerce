@@ -9,17 +9,9 @@
 
 import type { Product, ProductImage, ProductVariant } from "../types/product";
 import type { NexaProduct, NexaProductDetail, NexaDetailVariant } from "../repositories/NexaProductRepository";
+import { slugify } from "../lib/urls";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-function slugify(text: string): string {
-    return text
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-|-$/g, "");
-}
 
 function stripHtml(html: string): string {
     return html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();

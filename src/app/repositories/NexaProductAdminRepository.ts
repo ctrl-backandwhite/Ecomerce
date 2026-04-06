@@ -15,10 +15,12 @@
 
 import { ApiError, NetworkError } from "../lib/AppError";
 import { authFetch } from "../lib/authFetch";
+import { API_CATALOG } from "../config/api";
+
+import { logger } from "../lib/logger";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:6001";
-const BASE_URL = `${API_BASE}/api/v1/products`;
+const BASE_URL = `${API_CATALOG}/api/v1/products`;
 
 // ── API types ────────────────────────────────────────────────────────────────
 
@@ -159,7 +161,7 @@ class NexaProductAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as AdminProductPage;
@@ -184,7 +186,7 @@ class NexaProductAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as AdminProduct;
@@ -212,7 +214,7 @@ class NexaProductAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as AdminProduct;
@@ -240,7 +242,7 @@ class NexaProductAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as AdminProduct;
@@ -268,7 +270,7 @@ class NexaProductAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -295,7 +297,7 @@ class NexaProductAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
             return (await res.json()) as BulkImportResult;
@@ -319,7 +321,7 @@ class NexaProductAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -346,7 +348,7 @@ class NexaProductAdminRepository {
                 try {
                     const errBody: ApiErrorBody = await res.json();
                     errorMsg = errBody.message || errorMsg;
-                } catch { /* ignore parse error */ }
+                } catch (err) { logger.warn("Suppressed error", err); }
                 throw new ApiError(res.status, errorMsg);
             }
         } catch (err) {
@@ -371,7 +373,7 @@ class NexaProductAdminRepository {
         if (this.syncAbortController) {
             this.syncAbortController.abort();
             this.syncAbortController = null;
-            console.log(
+            logger.debug(
                 "%c[CJ Sync] ⏹ Sincronización detenida por el usuario.",
                 "color: #f59e0b; font-weight: bold",
             );
@@ -401,7 +403,7 @@ class NexaProductAdminRepository {
         let page = 1;
         let cancelled = false;
 
-        console.log(
+        logger.debug(
             "%c[CJ Sync] Iniciando sincronización de productos (páginas de %d)…",
             "color: #2563eb; font-weight: bold",
             PAGE_SIZE,
@@ -419,7 +421,7 @@ class NexaProductAdminRepository {
                 const rangeStart = (page - 1) * PAGE_SIZE + 1;
                 const rangeEnd = page * PAGE_SIZE;
 
-                console.log(
+                logger.debug(
                     `%c[CJ Sync] Página ${page} → productos ${rangeStart}–${rangeEnd}…`,
                     "color: #0891b2",
                 );
@@ -434,9 +436,7 @@ class NexaProductAdminRepository {
                     try {
                         const errBody: ApiErrorBody = await res.json();
                         errorMsg = errBody.message || errorMsg;
-                    } catch {
-                        /* response body was not JSON */
-                    }
+                    } catch (err) { logger.warn("Suppressed error", err); }
                     throw new ApiError(res.status, errorMsg);
                 }
 
@@ -451,7 +451,7 @@ class NexaProductAdminRepository {
                 totalCreated += result.created;
                 totalUpdated += result.updated;
 
-                console.log(
+                logger.debug(
                     `%c[CJ Sync] Página ${page} completada: ` +
                     `+${result.created} creados, ~${result.updated} actualizados ` +
                     `(acumulado: ${totalCreated} creados, ${totalUpdated} actualizados)`,
@@ -459,7 +459,7 @@ class NexaProductAdminRepository {
                 );
 
                 if (!result.hasMore) {
-                    console.log(
+                    logger.debug(
                         "%c[CJ Sync] ✓ Sincronización finalizada. " +
                         `Total: ${totalCreated} creados, ${totalUpdated} actualizados ` +
                         `(${totalCreated + totalUpdated} procesados)`,
@@ -469,7 +469,7 @@ class NexaProductAdminRepository {
                 }
 
                 // Wait 10 seconds before next page — also abortable
-                console.log(
+                logger.debug(
                     `%c[CJ Sync] Esperando ${DELAY_MS / 1000}s antes de la siguiente página…`,
                     "color: #9333ea",
                 );
@@ -500,7 +500,7 @@ class NexaProductAdminRepository {
         }
 
         if (cancelled) {
-            console.log(
+            logger.debug(
                 "%c[CJ Sync] ⏹ Detenida. " +
                 `Parcial: ${totalCreated} creados, ${totalUpdated} actualizados ` +
                 `(${totalCreated + totalUpdated} procesados hasta página ${page})`,

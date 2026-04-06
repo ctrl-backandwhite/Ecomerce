@@ -14,27 +14,18 @@ import {
 import {
     campaignRepository,
     type Campaign,
-} from "../repositories/CmsRepository";
+} from "../repositories/CampaignRepository";
 import { mapNexaProducts } from "../mappers/NexaProductMapper";
 import {
     nexaCategoryRepository,
-    type NexaCategory,
 } from "../repositories/NexaCategoryRepository";
 import { useLanguage } from "../context/LanguageContext";
+import { buildCategoryMap } from "../lib/categoryUtils";
 import type { Product } from "../types/product";
 
-/* ── Helpers ────────────────────────────────────────────────── */
+import { logger } from "../lib/logger";
 
-function buildCategoryMap(
-    cats: NexaCategory[],
-    map: Record<string, string> = {},
-): Record<string, string> {
-    for (const c of cats) {
-        map[c.id] = c.name;
-        if (c.subCategories?.length) buildCategoryMap(c.subCategories, map);
-    }
-    return map;
-}
+/* ── Helpers ────────────────────────────────────────────────── */
 
 function campaignMatchesProduct(camp: Campaign, p: NexaProduct): boolean {
     const hasProductFilter =
@@ -110,9 +101,7 @@ export function useFlashDeals(): UseFlashDealsResult {
                     if (!controller.signal.aborted) {
                         setCategoryMap(buildCategoryMap(cats));
                     }
-                } catch {
-                    /* category names are optional */
-                }
+                } catch (err) { logger.warn("Suppressed error", err); }
             } catch (err) {
                 if (controller.signal.aborted) return;
                 console.error("[useFlashDeals] fetch error:", err);

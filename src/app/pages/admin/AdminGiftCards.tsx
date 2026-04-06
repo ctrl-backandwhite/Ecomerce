@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Gift, Copy, Ban, Eye, DollarSign, Check, X, User, Mail, Calendar, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "../../lib/logger";
+
 import {
   type GiftCard as ApiGiftCard, type GiftCardDesign, type GiftCardTransaction,
   adminGiftCardRepository as giftCardRepository,
-} from "../../repositories/CmsRepository";
+} from "../../repositories/AdminGiftCardRepository";
 
 type GCStatus = "pending" | "active" | "used" | "expired" | "void";
 
@@ -113,9 +115,7 @@ export function AdminGiftCards() {
     try {
       const txs = await giftCardRepository.findTransactions(card.id);
       setDetail({ card, txs });
-    } catch {
-      /* transactions optional */
-    } finally {
+    } catch (err) { logger.warn("Suppressed error", err); } finally {
       setLoadingDetail(false);
     }
   };

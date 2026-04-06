@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Pencil, Check, X, TrendingUp, Globe, Link2 } from "lucide-react";
 import { toast } from "sonner";
-import { type SeoPage as ApiSeoPage, type SeoPagePayload, seoPageRepository } from "../../repositories/CmsRepository";
+import { type SeoPage as ApiSeoPage, type SeoPagePayload, seoPageRepository } from "../../repositories/SeoPageRepository";
 
 interface SEOEntry {
   id: string;

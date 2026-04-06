@@ -7,11 +7,12 @@ import {
   ToggleLeft, Star, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useStore } from "../../context/StoreContext";
+import { useNexaProducts } from "../../hooks/useNexaProducts";
+import { useNexaCategories } from "../../hooks/useNexaCategories";
 import {
   type Campaign as ApiCampaign, type CampaignPayload, type ApiCampaignType,
   campaignRepository,
-} from "../../repositories/CmsRepository";
+} from "../../repositories/CampaignRepository";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type CampaignType =
@@ -200,7 +201,8 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
   const isEdit = Boolean(initial.id);
 
   // Live products from the same source as /home
-  const { products: allProducts, categories: allCategories } = useStore();
+  const { products: allProducts } = useNexaProducts();
+  const { categories: allCategories } = useNexaCategories();
 
   const set = (field: keyof typeof form, value: any) =>
     setForm(prev => ({ ...prev, [field]: value }));
@@ -798,7 +800,7 @@ function CampaignCard({
   onToggle: () => void;
   onDelete: () => void;
 }) {
-  const { categories: allCategories } = useStore();
+  const { categories: allCategories } = useNexaCategories();
   const tm = TYPE_META[campaign.type];
   const sm = STATUS_META[campaign.status];
   const TypeIcon = tm.icon;

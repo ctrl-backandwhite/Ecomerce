@@ -5,6 +5,8 @@ import { profileRepository, type ProfilePayload, type SyncIdentityPayload } from
 import { Save, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
+import { logger } from "../../lib/logger";
+
 const docTypes = [
   { value: "DNI", label: "DNI", placeholder: "Ej. 12345678A" },
   { value: "PASSPORT", label: "PASAPORTE", placeholder: "Ej. USA12345678" },
@@ -68,9 +70,7 @@ export function ProfileDatos() {
       };
       setForm(loaded);
       updateProfile(loaded);
-    } catch {
-      // If API fails, keep using local context data (already set in state init)
-    }
+    } catch (err) { logger.warn("Suppressed error", err); }
   }, [authUser]);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);

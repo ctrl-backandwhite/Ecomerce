@@ -29,8 +29,8 @@ import {
 } from "lucide-react";
 import { priceRanges } from "../config/priceRanges";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
-import { useStore } from "../context/StoreContext";
-import { useNexaCategories } from "../services/useNexaCategories";
+import { useNexaProducts } from "../hooks/useNexaProducts";
+import { useNexaCategories } from "../hooks/useNexaCategories";
 
 // ── Icon resolver ─────────────────────────────────────────────────────────────
 const ICON_RULES: [RegExp, LucideIcon][] = [
@@ -144,7 +144,7 @@ export function MobileFilterDrawer({
   onSort,
   onReset,
 }: MobileFilterDrawerProps) {
-  const { products } = useStore();
+  const { products } = useNexaProducts();
 
   // Lock body scroll when drawer is open
   useEffect(() => {
