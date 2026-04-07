@@ -61,8 +61,15 @@ export function Checkout() {
     const tax = state.taxCalc?.taxAmount ?? subtotal * 0.1;
     const couponDiscount = state.couponResult?.valid ? (state.couponResult.discount ?? 0) : 0;
     const loyaltyDiscount = state.loyaltyRate > 0 ? state.loyaltyPoints / state.loyaltyRate : 0;
-    const giftCardDiscount = state.giftCardBalance !== null
-        ? Math.min(state.giftCardBalance, subtotal + shipping + tax - couponDiscount - loyaltyDiscount) : 0;
+
+    /* Distribute gift card amounts across all applied cards */
+    let gcRemaining = subtotal + shipping + tax - couponDiscount - loyaltyDiscount;
+    const appliedAmounts = state.appliedGiftCards.map(card => {
+        const applied = Math.min(card.balance, Math.max(0, gcRemaining));
+        gcRemaining -= applied;
+        return { code: card.code, applied };
+    });
+    const giftCardDiscount = appliedAmounts.reduce((sum, a) => sum + a.applied, 0);
     const total = Math.max(0, subtotal + shipping + tax - couponDiscount - loyaltyDiscount - giftCardDiscount);
     const maxRedeemable = Math.min(state.loyaltyBalance, Math.floor((subtotal + shipping + tax - couponDiscount) * state.loyaltyRate));
 
@@ -71,7 +78,7 @@ export function Checkout() {
 
     /* ── Async action hooks ── */
     const applyCoupon = useCouponValidation(state.couponCode, subtotal, dispatch);
-    const applyGiftCard = useGiftCardRedemption(state.giftCardCode, dispatch);
+    const applyManualCard = useGiftCardRedemption(state.giftCardCode, state.appliedGiftCards, dispatch);
     const handleSubmit = useCheckoutSubmit(state, dispatch, clearCart);
 
     /* ── Step validation ── */
@@ -83,13 +90,15 @@ export function Checkout() {
             : state.newMode === "store"
                 ? !!state.selectedStoreId
                 : !!state.selectedPickupId;
-    const step3Valid = state.selectedPmId !== "new"
-        ? selectedPm?.type === "card" ? !!state.savedCardCvv : true
-        : state.payMethod === "card"
-            ? !!(state.payment.cardNumber && state.payment.cardName && state.payment.expiry && state.payment.cvv)
-            : state.payMethod === "paypal"
-                ? !!state.paypalEmail
-                : true;
+    const step3Valid = total === 0
+        ? true
+        : state.selectedPmId !== "new"
+            ? selectedPm?.type === "card" ? !!state.savedCardCvv : true
+            : state.payMethod === "card"
+                ? !!(state.payment.cardNumber && state.payment.cardName && state.payment.expiry && state.payment.cvv)
+                : state.payMethod === "paypal"
+                    ? !!state.paypalEmail
+                    : true;
 
     /* ── Delivery / Payment summary helpers ── */
     function deliverySummary() {
@@ -163,11 +172,16 @@ export function Checkout() {
                         loyaltyRate={state.loyaltyRate} loyaltyDiscount={loyaltyDiscount}
                         maxRedeemable={maxRedeemable}
                         giftCardCode={state.giftCardCode} giftCardLoading={state.giftCardLoading}
-                        giftCardError={state.giftCardError} giftCardBalance={state.giftCardBalance}
+                        giftCardError={state.giftCardError}
+                        appliedGiftCards={state.appliedGiftCards}
+                        myGiftCards={state.myGiftCards}
+                        myGiftCardsLoaded={state.myGiftCardsLoaded}
                         giftCardDiscount={giftCardDiscount}
+                        appliedAmounts={appliedAmounts}
+                        remainingTotal={total}
                         deliverySummary={deliverySummary()} selectedAddrId={state.selectedAddrId}
                         newMode={state.newMode}
-                        dispatch={dispatch} applyCoupon={applyCoupon} applyGiftCard={applyGiftCard}
+                        dispatch={dispatch} applyCoupon={applyCoupon} applyManualCard={applyManualCard}
                     />
                 </div>
             </div>

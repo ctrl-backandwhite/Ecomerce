@@ -54,6 +54,10 @@ export interface Order {
     paymentRef: string | null;
     notes: string | null;
     couponId: string | null;
+    giftCardCode: string | null;
+    giftCardAmount: number;
+    loyaltyPointsUsed: number;
+    loyaltyDiscount: number;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -74,6 +78,10 @@ export interface CreateOrderPayload {
     billingAddress?: Record<string, unknown>;
     paymentMethod: string;
     couponCode?: string;
+    giftCardCode?: string;
+    giftCardAmount?: number;
+    loyaltyPointsUsed?: number;
+    loyaltyDiscount?: number;
     notes?: string;
 }
 

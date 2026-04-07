@@ -51,6 +51,9 @@ function toDocData(inv: Invoice) {
         shipping: inv.shipping,
         tax: inv.tax,
         total: inv.total,
+        discountAmount: inv.discountAmount ?? 0,
+        giftCardAmount: inv.giftCardAmount ?? 0,
+        loyaltyDiscount: inv.loyaltyDiscount ?? 0,
         paymentMethod: inv.paymentMethod,
         notes: inv.notes ?? undefined,
     };

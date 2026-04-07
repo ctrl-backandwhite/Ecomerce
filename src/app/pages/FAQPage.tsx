@@ -25,7 +25,7 @@ const FAQS = [
     category: "Pagos y facturas",
     items: [
       { q: "¿Qué métodos de pago aceptan?", a: "Aceptamos tarjetas Visa y Mastercard, PayPal, transferencia bancaria y criptomonedas (USDT y Bitcoin). Todos los pagos están cifrados con SSL." },
-      { q: "¿Puedo pagar a plazos?", a: "Sí, ofrecemos financiación sin intereses a 3, 6 y 12 meses en compras superiores a €200 mediante Stripe Installments. La opción aparece en el checkout." },
+      { q: "¿Puedo pagar a plazos?", a: "Sí, ofrecemos financiación sin intereses a 3, 6 y 12 meses en compras superiores a $200 mediante Stripe Installments. La opción aparece en el checkout." },
       { q: "¿Cómo obtengo mi factura?", a: "Tu factura se genera automáticamente al confirmar el pedido. La encontrarás en Cuenta → Mis Pedidos → Ver Factura, y se enviará también por email en PDF." },
       { q: "¿Puedo solicitar factura con datos de empresa (B2B)?", a: "Sí. Al hacer checkout encontrarás la opción 'Factura para empresa'. Introduce el NIF/CIF y los datos fiscales. La factura se emite en 24 h." },
     ],
@@ -33,7 +33,7 @@ const FAQS = [
   {
     category: "Cuenta y fidelidad",
     items: [
-      { q: "¿Cómo funciona el programa de puntos NX036?", a: "Ganas 1 punto por cada €1 gastado. Con 500 puntos obtienes un descuento de €5. Los puntos no caducan y pueden combinarse con cupones de descuento." },
+      { q: "¿Cómo funciona el programa de puntos NX036?", a: "Ganas 1 punto por cada $1 gastado. Con 500 puntos obtienes un descuento de $5. Los puntos no caducan y pueden combinarse con cupones de descuento." },
       { q: "¿Puedo comprar sin crear una cuenta?", a: "Sí, puedes hacer checkout como invitado. Sin embargo, con cuenta podrás rastrear pedidos, guardar favoritos, acumular puntos y gestionar devoluciones fácilmente." },
       { q: "¿Cómo cambio mi contraseña?", a: "Ve a Cuenta → Configuración → Cambiar contraseña. Si no recuerdas tu contraseña, usa la opción 'Olvidé mi contraseña' en la pantalla de inicio de sesión." },
       { q: "¿Cómo elimino mi cuenta?", a: "Puedes solicitar la eliminación de tu cuenta y datos personales desde Cuenta → Configuración → Eliminar cuenta, de acuerdo con el RGPD." },

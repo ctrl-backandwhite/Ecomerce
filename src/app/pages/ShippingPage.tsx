@@ -1,10 +1,10 @@
 import { Truck, Clock, MapPin, Package, RefreshCcw, Shield } from "lucide-react";
 
 const carriers = [
-  { name: "NX036 Express",     time: "24 h",        price: "Gratis +€100 / €4.99",  zones: "España y Portugal"   },
-  { name: "Standard",         time: "3–5 días",    price: "Gratis +€50 / €2.99",   zones: "España y Portugal"   },
-  { name: "UPS International",time: "5–7 días",    price: "Desde €9.99",           zones: "Unión Europea"       },
-  { name: "FedEx Global",     time: "7–14 días",   price: "Desde €14.99",          zones: "LATAM y resto mundo" },
+  { name: "NX036 Express",     time: "24 h",        price: "Gratis +$100 / $4.99",  zones: "España y Portugal"   },
+  { name: "Standard",         time: "3–5 días",    price: "Gratis +$50 / $2.99",   zones: "España y Portugal"   },
+  { name: "UPS International",time: "5–7 días",    price: "Desde $9.99",           zones: "Unión Europea"       },
+  { name: "FedEx Global",     time: "7–14 días",   price: "Desde $14.99",          zones: "LATAM y resto mundo" },
 ];
 
 const steps = [
@@ -105,7 +105,7 @@ export function ShippingPage() {
 
       {/* Free shipping banner */}
       <section className="py-10 px-4 bg-gray-700 text-center">
-        <p className="text-white text-sm">Envío gratuito en pedidos superiores a <span className="text-gray-300">€50</span> en España · <span className="text-gray-300">€100</span> en resto de Europa</p>
+        <p className="text-white text-sm">Envío gratuito en pedidos superiores a <span className="text-gray-300">$50</span> en España · <span className="text-gray-300">$100</span> en resto de Europa</p>
       </section>
     </div>
   );

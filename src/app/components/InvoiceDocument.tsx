@@ -29,6 +29,9 @@ export interface InvoiceData {
   shipping: number;
   tax: number;
   total: number;
+  discountAmount?: number;
+  giftCardAmount?: number;
+  loyaltyDiscount?: number;
   paymentMethod?: string;
   notes?: string;
 }
@@ -48,6 +51,20 @@ function fmt(n: number) {
 
 function fmtDate(s: string) {
   return new Date(s).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+const PM_LABELS: Record<string, string> = {
+  CREDIT_CARD: "Tarjeta de crédito",
+  PAYPAL: "PayPal",
+  CRYPTO_USDT: "USDT",
+  CRYPTO_BTC: "Bitcoin",
+  GIFT_CARD: "Tarjeta de regalo",
+  NONE: "Sin cargo",
+};
+
+function fmtPm(raw?: string) {
+  if (!raw) return "";
+  return PM_LABELS[raw] ?? raw.replace(/_/g, " ");
 }
 
 function buildQRValue(data: InvoiceData): string {
@@ -200,7 +217,7 @@ export function InvoiceDocument({
               {data.paymentMethod && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-gray-400">Método de pago</span>
-                  <span className="text-xs text-gray-700">{data.paymentMethod}</span>
+                  <span className="text-xs text-gray-700">{fmtPm(data.paymentMethod)}</span>
                 </div>
               )}
             </div>
@@ -249,10 +266,40 @@ export function InvoiceDocument({
                 <span className="text-gray-500">IVA (10%)</span>
                 <span className="text-gray-900">${fmt(data.tax)}</span>
               </div>
+              {(data.discountAmount ?? 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Cupón de descuento</span>
+                  <span className="text-green-600">−${fmt(data.discountAmount!)}</span>
+                </div>
+              )}
+              {(data.giftCardAmount ?? 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Tarjeta de regalo</span>
+                  <span className="text-green-600">−${fmt(data.giftCardAmount!)}</span>
+                </div>
+              )}
+              {(data.loyaltyDiscount ?? 0) > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">Puntos de lealtad</span>
+                  <span className="text-green-600">−${fmt(data.loyaltyDiscount!)}</span>
+                </div>
+              )}
               <div className="flex justify-between pt-3 border-t border-gray-200">
                 <span className="text-sm text-gray-900">Total</span>
                 <span className="text-xl text-gray-900 tracking-tight">${fmt(data.total)}</span>
               </div>
+              {(() => {
+                const charged = data.total - (data.giftCardAmount ?? 0) - (data.loyaltyDiscount ?? 0);
+                if (charged > 0 && ((data.giftCardAmount ?? 0) > 0 || (data.loyaltyDiscount ?? 0) > 0)) {
+                  return (
+                    <div className="flex justify-between text-sm pt-1">
+                      <span className="text-gray-400">Cobrado vía {fmtPm(data.paymentMethod)}</span>
+                      <span className="text-gray-600">${fmt(charged)}</span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
 

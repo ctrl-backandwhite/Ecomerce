@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router";
 import {
   Gift, Plus, Copy, ArrowRight, Clock,
@@ -58,7 +59,7 @@ function MiniCard({ designId, amount, label }: { designId: string; amount: numbe
     >
       <span className="text-[10px] tracking-widest" style={{ color: design.accent }}>{design.emoji}</span>
       <span className="text-sm" style={{ color: design.accent }}>
-        {label ?? `${amount}€`}
+        {label ?? `$${amount}`}
       </span>
     </div>
   );
@@ -97,7 +98,7 @@ function ActivateModal({ onClose, onActivate }: {
     }
   }
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
         <div className="flex items-center justify-between mb-5">
@@ -160,7 +161,8 @@ function ActivateModal({ onClose, onActivate }: {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -181,7 +183,7 @@ function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code:
           style={{ background: `linear-gradient(135deg, ${design.from}, ${design.to})` }}
         >
           <span className="text-sm" style={{ color: design.accent }}>{design.emoji}</span>
-          <span className="text-sm" style={{ color: design.accent }}>{card.balance}€</span>
+          <span className="text-sm" style={{ color: design.accent }}>${card.balance}</span>
         </div>
 
         {/* Info */}
@@ -201,7 +203,7 @@ function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code:
             <div className="mt-2">
               {/* Balance bar */}
               <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
-                <span>Saldo: <strong className="text-gray-900">{card.balance}€</strong> de {card.originalAmount}€</span>
+                <span>Saldo: <strong className="text-gray-900">${card.balance}</strong> de ${card.originalAmount}</span>
                 <span className="flex items-center gap-0.5">
                   <Clock className="w-2.5 h-2.5" strokeWidth={1.5} />
                   {expiry}
@@ -299,7 +301,7 @@ function SentCard({ card, onCopy }: { card: SentGiftCard; onCopy: (code: string)
             </span>
           </div>
           <div className="flex items-center gap-3 mt-2">
-            <span className="text-xs text-gray-900">{card.amount}€</span>
+            <span className="text-xs text-gray-900">${card.amount}</span>
             <span className="text-[10px] text-gray-400">Enviada el {card.sentDate}</span>
           </div>
           {card.message && (
@@ -348,8 +350,11 @@ export function ProfileGiftCards() {
     return () => { cancelled = true; };
   }, []);
 
-  const totalBalance = receivedCards.filter(c => c.status === "active").reduce((s, c) => s + c.balance, 0);
+  const totalBalance = parseFloat(receivedCards.filter(c => c.status === "active").reduce((s, c) => s + c.balance, 0).toFixed(2));
   const activeCount = receivedCards.filter(c => c.status === "active").length;
+
+  const STATUS_ORDER: Record<GCStatus, number> = { active: 0, pending: 1, used: 2, expired: 3 };
+  const sortedReceived = [...receivedCards].sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
 
   function handleCopy(code: string) {
     navigator.clipboard.writeText(code).catch(() => { });
@@ -374,7 +379,7 @@ export function ProfileGiftCards() {
       } else {
         setReceivedCards(prev => [mapped, ...prev]);
       }
-      toast.success(`Tarjeta activada — Saldo de ${card.balance}€ disponible`);
+      toast.success(`Tarjeta activada — Saldo de $${card.balance} disponible`);
       setShowActivate(false);
     } catch (err) {
       if (err instanceof ApiError && err.message.includes("already activated")) {
@@ -398,7 +403,7 @@ export function ProfileGiftCards() {
         <div className="absolute top-3 right-6 text-5xl opacity-10">✦</div>
         <div className="absolute bottom-2 left-6 text-3xl opacity-5">✦</div>
         <p className="text-[11px] tracking-widest uppercase text-white/60 mb-1">Saldo disponible en tarjetas</p>
-        <p className="text-4xl tracking-tight mb-3">{totalBalance}€</p>
+        <p className="text-4xl tracking-tight mb-3">${totalBalance}</p>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 text-xs text-white/70">
             <Gift className="w-3.5 h-3.5" strokeWidth={1.5} />
@@ -471,7 +476,7 @@ export function ProfileGiftCards() {
                   <p className="text-xs text-gray-400">¿Tienes un código? Actívalo con el botón de arriba</p>
                 </div>
               ) : (
-                receivedCards.map(c => (
+                sortedReceived.map(c => (
                   <ReceivedCard key={c.id} card={c} onCopy={handleCopy} />
                 ))
               )}

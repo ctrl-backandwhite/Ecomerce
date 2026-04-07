@@ -60,6 +60,12 @@ export interface CouponValidation {
     message?: string;
 }
 
+export interface CouponUsageRecord {
+    userId: string;
+    orderId: string;
+    usedAt: string;
+}
+
 class CouponRepository extends BaseRepository<Coupon, CouponPayload, CouponPayload> {
     constructor() {
         super("/api/v1/coupons");
@@ -83,7 +89,7 @@ class CouponRepository extends BaseRepository<Coupon, CouponPayload, CouponPaylo
             const res = await authFetch(`${API_BASE}/api/v1/coupons/validate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code, orderTotal }),
+                body: JSON.stringify({ code, cartSubtotal: orderTotal }),
             });
             if (!res.ok) {
                 let msg = `HTTP ${res.status}`;
@@ -99,6 +105,15 @@ class CouponRepository extends BaseRepository<Coupon, CouponPayload, CouponPaylo
 
     async toggleActive(id: string): Promise<void> {
         return this.patch(id, "toggle");
+    }
+
+    async getUsages(couponId: string): Promise<CouponUsageRecord[]> {
+        try {
+            const res = await authFetch(`${this.baseUrl}/${couponId}/usages`);
+            return await this.handleResponse<CouponUsageRecord[]>(res);
+        } catch (err) {
+            this.wrapError(err, "No se pudo obtener el historial de uso");
+        }
     }
 }
 

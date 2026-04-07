@@ -686,7 +686,7 @@ export function ProfilePedidos() {
         </div>
 
         {/* Filter tabs */}
-        <div className="px-6 py-3 border-b border-gray-100 flex gap-2 overflow-x-auto scrollbar-none">
+        <div className="px-6 py-3 border-b border-gray-100 flex gap-2 overflow-x-auto scrollbar-hide">
           {filterTabs.map(({ id, label }) => (
             <button
               key={id}

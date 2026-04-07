@@ -61,7 +61,7 @@ interface Campaign {
 // ── Catalogues ────────────────────────────────────────────────────────────────
 const TYPE_META: Record<CampaignType, { label: string; icon: React.ElementType; iconBg: string; iconText: string; description: string }> = {
   percentage: { label: "Descuento %", icon: Percent, iconBg: "bg-blue-50", iconText: "text-blue-600", description: "Aplica un porcentaje de descuento" },
-  fixed: { label: "Descuento fijo", icon: DollarSign, iconBg: "bg-green-50", iconText: "text-green-600", description: "Descuento de cantidad fija en €" },
+  fixed: { label: "Descuento fijo", icon: DollarSign, iconBg: "bg-green-50", iconText: "text-green-600", description: "Descuento de cantidad fija en $" },
   flash: { label: "Flash Sale", icon: Zap, iconBg: "bg-yellow-50", iconText: "text-yellow-600", description: "Oferta relámpago con contador" },
   bundle: { label: "Compra X lleva Y", icon: Package, iconBg: "bg-orange-50", iconText: "text-orange-600", description: "Compra N artículos, lleva M gratis" },
   free_shipping: { label: "Envío gratis", icon: Truck, iconBg: "bg-teal-50", iconText: "text-teal-600", description: "Elimina el coste de envío" },
@@ -167,7 +167,7 @@ const lbl = "block text-[11px] text-gray-500 mb-1";
 
 function discountLabel(c: Campaign): string {
   if (c.type === "percentage" || c.type === "flash") return `-${c.discountValue}%`;
-  if (c.type === "fixed") return `-€${c.discountValue}`;
+  if (c.type === "fixed") return `-$${c.discountValue}`;
   if (c.type === "free_shipping") return "Envío gratis";
   if (c.type === "two_for_one") return "2x1";
   if (c.type === "bundle") return `${c.buyQty}x${c.getQty}`;
@@ -401,7 +401,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                       </div>
                     </div>
                     <div>
-                      <label className={lbl}>Descuento máximo (€) <span className="text-gray-300">opcional</span></label>
+                      <label className={lbl}>Descuento máximo ($) <span className="text-gray-300">opcional</span></label>
                       <div className="relative">
                         <input
                           type="number" min={0}
@@ -410,7 +410,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                           value={form.maxDiscount ?? ""}
                           onChange={e => set("maxDiscount", e.target.value === "" ? null : Number(e.target.value))}
                         />
-                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
                       </div>
                     </div>
                   </div>
@@ -433,7 +433,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
 
               {form.type === "fixed" && (
                 <div>
-                  <label className={lbl}>Descuento fijo (€) *</label>
+                  <label className={lbl}>Descuento fijo ($) *</label>
                   <div className="relative">
                     <input
                       type="number" min={1}
@@ -442,7 +442,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                       value={form.discountValue}
                       onChange={e => set("discountValue", Number(e.target.value))}
                     />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
                   </div>
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {[5, 10, 20, 30, 50, 75, 100].map(v => (
@@ -450,7 +450,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                         onClick={() => set("discountValue", v)}
                         className={`h-6 px-2.5 text-[11px] rounded-lg border transition-colors ${form.discountValue === v ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}
                       >
-                        €{v}
+                        ${v}
                       </button>
                     ))}
                   </div>
@@ -485,7 +485,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
               <div className="h-px bg-gray-100" />
 
               <div>
-                <label className={lbl}>Pedido mínimo para activar (€)</label>
+                <label className={lbl}>Pedido mínimo para activar ($)</label>
                 <div className="relative">
                   <input
                     type="number" min={0}
@@ -494,7 +494,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                     value={form.minOrder}
                     onChange={e => set("minOrder", Number(e.target.value))}
                   />
-                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">€</span>
+                  <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-gray-400">$</span>
                 </div>
                 <p className="text-[10px] text-gray-400 mt-1">Deja en 0 para que se active en cualquier pedido.</p>
               </div>
@@ -585,7 +585,7 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                         <img src={p.image} alt={p.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
                         <div className="min-w-0">
                           <p className="text-xs text-gray-900 truncate">{p.name}</p>
-                          <p className="text-[10px] text-gray-400">{p.sku} · €{p.price}</p>
+                          <p className="text-[10px] text-gray-400">{p.sku} · ${p.price}</p>
                         </div>
                       </button>
                     ))}
@@ -857,7 +857,7 @@ function CampaignCard({
           </div>
           <div>
             <p className="text-[10px] text-gray-400">Ingresos</p>
-            <p className="text-xs text-gray-900">€{campaign.revenue.toLocaleString()}</p>
+            <p className="text-xs text-gray-900">${campaign.revenue.toLocaleString()}</p>
           </div>
         </div>
       )}
@@ -991,7 +991,7 @@ export function AdminCampaigns() {
           { label: "Campañas totales", value: campaigns.length, icon: Layers },
           { label: "Activas ahora", value: activeCount, icon: Zap },
           { label: "Usos totales", value: totalUses.toLocaleString(), icon: ShoppingBag },
-          { label: "Ingresos generados", value: `€${totalRevenue.toLocaleString()}`, icon: BarChart2 },
+          { label: "Ingresos generados", value: `$${totalRevenue.toLocaleString()}`, icon: BarChart2 },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">

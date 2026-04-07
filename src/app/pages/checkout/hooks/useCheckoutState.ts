@@ -33,7 +33,23 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
         case "RESET_COUPON":
             return { ...state, couponResult: null };
         case "RESET_GIFT_CARD":
-            return { ...state, giftCardBalance: null, giftCardError: null };
+            return { ...state, giftCardError: null };
+        case "TOGGLE_GIFT_CARD": {
+            const exists = state.appliedGiftCards.some(c => c.code === action.code);
+            return {
+                ...state,
+                appliedGiftCards: exists
+                    ? state.appliedGiftCards.filter(c => c.code !== action.code)
+                    : [...state.appliedGiftCards, { code: action.code, balance: action.balance }],
+                giftCardError: null,
+            };
+        }
+        case "REMOVE_GIFT_CARD":
+            return {
+                ...state,
+                appliedGiftCards: state.appliedGiftCards.filter(c => c.code !== action.code),
+                giftCardError: null,
+            };
         default:
             return state;
     }
@@ -84,7 +100,9 @@ export function buildInitialState(user: UserProfile): CheckoutState {
         loyaltyRate: 100,
         loyaltyPoints: 0,
         giftCardCode: "",
-        giftCardBalance: null,
+        appliedGiftCards: [],
+        myGiftCards: [],
+        myGiftCardsLoaded: false,
         giftCardLoading: false,
         giftCardError: null,
         btcRate: 68500,

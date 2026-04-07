@@ -1140,7 +1140,6 @@ export function ProductDetail() {
 
               <div
                 className="overflow-y-auto flex-1 divide-y divide-gray-50"
-                style={{ scrollbarWidth: "thin", scrollbarColor: "#e5e7eb transparent" }}
               >
                 {product.attributes.map((attr, i) => (
                   <div
@@ -1248,7 +1247,6 @@ export function ProductDetail() {
 
             <div
               className="overflow-y-auto flex-1"
-              style={{ scrollbarWidth: "thin", scrollbarColor: "#e5e7eb transparent" }}
             >
               <div className="grid grid-cols-2 divide-x divide-gray-100">
                 {product.attributes.map((attr, i) => (

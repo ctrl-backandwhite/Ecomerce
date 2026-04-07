@@ -139,7 +139,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 py-4 overflow-y-auto">
+        <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin">
           {menuGroups.map((group) => (
             <div key={group.label} id={group.tourId} className="mb-5">
               {!isCollapsed && (

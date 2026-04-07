@@ -326,7 +326,7 @@ export function Home() {
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
             <div className="hidden sm:flex items-center gap-2 text-xs text-white/50">
-              {["25€", "50€", "100€", "200€"].map((a) => (
+              {["$25", "$50", "$100", "$200"].map((a) => (
                 <span key={a} className="bg-white/10 border border-white/20 rounded-full px-2.5 py-0.5">{a}</span>
               ))}
             </div>

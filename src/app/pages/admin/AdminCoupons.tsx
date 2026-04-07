@@ -3,11 +3,11 @@ import {
   Search, Plus, Pencil, Trash2, X, Copy, Check,
   Tag, Percent, DollarSign, Calendar, Users,
   ToggleLeft, ToggleRight, Infinity as InfinityIcon,
-  AlertTriangle, TrendingUp, Gift,
+  AlertTriangle, TrendingUp, Gift, Clock, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
-import { type Coupon as ApiCoupon, type CouponPayload, couponRepository } from "../../repositories/CouponRepository";
+import { type Coupon as ApiCoupon, type CouponPayload, type CouponUsageRecord, couponRepository } from "../../repositories/CouponRepository";
 
 /* ── Types ────────────────────────────────────────────────── */
 interface Coupon {
@@ -359,6 +359,133 @@ function CouponModal({
   );
 }
 
+/* ── Usages modal ────────────────────────────────────────── */
+function UsagesModal({
+  coupon, onClose,
+}: {
+  coupon: Coupon;
+  onClose: () => void;
+}) {
+  const [usages, setUsages] = useState<CouponUsageRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    couponRepository.getUsages(coupon.id)
+      .then(setUsages)
+      .catch(() => toast.error("Error al cargar el historial"))
+      .finally(() => setLoading(false));
+  }, [coupon.id]);
+
+  function fmtDate(iso: string) {
+    const d = new Date(iso);
+    return d.toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function fmtTime(iso: string) {
+    const d = new Date(iso);
+    return d.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-xl w-full max-w-lg overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-blue-500 flex items-center justify-center">
+              <Users className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-900">Historial de uso</p>
+              <p className="text-[11px] text-gray-400 font-mono mt-0.5">{coupon.code}</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-50 rounded-full transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="max-h-[60vh] overflow-y-auto">
+          {loading && (
+            <div className="py-12 text-center">
+              <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs text-gray-400">Cargando historial…</p>
+            </div>
+          )}
+
+          {!loading && usages.length === 0 && (
+            <div className="py-12 text-center">
+              <Users className="w-8 h-8 text-gray-200 mx-auto mb-2" strokeWidth={1} />
+              <p className="text-sm text-gray-400">Sin registros de uso</p>
+              <p className="text-xs text-gray-300 mt-1">Este cupón aún no ha sido utilizado</p>
+            </div>
+          )}
+
+          {!loading && usages.length > 0 && (
+            <div>
+              {/* Column headers */}
+              <div className="grid grid-cols-[1.2fr_1fr_0.7fr] gap-3 px-6 py-2.5 border-b border-gray-100 bg-gray-50/60">
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Usuario</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider">Pedido</p>
+                <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Fecha / Hora</p>
+              </div>
+
+              {usages.map((u, i) => (
+                <div
+                  key={`${u.userId}-${u.usedAt}`}
+                  className={`grid grid-cols-[1.2fr_1fr_0.7fr] gap-3 px-6 py-3 items-center hover:bg-gray-50/60 transition-colors ${i !== usages.length - 1 ? "border-b border-gray-50" : ""
+                    }`}
+                >
+                  {/* User */}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                      <Users className="w-3 h-3 text-gray-400" />
+                    </div>
+                    <span className="text-xs text-gray-700 truncate" title={u.userId}>{u.userId}</span>
+                  </div>
+
+                  {/* Order */}
+                  <div className="flex items-center gap-1 min-w-0">
+                    <ExternalLink className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                    <span className="text-xs text-gray-500 font-mono truncate" title={u.orderId}>
+                      {u.orderId.slice(0, 8)}…
+                    </span>
+                    <CopyBtn text={u.orderId} />
+                  </div>
+
+                  {/* Date + time */}
+                  <div className="text-right">
+                    <p className="text-xs text-gray-700 tabular-nums">{fmtDate(u.usedAt)}</p>
+                    <div className="flex items-center justify-end gap-1 mt-0.5">
+                      <Clock className="w-2.5 h-2.5 text-gray-300" />
+                      <span className="text-[11px] text-gray-400 tabular-nums">{fmtTime(u.usedAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-6 py-3 border-t border-gray-100 bg-gray-50/50">
+          <span className="text-[11px] text-gray-400">
+            {usages.length} uso{usages.length !== 1 ? "s" : ""} registrado{usages.length !== 1 ? "s" : ""}
+          </span>
+          <button
+            onClick={onClose}
+            className="h-7 px-3 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            Cerrar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ── Delete confirm ─────────────────────────────────────── */
 function DeleteConfirm({ code, onConfirm, onClose }: { code: string; onConfirm: () => void; onClose: () => void }) {
   return (
@@ -389,6 +516,7 @@ export function AdminCoupons() {
   const [typeFilter, setTypeF] = useState<"all" | "percentage" | "fixed" | "freeShipping">("all");
   const [modal, setModal] = useState<{ open: boolean; coupon: Partial<Coupon> } | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [usagesCoupon, setUsagesCoupon] = useState<Coupon | null>(null);
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 15;
 
@@ -622,13 +750,17 @@ export function AdminCoupons() {
 
                 {/* Usos */}
                 <div className="min-w-0">
-                  <div className="flex items-center gap-1.5 text-xs text-gray-600">
-                    <Users className="w-3 h-3 text-gray-300 flex-shrink-0" />
-                    <span className="tabular-nums">{c.usedCount}</span>
+                  <button
+                    onClick={() => setUsagesCoupon(c)}
+                    className="flex items-center gap-1.5 text-xs text-gray-600 hover:text-blue-600 transition-colors group"
+                    title="Ver historial de uso"
+                  >
+                    <Users className="w-3 h-3 text-gray-300 group-hover:text-blue-400 flex-shrink-0" />
+                    <span className="tabular-nums group-hover:underline">{c.usedCount}</span>
                     {c.maxUses !== null
                       ? <span className="text-gray-400 tabular-nums">/ {c.maxUses}</span>
                       : <InfinityIcon className="w-3 h-3 text-gray-300" />}
-                  </div>
+                  </button>
                   {pct !== null && (
                     <div className="mt-1 h-1 bg-gray-100 rounded-full overflow-hidden w-20">
                       <div
@@ -703,6 +835,12 @@ export function AdminCoupons() {
           code={deleteTarget.code}
           onConfirm={handleDelete}
           onClose={() => setDeleteId(null)}
+        />
+      )}
+      {usagesCoupon && (
+        <UsagesModal
+          coupon={usagesCoupon}
+          onClose={() => setUsagesCoupon(null)}
         />
       )}
     </div>

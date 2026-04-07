@@ -418,7 +418,7 @@ function RuleModal({ initial, carriers, onSave, onClose }: RuleModalProps) {
           </div>
 
           <div>
-            <label className={lbl}>Precio del envío (€) *</label>
+            <label className={lbl}>Precio del envío ($) *</label>
             <div className="relative">
               <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-300" />
               <input
@@ -695,8 +695,8 @@ export function AdminShipping() {
 
               <p className="text-xs text-gray-500 lg:block">{c.zones}</p>
               <p className="text-xs text-gray-500 text-center">{c.minDays}–{c.maxDays} días</p>
-              <p className="text-xs text-gray-500 text-right tabular-nums">{c.freeAbove != null ? `€${c.freeAbove}` : "—"}</p>
-              <p className="text-xs text-gray-900 text-right tabular-nums">€{c.baseCost.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 text-right tabular-nums">{c.freeAbove != null ? `$${c.freeAbove}` : "—"}</p>
+              <p className="text-xs text-gray-900 text-right tabular-nums">${c.baseCost.toFixed(2)}</p>
 
               {/* Status toggle */}
               <button
@@ -778,7 +778,7 @@ export function AdminShipping() {
               </div>
               <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightFrom} kg</p>
               <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightTo} kg</p>
-              <p className="text-xs text-gray-900 text-right tabular-nums">€{r.price.toFixed(2)}</p>
+              <p className="text-xs text-gray-900 text-right tabular-nums">${r.price.toFixed(2)}</p>
               <div className="flex gap-1 justify-end">
                 <button onClick={() => openEditRule(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" strokeWidth={1.5} /></button>
                 <button onClick={() => confirmDeleteRule(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} /></button>

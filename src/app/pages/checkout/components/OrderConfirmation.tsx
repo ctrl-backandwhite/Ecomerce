@@ -89,6 +89,9 @@ export function OrderConfirmation({ state }: OrderConfirmationProps) {
             shipping: backendInvoice.shipping,
             tax: backendInvoice.tax,
             total: backendInvoice.total,
+            discountAmount: backendInvoice.discountAmount ?? 0,
+            giftCardAmount: backendInvoice.giftCardAmount ?? 0,
+            loyaltyDiscount: backendInvoice.loyaltyDiscount ?? 0,
             paymentMethod: backendInvoice.paymentMethod,
         }
         : {

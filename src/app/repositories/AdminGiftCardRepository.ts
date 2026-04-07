@@ -73,7 +73,10 @@ class GiftCardRepository {
     }
 
     async getBalance(code: string): Promise<{ balance: number }> {
-        try { return handleRes<{ balance: number }>(await authFetch(`${this.url}/code/${code}/balance`)); }
+        try {
+            const raw = await handleRes<number>(await authFetch(`${this.url}/code/${code}/balance`));
+            return { balance: typeof raw === "number" ? raw : (raw as any).balance ?? 0 };
+        }
         catch (err) { wrapErr(err, "No se pudo obtener el saldo"); }
     }
 

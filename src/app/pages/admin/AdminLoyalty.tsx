@@ -14,7 +14,7 @@ import {
 
 /* ── Action i18n + icons ──────────────────────────────────────── */
 const ACTION_META: Record<LoyaltyAction, { label: string; icon: typeof Star }> = {
-  PURCHASE: { label: "Compra (por cada €)", icon: ShoppingCart },
+  PURCHASE: { label: "Compra (por cada $)", icon: ShoppingCart },
   REVIEW: { label: "Reseña de producto", icon: MessageSquare },
   REFERRAL: { label: "Referir un amigo", icon: UserPlus },
   REGISTRATION: { label: "Registro de cuenta", icon: UserCheck },

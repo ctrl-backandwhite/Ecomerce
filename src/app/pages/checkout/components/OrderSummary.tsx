@@ -5,7 +5,7 @@ import type { CouponValidation } from "../../../repositories/CouponRepository";
 import { CouponInput } from "./CouponInput";
 import { LoyaltySection } from "./LoyaltySection";
 import { GiftCardSection } from "./GiftCardSection";
-import type { CheckoutAction } from "../types";
+import type { CheckoutAction, AppliedGiftCard, MyGiftCard } from "../types";
 
 interface OrderSummaryProps {
     items: CartItem[];
@@ -28,14 +28,18 @@ interface OrderSummaryProps {
     giftCardCode: string;
     giftCardLoading: boolean;
     giftCardError: string | null;
-    giftCardBalance: number | null;
+    appliedGiftCards: AppliedGiftCard[];
+    myGiftCards: MyGiftCard[];
+    myGiftCardsLoaded: boolean;
     giftCardDiscount: number;
+    appliedAmounts: { code: string; applied: number }[];
+    remainingTotal: number;
     deliverySummary: string;
     selectedAddrId: string;
     newMode: string;
     dispatch: React.Dispatch<CheckoutAction>;
     applyCoupon: () => void;
-    applyGiftCard: () => void;
+    applyManualCard: () => void;
 }
 
 export function OrderSummary({
@@ -43,9 +47,11 @@ export function OrderSummary({
     selectedShipping,
     couponCode, couponLoading, couponResult, couponDiscount,
     loyaltyBalance, loyaltyPoints, loyaltyRate, loyaltyDiscount, maxRedeemable,
-    giftCardCode, giftCardLoading, giftCardError, giftCardBalance, giftCardDiscount,
+    giftCardCode, giftCardLoading, giftCardError,
+    appliedGiftCards, myGiftCards, myGiftCardsLoaded, giftCardDiscount,
+    appliedAmounts, remainingTotal,
     deliverySummary, selectedAddrId, newMode,
-    dispatch, applyCoupon, applyGiftCard,
+    dispatch, applyCoupon, applyManualCard,
 }: OrderSummaryProps) {
     return (
         <div className="lg:col-span-1">
@@ -112,10 +118,14 @@ export function OrderSummary({
                     giftCardCode={giftCardCode}
                     giftCardLoading={giftCardLoading}
                     giftCardError={giftCardError}
-                    giftCardBalance={giftCardBalance}
+                    appliedGiftCards={appliedGiftCards}
+                    myGiftCards={myGiftCards}
+                    myGiftCardsLoaded={myGiftCardsLoaded}
                     giftCardDiscount={giftCardDiscount}
+                    appliedAmounts={appliedAmounts}
+                    remainingTotal={remainingTotal}
                     dispatch={dispatch}
-                    applyGiftCard={applyGiftCard}
+                    applyManualCard={applyManualCard}
                 />
 
                 {/* Totals */}

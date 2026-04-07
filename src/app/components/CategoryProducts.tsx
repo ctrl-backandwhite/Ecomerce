@@ -59,7 +59,7 @@ function CategoryRow({ category, products }: { category: string; products: Produ
           <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
         </Link>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-3" style={{ scrollbarWidth: "thin" }}>
+      <div className="flex gap-4 overflow-x-auto pb-3">
         {categoryProducts.map((product) => (
           <MiniProductCard key={product.id} product={product} />
         ))}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useUser } from "../../context/UserContext";
 import { useCart } from "../../context/CartContext";
 import { nexaProductRepository, type NexaProduct } from "../../repositories/NexaProductRepository";
@@ -45,7 +46,7 @@ function ProductModal({
   const name = pName(product);
   const price = pPrice(product);
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -125,7 +126,8 @@ function ProductModal({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

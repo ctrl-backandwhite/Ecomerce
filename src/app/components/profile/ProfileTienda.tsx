@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useUser } from "../../context/UserContext";
 import {
   Store,
@@ -70,7 +71,7 @@ function FaceVerificationModal({
   const startCamera = () => { setStep("camera"); setTimeout(() => setStep("scanning"), 2500); };
   const handleSuccess = () => { onSuccess(); onClose(); };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="bg-white rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
@@ -178,16 +179,17 @@ function FaceVerificationModal({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
 /* ── Face status map ──────────────────────────────────────── */
 const faceStatusMap = {
-  unverified: { label: "Sin verificar", icon: ShieldX,     color: "text-gray-400",  bg: "bg-gray-50",   border: "border-gray-200",  dot: "bg-gray-300" },
-  pending:    { label: "En revisión",   icon: Clock,       color: "text-amber-600", bg: "bg-amber-50",  border: "border-amber-100", dot: "bg-amber-400" },
-  verified:   { label: "Verificado",    icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50",  border: "border-green-100", dot: "bg-green-500" },
-  rejected:   { label: "Rechazado",     icon: XCircle,     color: "text-red-500",   bg: "bg-red-50",    border: "border-red-100",   dot: "bg-red-400" },
+  unverified: { label: "Sin verificar", icon: ShieldX, color: "text-gray-400", bg: "bg-gray-50", border: "border-gray-200", dot: "bg-gray-300" },
+  pending: { label: "En revisión", icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", dot: "bg-amber-400" },
+  verified: { label: "Verificado", icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50", border: "border-green-100", dot: "bg-green-500" },
+  rejected: { label: "Rechazado", icon: XCircle, color: "text-red-500", bg: "bg-red-50", border: "border-red-100", dot: "bg-red-400" },
 };
 
 /* ── Helpers ──────────────────────────────────────────────── */
@@ -198,10 +200,10 @@ const storeCategories = [
 ];
 
 const statusConfig = {
-  draft:     { label: "Borrador",   icon: FileText,    color: "text-gray-500",  bg: "bg-gray-50",    border: "border-gray-200",  dot: "bg-gray-400" },
-  pending:   { label: "En revisión",icon: Clock,       color: "text-amber-600", bg: "bg-amber-50",   border: "border-amber-100", dot: "bg-amber-400" },
-  active:    { label: "Activa",     icon: CheckCircle, color: "text-green-600", bg: "bg-green-50",   border: "border-green-100", dot: "bg-green-500" },
-  suspended: { label: "Suspendida", icon: XCircle,     color: "text-red-500",   bg: "bg-red-50",     border: "border-red-100",   dot: "bg-red-400" },
+  draft: { label: "Borrador", icon: FileText, color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200", dot: "bg-gray-400" },
+  pending: { label: "En revisión", icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", dot: "bg-amber-400" },
+  active: { label: "Activa", icon: CheckCircle, color: "text-green-600", bg: "bg-green-50", border: "border-green-100", dot: "bg-green-500" },
+  suspended: { label: "Suspendida", icon: XCircle, color: "text-red-500", bg: "bg-red-50", border: "border-red-100", dot: "bg-red-400" },
 };
 
 /* ── Shared small input ───────────────────────────────────── */
@@ -437,10 +439,10 @@ export function ProfileTienda() {
       {/* ── Stats row ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: ShoppingBag, label: "Ventas totales",  value: user.store.totalSales.toString() },
-          { icon: TrendingUp,  label: "Ingresos",        value: `$${(user.store.totalRevenue / 1000).toFixed(0)}K` },
-          { icon: Star,        label: "Calificación",    value: `${user.store.rating} / 5` },
-          { icon: Package,     label: "Reseñas",         value: user.store.reviewCount.toString() },
+          { icon: ShoppingBag, label: "Ventas totales", value: user.store.totalSales.toString() },
+          { icon: TrendingUp, label: "Ingresos", value: `$${(user.store.totalRevenue / 1000).toFixed(0)}K` },
+          { icon: Star, label: "Calificación", value: `${user.store.rating} / 5` },
+          { icon: Package, label: "Reseñas", value: user.store.reviewCount.toString() },
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">

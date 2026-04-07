@@ -129,18 +129,33 @@ function dtoToCartItem(dto: CartItemDto): CartItem {
 
 /* ── Enrich cart items from product catalog (fresh prices/names) ── */
 
-async function enrichCartItems(cartItems: CartItem[]): Promise<CartItem[]> {
-  if (cartItems.length === 0) return cartItems;
+/** Enrichment data keyed by productId (only catalog fields, never quantity). */
+interface EnrichmentPatch {
+  name: string;
+  image: string;
+  price: number;
+  description: string;
+  category: string;
+  rating: number;
+  reviews: number;
+  sku: string;
+  stock: number;
+}
 
-  const enriched = await Promise.all(
+async function fetchEnrichmentPatches(
+  cartItems: CartItem[],
+): Promise<Map<string, EnrichmentPatch>> {
+  const patches = new Map<string, EnrichmentPatch>();
+  if (cartItems.length === 0) return patches;
+
+  await Promise.all(
     cartItems.map(async (item) => {
       try {
         const raw = await nexaProductRepository.findById(item.productId);
         const product = mapNexaProduct(raw);
         // Persist in cache so future dtoToCartItem calls keep the data
         cacheProduct(item.productId, product);
-        return {
-          ...item,
+        patches.set(item.id, {
           name: product.name,
           image: product.image,
           price: product.price,
@@ -150,14 +165,31 @@ async function enrichCartItems(cartItems: CartItem[]): Promise<CartItem[]> {
           reviews: product.reviews,
           sku: product.sku,
           stock: product.stock,
-        };
+        });
       } catch (err) {
         console.warn(`[Cart] Failed to enrich product ${item.productId}:`, err);
-        return item;
       }
     }),
   );
-  return enriched;
+  return patches;
+}
+
+/**
+ * Merge enrichment patches into current state via a functional updater.
+ * This preserves any quantity changes the user made while enrichment was
+ * in flight (fixes the race condition where enrichment would clobber
+ * optimistic quantity updates).
+ */
+function applyEnrichment(
+  setItemsFn: React.Dispatch<React.SetStateAction<CartItem[]>>,
+  patches: Map<string, EnrichmentPatch>,
+) {
+  setItemsFn((prev) =>
+    prev.map((item) => {
+      const patch = patches.get(item.id);
+      return patch ? { ...item, ...patch } : item;
+    }),
+  );
 }
 
 /* ── Composite-key helper ──────────────────────────────────── */
@@ -206,7 +238,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const guest = loadGuestCart();
         setItems(guest);
         if (guest.length > 0) {
-          enrichCartItems(guest).then((enriched) => setItems(enriched));
+          fetchEnrichmentPatches(guest).then((patches) =>
+            applyEnrichment(setItems, patches),
+          );
         }
       }
       hydrated.current = true;
@@ -240,8 +274,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           if (backendItems.length > 0) {
             // Show items immediately, then enrich with fresh catalog data
             setItems(backendItems);
-            enrichCartItems(backendItems).then((enriched) => {
-              if (!cancelled) setItems(enriched);
+            fetchEnrichmentPatches(backendItems).then((patches) => {
+              if (!cancelled) applyEnrichment(setItems, patches);
             });
           } else {
             // Backend returned empty — recover from localStorage cache
@@ -249,8 +283,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
             if (cached.length > 0) {
               console.warn("[Cart] Backend empty, recovering", cached.length, "items from cache");
               setItems(cached);
-              enrichCartItems(cached).then((enriched) => {
-                if (!cancelled) setItems(enriched);
+              fetchEnrichmentPatches(cached).then((patches) => {
+                if (!cancelled) applyEnrichment(setItems, patches);
               });
             } else {
               setItems([]);
@@ -322,7 +356,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
             selectedAttrs: options?.selectedAttrs,
           })
           .then((cart) => {
-            if (cart.items.length > 0) setItems(cart.items.map(dtoToCartItem));
+            if (cart.items.length > 0) {
+              const fresh = cart.items.map(dtoToCartItem);
+              const freshMap = new Map(fresh.map((i) => [i.id, i]));
+              // Merge backend data while preserving local order
+              setItems((prev) => {
+                const merged = prev.map((p) => freshMap.get(p.id) ?? p);
+                const localIds = new Set(prev.map((p) => p.id));
+                fresh.forEach((f) => { if (!localIds.has(f.id)) merged.push(f); });
+                return merged;
+              });
+            }
           })
           .catch((err) => {
             console.warn("[Cart] addItem backend sync failed, rolling back:", err);
@@ -336,22 +380,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
   /* ── Remove from cart ──────────────────────────────────── */
   const removeFromCart = useCallback(
     (cartId: string) => {
-      // Capture snapshot for rollback (M-11)
-      const snapshot = [...items];
-      let backendId: string | undefined;
-      setItems((prev) => {
-        const item = prev.find((i) => i.id === cartId);
-        backendId = item?.backendItemId;
-        return prev.filter((i) => i.id !== cartId);
-      });
+      const removedItem = items.find((i) => i.id === cartId);
+      const backendId = removedItem?.backendItemId;
+
+      setItems((prev) => prev.filter((i) => i.id !== cartId));
 
       if (isAuthenticated && backendId) {
         cartRepository
           .removeItem(backendId)
-          .then((cart) => setItems(cart.items.map(dtoToCartItem)))
+          .then((cart) => {
+            const fresh = cart.items.map(dtoToCartItem);
+            const freshIds = new Set(fresh.map((f) => f.id));
+            const freshMap = new Map(fresh.map((i) => [i.id, i]));
+            // Keep current order, drop removed items, merge backend data
+            setItems((prev) => {
+              const merged = prev
+                .filter((p) => freshIds.has(p.id))
+                .map((p) => freshMap.get(p.id) ?? p);
+              // Append any items that exist in backend but not locally
+              const localIds = new Set(prev.map((p) => p.id));
+              fresh.forEach((f) => { if (!localIds.has(f.id)) merged.push(f); });
+              return merged;
+            });
+          })
           .catch((err) => {
             console.warn("[Cart] removeItem backend sync failed, rolling back:", err);
-            setItems(snapshot);
+            // Rollback: re-insert the removed item via functional updater
+            if (removedItem) {
+              setItems((prev) => [...prev, removedItem]);
+            }
           });
       }
     },
@@ -366,22 +423,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Capture snapshot for rollback (M-11)
-      const snapshot = [...items];
-      let backendId: string | undefined;
-      setItems((prev) => {
-        const item = prev.find((i) => i.id === cartId);
-        backendId = item?.backendItemId;
-        return prev.map((i) => (i.id === cartId ? { ...i, quantity } : i));
-      });
+      // Look up backendId from closure `items` (safe — items is in deps)
+      const target = items.find((i) => i.id === cartId);
+      const backendId = target?.backendItemId;
+      const prevQuantity = target?.quantity ?? quantity;
+
+      // Optimistic local update
+      setItems((prev) =>
+        prev.map((i) => (i.id === cartId ? { ...i, quantity } : i)),
+      );
 
       if (isAuthenticated && backendId) {
         cartRepository
           .updateItemQuantity(backendId, quantity)
-          .then((cart) => setItems(cart.items.map(dtoToCartItem)))
+          .then((cart) => {
+            const fresh = cart.items.map(dtoToCartItem);
+            const freshMap = new Map(fresh.map((i) => [i.id, i]));
+            // Merge backend data while preserving the current local order
+            setItems((prev) => {
+              const merged = prev.map((p) => freshMap.get(p.id) ?? p);
+              // Append any items that exist in backend but not locally
+              const localIds = new Set(prev.map((p) => p.id));
+              fresh.forEach((f) => { if (!localIds.has(f.id)) merged.push(f); });
+              return merged;
+            });
+          })
           .catch((err) => {
             console.warn("[Cart] updateQuantity backend sync failed, rolling back:", err);
-            setItems(snapshot);
+            // Rollback only the affected item via functional updater
+            setItems((prev) =>
+              prev.map((i) =>
+                i.id === cartId ? { ...i, quantity: prevQuantity } : i,
+              ),
+            );
           });
       }
     },

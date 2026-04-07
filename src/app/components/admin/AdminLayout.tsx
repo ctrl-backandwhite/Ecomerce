@@ -136,7 +136,7 @@ export function AdminLayout() {
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto scrollbar-thin">
           <div className="p-5 md:p-7 h-full">
             <Suspense fallback={<div className="flex items-center justify-center h-full min-h-48"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-500 rounded-full animate-spin" /></div>}>
               <Outlet />

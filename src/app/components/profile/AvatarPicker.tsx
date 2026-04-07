@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, Upload, Check } from "lucide-react";
 import { DEFAULT_AVATARS, resolveAvatar } from "../../lib/avatars";
 
@@ -35,7 +36,7 @@ export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerP
         reader.readAsDataURL(file);
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Backdrop */}
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
@@ -125,6 +126,7 @@ export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerP
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body,
     );
 }

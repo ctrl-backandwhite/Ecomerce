@@ -24,7 +24,7 @@ export function useCheckoutSubmit(
         const {
             contact, selectedAddrId, newMode, manualAddr, selectedStoreId,
             selectedPickupId, selectedPmId, payMethod, loyaltyPoints, loyaltyRate,
-            giftCardCode, couponCode, couponResult, savedCardCvv,
+            appliedGiftCards, couponCode, couponResult, savedCardCvv,
         } = state;
 
         /* Derive selected address / payment from user data */
@@ -35,6 +35,24 @@ export function useCheckoutSubmit(
             ? user.paymentMethods.find((p) => p.id === selectedPmId)
             : undefined;
 
+        /* Compute totals now (items still in cart) */
+        const selectedShipping = state.shippingOptions.find((o) => o.id === state.selectedShippingId);
+        const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
+        const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
+        const tax = state.taxCalc?.taxAmount ?? subtotal * 0.1;
+        const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
+        const loyaltyDiscount = loyaltyRate > 0 ? loyaltyPoints / loyaltyRate : 0;
+
+        /* Distribute gift card amounts across all applied cards */
+        let gcRemaining = subtotal + shipping + tax - couponDiscount - loyaltyDiscount;
+        const gcAmounts = appliedGiftCards.map(card => {
+            const applied = Math.min(card.balance, Math.max(0, gcRemaining));
+            gcRemaining -= applied;
+            return { code: card.code, applied };
+        });
+        const giftCardDiscount = gcAmounts.reduce((sum, a) => sum + a.applied, 0);
+        const total = Math.max(0, subtotal + shipping + tax - couponDiscount - loyaltyDiscount - giftCardDiscount);
+
         /* Step validation */
         const step1Valid = !!(contact.email && contact.phone);
         const step2Valid = selectedAddrId !== "new"
@@ -44,30 +62,20 @@ export function useCheckoutSubmit(
                 : newMode === "store"
                     ? !!selectedStoreId
                     : !!selectedPickupId;
-        const step3Valid = selectedPmId !== "new"
-            ? selectedPm?.type === "card" ? !!savedCardCvv : true
-            : payMethod === "card"
-                ? !!(state.payment.cardNumber && state.payment.cardName && state.payment.expiry && state.payment.cvv)
-                : payMethod === "paypal"
-                    ? !!state.paypalEmail
-                    : true;
+        const step3Valid = total === 0
+            ? true
+            : selectedPmId !== "new"
+                ? selectedPm?.type === "card" ? !!savedCardCvv : true
+                : payMethod === "card"
+                    ? !!(state.payment.cardNumber && state.payment.cardName && state.payment.expiry && state.payment.cvv)
+                    : payMethod === "paypal"
+                        ? !!state.paypalEmail
+                        : true;
 
         if (!step1Valid || !step2Valid || !step3Valid) return;
 
         dispatch({ type: "PATCH", payload: { isProcessing: true, orderError: null } });
         dispatch({ type: "PATCH", payload: { orderSnapshot: [...items] } });
-
-        /* Compute totals now (items still in cart) */
-        const selectedShipping = state.shippingOptions.find((o) => o.id === state.selectedShippingId);
-        const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-        const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
-        const tax = state.taxCalc?.taxAmount ?? subtotal * 0.1;
-        const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
-        const loyaltyDiscount = loyaltyRate > 0 ? loyaltyPoints / loyaltyRate : 0;
-        const giftCardDiscount = state.giftCardBalance !== null
-            ? Math.min(state.giftCardBalance, subtotal + shipping + tax - couponDiscount - loyaltyDiscount)
-            : 0;
-        const total = Math.max(0, subtotal + shipping + tax - couponDiscount - loyaltyDiscount - giftCardDiscount);
 
         dispatch({ type: "PATCH", payload: { totalsSnapshot: { subtotal, shipping, tax, total } } });
 
@@ -124,35 +132,44 @@ export function useCheckoutSubmit(
             const paymentMethodMap: Record<string, string> = {
                 card: "CREDIT_CARD", paypal: "PAYPAL", usdt: "CRYPTO_USDT", btc: "CRYPTO_BTC",
             };
-            const paymentMethodStr = paymentMethodMap[activePmType] ?? "CREDIT_CARD";
+            const paymentMethodStr = total === 0
+                ? (giftCardDiscount > 0 ? "GIFT_CARD" : "NONE")
+                : paymentMethodMap[activePmType] ?? "CREDIT_CARD";
 
             /* 3 ─ Create order via backend (DRAFT status — no stock deducted yet) */
+            const firstGcCode = gcAmounts.find(a => a.applied > 0)?.code;
             const order = await orderRepository.createOrder({
                 shippingAddress,
                 paymentMethod: paymentMethodStr,
                 couponCode: couponResult?.valid ? couponCode.trim() : undefined,
+                giftCardCode: firstGcCode ?? undefined,
+                giftCardAmount: giftCardDiscount > 0 ? giftCardDiscount : undefined,
+                loyaltyPointsUsed: loyaltyPoints > 0 ? loyaltyPoints : undefined,
+                loyaltyDiscount: loyaltyDiscount > 0 ? loyaltyDiscount : undefined,
                 notes: undefined,
             });
             dispatch({ type: "PATCH", payload: { createdOrder: order } });
 
-            /* 4 ─ Process payment */
-            const activeType = selectedPm ? selectedPm.type : payMethod;
-            const methodMap: Record<string, "CARD" | "PAYPAL" | "USDT" | "BTC"> = {
-                card: "CARD", paypal: "PAYPAL", usdt: "USDT", btc: "BTC",
-            };
+            /* 4 ─ Process payment (skip if total is fully covered by gift card / discounts) */
+            if (total > 0) {
+                const activeType = selectedPm ? selectedPm.type : payMethod;
+                const methodMap: Record<string, "CARD" | "PAYPAL" | "USDT" | "BTC"> = {
+                    card: "CARD", paypal: "PAYPAL", usdt: "USDT", btc: "BTC",
+                };
 
-            try {
-                await paymentRepository.processPayment({
-                    orderId: order.id,
-                    userId: user.id,
-                    email: contact.email || user.email,
-                    amount: total,
-                    currency: "USD",
-                    paymentMethod: methodMap[activeType] ?? "CARD",
-                });
-            } catch (payErr) {
-                try { await orderRepository.cancelOrder(order.id); } catch (err) { logger.warn("Suppressed error", err); }
-                throw payErr;
+                try {
+                    await paymentRepository.processPayment({
+                        orderId: order.id,
+                        userId: user.id,
+                        email: contact.email || user.email,
+                        amount: total,
+                        currency: "USD",
+                        paymentMethod: methodMap[activeType] ?? "CARD",
+                    });
+                } catch (payErr) {
+                    try { await orderRepository.cancelOrder(order.id); } catch (err) { logger.warn("Suppressed error", err); }
+                    throw payErr;
+                }
             }
 
             /* 5 ─ Confirm order (DRAFT → PENDING, deducts stock, creates invoice) */
@@ -170,15 +187,17 @@ export function useCheckoutSubmit(
                 } catch (err) { logger.warn("Suppressed error", err); }
             }
 
-            /* 5c ─ Redeem gift card (if applied) */
-            if (giftCardDiscount > 0 && giftCardCode.trim()) {
-                try {
-                    await giftCardRepository.redeem({
-                        code: giftCardCode.trim(),
-                        amount: giftCardDiscount,
-                        orderId: order.id,
-                    });
-                } catch (err) { logger.warn("Suppressed error", err); }
+            /* 5c ─ Redeem gift cards (each one individually) */
+            for (const gc of gcAmounts) {
+                if (gc.applied > 0) {
+                    try {
+                        await giftCardRepository.redeem({
+                            code: gc.code,
+                            amount: gc.applied,
+                            orderId: order.id,
+                        });
+                    } catch (err) { logger.warn("Suppressed error", err); }
+                }
             }
 
             /* 6 ─ Try to fetch the backend invoice */

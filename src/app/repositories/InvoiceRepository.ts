@@ -41,6 +41,9 @@ export interface Invoice {
     shipping: number;
     tax: number;
     total: number;
+    discountAmount: number;
+    giftCardAmount: number;
+    loyaltyDiscount: number;
     paymentMethod: string;
     notes: string | null;
     createdAt: string;
