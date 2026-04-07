@@ -29,3 +29,8 @@ npm-debug.log*
 
 # Test coverage
 coverage/
+
+# Additional cleanup
+.env.production
+*.class
+STOREFRONT_CHECKOUT_AUDIT.md
