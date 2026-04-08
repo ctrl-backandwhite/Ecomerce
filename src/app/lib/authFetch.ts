@@ -76,6 +76,10 @@ export async function authFetch(
         const lang = localStorage.getItem("nexa-locale") || navigator.language || "es";
         headers.set("Accept-Language", lang);
 
+        // Propagate selected currency for backend price conversion
+        const currencyCode = localStorage.getItem("nexa-currency") || "USD";
+        headers.set("X-Currency", currencyCode);
+
         // Gateway authentication token
         headers.set("X-nx036-auth", `NX036.${btoa(`${CLIENT_ID}:${Date.now()}`)}`);
 

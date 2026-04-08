@@ -13,7 +13,7 @@ import { Badge } from "../components/ui/badge";
 export function Cart() {
   const { items, removeFromCart, updateQuantity, getTotalPrice } = useCart();
   const { toggleFavorite, isFavorite } = useUser();
-  const { formatPrice, formatDirect, convertPrice } = useCurrency();
+  const { formatPrice } = useCurrency();
   const { selectedCountry } = useTimezone();
   const navigate = useNavigate();
 
@@ -57,10 +57,9 @@ export function Cart() {
       .catch(() => setMinFreeAbove(null));
   }, [countryCode]);
 
-  // Convert USD → display currency once for the summary section
-  const rate = convertPrice(1); // display-currency per USD
-  const displaySubtotal = Math.round(subtotal * rate * 100) / 100;
-  const displayTax = Math.round(estimatedTax * rate * 100) / 100;
+  // Prices are already in display currency (backend converts via X-Currency)
+  const displaySubtotal = subtotal;
+  const displayTax = estimatedTax;
   const displayTotal = displaySubtotal + displayTax;
 
   if (items.length === 0) {
@@ -223,7 +222,7 @@ export function Cart() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>{formatDirect(displaySubtotal)}</span>
+                  <span>{formatPrice(displaySubtotal)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Envío</span>
@@ -231,12 +230,12 @@ export function Cart() {
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Impuestos ({selectedCountry?.country ?? "EE.UU."}){taxLoading ? " …" : " (est.)"}</span>
-                  <span>{displayTax > 0 ? formatDirect(displayTax) : formatDirect(0)}</span>
+                  <span>{displayTax > 0 ? formatPrice(displayTax) : formatPrice(0)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">
                   <span className="text-sm text-gray-900">Total estimado</span>
                   <span className="text-lg text-gray-900">
-                    {formatDirect(displayTotal)}
+                    {formatPrice(displayTotal)}
                   </span>
                 </div>
               </div>
@@ -244,7 +243,7 @@ export function Cart() {
               {subtotal > 0 && minFreeAbove != null && displaySubtotal < minFreeAbove && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
                   <p>
-                    ¡Agrega {formatDirect(minFreeAbove - displaySubtotal)} más para posible envío
+                    ¡Agrega {formatPrice(minFreeAbove - displaySubtotal)} más para posible envío
                     gratis!
                   </p>
                 </div>

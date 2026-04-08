@@ -133,8 +133,13 @@ export function mapNexaProduct(
     raw: NexaProduct,
     categoryName?: string,
 ): Product {
-    const { min: price, max: priceMax } = parseSellPrice(raw.sellPrice);
-    const { min: cost } = parseSellPrice(raw.costPrice);
+    // Prefer sellPriceRaw (pre-converted numeric) over parsing the string
+    const { min: price, max: priceMax } = raw.sellPriceRaw != null
+        ? { min: raw.sellPriceRaw, max: undefined }
+        : parseSellPrice(raw.sellPrice);
+    const { min: cost } = raw.costPriceRaw != null
+        ? { min: raw.costPriceRaw }
+        : parseSellPrice(raw.costPrice);
     const firstVariant = raw.variants?.[0];
 
     // Calculate total inventory across all variant inventories
@@ -185,6 +190,8 @@ export function mapNexaProduct(
         status: "active",
         visibility: "public",
         featured: false,
+        currencyCode: raw.currencyCode,
+        currencySymbol: raw.currencySymbol,
     };
 }
 
@@ -264,7 +271,10 @@ function buildDetailImages(detail: NexaProductDetail): ProductImage[] {
  * frontend Product type used throughout the UI.
  */
 export function mapNexaProductDetail(raw: NexaProductDetail): Product {
-    const { min: price, max: priceMax } = parseSellPrice(raw.sellPrice);
+    // Prefer sellPriceRaw (pre-converted numeric) over parsing the string
+    const { min: price, max: priceMax } = raw.sellPriceRaw != null
+        ? { min: raw.sellPriceRaw, max: undefined }
+        : parseSellPrice(raw.sellPrice);
     const suggestedPrice = raw.suggestSellPrice ? parseFloat(raw.suggestSellPrice) : undefined;
     const firstVariant = raw.variants?.[0];
 
@@ -357,5 +367,7 @@ export function mapNexaProductDetail(raw: NexaProductDetail): Product {
         status: "active",
         visibility: "public",
         featured: false,
+        currencyCode: raw.currencyCode,
+        currencySymbol: raw.currencySymbol,
     };
 }

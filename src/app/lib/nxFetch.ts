@@ -40,5 +40,9 @@ export function nxFetch(
     const headers = new Headers(init?.headers);
     headers.set("X-nx036-auth", generateNxToken());
 
+    // Propagate selected currency for backend price conversion
+    const currencyCode = localStorage.getItem("nexa-currency") || "USD";
+    headers.set("X-Currency", currencyCode);
+
     return fetch(input, { ...init, headers });
 }

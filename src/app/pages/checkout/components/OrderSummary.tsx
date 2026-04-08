@@ -54,24 +54,19 @@ export function OrderSummary({
     deliverySummary, selectedAddrId, newMode,
     dispatch, applyCoupon, applyManualCard,
 }: OrderSummaryProps) {
-    const { formatPrice, convertPrice, formatDirect } = useCurrency();
+    const { formatPrice } = useCurrency();
 
     /* ── Rounding-safe total ──
-     * Each `formatPrice()` individually rounds after currency conversion, so
-     * the sum of displayed parts may differ from `formatPrice(total)` by a
-     * cent.  We round every part in the display currency first, then derive
-     * the displayed total as the sum of rounded values.
-     * NOTE: shipping is NOT currency-converted — rates are already in the display currency.
+     * All amounts now come pre-converted from the backend via X-Currency header.
+     * No client-side currency conversion needed — just round for display.
      */
-    const rate = convertPrice(1);                                     // 1 USD → display
-    const round2 = (usd: number) => Math.round(usd * rate * 100) / 100;
     const roundRaw = (n: number) => Math.round(n * 100) / 100;
-    const rSubtotal = round2(subtotal);
-    const rShipping = roundRaw(shipping);                             // no conversion
-    const rTax = round2(tax);
-    const rCoupon = round2(couponDiscount);
-    const rLoyalty = round2(loyaltyDiscount);
-    const rGiftCard = round2(giftCardDiscount);
+    const rSubtotal = roundRaw(subtotal);
+    const rShipping = roundRaw(shipping);
+    const rTax = roundRaw(tax);
+    const rCoupon = roundRaw(couponDiscount);
+    const rLoyalty = roundRaw(loyaltyDiscount);
+    const rGiftCard = roundRaw(giftCardDiscount);
     const displayTotal = Math.max(0, rSubtotal + rShipping + rTax - rCoupon - rLoyalty - rGiftCard);
 
     return (
@@ -158,7 +153,7 @@ export function OrderSummary({
                     <div className="flex justify-between text-xs text-gray-500">
                         <span>Envío{selectedShipping ? ` · ${selectedShipping.name}` : ""}</span>
                         <span className={shipping === 0 && selectedShipping ? "text-green-600" : shipping === 0 ? "text-amber-500" : ""}>
-                            {shipping === 0 && selectedShipping ? "Gratis" : shipping === 0 ? "No disponible" : formatDirect(shipping)}
+                            {shipping === 0 && selectedShipping ? "Gratis" : shipping === 0 ? "No disponible" : formatPrice(shipping)}
                         </span>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
@@ -185,7 +180,7 @@ export function OrderSummary({
                     )}
                     <div className="flex justify-between text-sm text-gray-900 pt-2.5 border-t border-gray-100">
                         <span>Total</span>
-                        <span>{formatDirect(displayTotal)}</span>
+                        <span>{formatPrice(displayTotal)}</span>
                     </div>
                 </div>
 

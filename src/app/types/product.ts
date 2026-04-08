@@ -56,4 +56,8 @@ export interface Product {
     visibility: "public" | "private" | "hidden";
     featured: boolean;
     warrantyId?: string;
+    /** ISO 4217 currency code from backend (e.g. "EUR") */
+    currencyCode?: string;
+    /** Currency symbol from backend (e.g. "€") */
+    currencySymbol?: string;
 }

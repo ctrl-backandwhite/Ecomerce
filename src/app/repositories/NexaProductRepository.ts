@@ -66,6 +66,7 @@ export interface NexaDetailVariant {
     variantSellPrice: number;
     variantSugSellPrice: number;
     retailPrice?: number;
+    currencyCode?: string;
     variantStandard: string | null;
     createTime: string | null;
     createdAt: string;
@@ -83,6 +84,10 @@ export interface NexaProduct {
     productImageSet: string | null;
     sellPrice: string;
     costPrice?: string;
+    currencyCode?: string;
+    currencySymbol?: string;
+    sellPriceRaw?: number;
+    costPriceRaw?: number;
     productType: string;
     description: string | null;
     listedNum: number;
@@ -128,6 +133,10 @@ export interface NexaProductDetail {
     updatedAt: string | null;
     translations: NexaDetailTranslation[];
     variants: NexaDetailVariant[];
+    currencyCode?: string;
+    currencySymbol?: string;
+    sellPriceRaw?: number;
+    costPriceRaw?: number;
 }
 
 export interface NexaProductPage {

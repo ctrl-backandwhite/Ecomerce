@@ -479,7 +479,7 @@ function DeleteDialog({ name, onConfirm, onClose }: { name: string; onConfirm: (
 // Main page
 // ─────────────────────────────────────────────────────────────
 export function AdminShipping() {
-  const { formatDirect } = useCurrency();
+  const { formatPrice } = useCurrency();
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [rules, setRules] = useState<ShippingRule[]>([]);
   const [zones, setZones] = useState<ZoneOption[]>(ZONES_FALLBACK);
@@ -503,7 +503,7 @@ export function AdminShipping() {
       setRules(rawRules.map(mapRuleToUi));
       setCarriers(apiCarriers.map(c => {
         const rule = rawRules.find(r => r.carrierId === c.id && r.active)
-                  || rawRules.find(r => r.carrierId === c.id);
+          || rawRules.find(r => r.carrierId === c.id);
         return {
           ...mapCarrierToUi(c),
           baseCost: rule?.rate ?? 0,
@@ -735,8 +735,8 @@ export function AdminShipping() {
 
               <p className="text-xs text-gray-500 lg:block">{zones.find(z => z.code === c.zones)?.name || c.zones}</p>
               <p className="text-xs text-gray-500 text-center">{c.minDays}–{c.maxDays} días</p>
-              <p className="text-xs text-gray-500 text-right tabular-nums">{c.freeAbove != null ? formatDirect(c.freeAbove) : "—"}</p>
-              <p className="text-xs text-gray-900 text-right tabular-nums">{formatDirect(c.baseCost)}</p>
+              <p className="text-xs text-gray-500 text-right tabular-nums">{c.freeAbove != null ? formatPrice(c.freeAbove) : "—"}</p>
+              <p className="text-xs text-gray-900 text-right tabular-nums">{formatPrice(c.baseCost)}</p>
 
               {/* Status toggle */}
               <button
@@ -819,7 +819,7 @@ export function AdminShipping() {
               </div>
               <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightFrom} kg</p>
               <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightTo} kg</p>
-              <p className="text-xs text-gray-900 text-right tabular-nums">{formatDirect(r.price)}</p>
+              <p className="text-xs text-gray-900 text-right tabular-nums">{formatPrice(r.price)}</p>
               <p className="text-center">
                 <span className={`inline-flex items-center gap-1 text-[10px] ${r.active ? "text-green-700" : "text-gray-400"}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${r.active ? "bg-green-500" : "bg-gray-300"}`} />

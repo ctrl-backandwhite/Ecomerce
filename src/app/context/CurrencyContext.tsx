@@ -27,17 +27,19 @@ interface CurrencyContextType {
     /** Switch to a different currency by code */
     setCurrencyCode: (code: string) => void;
     /**
-     * Convert a USD-base amount to the selected currency and format it.
-     * e.g. formatPrice(29.99) → "€27.77" or "$29.99"
+     * Format a price that is already in the display currency (no conversion).
+     * Backend converts prices via X-Currency header; the frontend only formats.
+     * e.g. formatPrice(27.77) → "€27.77" or "$29.99"
      */
-    formatPrice: (amountUsd: number) => string;
+    formatPrice: (amount: number) => string;
     /**
-     * Convert a USD-base amount to the selected currency (number only).
+     * @deprecated Use formatPrice — all amounts now come pre-converted from backend.
+     * Kept temporarily for backward compatibility during migration.
      */
     convertPrice: (amountUsd: number) => number;
     /**
-     * Format a value already in the display currency (no USD→X conversion).
-     * Use for amounts not stored in USD, e.g. shipping rates.
+     * @deprecated Alias for formatPrice. Use formatPrice instead.
+     * Kept temporarily for backward compatibility during migration.
      */
     formatDirect: (amount: number) => string;
     /** True while rates are being loaded */
@@ -131,33 +133,14 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
 
     const convertPrice = useCallback(
         (amountUsd: number): number => {
-            if (!currency || currency.rate === 0) return amountUsd;
-            return amountUsd * currency.rate;
+            // @deprecated — Backend now converts via X-Currency header.
+            // Returns amount as-is (identity function) since prices come pre-converted.
+            return amountUsd;
         },
-        [currency],
+        [],
     );
 
     const formatPrice = useCallback(
-        (amountUsd: number): string => {
-            const converted = convertPrice(amountUsd);
-            const code = currency?.currencyCode ?? "USD";
-            try {
-                return new Intl.NumberFormat(intlLocale, {
-                    style: "currency",
-                    currency: code,
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                }).format(converted);
-            } catch {
-                // Fallback if currency code is invalid for Intl
-                const symbol = currency?.currencySymbol ?? "$";
-                return `${symbol}${converted.toFixed(2)}`;
-            }
-        },
-        [convertPrice, currency, intlLocale],
-    );
-
-    const formatDirect = useCallback(
         (amount: number): string => {
             const code = currency?.currencyCode ?? "USD";
             try {
@@ -168,12 +151,16 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
                     maximumFractionDigits: 2,
                 }).format(amount);
             } catch {
+                // Fallback if currency code is invalid for Intl
                 const symbol = currency?.currencySymbol ?? "$";
                 return `${symbol}${amount.toFixed(2)}`;
             }
         },
         [currency, intlLocale],
     );
+
+    // @deprecated — alias for formatPrice, kept for backward compat
+    const formatDirect = formatPrice;
 
     const value = useMemo<CurrencyContextType>(
         () => ({ currency, rates, setCurrencyCode, formatPrice, convertPrice, formatDirect, loading }),
