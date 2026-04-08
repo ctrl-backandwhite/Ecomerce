@@ -12,7 +12,7 @@ import { Badge } from "../components/ui/badge";
 export function Cart() {
   const { items, removeFromCart, updateQuantity, getTotalPrice } = useCart();
   const { toggleFavorite, isFavorite } = useUser();
-  const { formatPrice } = useCurrency();
+  const { formatPrice, convertPrice } = useCurrency();
   const { selectedCountry } = useTimezone();
   const navigate = useNavigate();
 
@@ -59,7 +59,12 @@ export function Cart() {
   }, [subtotal, countryCode]);
 
   const estimatedTax = taxEstimate?.taxAmount ?? 0;
-  const estimatedTotal = subtotal + estimatedTax;
+  // Compute total so that its formatted display matches the sum of formatted parts
+  // (avoids rounding discrepancies when converting USD → display currency)
+  const rate = convertPrice(1); // display-currency per USD
+  const roundedSubtotal = Math.round(subtotal * rate * 100) / 100;
+  const roundedTax = Math.round(estimatedTax * rate * 100) / 100;
+  const estimatedTotalDisplay = (roundedSubtotal + roundedTax) / rate;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -214,7 +219,7 @@ export function Cart() {
                 <div className="border-t pt-3 flex justify-between items-center">
                   <span className="text-sm text-gray-900">Total estimado</span>
                   <span className="text-lg text-gray-900">
-                    {formatPrice(estimatedTotal)}
+                    {formatPrice(estimatedTotalDisplay)}
                   </span>
                 </div>
               </div>

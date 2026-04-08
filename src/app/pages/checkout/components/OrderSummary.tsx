@@ -54,7 +54,25 @@ export function OrderSummary({
     deliverySummary, selectedAddrId, newMode,
     dispatch, applyCoupon, applyManualCard,
 }: OrderSummaryProps) {
-    const { formatPrice } = useCurrency();
+    const { formatPrice, convertPrice } = useCurrency();
+
+    /* ── Rounding-safe total ──
+     * Each `formatPrice()` individually rounds after currency conversion, so
+     * the sum of displayed parts may differ from `formatPrice(total)` by a
+     * cent.  We round every part in the display currency first, then derive
+     * the displayed total as the sum of rounded values.
+     */
+    const rate = convertPrice(1);                                     // 1 USD → display
+    const round2 = (usd: number) => Math.round(usd * rate * 100) / 100;
+    const rSubtotal = round2(subtotal);
+    const rShipping = round2(shipping);
+    const rTax = round2(tax);
+    const rCoupon = round2(couponDiscount);
+    const rLoyalty = round2(loyaltyDiscount);
+    const rGiftCard = round2(giftCardDiscount);
+    const displayTotal = Math.max(0, rSubtotal + rShipping + rTax - rCoupon - rLoyalty - rGiftCard);
+    const totalForFmt = rate > 0 ? displayTotal / rate : total;      // back to USD
+
     return (
         <div className="lg:col-span-1">
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm sticky top-24 overflow-hidden">
@@ -166,7 +184,7 @@ export function OrderSummary({
                     )}
                     <div className="flex justify-between text-sm text-gray-900 pt-2.5 border-t border-gray-100">
                         <span>Total</span>
-                        <span>{formatPrice(total)}</span>
+                        <span>{formatPrice(totalForFmt)}</span>
                     </div>
                 </div>
 
