@@ -57,12 +57,11 @@ export function Cart() {
       .catch(() => setMinFreeAbove(null));
   }, [countryCode]);
 
-  // Compute total so that its formatted display matches the sum of formatted parts
-  // (avoids rounding discrepancies when converting USD → display currency)
+  // Convert USD → display currency once for the summary section
   const rate = convertPrice(1); // display-currency per USD
-  const roundedSubtotal = Math.round(subtotal * rate * 100) / 100;
-  const roundedTax = Math.round(estimatedTax * rate * 100) / 100;
-  const estimatedTotalDisplay = (roundedSubtotal + roundedTax) / rate;
+  const displaySubtotal = Math.round(subtotal * rate * 100) / 100;
+  const displayTax = Math.round(estimatedTax * rate * 100) / 100;
+  const displayTotal = displaySubtotal + displayTax;
 
   if (items.length === 0) {
     return (
@@ -224,7 +223,7 @@ export function Cart() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>{formatPrice(subtotal)}</span>
+                  <span>{formatDirect(displaySubtotal)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Envío</span>
@@ -232,20 +231,20 @@ export function Cart() {
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Impuestos ({selectedCountry?.country ?? "EE.UU."}){taxLoading ? " …" : " (est.)"}</span>
-                  <span>{estimatedTax > 0 ? formatPrice(estimatedTax) : formatPrice(0)}</span>
+                  <span>{displayTax > 0 ? formatDirect(displayTax) : formatDirect(0)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">
                   <span className="text-sm text-gray-900">Total estimado</span>
                   <span className="text-lg text-gray-900">
-                    {formatPrice(estimatedTotalDisplay)}
+                    {formatDirect(displayTotal)}
                   </span>
                 </div>
               </div>
 
-              {subtotal > 0 && minFreeAbove != null && roundedSubtotal < minFreeAbove && (
+              {subtotal > 0 && minFreeAbove != null && displaySubtotal < minFreeAbove && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
                   <p>
-                    ¡Agrega {formatDirect(minFreeAbove - roundedSubtotal)} más para posible envío
+                    ¡Agrega {formatDirect(minFreeAbove - displaySubtotal)} más para posible envío
                     gratis!
                   </p>
                 </div>
