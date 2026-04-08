@@ -8,13 +8,21 @@
  */
 
 import { authFetch } from "../lib/authFetch";
-import { nxFetch } from "../lib/nxFetch";
 import { handleRes, wrapErr } from "../lib/apiHelpers";
 import { ApiError } from "../lib/AppError";
 import { API_BASE } from "../config/api";
 import type { Page } from "../types/api";
 
 const BASE_URL = `${API_BASE}/api/v1/shipping`;
+
+/** Shape returned by the backend */
+interface ApiShippingOption {
+    ruleId: string;
+    carrierName: string;
+    rate: number;
+    estimatedDays: number;
+    freeShipping: boolean;
+}
 
 export interface ShippingOption {
     id: string;
@@ -70,12 +78,19 @@ export interface ShippingRulePayload {
 }
 
 class ShippingRepository {
-    // Options (public)
+    // Options (authenticated — user is at checkout)
     async getOptions(query: Record<string, string> = {}): Promise<ShippingOption[]> {
         try {
             const params = new URLSearchParams(query);
-            const res = await nxFetch(`${BASE_URL}/options?${params}`);
-            return handleRes<ShippingOption[]>(res);
+            const res = await authFetch(`${BASE_URL}/options?${params}`);
+            const body = await handleRes<{ options: ApiShippingOption[] }>(res);
+            return (body.options ?? []).map((o) => ({
+                id: o.ruleId,
+                name: o.carrierName,
+                carrier: o.carrierName,
+                estimatedDays: o.estimatedDays,
+                price: o.freeShipping ? 0 : Number(o.rate),
+            }));
         } catch (err) { wrapErr(err, "No se pudieron obtener las opciones de envío"); }
     }
 

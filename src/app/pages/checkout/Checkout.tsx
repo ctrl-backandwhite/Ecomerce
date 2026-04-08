@@ -31,8 +31,12 @@ export function Checkout() {
 
     const [state, dispatch] = useCheckoutState(user);
 
+    /* ── Derived: address for shipping / tax ── */
+    const selectedAddr = state.selectedAddrId !== "new"
+        ? user.addresses.find((a) => a.id === state.selectedAddrId) : null;
+
     /* ── Side-effect hooks ── */
-    useShippingOptions(dispatch);
+    useShippingOptions(getTotalPrice(), state.selectedAddrId, selectedAddr, state.manualAddr, state.newMode, dispatch);
     useLoyaltyRedemption(user.id, dispatch);
 
     /* ── Fetch BTC rate from CoinGecko ── */
@@ -48,8 +52,6 @@ export function Checkout() {
     }, [dispatch]);
 
     /* ── Derived values ── */
-    const selectedAddr = state.selectedAddrId !== "new"
-        ? user.addresses.find((a) => a.id === state.selectedAddrId) : null;
     const selectedStore = storeLocations.find((s) => s.id === state.selectedStoreId);
     const selectedPickup = pickupPoints.find((p) => p.id === state.selectedPickupId);
     const selectedPm: PaymentMethod | undefined = state.selectedPmId !== "new"
