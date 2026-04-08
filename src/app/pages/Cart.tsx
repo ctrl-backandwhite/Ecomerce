@@ -1,6 +1,9 @@
+import { useState, useEffect, useRef } from "react";
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useTimezone } from "../context/TimezoneContext";
+import { taxRepository, type TaxCalculation } from "../repositories/TaxRepository";
 import { Button } from "../components/ui/button";
 import { Link, useNavigate } from "react-router";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Heart } from "lucide-react";
@@ -10,7 +13,13 @@ export function Cart() {
   const { items, removeFromCart, updateQuantity, getTotalPrice } = useCart();
   const { toggleFavorite, isFavorite } = useUser();
   const { formatPrice } = useCurrency();
+  const { selectedCountry } = useTimezone();
   const navigate = useNavigate();
+
+  // ── Estimated tax based on user's selected country ──────────────────────
+  const [taxEstimate, setTaxEstimate] = useState<TaxCalculation | null>(null);
+  const [taxLoading, setTaxLoading] = useState(false);
+  const taxTimer = useRef<ReturnType<typeof setTimeout>>();
 
   if (items.length === 0) {
     return (
@@ -33,6 +42,24 @@ export function Cart() {
   }
 
   const subtotal = getTotalPrice();
+  const countryCode = selectedCountry?.code ?? "US";
+
+  useEffect(() => {
+    clearTimeout(taxTimer.current);
+    if (subtotal === 0) { setTaxEstimate(null); return; }
+    setTaxLoading(true);
+    taxTimer.current = setTimeout(() => {
+      taxRepository
+        .calculate({ subtotal, country: countryCode })
+        .then(setTaxEstimate)
+        .catch(() => setTaxEstimate(null))
+        .finally(() => setTaxLoading(false));
+    }, 500);
+    return () => clearTimeout(taxTimer.current);
+  }, [subtotal, countryCode]);
+
+  const estimatedTax = taxEstimate?.taxAmount ?? 0;
+  const estimatedTotal = subtotal + estimatedTax;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -181,13 +208,13 @@ export function Cart() {
                   <span>Calculado en el checkout</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>Impuestos</span>
-                  <span>Calculados en el checkout</span>
+                  <span>Impuestos ({selectedCountry?.country ?? "EE.UU."}){taxLoading ? " …" : " (est.)"}</span>
+                  <span>{estimatedTax > 0 ? formatPrice(estimatedTax) : "$0.00"}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">
-                  <span className="text-sm text-gray-900">Subtotal</span>
+                  <span className="text-sm text-gray-900">Total estimado</span>
                   <span className="text-lg text-gray-900">
-                    {formatPrice(subtotal)}
+                    {formatPrice(estimatedTotal)}
                   </span>
                 </div>
               </div>
