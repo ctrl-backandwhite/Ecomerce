@@ -556,7 +556,8 @@ export function ProductDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
-  const { formatPrice } = useCurrency();
+  const { formatPrice, currency } = useCurrency();
+  const currencyCode = currency?.currencyCode ?? "USD";
 
   const apiLocale = locale === "pt" ? "pt-BR" : locale;
 
@@ -590,7 +591,7 @@ export function ProductDetail() {
       });
 
     return () => controller.abort();
-  }, [id, apiLocale]);
+  }, [id, apiLocale, currencyCode]);
 
   const backTo: string = (location.state as any)?.from || "/";
   /** Use browser history back when the user came from within the app,

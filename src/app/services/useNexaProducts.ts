@@ -20,6 +20,7 @@ import {
 } from "../mappers/NexaProductMapper";
 import { nexaCategoryRepository } from "../repositories/NexaCategoryRepository";
 import { useLanguage } from "../context/LanguageContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { buildCategoryMap } from "../lib/categoryUtils";
 import type { Product } from "../types/product";
 
@@ -39,8 +40,8 @@ interface CacheEntry {
 }
 const _cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 5 * 60_000; // 5 minutes
-function cacheKey(categoryId?: string, locale?: string) {
-    return `${categoryId ?? "ALL"}|${locale ?? "en"}`;
+function cacheKey(categoryId?: string, locale?: string, currencyCode?: string) {
+    return `${categoryId ?? "ALL"}|${locale ?? "en"}|${currencyCode ?? "USD"}`;
 }
 
 export interface UseNexaProductsResult {
@@ -78,10 +79,12 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
     const { categoryId, name, sortBy, ascending } = opts;
 
     const { locale } = useLanguage();
+    const { currency } = useCurrency();
     const apiLocale = locale === "pt" ? "pt-BR" : locale;
+    const currencyCode = currency?.currencyCode ?? "USD";
 
     // ── Try to restore from cache on mount ─────────────────────────────────
-    const ck = cacheKey(categoryId, apiLocale);
+    const ck = cacheKey(categoryId, apiLocale, currencyCode);
     const cached = _cache.get(ck);
     const cacheValid = cached && Date.now() - cached.timestamp < CACHE_TTL;
 
@@ -156,7 +159,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 setDataSource("api");
 
                 // ── Update module-level cache ───────────────────────
-                _cache.set(cacheKey(categoryId, apiLocale), {
+                _cache.set(cacheKey(categoryId, apiLocale, currencyCode), {
                     products: updatedProducts,
                     totalElements: result.totalElements,
                     currentPage: page,
@@ -183,7 +186,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 }
             }
         },
-        [apiLocale, categoryId, name, sortBy, ascending],
+        [apiLocale, categoryId, name, sortBy, ascending, currencyCode],
     );
 
     // ── Initial fetch + re-fetch on locale/category change ────────────────────
