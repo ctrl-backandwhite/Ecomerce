@@ -22,6 +22,7 @@ interface ApiShippingOption {
     rate: number;
     estimatedDays: number;
     freeShipping: boolean;
+    freeAbove: number | null;
 }
 
 export interface ShippingOption {
@@ -30,6 +31,7 @@ export interface ShippingOption {
     carrier: string;
     estimatedDays: number;
     price: number;
+    freeAbove: number | null;
 }
 
 export interface Carrier {
@@ -76,6 +78,7 @@ export interface ShippingRulePayload {
     rate: number;
     freeAbove?: number;
     estimatedDays?: number;
+    active?: boolean;
 }
 
 class ShippingRepository {
@@ -91,6 +94,7 @@ class ShippingRepository {
                 carrier: o.carrierName,
                 estimatedDays: o.estimatedDays,
                 price: o.freeShipping ? 0 : Number(o.rate),
+                freeAbove: o.freeAbove != null ? Number(o.freeAbove) : null,
             }));
         } catch (err) { wrapErr(err, "No se pudieron obtener las opciones de envío"); }
     }

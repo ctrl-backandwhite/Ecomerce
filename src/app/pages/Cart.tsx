@@ -4,6 +4,7 @@ import { useUser } from "../context/UserContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTimezone } from "../context/TimezoneContext";
 import { taxRepository, type TaxCalculation } from "../repositories/TaxRepository";
+import { shippingRepository } from "../repositories/ShippingRepository";
 import { Button } from "../components/ui/button";
 import { Link, useNavigate } from "react-router";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Heart } from "lucide-react";
@@ -39,6 +40,23 @@ export function Cart() {
   }, [subtotal, countryCode]);
 
   const estimatedTax = taxEstimate?.taxAmount ?? 0;
+
+  // ── Free-shipping threshold from real shipping rules ─────────────────
+  const [minFreeAbove, setMinFreeAbove] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!countryCode) return;
+    shippingRepository
+      .getOptions({ country: countryCode, subtotal: "0", weight: "1" })
+      .then((opts) => {
+        const thresholds = opts
+          .map((o) => o.freeAbove)
+          .filter((v): v is number => v != null && v > 0);
+        setMinFreeAbove(thresholds.length > 0 ? Math.min(...thresholds) : null);
+      })
+      .catch(() => setMinFreeAbove(null));
+  }, [countryCode]);
+
   // Compute total so that its formatted display matches the sum of formatted parts
   // (avoids rounding discrepancies when converting USD → display currency)
   const rate = convertPrice(1); // display-currency per USD
@@ -214,7 +232,7 @@ export function Cart() {
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Impuestos ({selectedCountry?.country ?? "EE.UU."}){taxLoading ? " …" : " (est.)"}</span>
-                  <span>{estimatedTax > 0 ? formatPrice(estimatedTax) : "$0.00"}</span>
+                  <span>{estimatedTax > 0 ? formatPrice(estimatedTax) : formatPrice(0)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">
                   <span className="text-sm text-gray-900">Total estimado</span>
@@ -224,10 +242,10 @@ export function Cart() {
                 </div>
               </div>
 
-              {subtotal > 0 && subtotal < 100 && (
+              {subtotal > 0 && minFreeAbove != null && subtotal < minFreeAbove && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
                   <p>
-                    ¡Agrega {formatPrice(100 - subtotal)} más para posible envío
+                    ¡Agrega {formatPrice(minFreeAbove - subtotal)} más para posible envío
                     gratis!
                   </p>
                 </div>

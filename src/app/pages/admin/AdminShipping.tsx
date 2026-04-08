@@ -89,6 +89,7 @@ function ruleToPayload(r: ShippingRule): ShippingRulePayload {
     carrierId: "",
     rate: r.price,
     zone: r.zone,
+    active: r.active,
   };
 }
 
@@ -554,6 +555,7 @@ export function AdminShipping() {
         freeAbove: data.freeAbove ?? undefined,
         estimatedDays: data.maxDays,
         zone: data.zones || "Global",
+        active: true,
       };
       const ruleId = (data as Carrier)._ruleId;
       if (ruleId) {

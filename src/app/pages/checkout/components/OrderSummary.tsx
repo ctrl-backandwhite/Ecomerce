@@ -157,8 +157,8 @@ export function OrderSummary({
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
                         <span>Envío{selectedShipping ? ` · ${selectedShipping.name}` : ""}</span>
-                        <span className={shipping === 0 ? "text-green-600" : ""}>
-                            {shipping === 0 ? "Gratis" : formatDirect(shipping)}
+                        <span className={shipping === 0 && selectedShipping ? "text-green-600" : shipping === 0 ? "text-amber-500" : ""}>
+                            {shipping === 0 && selectedShipping ? "Gratis" : shipping === 0 ? "No disponible" : formatDirect(shipping)}
                         </span>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
