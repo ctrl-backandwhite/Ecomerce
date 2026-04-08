@@ -9,6 +9,9 @@ import {
   type ShippingRule as ApiShippingRule, type ShippingRulePayload,
   shippingRepository,
 } from "../../repositories/ShippingRepository";
+import { useCurrency } from "../../context/CurrencyContext";
+import { findAll as findAllCurrencies } from "../../repositories/CurrencyRateRepository";
+import type { CurrencyRate } from "../../types/currency";
 
 // ── Types ────────────────────────────────────────────────────
 interface Carrier {
@@ -22,6 +25,7 @@ interface Carrier {
   freeAbove: number | null;
   baseCost: number;
   active: boolean;
+  _ruleId?: string;    // ID of the associated default shipping rule
 }
 
 interface ShippingRule {
@@ -33,15 +37,12 @@ interface ShippingRule {
   price: number;
 }
 
-const ZONES = [
-  "España",
-  "Portugal",
-  "Unión Europea",
-  "Reino Unido",
-  "LATAM",
-  "Estados Unidos",
-  "Resto del mundo",
+const ZONES_FALLBACK = [
+  { code: "ES", name: "España" },
+  { code: "US", name: "United States" },
 ];
+
+interface ZoneOption { code: string; name: string; }
 
 // ── Initial mock data ────────────────────────────────────────
 // Removed: data is now loaded from the API.
@@ -96,7 +97,7 @@ const emptyCarrier: Omit<Carrier, "id"> = {
 };
 
 const emptyRule: Omit<ShippingRule, "id"> = {
-  zone: ZONES[0], carrier: "", weightFrom: 0, weightTo: 30, price: 0,
+  zone: "", carrier: "", weightFrom: 0, weightTo: 30, price: 0,
 };
 
 // ── Shared input style ───────────────────────────────────────
@@ -108,11 +109,12 @@ const lbl = "block text-[11px] text-gray-500 mb-1";
 // ─────────────────────────────────────────────────────────────
 interface CarrierModalProps {
   initial: Omit<Carrier, "id"> & { id?: string };
+  zones: ZoneOption[];
   onSave: (data: Omit<Carrier, "id"> & { id?: string }) => void;
   onClose: () => void;
 }
 
-function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
+function CarrierModal({ initial, zones, onSave, onClose }: CarrierModalProps) {
   const [form, setForm] = useState({ ...initial });
   const isEdit = Boolean(initial.id);
 
@@ -123,7 +125,7 @@ function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
     e.preventDefault();
     if (!form.name.trim()) { toast.error("El nombre es obligatorio"); return; }
     if (!form.logo.trim()) { toast.error("Las iniciales son obligatorias"); return; }
-    if (!form.zones.trim()) { toast.error("La cobertura es obligatoria"); return; }
+    if (!form.zones) { toast.error("La zona de cobertura es obligatoria"); return; }
     if (form.minDays < 1) { toast.error("Los días mínimos deben ser ≥ 1"); return; }
     if (form.maxDays < form.minDays) { toast.error("Los días máximos deben ser ≥ mínimos"); return; }
     if (form.baseCost < 0) { toast.error("La tarifa base no puede ser negativa"); return; }
@@ -160,7 +162,7 @@ function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
             <div>
               <p className="text-sm text-gray-900">{form.name || "Nombre del transportista"}</p>
               <p className="text-[11px] text-gray-400">
-                {form.zones || "Cobertura"} · {form.minDays}–{form.maxDays} días
+                {zones.find(z => z.code === form.zones)?.name || "Cobertura"} · {form.minDays}–{form.maxDays} días
               </p>
             </div>
             <div className={`ml-auto flex items-center gap-1 text-[11px] px-2.5 py-0.5 rounded-full ${form.active ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-500"}`}>
@@ -216,13 +218,15 @@ function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
           <fieldset className="space-y-3">
             <legend className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Cobertura y plazos</legend>
             <div>
-              <label className={lbl}>Zonas de cobertura *</label>
-              <input
+              <label className={lbl}>Zona de cobertura *</label>
+              <select
                 className={inp}
-                placeholder="Ej: España y Portugal"
                 value={form.zones}
                 onChange={e => set("zones", e.target.value)}
-              />
+              >
+                <option value="">Selecciona un país…</option>
+                {zones.map(z => <option key={z.code} value={z.code}>{z.name}</option>)}
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -343,11 +347,12 @@ function CarrierModal({ initial, onSave, onClose }: CarrierModalProps) {
 interface RuleModalProps {
   initial: Omit<ShippingRule, "id"> & { id?: string };
   carriers: Carrier[];
+  zones: ZoneOption[];
   onSave: (data: Omit<ShippingRule, "id"> & { id?: string }) => void;
   onClose: () => void;
 }
 
-function RuleModal({ initial, carriers, onSave, onClose }: RuleModalProps) {
+function RuleModal({ initial, carriers, zones, onSave, onClose }: RuleModalProps) {
   const [form, setForm] = useState({ ...initial });
   const isEdit = Boolean(initial.id);
   const set = (field: keyof typeof form, value: any) =>
@@ -382,7 +387,8 @@ function RuleModal({ initial, carriers, onSave, onClose }: RuleModalProps) {
             <div>
               <label className={lbl}>Zona *</label>
               <select className={inp} value={form.zone} onChange={e => set("zone", e.target.value)}>
-                {ZONES.map(z => <option key={z} value={z}>{z}</option>)}
+                <option value="">Selecciona un país…</option>
+                {zones.map(z => <option key={z.code} value={z.code}>{z.name}</option>)}
               </select>
             </div>
             <div>
@@ -470,29 +476,45 @@ function DeleteDialog({ name, onConfirm, onClose }: { name: string; onConfirm: (
 // Main page
 // ─────────────────────────────────────────────────────────────
 export function AdminShipping() {
+  const { formatDirect } = useCurrency();
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [rules, setRules] = useState<ShippingRule[]>([]);
+  const [zones, setZones] = useState<ZoneOption[]>(ZONES_FALLBACK);
   const [tab, setTab] = useState<"carriers" | "rules" | "zones">("carriers");
 
-  const loadCarriers = useCallback(async () => {
+  const loadAll = useCallback(async () => {
     try {
-      const data = await shippingRepository.findAllCarriers();
-      setCarriers(data.map(mapCarrierToUi));
+      const [apiCarriers, rawRules, currencies] = await Promise.all([
+        shippingRepository.findAllCarriers(),
+        shippingRepository.findAllRules(),
+        findAllCurrencies(true).catch(() => [] as CurrencyRate[]),
+      ]);
+
+      // Build zone list from active currencies (exclude BTC / "XX")
+      const zoneList: ZoneOption[] = currencies
+        .filter(c => c.countryCode && c.countryCode !== "XX")
+        .map(c => ({ code: c.countryCode, name: c.countryName }))
+        .sort((a, b) => a.name.localeCompare(b.name));
+      if (zoneList.length > 0) setZones(zoneList);
+
+      setRules(rawRules.map(mapRuleToUi));
+      setCarriers(apiCarriers.map(c => {
+        const rule = rawRules.find(r => r.carrierId === c.id);
+        return {
+          ...mapCarrierToUi(c),
+          baseCost: rule?.rate ?? 0,
+          freeAbove: rule?.freeAbove ?? null,
+          maxDays: rule?.estimatedDays ?? 5,
+          zones: rule?.zone ?? "",
+          _ruleId: rule?.id,
+        };
+      }));
     } catch {
-      toast.error("Error al cargar transportistas");
+      toast.error("Error al cargar datos de envío");
     }
   }, []);
 
-  const loadRules = useCallback(async () => {
-    try {
-      const data = await shippingRepository.findAllRules();
-      setRules(data.map(mapRuleToUi));
-    } catch {
-      toast.error("Error al cargar reglas de envío");
-    }
-  }, []);
-
-  useEffect(() => { loadCarriers(); loadRules(); }, [loadCarriers, loadRules]);
+  useEffect(() => { loadAll(); }, [loadAll]);
 
   // Carrier modal state
   const [carrierModal, setCarrierModal] = useState<{
@@ -515,16 +537,31 @@ export function AdminShipping() {
 
   const saveCarrier = async (data: Omit<Carrier, "id"> & { id?: string }) => {
     try {
+      let savedCarrier: ApiCarrier;
       if (data.id) {
-        const updated = await shippingRepository.updateCarrier(data.id, carrierToPayload(data as Carrier));
-        setCarriers(prev => prev.map(c => c.id === data.id ? mapCarrierToUi(updated) : c));
-        toast.success("Transportista actualizado");
+        savedCarrier = await shippingRepository.updateCarrier(data.id, carrierToPayload(data as Carrier));
       } else {
-        const created = await shippingRepository.createCarrier(carrierToPayload(data as Carrier));
-        setCarriers(prev => [...prev, mapCarrierToUi(created)]);
-        toast.success("Transportista creado");
+        savedCarrier = await shippingRepository.createCarrier(carrierToPayload(data as Carrier));
       }
+
+      // Persist baseCost / freeAbove in the carrier's default shipping rule
+      const rulePayload: ShippingRulePayload = {
+        carrierId: savedCarrier.id,
+        rate: data.baseCost,
+        freeAbove: data.freeAbove ?? undefined,
+        estimatedDays: data.maxDays,
+        zone: data.zones || "Global",
+      };
+      const ruleId = (data as Carrier)._ruleId;
+      if (ruleId) {
+        await shippingRepository.updateRule(ruleId, rulePayload);
+      } else {
+        await shippingRepository.createRule(rulePayload);
+      }
+
+      await loadAll();
       setCarrierModal({ open: false, data: null });
+      toast.success(data.id ? "Transportista actualizado" : "Transportista creado");
     } catch {
       toast.error("Error al guardar transportista");
     }
@@ -552,15 +589,14 @@ export function AdminShipping() {
   const saveRule = async (data: Omit<ShippingRule, "id"> & { id?: string }) => {
     try {
       if (data.id) {
-        const updated = await shippingRepository.updateRule(data.id, ruleToPayload(data as ShippingRule));
-        setRules(prev => prev.map(r => r.id === data.id ? mapRuleToUi(updated) : r));
+        await shippingRepository.updateRule(data.id, ruleToPayload(data as ShippingRule));
         toast.success("Regla actualizada");
       } else {
-        const created = await shippingRepository.createRule(ruleToPayload(data as ShippingRule));
-        setRules(prev => [...prev, mapRuleToUi(created)]);
+        await shippingRepository.createRule(ruleToPayload(data as ShippingRule));
         toast.success("Regla creada");
       }
       setRuleModal({ open: false, data: null });
+      await loadAll();
     } catch {
       toast.error("Error al guardar regla");
     }
@@ -575,14 +611,13 @@ export function AdminShipping() {
     try {
       if (deleteTarget.type === "carrier") {
         await shippingRepository.deleteCarrier(deleteTarget.id);
-        setCarriers(prev => prev.filter(c => c.id !== deleteTarget.id));
         toast.success("Transportista eliminado");
       } else {
         await shippingRepository.deleteRule(deleteTarget.id);
-        setRules(prev => prev.filter(r => r.id !== deleteTarget.id));
         toast.success("Regla eliminada");
       }
       setDeleteTarget(null);
+      await loadAll();
     } catch {
       toast.error("Error al eliminar");
     }
@@ -623,7 +658,7 @@ export function AdminShipping() {
         {[
           { label: "Transportistas", value: carriers.length, icon: Truck },
           { label: "Activos", value: carriers.filter(c => c.active).length, icon: Check },
-          { label: "Zonas cubiertas", value: ZONES.length, icon: Globe },
+          { label: "Países cubiertos", value: zones.length, icon: Globe },
           { label: "Reglas de tarifa", value: rules.length, icon: MapPin },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
@@ -693,10 +728,10 @@ export function AdminShipping() {
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 lg:block">{c.zones}</p>
+              <p className="text-xs text-gray-500 lg:block">{zones.find(z => z.code === c.zones)?.name || c.zones}</p>
               <p className="text-xs text-gray-500 text-center">{c.minDays}–{c.maxDays} días</p>
-              <p className="text-xs text-gray-500 text-right tabular-nums">{c.freeAbove != null ? `$${c.freeAbove}` : "—"}</p>
-              <p className="text-xs text-gray-900 text-right tabular-nums">${c.baseCost.toFixed(2)}</p>
+              <p className="text-xs text-gray-500 text-right tabular-nums">{c.freeAbove != null ? formatDirect(c.freeAbove) : "—"}</p>
+              <p className="text-xs text-gray-900 text-right tabular-nums">{formatDirect(c.baseCost)}</p>
 
               {/* Status toggle */}
               <button
@@ -769,7 +804,7 @@ export function AdminShipping() {
               key={r.id}
               className={`flex flex-col lg:grid lg:grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_auto] gap-2 lg:gap-3 px-4 py-3 items-start lg:items-center ${i !== rules.length - 1 ? "border-b border-gray-50" : ""}`}
             >
-              <p className="text-xs text-gray-900">{r.zone}</p>
+              <p className="text-xs text-gray-900">{zones.find(z => z.code === r.zone)?.name || r.zone}</p>
               <div className="flex items-center gap-1.5">
                 <div className="w-5 h-5 rounded-md bg-gray-500 flex items-center justify-center text-[9px] text-white flex-shrink-0">
                   {carriers.find(c => c.name === r.carrier)?.logo ?? "??"}
@@ -778,7 +813,7 @@ export function AdminShipping() {
               </div>
               <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightFrom} kg</p>
               <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightTo} kg</p>
-              <p className="text-xs text-gray-900 text-right tabular-nums">${r.price.toFixed(2)}</p>
+              <p className="text-xs text-gray-900 text-right tabular-nums">{formatDirect(r.price)}</p>
               <div className="flex gap-1 justify-end">
                 <button onClick={() => openEditRule(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" strokeWidth={1.5} /></button>
                 <button onClick={() => confirmDeleteRule(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} /></button>
@@ -800,14 +835,14 @@ export function AdminShipping() {
       {tab === "zones" && (
         <div className="bg-white border border-gray-100 rounded-xl p-6">
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {ZONES.map(zone => {
-              const count = rules.filter(r => r.zone === zone).length;
+            {zones.map(zone => {
+              const count = rules.filter(r => r.zone === zone.code).length;
               return (
-                <div key={zone} className="border border-gray-100 rounded-xl p-4 flex items-center justify-between">
+                <div key={zone.code} className="border border-gray-100 rounded-xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <Globe className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
                     <div>
-                      <p className="text-xs text-gray-900">{zone}</p>
+                      <p className="text-xs text-gray-900">{zone.name}</p>
                       <p className="text-[10px] text-gray-400">{count} regla{count !== 1 ? "s" : ""}</p>
                     </div>
                   </div>
@@ -825,6 +860,7 @@ export function AdminShipping() {
       {carrierModal.open && carrierModal.data && (
         <CarrierModal
           initial={carrierModal.data}
+          zones={zones}
           onSave={saveCarrier}
           onClose={() => setCarrierModal({ open: false, data: null })}
         />
@@ -834,6 +870,7 @@ export function AdminShipping() {
         <RuleModal
           initial={ruleModal.data}
           carriers={carriers}
+          zones={zones}
           onSave={saveRule}
           onClose={() => setRuleModal({ open: false, data: null })}
         />

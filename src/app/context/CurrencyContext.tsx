@@ -35,6 +35,11 @@ interface CurrencyContextType {
      * Convert a USD-base amount to the selected currency (number only).
      */
     convertPrice: (amountUsd: number) => number;
+    /**
+     * Format a value already in the display currency (no USD→X conversion).
+     * Use for amounts not stored in USD, e.g. shipping rates.
+     */
+    formatDirect: (amount: number) => string;
     /** True while rates are being loaded */
     loading: boolean;
 }
@@ -152,9 +157,27 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         [convertPrice, currency, intlLocale],
     );
 
+    const formatDirect = useCallback(
+        (amount: number): string => {
+            const code = currency?.currencyCode ?? "USD";
+            try {
+                return new Intl.NumberFormat(intlLocale, {
+                    style: "currency",
+                    currency: code,
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                }).format(amount);
+            } catch {
+                const symbol = currency?.currencySymbol ?? "$";
+                return `${symbol}${amount.toFixed(2)}`;
+            }
+        },
+        [currency, intlLocale],
+    );
+
     const value = useMemo<CurrencyContextType>(
-        () => ({ currency, rates, setCurrencyCode, formatPrice, convertPrice, loading }),
-        [currency, rates, setCurrencyCode, formatPrice, convertPrice, loading],
+        () => ({ currency, rates, setCurrencyCode, formatPrice, convertPrice, formatDirect, loading }),
+        [currency, rates, setCurrencyCode, formatPrice, convertPrice, formatDirect, loading],
     );
 
     return (
