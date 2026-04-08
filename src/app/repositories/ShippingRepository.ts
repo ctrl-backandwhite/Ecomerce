@@ -60,6 +60,7 @@ export interface ShippingRule {
     rate: number;
     freeAbove: number | null;
     estimatedDays: number;
+    active: boolean;
     carrierName: string;
     createdAt: string;
     updatedAt: string | null;

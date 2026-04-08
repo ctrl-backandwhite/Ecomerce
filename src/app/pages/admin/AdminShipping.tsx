@@ -35,6 +35,7 @@ interface ShippingRule {
   weightFrom: number;
   weightTo: number;
   price: number;
+  active: boolean;
 }
 
 const ZONES_FALLBACK = [
@@ -79,6 +80,7 @@ function mapRuleToUi(r: ApiShippingRule): ShippingRule {
     weightFrom: r.weightMin ?? 0,
     weightTo: r.weightMax ?? 30,
     price: r.rate,
+    active: r.active ?? true,
   };
 }
 
@@ -97,7 +99,7 @@ const emptyCarrier: Omit<Carrier, "id"> = {
 };
 
 const emptyRule: Omit<ShippingRule, "id"> = {
-  zone: "", carrier: "", weightFrom: 0, weightTo: 30, price: 0,
+  zone: "", carrier: "", weightFrom: 0, weightTo: 30, price: 0, active: true,
 };
 
 // ── Shared input style ───────────────────────────────────────
@@ -499,7 +501,8 @@ export function AdminShipping() {
 
       setRules(rawRules.map(mapRuleToUi));
       setCarriers(apiCarriers.map(c => {
-        const rule = rawRules.find(r => r.carrierId === c.id);
+        const rule = rawRules.find(r => r.carrierId === c.id && r.active)
+                  || rawRules.find(r => r.carrierId === c.id);
         return {
           ...mapCarrierToUi(c),
           baseCost: rule?.rate ?? 0,
@@ -779,13 +782,14 @@ export function AdminShipping() {
       {/* ── Rules tab ── */}
       {tab === "rules" && (
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-          <div className="hidden lg:grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+          <div className="hidden lg:grid grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_0.6fr_auto] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
             {[
               { label: "Zona", cls: "text-left" },
               { label: "Transportista", cls: "text-left" },
               { label: "Peso desde", cls: "text-right" },
               { label: "Peso hasta", cls: "text-right" },
               { label: "Precio", cls: "text-right" },
+              { label: "Estado", cls: "text-center" },
               { label: "", cls: "text-right" },
             ].map(h => (
               <p key={h.label} className={`text-[10px] text-gray-400 uppercase tracking-wider ${h.cls}`}>{h.label}</p>
@@ -802,7 +806,7 @@ export function AdminShipping() {
           {rules.map((r, i) => (
             <div
               key={r.id}
-              className={`flex flex-col lg:grid lg:grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_auto] gap-2 lg:gap-3 px-4 py-3 items-start lg:items-center ${i !== rules.length - 1 ? "border-b border-gray-50" : ""}`}
+              className={`flex flex-col lg:grid lg:grid-cols-[1.5fr_1.5fr_1fr_1fr_0.8fr_0.6fr_auto] gap-2 lg:gap-3 px-4 py-3 items-start lg:items-center ${i !== rules.length - 1 ? "border-b border-gray-50" : ""}`}
             >
               <p className="text-xs text-gray-900">{zones.find(z => z.code === r.zone)?.name || r.zone}</p>
               <div className="flex items-center gap-1.5">
@@ -814,6 +818,12 @@ export function AdminShipping() {
               <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightFrom} kg</p>
               <p className="text-xs text-gray-500 text-right tabular-nums">{r.weightTo} kg</p>
               <p className="text-xs text-gray-900 text-right tabular-nums">{formatDirect(r.price)}</p>
+              <p className="text-center">
+                <span className={`inline-flex items-center gap-1 text-[10px] ${r.active ? "text-green-700" : "text-gray-400"}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${r.active ? "bg-green-500" : "bg-gray-300"}`} />
+                  {r.active ? "Activo" : "Inactivo"}
+                </span>
+              </p>
               <div className="flex gap-1 justify-end">
                 <button onClick={() => openEditRule(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5" strokeWidth={1.5} /></button>
                 <button onClick={() => confirmDeleteRule(r)} className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} /></button>
