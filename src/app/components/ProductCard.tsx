@@ -185,16 +185,10 @@ export function ProductCard({ product }: ProductCardProps) {
             {/* Price */}
             <div className="mt-auto">
               <div className="flex items-baseline gap-2 mb-3">
-                {product.priceMax && product.priceMax !== product.price ? (
-                  <span className="text-2xl text-gray-900">
-                    {formatPrice(product.price)}
-                    <span className="text-base text-gray-400 mx-0.5">–</span>
-                    {formatPrice(product.priceMax)}
-                  </span>
-                ) : (
-                  <span className="text-2xl text-gray-900">{formatPrice(product.price)}</span>
-                )}
-                {product.originalPrice && (
+                <span className="text-2xl text-gray-900">
+                  {formatPrice(product.price)}
+                </span>
+                {product.originalPrice && product.originalPrice > product.price && (
                   <span className="text-sm text-gray-500 line-through">
                     {formatPrice(product.originalPrice)}
                   </span>

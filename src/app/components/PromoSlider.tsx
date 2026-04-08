@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { slideRepository, type Slide } from "../repositories/SlideRepository";
+import { useLanguage } from "../context/LanguageContext";
 
 import { logger } from "../lib/logger";
 
@@ -21,7 +22,7 @@ interface Promo {
 }
 
 /* ── Map API slide → UI promo ─────────────────────────────── */
-function slideToPromo(s: Slide, index: number): Promo {
+function slideToPromo(s: Slide, index: number, t: (key: string) => string): Promo {
   const colors = [
     "bg-white/20 text-white border-white/30",
     "bg-rose-500/80 text-white border-rose-400/50",
@@ -45,7 +46,7 @@ function slideToPromo(s: Slide, index: number): Promo {
     description: "",
     badge: "",
     badgeColor: colors[index % colors.length],
-    buttonText: s.buttonText ?? "Ver más",
+    buttonText: s.buttonText ?? t("slide.default.btn"),
     filterParams: params,
     image: s.imageUrl,
     align: index % 2 === 0 ? "left" : "right",
@@ -53,64 +54,62 @@ function slideToPromo(s: Slide, index: number): Promo {
 }
 
 /* ── Fallback static promos (used when API has no active slides) ── */
-const fallbackPromos: Promo[] = [
-  {
-    id: "fallback-1",
-    title: "Descubre los Mejores Productos",
-    subtitle: "Tecnología de vanguardia",
-    description:
-      "Ofertas exclusivas con garantía de satisfacción y envío gratis en tu primera compra.",
-    badge: "Nuevo",
-    badgeColor: "bg-white/20 text-white border-white/30",
-    buttonText: "Ver Ofertas",
-    filterParams: { ofertas: "true" },
-    image:
-      "https://images.unsplash.com/photo-1738520420654-87cd2ad005d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMHRlY2hub2xvZ3klMjBtb2Rlcm4lMjBnYWRnZXRzfGVufDF8fHx8MTc3MzMxMjk4N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-    align: "left",
-  },
-  {
-    id: "fallback-2",
-    title: "Hasta 50% OFF",
-    subtitle: "Moda & Tendencias",
-    description:
-      "Las últimas tendencias de moda con descuentos increíbles. Stock limitado.",
-    badge: "Oferta",
-    badgeColor: "bg-rose-500/80 text-white border-rose-400/50",
-    buttonText: "Ver Ofertas de Moda",
-    filterParams: { category: "Moda", ofertas: "true" },
-    image:
-      "https://images.unsplash.com/photo-1771435416537-fdad7cbf4ef8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwY2xvdGhpbmclMjBzYWxlJTIwZGlzY291bnQlMjBzaG9wcGluZ3xlbnwxfHx8fDE3NzMzMTI5ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    align: "right",
-  },
-  {
-    id: "fallback-3",
-    title: "Gaming al Siguiente Nivel",
-    subtitle: "Setups Épicos",
-    description:
-      "Consolas, periféricos y accesorios para dominar cada partida.",
-    badge: "Destacado",
-    badgeColor: "bg-violet-500/80 text-white border-violet-400/50",
-    buttonText: "Explorar Gaming",
-    filterParams: { category: "Gaming" },
-    image:
-      "https://images.unsplash.com/photo-1771014817844-327a14245bd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBzZXR1cCUyMHJnYiUyMG5lb24lMjBkYXJrfGVufDF8fHx8MTc3MzMxMjk4OHww&ixlib=rb-4.1.0&q=80&w=1080",
-    align: "left",
-  },
-  {
-    id: "fallback-4",
-    title: "Electrónica de Alta Gama",
-    subtitle: "Innovación sin límites",
-    description:
-      "Los mejores smartphones, laptops y gadgets con descuentos especiales para miembros NX036.",
-    badge: "Exclusivo",
-    badgeColor: "bg-amber-500/80 text-white border-amber-400/50",
-    buttonText: "Ver Electrónica",
-    filterParams: { category: "Electrónica", ofertas: "true" },
-    image:
-      "https://images.unsplash.com/photo-1759588071814-1ba7c5761af4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXB0b3AlMjB3aGl0ZSUyMGJhY2tncm91bmQlMjBwcm9kdWN0JTIwc3R1ZGlvfGVufDF8fHx8MTc3MzMxNzYxOHww&ixlib=rb-4.1.0&q=80&w=1080",
-    align: "right",
-  },
-];
+function getFallbackPromos(t: (key: string) => string): Promo[] {
+  return [
+    {
+      id: "fallback-1",
+      title: t("slide.fb1.title"),
+      subtitle: t("slide.fb1.subtitle"),
+      description: t("slide.fb1.desc"),
+      badge: t("slide.fb1.badge"),
+      badgeColor: "bg-white/20 text-white border-white/30",
+      buttonText: t("slide.fb1.btn"),
+      filterParams: { ofertas: "true" },
+      image:
+        "https://images.unsplash.com/photo-1738520420654-87cd2ad005d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMHRlY2hub2xvZ3klMjBtb2Rlcm4lMjBnYWRnZXRzfGVufDF8fHx8MTc3MzMxMjk4N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+      align: "left",
+    },
+    {
+      id: "fallback-2",
+      title: t("slide.fb2.title"),
+      subtitle: t("slide.fb2.subtitle"),
+      description: t("slide.fb2.desc"),
+      badge: t("slide.fb2.badge"),
+      badgeColor: "bg-rose-500/80 text-white border-rose-400/50",
+      buttonText: t("slide.fb2.btn"),
+      filterParams: { category: "Moda", ofertas: "true" },
+      image:
+        "https://images.unsplash.com/photo-1771435416537-fdad7cbf4ef8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwY2xvdGhpbmclMjBzYWxlJTIwZGlzY291bnQlMjBzaG9wcGluZ3xlbnwxfHx8fDE3NzMzMTI5ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      align: "right",
+    },
+    {
+      id: "fallback-3",
+      title: t("slide.fb3.title"),
+      subtitle: t("slide.fb3.subtitle"),
+      description: t("slide.fb3.desc"),
+      badge: t("slide.fb3.badge"),
+      badgeColor: "bg-violet-500/80 text-white border-violet-400/50",
+      buttonText: t("slide.fb3.btn"),
+      filterParams: { category: "Gaming" },
+      image:
+        "https://images.unsplash.com/photo-1771014817844-327a14245bd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBzZXR1cCUyMHJnYiUyMG5lb24lMjBkYXJrfGVufDF8fHx8MTc3MzMxMjk4OHww&ixlib=rb-4.1.0&q=80&w=1080",
+      align: "left",
+    },
+    {
+      id: "fallback-4",
+      title: t("slide.fb4.title"),
+      subtitle: t("slide.fb4.subtitle"),
+      description: t("slide.fb4.desc"),
+      badge: t("slide.fb4.badge"),
+      badgeColor: "bg-amber-500/80 text-white border-amber-400/50",
+      buttonText: t("slide.fb4.btn"),
+      filterParams: { category: "Electrónica", ofertas: "true" },
+      image:
+        "https://images.unsplash.com/photo-1759588071814-1ba7c5761af4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXB0b3AlMjB3aGl0ZSUyMGJhY2tncm91bmQlMjBwcm9kdWN0JTIwc3R1ZGlvfGVufDF8fHx8MTc3MzMxNzYxOHww&ixlib=rb-4.1.0&q=80&w=1080",
+      align: "right",
+    },
+  ];
+}
 
 const TRANSITION_MS = 900;
 
@@ -119,19 +118,34 @@ interface PromoSliderProps {
 }
 
 export function PromoSlider({ onCtaClick }: PromoSliderProps) {
+  const { t, locale } = useLanguage();
+  const fallbackPromos = useMemo(() => getFallbackPromos(t), [t]);
   const [promos, setPromos] = useState<Promo[]>(fallbackPromos);
   const [current, setCurrent] = useState(0);
   const [contentVisible, setContentVisible] = useState(true);
   const locked = useRef(false);
+  const apiLoaded = useRef(false);
 
-  /* ── Load active slides from API ── */
+  /* keep fallback promos in sync with locale changes */
   useEffect(() => {
+    if (!apiLoaded.current) setPromos(fallbackPromos);
+  }, [fallbackPromos]);
+
+  /* ── Load active slides from API (only for "es" — API content is Spanish) ── */
+  useEffect(() => {
+    if (locale !== "es") {
+      apiLoaded.current = false;
+      setPromos(fallbackPromos);
+      setCurrent(0);
+      return;
+    }
     let cancelled = false;
     slideRepository
       .findActive()
       .then((slides) => {
         if (!cancelled && slides.length > 0) {
-          setPromos(slides.map(slideToPromo));
+          apiLoaded.current = true;
+          setPromos(slides.map((s, i) => slideToPromo(s, i, t)));
           setCurrent(0);
         }
       })
@@ -139,7 +153,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
         /* keep fallback promos on error */
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [t, locale, fallbackPromos]);
 
   const goTo = useCallback((index: number) => {
     if (locked.current) return;
@@ -254,7 +268,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
                     key={key}
                     className="text-[11px] px-2.5 py-1 bg-white/15 text-white/80 border border-white/20 rounded-full backdrop-blur-sm"
                   >
-                    {key === "ofertas" ? "Con descuento" : val}
+                    {key === "ofertas" ? t("slide.chip.discount") : val}
                   </span>
                 ))}
               </div>
@@ -266,7 +280,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
       {/* ── Prev / Next ── */}
       <button
         onClick={prev}
-        aria-label="Anterior"
+        aria-label={t("slide.prev")}
         className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 hover:bg-black/55 text-white flex items-center justify-center backdrop-blur-sm border border-white/20 transition-colors"
         style={{ zIndex: 20 }}
       >
@@ -274,7 +288,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
       </button>
       <button
         onClick={next}
-        aria-label="Siguiente"
+        aria-label={t("slide.next")}
         className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 hover:bg-black/55 text-white flex items-center justify-center backdrop-blur-sm border border-white/20 transition-colors"
         style={{ zIndex: 20 }}
       >
@@ -290,7 +304,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
           <button
             key={i}
             onClick={() => goTo(i)}
-            aria-label={`Ir a slide ${i + 1}`}
+            aria-label={`${t("slide.goTo")} ${i + 1}`}
             className={`h-1.5 rounded-full transition-all duration-500 ${i === current
               ? "w-8 bg-white"
               : "w-2 bg-white/40 hover:bg-white/70"

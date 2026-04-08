@@ -1,12 +1,15 @@
 import { Truck, Shield, CreditCard } from "lucide-react";
-
-const items = [
-  { icon: Truck, text: "Envío gratis en compras sobre", highlight: "$100" },
-  { icon: Shield, text: "Compra 100% segura" },
-  { icon: CreditCard, text: "Múltiples métodos de pago" },
-];
+import { useLanguage } from "../context/LanguageContext";
 
 export function InfoBanner() {
+  const { t } = useLanguage();
+
+  const items = [
+    { icon: Truck, text: t("banner.freeShipping"), highlight: t("banner.freeShipping.amount") },
+    { icon: Shield, text: t("banner.secureBuy") },
+    { icon: CreditCard, text: t("banner.multiPayment") },
+  ];
+
   /* Duplicate the list so the marquee loops seamlessly */
   const doubled = [...items, ...items];
 

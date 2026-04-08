@@ -22,6 +22,7 @@ import { priceRanges } from "../config/priceRanges";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../config/filters";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useNexaCategories } from "../hooks/useNexaCategories";
+import { useLanguage } from "../context/LanguageContext";
 import { slugify, urls } from "../lib/urls";
 
 const PAGE_SIZE = 24;
@@ -32,6 +33,8 @@ function scrollToProducts() {
 }
 
 export function Home() {
+  const { t } = useLanguage();
+
   /* ── Path params (clean URLs) ──────────────────────────────── */
   const { catSlug, subcatSlug, query: routeQuery } = useParams<{
     catSlug?: string;
@@ -199,16 +202,12 @@ export function Home() {
     setPromoClickKey((k) => k + 1);
     if (params.category) {
       const dest = urls.category(params.category);
-      if (params.ofertas) {
-        navigate(dest);
-        setSearchParams({ ofertas: params.ofertas });
-      } else {
-        navigate(dest);
-      }
+      const qs = params.ofertas ? `?ofertas=${params.ofertas}` : "";
+      navigate(`${dest}${qs}`, { preventScrollReset: true });
     } else if (params.ofertas) {
-      setSearchParams({ ofertas: params.ofertas });
+      navigate(`${urls.store()}?ofertas=${params.ofertas}`, { preventScrollReset: true });
     }
-  }, [navigate, setSearchParams]);
+  }, [navigate]);
 
   /* ── Filter handlers ─────────────────────────────────────────── */
   const handleCategory = (cat: string, catId?: string) => {
@@ -315,15 +314,15 @@ export function Home() {
 
   /* ── Section title ───────────────────────────────────────────── */
   const sectionTitle = (() => {
-    if (searchQuery) return `Resultados para "${searchQuery}"`;
-    if (soloOfertas && selectedCategory !== "Todos") return `Ofertas · ${selectedCategory}`;
-    if (soloOfertas) return "Ofertas y Descuentos";
+    if (searchQuery) return `${t("home.searchResults")} "${searchQuery}"`;
+    if (soloOfertas && selectedCategory !== "Todos") return `${t("home.dealsFor")} ${selectedCategory}`;
+    if (soloOfertas) return t("home.deals");
     if (selectedSubcat) return selectedSubcat;
     if (selectedBrand && selectedCategory !== "Todos") return `${selectedBrand} · ${selectedCategory}`;
     if (selectedBrand) return selectedBrand;
     if (selectedAttr) return selectedAttr;
     if (selectedCategory !== "Todos") return selectedCategory;
-    return "Todos los Productos";
+    return t("home.allProducts");
   })();
 
   return (
@@ -346,8 +345,8 @@ export function Home() {
               <Gift className="w-7 h-7 text-white" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-white tracking-tight text-lg">Tarjetas de regalo NX036</p>
-              <p className="text-white/60 text-sm mt-0.5">El regalo perfecto — envíalo directo al email de quien quieras</p>
+              <p className="text-white tracking-tight text-lg">{t("gift.title")}</p>
+              <p className="text-white/60 text-sm mt-0.5">{t("gift.subtitle")}</p>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -360,7 +359,7 @@ export function Home() {
               to="/gift-cards"
               className="flex items-center gap-2 h-10 px-5 text-sm text-gray-900 bg-white rounded-xl hover:bg-gray-100 transition-colors whitespace-nowrap"
             >
-              Regalar ahora
+              {t("gift.cta")}
               <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
             </Link>
           </div>
@@ -418,7 +417,7 @@ export function Home() {
                     className="lg:hidden flex items-center gap-2 text-sm text-gray-600 border border-gray-200 rounded-lg px-3 py-2 hover:border-gray-400 transition-colors"
                   >
                     <SlidersHorizontal className="w-4 h-4" />
-                    Filtros
+                    {t("home.filters")}
                   </button>
 
                   {/* Title — desktop only */}
@@ -427,7 +426,7 @@ export function Home() {
                       {sectionTitle}
                     </h2>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {filtered.length} productos
+                      {filtered.length} {t("home.products")}
                     </p>
                   </div>
 
@@ -455,11 +454,11 @@ export function Home() {
                   onChange={(e) => setSortBy(e.target.value)}
                   className="text-sm text-gray-600 border border-gray-200 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-gray-400 cursor-pointer flex-shrink-0"
                 >
-                  <option value="featured">Destacados</option>
-                  <option value="price-low">Precio: menor a mayor</option>
-                  <option value="price-high">Precio: mayor a menor</option>
-                  <option value="rating">Mejor valorados</option>
-                  <option value="name">Nombre A–Z</option>
+                  <option value="featured">{t("home.featured")}</option>
+                  <option value="price-low">{t("home.priceLow")}</option>
+                  <option value="price-high">{t("home.priceHigh")}</option>
+                  <option value="rating">{t("home.topRated")}</option>
+                  <option value="name">{t("home.nameAZ")}</option>
                 </select>
               </div>
 
@@ -474,7 +473,7 @@ export function Home() {
                         : "border-gray-200 text-gray-600 hover:border-gray-400"
                         }`}
                     >
-                      Todos
+                      {t("home.all")}
                     </button>
                     {subcategoryChips.map((sub) => {
                       const count = products.filter(
@@ -528,7 +527,7 @@ export function Home() {
                     {selectedCategory !== "Todos" && (
                       <span className="ml-auto text-xs text-gray-400 flex items-center gap-1">
                         <ChevronRight className="w-3 h-3" />
-                        {filtered.length} resultados
+                        {filtered.length} {t("home.results")}
                       </span>
                     )}
                   </div>
@@ -539,13 +538,13 @@ export function Home() {
               {dataSource === "api" && (
                 <div className="flex items-center gap-1.5 mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-[11px] text-gray-400">Catálogo en vivo</span>
+                  <span className="text-[11px] text-gray-400">{t("home.catalogLive")}</span>
                 </div>
               )}
               {dataSource === "mock" && (
                 <div className="flex items-center gap-1.5 mb-4">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                  <span className="text-[11px] text-gray-400">Modo demo — datos de muestra</span>
+                  <span className="text-[11px] text-gray-400">{t("home.demoMode")}</span>
                 </div>
               )}
 
@@ -553,14 +552,14 @@ export function Home() {
               {productsError && !productsLoading && products.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <AlertTriangle className="w-10 h-10 text-gray-200 mb-3" strokeWidth={1.5} />
-                  <p className="text-sm text-gray-500 mb-1">Error al cargar productos</p>
+                  <p className="text-sm text-gray-500 mb-1">{t("home.errorLoading")}</p>
                   <p className="text-xs text-gray-400 mb-4 max-w-sm">{productsError}</p>
                   <button
                     onClick={() => refreshProducts()}
                     className="flex items-center gap-1.5 h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors"
                   >
                     <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    Reintentar
+                    {t("home.retry")}
                   </button>
                 </div>
               )}
@@ -600,12 +599,12 @@ export function Home() {
                       {loadingMore && (
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Loader2 className="w-4 h-4 animate-spin" />
-                          Cargando más productos...
+                          {t("home.loadingMore")}
                         </div>
                       )}
                       {!hasMore && filtered.length > PAGE_SIZE && (
                         <p className="text-xs text-gray-300 tracking-widest uppercase">
-                          Todos los productos cargados
+                          {t("home.allLoaded")}
                         </p>
                       )}
                     </div>
@@ -615,15 +614,15 @@ export function Home() {
                     <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
                       <Search className="w-6 h-6 text-gray-300" />
                     </div>
-                    <h3 className="text-lg text-gray-900 mb-2">Sin resultados</h3>
+                    <h3 className="text-lg text-gray-900 mb-2">{t("home.noResults")}</h3>
                     <p className="text-sm text-gray-400 mb-6">
-                      Prueba ajustando los filtros o cambia la búsqueda
+                      {t("home.noResultsHint")}
                     </p>
                     <button
                       onClick={handleReset}
                       className="text-sm px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
                     >
-                      Limpiar filtros
+                      {t("home.clearFilters")}
                     </button>
                   </div>
                 )
@@ -654,10 +653,10 @@ export function Home() {
           {/* Desktop: icono + texto */}
           <div className="hidden sm:grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { icon: "🚚", title: "Envío Gratis", sub: "En compras sobre $100" },
-              { icon: "🔒", title: "Compra Segura", sub: "Protección garantizada" },
-              { icon: "💳", title: "Pago Fácil", sub: "Múltiples métodos" },
-              { icon: "🎧", title: "Soporte 24/7", sub: "Siempre disponible" },
+              { icon: "🚚", title: t("features.shipping"), sub: t("features.shipping.sub") },
+              { icon: "🔒", title: t("features.secure"), sub: t("features.secure.sub") },
+              { icon: "💳", title: t("features.payment"), sub: t("features.payment.sub") },
+              { icon: "🎧", title: t("features.support"), sub: t("features.support.sub") },
             ].map(({ icon, title, sub }) => (
               <div key={title} className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center flex-shrink-0 text-lg">

@@ -525,8 +525,8 @@ export function AdminTaxes() {
 
   const loadRules = useCallback(async () => {
     try {
-      const page = await taxRepository.findPaged({ size: 500 });
-      setRules(page.content.map(mapApiToUi));
+      const data = await taxRepository.findAll();
+      setRules(data.map(mapApiToUi));
     } catch {
       toast.error("Error al cargar reglas fiscales");
     }
