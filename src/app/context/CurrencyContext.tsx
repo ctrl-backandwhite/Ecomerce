@@ -112,11 +112,12 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         }
     }, [selectedCountry.code, rates]);
 
-    // Set currency code
+    // Set currency code and reload so all data is re-fetched with the new X-Currency header
     const setCurrencyCode = useCallback((code: string) => {
-        setSelectedCode(code);
+        if (code === selectedCode) return;
         storeCurrency(code);
-    }, []);
+        window.location.reload();
+    }, [selectedCode]);
 
     // Selected rate object
     const currency = useMemo(
