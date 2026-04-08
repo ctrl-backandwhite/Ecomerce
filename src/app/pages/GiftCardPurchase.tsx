@@ -15,6 +15,7 @@ import {
 } from "../types/giftcard";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 import type { PaymentMethod } from "../context/UserContext";
 import {
   VisaLogo, MastercardLogo, PayPalLogo, USDTLogo, BTCLogo,
@@ -57,6 +58,7 @@ function GiftCardVisual({
   code?: string;
   size?: "sm" | "md" | "lg";
 }) {
+  const { formatPrice } = useCurrency();
   const dims = {
     sm: { w: "w-48", h: "h-28", pad: "p-3", txt: "text-xs", amt: "text-xl" },
     md: { w: "w-72", h: "h-44", pad: "p-4", txt: "text-xs", amt: "text-2xl" },
@@ -99,7 +101,7 @@ function GiftCardVisual({
       {/* Amount */}
       <div className="relative z-10 text-center">
         <p className={`${dims.amt} tracking-tight`} style={{ color: design.accent }}>
-          {amount > 0 ? `$${amount}` : "_ _ $"}
+          {amount > 0 ? formatPrice(amount) : "_ _ $"}
         </p>
         {fromName && (
           <p className={`${dims.txt} mt-1 opacity-70`} style={{ color: design.accent }}>
@@ -167,6 +169,7 @@ const lbl = "block text-xs text-gray-500 mb-1.5";
 export function GiftCardPurchase() {
   const { isAuthenticated, login } = useAuth();
   const { user } = useUser();
+  const { formatPrice } = useCurrency();
 
   const [step, setStep] = useState<Step>(1);
   const [generatedCode, setGeneratedCode] = useState("");
@@ -355,7 +358,7 @@ export function GiftCardPurchase() {
                         : "bg-white text-gray-700 border-gray-200 hover:border-gray-500"
                         }`}
                     >
-                      ${a}
+                      {formatPrice(a)}
                     </button>
                   ))}
                 </div>
@@ -381,7 +384,7 @@ export function GiftCardPurchase() {
                 onClick={() => setStep(2)}
                 className="flex items-center justify-center gap-2 w-full h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                Continuar — {effectiveAmount > 0 ? `$${effectiveAmount}` : "Elige un importe"}
+                Continuar — {effectiveAmount > 0 ? formatPrice(effectiveAmount) : "Elige un importe"}
                 <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
@@ -586,7 +589,7 @@ export function GiftCardPurchase() {
                 <div className="border-t border-gray-100 pt-3 space-y-1.5">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Tarjeta regalo</span>
-                    <span className="text-gray-900">${effectiveAmount}</span>
+                    <span className="text-gray-900">{formatPrice(effectiveAmount)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-500">Envío por email</span>
@@ -594,7 +597,7 @@ export function GiftCardPurchase() {
                   </div>
                   <div className="flex justify-between text-sm border-t border-gray-100 pt-2 mt-2">
                     <span className="text-gray-900">Total</span>
-                    <span className="text-gray-900">${effectiveAmount}</span>
+                    <span className="text-gray-900">{formatPrice(effectiveAmount)}</span>
                   </div>
                 </div>
               </div>
@@ -805,7 +808,7 @@ export function GiftCardPurchase() {
                   className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Lock className="w-4 h-4" strokeWidth={1.5} />
-                  Pagar ${effectiveAmount}
+                  Pagar {formatPrice(effectiveAmount)}
                 </button>
               </div>
             </div>

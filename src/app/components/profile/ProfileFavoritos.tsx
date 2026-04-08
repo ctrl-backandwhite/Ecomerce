@@ -14,6 +14,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { Link } from "react-router";
+import { useCurrency } from "../../context/CurrencyContext";
 import { toast } from "sonner";
 
 import { logger } from "../../lib/logger";
@@ -45,7 +46,7 @@ function ProductModal({
 }) {
   const name = pName(product);
   const price = pPrice(product);
-
+  const { formatPrice } = useCurrency();
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -82,7 +83,7 @@ function ProductModal({
 
             {/* Price */}
             <div className="flex items-baseline gap-3 mb-4">
-              <span className="text-2xl text-gray-900">${price.toFixed(2)}</span>
+              <span className="text-2xl text-gray-900">{formatPrice(price)}</span>
             </div>
 
             {/* Description */}
@@ -135,6 +136,7 @@ function ProductModal({
 export function ProfileFavoritos() {
   const { user, toggleFavorite } = useUser();
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   const [selected, setSelected] = useState<Product | null>(null);
   const [favorites, setFavorites] = useState<NexaProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -258,7 +260,7 @@ export function ProfileFavoritos() {
 
                   {/* Price */}
                   <div className="text-right flex-shrink-0">
-                    <p className="text-sm text-gray-900">${price.toFixed(2)}</p>
+                    <p className="text-sm text-gray-900">{formatPrice(price)}</p>
                   </div>
 
                   {/* Move to cart */}

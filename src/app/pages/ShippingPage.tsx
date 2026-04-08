@@ -1,25 +1,25 @@
 import { Truck, Clock, MapPin, Package, RefreshCcw, Shield } from "lucide-react";
 
 const carriers = [
-  { name: "NX036 Express",     time: "24 h",        price: "Gratis +$100 / $4.99",  zones: "España y Portugal"   },
-  { name: "Standard",         time: "3–5 días",    price: "Gratis +$50 / $2.99",   zones: "España y Portugal"   },
-  { name: "UPS International",time: "5–7 días",    price: "Desde $9.99",           zones: "Unión Europea"       },
-  { name: "FedEx Global",     time: "7–14 días",   price: "Desde $14.99",          zones: "LATAM y resto mundo" },
+  { name: "NX036 Express", time: "24 h", price: "Gratis +$100 / $4.99", zones: "España y Portugal" },
+  { name: "Standard", time: "3–5 días", price: "Gratis +$50 / $2.99", zones: "España y Portugal" },
+  { name: "UPS International", time: "5–7 días", price: "Desde $9.99", zones: "Unión Europea" },
+  { name: "FedEx Global", time: "7–14 días", price: "Desde $14.99", zones: "LATAM y resto mundo" },
 ];
 
 const steps = [
-  { n: "01", title: "Confirmación",   desc: "Recibes email + factura en cuanto confirmas el pago." },
-  { n: "02", title: "Preparación",    desc: "El equipo de almacén prepara y empaqueta tu pedido (1–2 días)." },
-  { n: "03", title: "Despacho",       desc: "El paquete sale con el transportista y recibes número de tracking." },
-  { n: "04", title: "En camino",      desc: "Puedes seguir tu paquete en tiempo real desde el email o tu cuenta." },
-  { n: "05", title: "Entrega",        desc: "El mensajero entrega en la dirección indicada o punto de recogida." },
+  { n: "01", title: "Confirmación", desc: "Recibes email + factura en cuanto confirmas el pago." },
+  { n: "02", title: "Preparación", desc: "El equipo de almacén prepara y empaqueta tu pedido (1–2 días)." },
+  { n: "03", title: "Despacho", desc: "El paquete sale con el transportista y recibes número de tracking." },
+  { n: "04", title: "En camino", desc: "Puedes seguir tu paquete en tiempo real desde el email o tu cuenta." },
+  { n: "05", title: "Entrega", desc: "El mensajero entrega en la dirección indicada o punto de recogida." },
 ];
 
 const policies = [
-  { icon: RefreshCcw, title: "Devoluciones gratuitas",  desc: "30 días, sin preguntas, en España y México." },
-  { icon: Shield,     title: "Envío asegurado",         desc: "Todos los paquetes van asegurados por su valor íntegro." },
-  { icon: Package,    title: "Embalaje sostenible",     desc: "100 % reciclado y libre de plásticos innecesarios." },
-  { icon: MapPin,     title: "Puntos de recogida",      desc: "Más de 2000 lockers y tiendas colaboradoras." },
+  { icon: RefreshCcw, title: "Devoluciones gratuitas", desc: "30 días, sin preguntas, en España y México." },
+  { icon: Shield, title: "Envío asegurado", desc: "Todos los paquetes van asegurados por su valor íntegro." },
+  { icon: Package, title: "Embalaje sostenible", desc: "100 % reciclado y libre de plásticos innecesarios." },
+  { icon: MapPin, title: "Puntos de recogida", desc: "Más de 2000 lockers y tiendas colaboradoras." },
 ];
 
 export function ShippingPage() {

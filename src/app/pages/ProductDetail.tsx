@@ -7,6 +7,7 @@ import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useLanguage } from "../context/LanguageContext";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { nexaProductRepository } from "../repositories/NexaProductRepository";
 import { mapNexaProductDetail } from "../mappers/NexaProductMapper";
 import DOMPurify from "dompurify";
@@ -555,6 +556,7 @@ export function ProductDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
 
   const apiLocale = locale === "pt" ? "pt-BR" : locale;
 
@@ -942,18 +944,18 @@ export function ProductDetail() {
                   <div className="flex items-baseline gap-2.5 flex-wrap">
                     {priceRange ? (
                       <span className="text-3xl text-gray-900 tracking-tight">
-                        ${priceRange.min.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatPrice(priceRange.min)}
                         <span className="text-xl text-gray-400 mx-1">–</span>
-                        ${priceRange.max.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {formatPrice(priceRange.max)}
                       </span>
                     ) : (
-                      <span className="text-3xl text-gray-900 tracking-tight">${displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-3xl text-gray-900 tracking-tight">{formatPrice(displayPrice)}</span>
                     )}
                     {!priceRange && product.originalPrice && product.originalPrice > displayPrice && (
-                      <span className="text-base text-gray-400 line-through">${product.originalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-base text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>
                     )}
                     {!priceRange && discount > 0 && (
-                      <span className="text-xs text-red-500">Ahorras ${(product.originalPrice! - displayPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span className="text-xs text-red-500">Ahorras {formatPrice(product.originalPrice! - displayPrice)}</span>
                     )}
                   </div>
 

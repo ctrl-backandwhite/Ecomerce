@@ -32,6 +32,7 @@ import {
 import { priceRanges } from "../config/priceRanges";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
 import { useNexaProducts } from "../hooks/useNexaProducts";
+import { useCurrency } from "../context/CurrencyContext";
 import { useNexaCategories } from "../hooks/useNexaCategories";
 import type { NexaCategory } from "../repositories/NexaCategoryRepository";
 
@@ -57,6 +58,7 @@ interface HomeSidebarProps {
 /* ── Top rated mini-widget ───────────────────────────────────── */
 function TopRated() {
   const { products } = useNexaProducts();
+  const { formatPrice } = useCurrency();
   const top = [...products].sort((a, b) => b.rating - a.rating).slice(0, 3);
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
@@ -85,7 +87,7 @@ function TopRated() {
             <div className="flex items-center gap-1 mt-0.5">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
               <span className="text-[11px] text-gray-500">{p.rating}</span>
-              <span className="text-[11px] text-gray-400">· ${p.price}</span>
+              <span className="text-[11px] text-gray-400">· {formatPrice(p.price)}</span>
             </div>
           </div>
         </Link>

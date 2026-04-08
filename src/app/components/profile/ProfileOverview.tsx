@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
 import { orderRepository, type Order as ApiOrder } from "../../repositories/OrderRepository";
 import { ShoppingBag, Heart, MapPin, Loader2 } from "lucide-react";
+import { useCurrency } from "../../context/CurrencyContext";
 
 type OrderStatus = "processing" | "shipped" | "delivered" | "cancelled";
 
@@ -37,6 +38,7 @@ interface Props {
 
 export function ProfileOverview({ onTabChange }: Props) {
   const { user } = useUser();
+  const { formatPrice } = useCurrency();
   const [lastOrder, setLastOrder] = useState<SimpleOrder | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(true);
 
@@ -134,7 +136,7 @@ export function ProfileOverview({ onTabChange }: Props) {
             </div>
             <p className="text-xs text-gray-400">
               {new Date(lastOrder.date).toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })}
-              {" · "}${lastOrder.total.toLocaleString()}
+              {" · "}{formatPrice(lastOrder.total)}
             </p>
             <p className="text-xs text-gray-400 mt-1 group-hover:text-gray-600 transition-colors">
               Ver todos los pedidos →

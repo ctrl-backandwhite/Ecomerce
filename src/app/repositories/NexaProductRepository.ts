@@ -65,6 +65,7 @@ export interface NexaDetailVariant {
     variantWeight: number;
     variantSellPrice: number;
     variantSugSellPrice: number;
+    retailPrice?: number;
     variantStandard: string | null;
     createTime: string | null;
     createdAt: string;
@@ -81,6 +82,7 @@ export interface NexaProduct {
     bigImage: string;
     productImageSet: string | null;
     sellPrice: string;
+    costPrice?: string;
     productType: string;
     description: string | null;
     listedNum: number;
@@ -114,6 +116,7 @@ export interface NexaProductDetail {
     productKeyEn: string | null;
     productProEn: string | null;
     sellPrice: number;
+    costPrice?: number;
     description: string | null;
     suggestSellPrice: string | null;
     listedNum: number;
@@ -163,7 +166,6 @@ class NexaProductRepository {
             params.set("locale", query.locale);
             if (query.categoryId) params.set("categoryId", query.categoryId);
             if (query.name) params.set("name", query.name);
-            params.set("status", "PUBLISHED");
             params.set("page", String(query.page ?? 0));
             params.set("size", String(query.size ?? 24));
             if (query.sortBy) params.set("sortBy", query.sortBy);

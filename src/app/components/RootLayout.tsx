@@ -14,6 +14,7 @@ import { RecentlyViewedProvider } from "../context/RecentlyViewedContext";
 import { NewsletterProvider } from "../context/NewsletterContext";
 import { LanguageProvider } from "../context/LanguageContext";
 import { TimezoneProvider } from "../context/TimezoneContext";
+import { CurrencyProvider } from "../context/CurrencyContext";
 import { AuthProvider } from "../context/AuthContext";
 
 type Provider = ({ children }: { children: ReactNode }) => ReactNode;
@@ -31,6 +32,7 @@ const AllProviders = composeProviders(
   AuthProvider,
   LanguageProvider,
   TimezoneProvider,
+  CurrencyProvider,
   UserProvider,
   CartProvider,
   CompareProvider,

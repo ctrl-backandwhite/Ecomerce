@@ -72,7 +72,7 @@ function mapVariant(
     return {
         id: v.vid,
         sku: v.variantSku,
-        price: v.variantSellPrice,
+        price: v.retailPrice ?? v.variantSellPrice,
         stock_quantity: stock > 0 ? stock : (fallbackStock ?? 0),
         attributes: parseVariantAttributes(productKeyEn, v.variantKey),
     };
@@ -134,6 +134,7 @@ export function mapNexaProduct(
     categoryName?: string,
 ): Product {
     const { min: price, max: priceMax } = parseSellPrice(raw.sellPrice);
+    const { min: cost } = parseSellPrice(raw.costPrice);
     const firstVariant = raw.variants?.[0];
 
     // Calculate total inventory across all variant inventories
@@ -154,6 +155,7 @@ export function mapNexaProduct(
         shortDescription: raw.description ? stripHtml(raw.description).substring(0, 200) : raw.name,
         price,
         priceMax,
+        costPrice: cost || undefined,
         taxClass: "standard",
         category: categoryName ?? raw.categoryId,
         subcategory: "",

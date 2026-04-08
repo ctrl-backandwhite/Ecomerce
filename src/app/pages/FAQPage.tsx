@@ -42,7 +42,7 @@ const FAQS = [
 ];
 
 export function FAQPage() {
-  const [search,   setSearch]   = useState("");
+  const [search, setSearch] = useState("");
   const [openKeys, setOpenKeys] = useState<Set<string>>(new Set());
 
   const toggle = (key: string) => {

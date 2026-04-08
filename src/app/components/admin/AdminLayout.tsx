@@ -38,6 +38,7 @@ const pageTitles: Record<string, string> = {
   "/admin/emails": "Plantillas de Email",
   "/admin/settings": "Configuración",
   "/admin/reports": "Reportes",
+  "/admin/pricing": "Reglas de Precio",
 };
 
 export function AdminLayout() {

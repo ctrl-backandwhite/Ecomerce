@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Gift, X, Check, CreditCard, ChevronDown } from "lucide-react";
+import { useCurrency } from "../../../context/CurrencyContext";
 import type { CheckoutAction, AppliedGiftCard, MyGiftCard } from "../types";
 
 interface GiftCardSectionProps {
@@ -26,6 +27,7 @@ export function GiftCardSection({
     dispatch, applyManualCard,
 }: GiftCardSectionProps) {
     const isApplied = (code: string) => appliedGiftCards.some(c => c.code === code);
+    const { formatPrice } = useCurrency();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropRef = useRef<HTMLDivElement>(null);
 
@@ -71,11 +73,11 @@ export function GiftCardSection({
                 </div>
                 <div className="text-right flex-shrink-0">
                     <span className={`text-[11px] ${selected ? "text-violet-600 font-medium" : "text-gray-500"}`}>
-                        ${card.balance.toFixed(2)}
+                        {formatPrice(card.balance)}
                     </span>
                     {selected && amt && amt.applied > 0 && amt.applied < card.balance && (
                         <span className="block text-[10px] text-violet-400">
-                            −${amt.applied.toFixed(2)}
+                            −{formatPrice(amt.applied)}
                         </span>
                     )}
                 </div>
@@ -90,7 +92,7 @@ export function GiftCardSection({
                 <span className="text-xs text-gray-600">Tarjetas regalo</span>
                 {giftCardDiscount > 0 && (
                     <span className="text-[10px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full ml-auto">
-                        −${giftCardDiscount.toFixed(2)}
+                        −{formatPrice(giftCardDiscount)}
                     </span>
                 )}
             </div>
@@ -141,7 +143,7 @@ export function GiftCardSection({
                                                 key={card.code}
                                                 className="inline-flex items-center gap-1 text-[10px] text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5"
                                             >
-                                                ····{card.code.slice(-4)} · ${amt && amt.applied > 0 ? amt.applied.toFixed(2) : card.balance.toFixed(2)}
+                                                ····{card.code.slice(-4)} · {amt && amt.applied > 0 ? formatPrice(amt.applied) : formatPrice(card.balance)}
                                                 <button
                                                     type="button"
                                                     onClick={() => dispatch({ type: "REMOVE_GIFT_CARD", code: card.code })}
@@ -194,9 +196,9 @@ export function GiftCardSection({
                                 <div key={card.code} className="flex items-center gap-2 px-3 py-1.5 bg-violet-50/60 border border-violet-200 rounded-lg text-xs">
                                     <Gift className="w-3 h-3 text-violet-400 flex-shrink-0" strokeWidth={1.5} />
                                     <span className="font-mono text-violet-700 text-[11px]">····{card.code.slice(-4)}</span>
-                                    <span className="text-violet-500 text-[11px]">${card.balance.toFixed(2)}</span>
+                                    <span className="text-violet-500 text-[11px]">{formatPrice(card.balance)}</span>
                                     {amt && amt.applied > 0 && amt.applied < card.balance && (
-                                        <span className="text-[10px] text-violet-400">−${amt.applied.toFixed(2)}</span>
+                                        <span className="text-[10px] text-violet-400">−{formatPrice(amt.applied)}</span>
                                     )}
                                     <button
                                         type="button"

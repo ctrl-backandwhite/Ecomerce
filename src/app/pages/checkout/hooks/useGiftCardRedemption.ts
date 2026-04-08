@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { adminGiftCardRepository } from "../../../repositories/AdminGiftCardRepository";
 import { giftCardRepository } from "../../../repositories/GiftCardRepository";
+import { useCurrency } from "../../../context/CurrencyContext";
 import { logger } from "../../../lib/logger";
 import { toast } from "sonner";
 import type { CheckoutAction, AppliedGiftCard } from "../types";
@@ -10,6 +11,7 @@ export function useGiftCardRedemption(
     appliedGiftCards: AppliedGiftCard[],
     dispatch: React.Dispatch<CheckoutAction>,
 ) {
+    const { formatPrice } = useCurrency();
     /* ── Fetch user's active gift cards on mount ── */
     useEffect(() => {
         let cancelled = false;
@@ -52,13 +54,13 @@ export function useGiftCardRedemption(
                         giftCardError: null,
                     }
                 });
-                toast.success(`Tarjeta aplicada · saldo $${balance.toFixed(2)}`);
+                toast.success(`Tarjeta aplicada · saldo ${formatPrice(balance)}`);
             }
         } catch (err) {
             logger.warn("Gift card validation failed", err);
             dispatch({ type: "PATCH", payload: { giftCardError: "Tarjeta no válida o expirada", giftCardLoading: false } });
         }
-    }, [giftCardCode, appliedGiftCards, dispatch]);
+    }, [giftCardCode, appliedGiftCards, dispatch, formatPrice]);
 
     return applyManualCard;
 }

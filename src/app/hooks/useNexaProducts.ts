@@ -189,12 +189,24 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
     );
 
     // ── Initial fetch + re-fetch on locale/category change ────────────────────
-    const skipInitialFetch = useRef(cacheValid);
+    // Track which cache key was used to initialise state, so we only skip the
+    // very first fetch when the cache genuinely matches the current request.
+    const initialisedFromCacheKey = useRef(cacheValid ? ck : "");
     useEffect(() => {
-        // If cache was valid on mount, skip the first fetch
-        if (skipInitialFetch.current) {
-            skipInitialFetch.current = false;
-            return;
+        // If we initialised state from cache on mount, check whether the cached
+        // data still corresponds to the current categoryId + locale.  When the
+        // component mounts with categoryId=undefined (categories not yet loaded)
+        // the cache key is "ALL|<locale>".  Once categories resolve and
+        // categoryId changes, the cache key no longer matches → we must fetch.
+        if (initialisedFromCacheKey.current) {
+            const currentCk = `${categoryId ?? "ALL"}|${apiLocale ?? "en"}`;
+            if (initialisedFromCacheKey.current === currentCk) {
+                // Cache matches what we currently need — safe to skip
+                initialisedFromCacheKey.current = "";
+                return;
+            }
+            // Cache was for a different request — fall through to fetch
+            initialisedFromCacheKey.current = "";
         }
 
         // Cancel any in-flight request before starting a new one

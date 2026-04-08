@@ -1,5 +1,6 @@
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { Button } from "../components/ui/button";
 import { Link, useNavigate } from "react-router";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Heart } from "lucide-react";
@@ -8,6 +9,7 @@ import { Badge } from "../components/ui/badge";
 export function Cart() {
   const { items, removeFromCart, updateQuantity, getTotalPrice } = useCart();
   const { toggleFavorite, isFavorite } = useUser();
+  const { formatPrice } = useCurrency();
   const navigate = useNavigate();
 
   if (items.length === 0) {
@@ -95,8 +97,8 @@ export function Cart() {
                             }
                           }}
                           className={`w-8 h-8 rounded-full border flex items-center justify-center transition-all ${isFavorite(item.productId ?? item.id)
-                              ? "border-red-200 bg-red-50"
-                              : "border-gray-200 hover:border-gray-300 bg-white"
+                            ? "border-red-200 bg-red-50"
+                            : "border-gray-200 hover:border-gray-300 bg-white"
                             }`}
                         >
                           <Heart
@@ -151,10 +153,10 @@ export function Cart() {
                       {/* Price */}
                       <div className="text-right">
                         <p className="text-base text-gray-900">
-                          ${(item.price * item.quantity).toFixed(2)}
+                          {formatPrice(item.price * item.quantity)}
                         </p>
                         <p className="text-xs text-gray-400">
-                          ${item.price} c/u
+                          {formatPrice(item.price)} c/u
                         </p>
                       </div>
                     </div>
@@ -172,7 +174,7 @@ export function Cart() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>Envío</span>
@@ -185,7 +187,7 @@ export function Cart() {
                 <div className="border-t pt-3 flex justify-between items-center">
                   <span className="text-sm text-gray-900">Subtotal</span>
                   <span className="text-lg text-gray-900">
-                    ${subtotal.toFixed(2)}
+                    {formatPrice(subtotal)}
                   </span>
                 </div>
               </div>
@@ -193,7 +195,7 @@ export function Cart() {
               {subtotal > 0 && subtotal < 100 && (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
                   <p>
-                    ¡Agrega ${(100 - subtotal).toFixed(2)} más para posible envío
+                    ¡Agrega {formatPrice(100 - subtotal)} más para posible envío
                     gratis!
                   </p>
                 </div>

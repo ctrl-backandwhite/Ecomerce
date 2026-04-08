@@ -121,21 +121,23 @@ export function CategoryBar() {
   };
 
   /* ── Navigation helpers ──────────────────────────────────────── */
-  const goToCategory = (category: string, _categoryId?: string) => {
+  const goToCategory = (category: string, categoryId?: string) => {
     setOpenCategory(null);
     setMobileOpen(null);
-    navigate(urls.category(category), { preventScrollReset: true });
+    const dest = urls.category(category);
+    navigate(categoryId ? `${dest}?categoryId=${categoryId}` : dest, { preventScrollReset: true });
   };
 
   const goToSubcategory = (
     category: string,
     subcategory: string,
     _parentCategoryId?: string,
-    _subcategoryId?: string,
+    subcategoryId?: string,
   ) => {
     setOpenCategory(null);
     setMobileOpen(null);
-    navigate(urls.subcategory(category, subcategory), { preventScrollReset: true });
+    const dest = urls.subcategory(category, subcategory);
+    navigate(subcategoryId ? `${dest}?subcategoryId=${subcategoryId}` : dest, { preventScrollReset: true });
   };
 
   /* ── Mobile tap handler ──────────────────────────────────────── */

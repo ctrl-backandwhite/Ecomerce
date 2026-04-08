@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { ArrowRight, Star } from "lucide-react";
 import type { Product } from "../types/product";
 import { useNexaProducts } from "../hooks/useNexaProducts";
+import { useCurrency } from "../context/CurrencyContext";
 
 const CATEGORY_ORDER = [
   "Electrónica", "Moda", "Audio", "Gaming",
@@ -9,6 +10,7 @@ const CATEGORY_ORDER = [
 ];
 
 function MiniProductCard({ product }: { product: Product }) {
+  const { formatPrice } = useCurrency();
   const discount = product.originalPrice
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null;
@@ -30,9 +32,9 @@ function MiniProductCard({ product }: { product: Product }) {
           <span className="text-[10px] text-gray-500">{product.rating}</span>
         </div>
         <div className="flex items-baseline gap-1.5">
-          <span className="text-sm text-gray-900">${product.price}</span>
+          <span className="text-sm text-gray-900">{formatPrice(product.price)}</span>
           {product.originalPrice && (
-            <span className="text-[10px] text-gray-400 line-through">${product.originalPrice}</span>
+            <span className="text-[10px] text-gray-400 line-through">{formatPrice(product.originalPrice)}</span>
           )}
         </div>
       </div>

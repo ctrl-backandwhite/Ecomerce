@@ -34,6 +34,7 @@ import {
   Pencil,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useCurrency } from "../../context/CurrencyContext";
 
 /* ── Face verification modal ──────────────────────────────── */
 type FaceStep = "idle" | "camera" | "scanning" | "done";
@@ -258,6 +259,7 @@ function SField({
 /* ── Main component ───────────────────────────────────────── */
 export function ProfileTienda() {
   const { user, updateProfile } = useUser();
+  const { formatPrice } = useCurrency();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...user.store });
   const [showFaceModal, setShowFaceModal] = useState(false);
@@ -440,7 +442,7 @@ export function ProfileTienda() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
           { icon: ShoppingBag, label: "Ventas totales", value: user.store.totalSales.toString() },
-          { icon: TrendingUp, label: "Ingresos", value: `$${(user.store.totalRevenue / 1000).toFixed(0)}K` },
+          { icon: TrendingUp, label: "Ingresos", value: formatPrice(user.store.totalRevenue) },
           { icon: Star, label: "Calificación", value: `${user.store.rating} / 5` },
           { icon: Package, label: "Reseñas", value: user.store.reviewCount.toString() },
         ].map(({ icon: Icon, label, value }) => (

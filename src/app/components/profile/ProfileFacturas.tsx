@@ -9,6 +9,7 @@ import { invoiceRepository, type Invoice, type InvoiceStatus } from "../../repos
 import { InvoiceDocument } from "../InvoiceDocument";
 import type { InvoiceStatus as DocStatus } from "../../types/invoice";
 import { toast } from "sonner";
+import { useCurrency } from "../../context/CurrencyContext";
 
 /* ── Status helpers ────────────────────────────────────────── */
 const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; text: string; dot: string; icon: typeof CheckCircle2 }> = {
@@ -64,6 +65,7 @@ const PAGE_SIZE = 8;
 
 export function ProfileFacturas() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
+    const { formatPrice } = useCurrency();
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<"all" | InvoiceStatus>("all");
@@ -138,7 +140,7 @@ export function ProfileFacturas() {
                 <div>
                     <h2 className="text-base text-gray-900">Mis Facturas</h2>
                     <p className="text-xs text-gray-400 mt-0.5">
-                        {stats.total} factura{stats.total !== 1 ? "s" : ""} · ${fmtPrice(stats.totalAmount)} facturado
+                        {stats.total} factura{stats.total !== 1 ? "s" : ""} · {formatPrice(stats.totalAmount)} facturado
                     </p>
                 </div>
             </div>
@@ -149,7 +151,7 @@ export function ProfileFacturas() {
                     { label: "Total", value: stats.total, color: "text-gray-900" },
                     { label: "Pagadas", value: stats.paid, color: "text-green-600" },
                     { label: "Pendientes", value: stats.pending, color: "text-amber-600" },
-                    { label: "Facturado", value: `$${fmtPrice(stats.totalAmount)}`, color: "text-gray-900" },
+                    { label: "Facturado", value: formatPrice(stats.totalAmount), color: "text-gray-900" },
                 ].map(({ label, value, color }) => (
                     <div key={label} className="bg-white border border-gray-100 rounded-xl p-3 text-center">
                         <p className={`text-lg font-light ${color}`}>{value}</p>
@@ -228,7 +230,7 @@ export function ProfileFacturas() {
                             </div>
 
                             {/* Amount */}
-                            <p className="text-sm text-gray-900 tabular-nums flex-shrink-0">${fmtPrice(inv.total)}</p>
+                            <p className="text-sm text-gray-900 tabular-nums flex-shrink-0">{formatPrice(inv.total)}</p>
 
                             {/* Actions */}
                             <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">

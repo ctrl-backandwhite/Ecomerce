@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext";
 import { useCompare } from "../context/CompareContext";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { toast } from "sonner";
 import { useRef, useState } from "react";
 import { QuickViewModal } from "./QuickViewModal";
@@ -18,6 +19,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const { add: addCompare, has: inCompare } = useCompare();
   const { toggleFavorite, isFavorite } = useUser();
   const { isAuthenticated } = useAuth();
+  const { formatPrice } = useCurrency();
   const liked = isFavorite(product.id);
   const imgRef = useRef<HTMLDivElement>(null);
   const [transform, setTransform] = useState("perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)");
@@ -185,16 +187,16 @@ export function ProductCard({ product }: ProductCardProps) {
               <div className="flex items-baseline gap-2 mb-3">
                 {product.priceMax && product.priceMax !== product.price ? (
                   <span className="text-2xl text-gray-900">
-                    ${product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatPrice(product.price)}
                     <span className="text-base text-gray-400 mx-0.5">–</span>
-                    ${product.priceMax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatPrice(product.priceMax)}
                   </span>
                 ) : (
-                  <span className="text-2xl text-gray-900">${product.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-2xl text-gray-900">{formatPrice(product.price)}</span>
                 )}
                 {product.originalPrice && (
                   <span className="text-sm text-gray-500 line-through">
-                    ${product.originalPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    {formatPrice(product.originalPrice)}
                   </span>
                 )}
               </div>

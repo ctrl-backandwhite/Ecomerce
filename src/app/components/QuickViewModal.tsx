@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { createPortal } from "react-dom";
 import type { Product } from "../types/product";
 import { useCart } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { useCompare } from "../context/CompareContext";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
@@ -16,6 +17,7 @@ interface Props {
 
 export function QuickViewModal({ product: p, onClose }: Props) {
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   const { add, has } = useCompare();
   const { toggleFavorite, isFavorite } = useUser();
   const { isAuthenticated } = useAuth();
@@ -87,8 +89,8 @@ export function QuickViewModal({ product: p, onClose }: Props) {
 
                   {/* Price */}
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl text-gray-900">${p.price}</span>
-                    {p.originalPrice && <span className="text-sm text-gray-400 line-through">${p.originalPrice}</span>}
+                    <span className="text-2xl text-gray-900">{formatPrice(p.price)}</span>
+                    {p.originalPrice && <span className="text-sm text-gray-400 line-through">{formatPrice(p.originalPrice)}</span>}
                   </div>
 
                   {/* Short description */}

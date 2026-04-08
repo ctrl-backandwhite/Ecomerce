@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCurrency } from "../../../context/CurrencyContext";
 import {
     ChevronRight, ChevronDown, ChevronLeft, Check, Plus,
     Lock, Shield, Mail, AlertCircle, Copy, Gift,
@@ -41,6 +42,7 @@ export function PaymentStep({
     state, dispatch, user, step3Valid, total, btcRate, isProcessing,
     paymentSummaryLabel, handleSubmit,
 }: PaymentStepProps) {
+    const { formatPrice } = useCurrency();
     const { step, selectedPmId, payMethod, payment, paypalEmail, savedCardCvv, pmDropdownOpen, copiedAddr } = state;
 
     const selectedPm: PaymentMethod | undefined = selectedPmId !== "new"
@@ -89,8 +91,8 @@ export function PaymentStep({
                                 onClick={handleSubmit}
                                 disabled={isProcessing}
                                 className={`w-full inline-flex items-center justify-center gap-2 text-sm rounded-xl px-5 py-3.5 transition-colors ${isProcessing
-                                        ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                    ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                                    : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                                     }`}
                             >
                                 {isProcessing ? (
@@ -101,7 +103,7 @@ export function PaymentStep({
                                 ) : (
                                     <>
                                         <Lock className="w-4 h-4" strokeWidth={1.5} />
-                                        Confirmar pedido · $0.00
+                                        Confirmar pedido · {formatPrice(0)}
                                     </>
                                 )}
                             </button>
@@ -473,14 +475,14 @@ export function PaymentStep({
                                             : activeType === "btc" ? "bg-[#F7931A] text-white hover:bg-[#e07f0a]"
                                                 : "bg-gray-200 text-gray-700 hover:bg-gray-300";
                                 const btnLabel = activePm
-                                    ? activePm.type === "paypal" ? `Pagar con PayPal · $${total.toFixed(2)}`
+                                    ? activePm.type === "paypal" ? `Pagar con PayPal · ${formatPrice(total)}`
                                         : activePm.type === "usdt" ? `Confirmar pago · ${total.toFixed(2)} USDT`
                                             : activePm.type === "btc" ? `Confirmar pago · ${(total / btcRate).toFixed(6)} BTC`
-                                                : `Confirmar pedido · $${total.toFixed(2)}`
-                                    : payMethod === "paypal" ? `Pagar con PayPal · $${total.toFixed(2)}`
+                                                : `Confirmar pedido · ${formatPrice(total)}`
+                                    : payMethod === "paypal" ? `Pagar con PayPal · ${formatPrice(total)}`
                                         : payMethod === "usdt" ? `Confirmar pago · ${total.toFixed(2)} USDT`
                                             : payMethod === "btc" ? `Confirmar pago · ${(total / btcRate).toFixed(6)} BTC`
-                                                : `Confirmar pedido · $${total.toFixed(2)}`;
+                                                : `Confirmar pedido · ${formatPrice(total)}`;
                                 return (
                                     <button
                                         onClick={handleSubmit}

@@ -60,6 +60,8 @@ const AdminNewsletter = lazyPage(() => import("./pages/admin/AdminNewsletter"), 
 const AdminCampaigns = lazyPage(() => import("./pages/admin/AdminCampaigns"), "AdminCampaigns");
 const AdminWarranties = lazyPage(() => import("./pages/admin/AdminWarranties"), "AdminWarranties");
 const AdminFlows = lazyPage(() => import("./pages/admin/AdminFlows"), "AdminFlows");
+const AdminCurrencyRates = lazyPage(() => import("./pages/admin/AdminCurrencyRates"), "AdminCurrencyRates");
+const AdminPricing = lazyPage(() => import("./pages/admin/AdminPricing"), "AdminPricing");
 
 export const router = createBrowserRouter([
   {
@@ -146,6 +148,8 @@ export const router = createBrowserRouter([
               { path: "flows", Component: AdminFlows },
               { path: "shipping", Component: AdminShipping },
               { path: "taxes", Component: AdminTaxes },
+              { path: "currency-rates", Component: AdminCurrencyRates },
+              { path: "pricing", Component: AdminPricing },
               { path: "emails", Component: AdminEmails },
               { path: "settings", Component: AdminSettings },
             ],

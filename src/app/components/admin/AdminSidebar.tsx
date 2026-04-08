@@ -5,7 +5,7 @@ import {
   Image, Presentation, Menu, Bookmark, Sliders,
   Ticket, Star, RotateCcw, BarChart2, FileText,
   Truck, Percent, Search, Mail, Award, Gift, Send,
-  Megaphone, Shield, GitBranch, Layers,
+  Megaphone, Shield, GitBranch, Layers, Coins,
 } from "lucide-react";
 
 const menuGroups = [
@@ -67,6 +67,8 @@ const menuGroups = [
       { title: "Flujos", icon: GitBranch, path: "/admin/flows" },
       { title: "Envíos", icon: Truck, path: "/admin/shipping" },
       { title: "Impuestos", icon: Percent, path: "/admin/taxes" },
+      { title: "Márgenes", icon: Percent, path: "/admin/pricing" },
+      { title: "Monedas", icon: Coins, path: "/admin/currency-rates" },
       { title: "Emails", icon: Mail, path: "/admin/emails" },
       { title: "Configuración", icon: Settings, path: "/admin/settings" },
     ],

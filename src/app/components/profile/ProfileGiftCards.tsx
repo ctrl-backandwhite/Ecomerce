@@ -19,6 +19,7 @@ import {
   toSentGiftCard,
 } from "../../repositories/GiftCardRepository";
 import { ApiError } from "../../lib/AppError";
+import { useCurrency } from "../../context/CurrencyContext";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getDesign(id: string) {
@@ -52,6 +53,7 @@ const STATUS_RECEIVED: Record<GCStatus, { label: string; dot: string; text: stri
 // ── Mini card visual ─────────────────────────────────────────────────────────
 function MiniCard({ designId, amount, label }: { designId: string; amount: number; label?: string }) {
   const design = getDesign(designId);
+  const { formatPrice } = useCurrency();
   return (
     <div
       className="w-20 h-12 rounded-xl flex flex-col items-center justify-center gap-0.5 flex-shrink-0 shadow-sm"
@@ -59,7 +61,7 @@ function MiniCard({ designId, amount, label }: { designId: string; amount: numbe
     >
       <span className="text-[10px] tracking-widest" style={{ color: design.accent }}>{design.emoji}</span>
       <span className="text-sm" style={{ color: design.accent }}>
-        {label ?? `$${amount}`}
+        {label ?? formatPrice(amount)}
       </span>
     </div>
   );
@@ -169,6 +171,7 @@ function ActivateModal({ onClose, onActivate }: {
 // ── Received card component ──────────────────────────────────────────────────
 function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code: string) => void }) {
   const [expanded, setExpanded] = useState(false);
+  const { formatPrice } = useCurrency();
   const st = STATUS_RECEIVED[card.status];
   const design = getDesign(card.designId);
   const percentUsed = Math.round(((card.originalAmount - card.balance) / card.originalAmount) * 100);
@@ -183,7 +186,7 @@ function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code:
           style={{ background: `linear-gradient(135deg, ${design.from}, ${design.to})` }}
         >
           <span className="text-sm" style={{ color: design.accent }}>{design.emoji}</span>
-          <span className="text-sm" style={{ color: design.accent }}>${card.balance}</span>
+          <span className="text-sm" style={{ color: design.accent }}>{formatPrice(card.balance)}</span>
         </div>
 
         {/* Info */}
@@ -203,7 +206,7 @@ function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code:
             <div className="mt-2">
               {/* Balance bar */}
               <div className="flex items-center justify-between text-[10px] text-gray-400 mb-1">
-                <span>Saldo: <strong className="text-gray-900">${card.balance}</strong> de ${card.originalAmount}</span>
+                <span>Saldo: <strong className="text-gray-900">{formatPrice(card.balance)}</strong> de {formatPrice(card.originalAmount)}</span>
                 <span className="flex items-center gap-0.5">
                   <Clock className="w-2.5 h-2.5" strokeWidth={1.5} />
                   {expiry}
@@ -280,6 +283,7 @@ function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code:
 // ── Sent card component ───────────────────────────────────────────────────────
 function SentCard({ card, onCopy }: { card: SentGiftCard; onCopy: (code: string) => void }) {
   const st = STATUS_SENT[card.status];
+  const { formatPrice } = useCurrency();
   const design = getDesign(card.designId);
 
   return (
@@ -301,7 +305,7 @@ function SentCard({ card, onCopy }: { card: SentGiftCard; onCopy: (code: string)
             </span>
           </div>
           <div className="flex items-center gap-3 mt-2">
-            <span className="text-xs text-gray-900">${card.amount}</span>
+            <span className="text-xs text-gray-900">{formatPrice(card.amount)}</span>
             <span className="text-[10px] text-gray-400">Enviada el {card.sentDate}</span>
           </div>
           {card.message && (
@@ -330,6 +334,7 @@ export function ProfileGiftCards() {
   const [showActivate, setShowActivate] = useState(false);
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const { formatPrice } = useCurrency();
 
   useEffect(() => {
     let cancelled = false;
@@ -379,7 +384,7 @@ export function ProfileGiftCards() {
       } else {
         setReceivedCards(prev => [mapped, ...prev]);
       }
-      toast.success(`Tarjeta activada — Saldo de $${card.balance} disponible`);
+      toast.success(`Tarjeta activada — Saldo de ${formatPrice(card.balance)} disponible`);
       setShowActivate(false);
     } catch (err) {
       if (err instanceof ApiError && err.message.includes("already activated")) {
@@ -403,7 +408,7 @@ export function ProfileGiftCards() {
         <div className="absolute top-3 right-6 text-5xl opacity-10">✦</div>
         <div className="absolute bottom-2 left-6 text-3xl opacity-5">✦</div>
         <p className="text-[11px] tracking-widest uppercase text-white/60 mb-1">Saldo disponible en tarjetas</p>
-        <p className="text-4xl tracking-tight mb-3">${totalBalance}</p>
+        <p className="text-4xl tracking-tight mb-3">{formatPrice(totalBalance)}</p>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1.5 text-xs text-white/70">
             <Gift className="w-3.5 h-3.5" strokeWidth={1.5} />

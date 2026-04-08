@@ -8,7 +8,6 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { X, Clock, MapPin, Search } from "lucide-react";
 import {
     useTimezone,
-    COUNTRY_TIMEZONES,
     formatDate,
     type CountryTimezone,
 } from "../context/TimezoneContext";
@@ -90,7 +89,7 @@ function CountryClockCard({
 // ── Sidebar component ───────────────────────────────────────────────────────
 
 export function TimezoneSidebar() {
-    const { selectedCountry, setCountry, isSidebarOpen, closeSidebar } =
+    const { selectedCountry, setCountry, countries, isSidebarOpen, closeSidebar, loading } =
         useTimezone();
     const { t } = useLanguage();
     const [search, setSearch] = useState("");
@@ -104,13 +103,13 @@ export function TimezoneSidebar() {
 
     // Filtered countries
     const filteredCountries = useMemo(() => {
-        if (!search.trim()) return COUNTRY_TIMEZONES;
+        if (!search.trim()) return countries;
         const q = search.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-        return COUNTRY_TIMEZONES.filter((tz) => {
+        return countries.filter((tz) => {
             const name = tz.country.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
             return name.includes(q) || tz.code.toLowerCase().includes(q) || tz.timezone.toLowerCase().includes(q);
         });
-    }, [search]);
+    }, [search, countries]);
 
     // Close on Escape
     useEffect(() => {

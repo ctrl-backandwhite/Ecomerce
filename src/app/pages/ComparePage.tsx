@@ -2,23 +2,33 @@ import { useCompare } from "../context/CompareContext";
 import { Star, X, ShoppingCart, ArrowLeft } from "lucide-react";
 import { Link } from "react-router";
 import { useCart } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { toast } from "sonner";
 
-const SPEC_ROWS = [
-  { label: "Precio",       key: "price",            render: (v: any) => v !== undefined ? `$${v}` : "—" },
-  { label: "Categoría",    key: "category",         render: (v: any) => v || "—" },
-  { label: "Marca",        key: "brand",            render: (v: any) => v || "—" },
-  { label: "Valoración",   key: "rating",           render: (v: any) => v !== undefined ? `${v} / 5` : "—" },
-  { label: "Reseñas",      key: "reviews",          render: (v: any) => v !== undefined ? `${v} opiniones` : "—" },
-  { label: "Stock",        key: "stock",            render: (v: any) => v !== undefined ? `${v} uds.` : "—" },
-  { label: "SKU",          key: "sku",              render: (v: any) => v || "—" },
-  { label: "Peso",         key: "weight",           render: (v: any) => v !== undefined ? `${v} kg` : "—" },
-  { label: "Clase fiscal", key: "taxClass",         render: (v: any) => v || "—" },
+const SPEC_ROWS_BASE = [
+  { label: "Categoría", key: "category", render: (v: any) => v || "—" },
+  { label: "Marca", key: "brand", render: (v: any) => v || "—" },
+  { label: "Valoración", key: "rating", render: (v: any) => v !== undefined ? `${v} / 5` : "—" },
+  { label: "Reseñas", key: "reviews", render: (v: any) => v !== undefined ? `${v} opiniones` : "—" },
+  { label: "Stock", key: "stock", render: (v: any) => v !== undefined ? `${v} uds.` : "—" },
+  { label: "SKU", key: "sku", render: (v: any) => v || "—" },
+  { label: "Peso", key: "weight", render: (v: any) => v !== undefined ? `${v} kg` : "—" },
+  { label: "Clase fiscal", key: "taxClass", render: (v: any) => v || "—" },
 ];
+
+function buildSpecRows(formatPrice: (n: number) => string) {
+  return [
+    { label: "Precio", key: "price", render: (v: any) => v !== undefined ? formatPrice(v) : "—" },
+    ...SPEC_ROWS_BASE,
+  ];
+}
 
 export function ComparePage() {
   const { items, remove, clear } = useCompare();
-  const { addToCart }             = useCart();
+  const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
+
+  const SPEC_ROWS = buildSpecRows(formatPrice);
 
   const handleAdd = (p: any) => {
     addToCart(p);
@@ -88,8 +98,8 @@ export function ComparePage() {
                       <span className="text-xs text-gray-400">({p.reviews})</span>
                     </div>
                     <div className="flex items-baseline gap-2 mb-3">
-                      <span className="text-lg text-gray-900">${p.price}</span>
-                      {p.originalPrice && <span className="text-xs text-gray-400 line-through">${p.originalPrice}</span>}
+                      <span className="text-lg text-gray-900">{formatPrice(p.price)}</span>
+                      {p.originalPrice && <span className="text-xs text-gray-400 line-through">{formatPrice(p.originalPrice)}</span>}
                     </div>
                     <button
                       onClick={() => handleAdd(p)}

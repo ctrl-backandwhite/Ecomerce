@@ -5,6 +5,7 @@ import type { CouponValidation } from "../../../repositories/CouponRepository";
 import { CouponInput } from "./CouponInput";
 import { LoyaltySection } from "./LoyaltySection";
 import { GiftCardSection } from "./GiftCardSection";
+import { useCurrency } from "../../../context/CurrencyContext";
 import type { CheckoutAction, AppliedGiftCard, MyGiftCard } from "../types";
 
 interface OrderSummaryProps {
@@ -53,6 +54,7 @@ export function OrderSummary({
     deliverySummary, selectedAddrId, newMode,
     dispatch, applyCoupon, applyManualCard,
 }: OrderSummaryProps) {
+    const { formatPrice } = useCurrency();
     return (
         <div className="lg:col-span-1">
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm sticky top-24 overflow-hidden">
@@ -88,7 +90,7 @@ export function OrderSummary({
                                     </div>
                                 )}
                             </div>
-                            <p className="text-xs text-gray-900 flex-shrink-0">${(item.price * item.quantity).toFixed(2)}</p>
+                            <p className="text-xs text-gray-900 flex-shrink-0">{formatPrice(item.price * item.quantity)}</p>
                         </div>
                     ))}
                 </div>
@@ -132,39 +134,39 @@ export function OrderSummary({
                 <div className="px-5 py-4 border-t border-gray-100 space-y-2.5">
                     <div className="flex justify-between text-xs text-gray-500">
                         <span>Subtotal</span>
-                        <span>${subtotal.toFixed(2)}</span>
+                        <span>{formatPrice(subtotal)}</span>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
                         <span>Envío{selectedShipping ? ` · ${selectedShipping.name}` : ""}</span>
                         <span className={shipping === 0 ? "text-green-600" : ""}>
-                            {shipping === 0 ? "Gratis" : `$${shipping.toFixed(2)}`}
+                            {shipping === 0 ? "Gratis" : formatPrice(shipping)}
                         </span>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500">
                         <span>Impuestos{taxCalc ? "" : " (est.)"}{taxLoading ? " …" : ""}</span>
-                        <span>${tax.toFixed(2)}</span>
+                        <span>{formatPrice(tax)}</span>
                     </div>
                     {couponDiscount > 0 && (
                         <div className="flex justify-between text-xs text-green-600">
                             <span>Cupón ({couponCode})</span>
-                            <span>-${couponDiscount.toFixed(2)}</span>
+                            <span>-{formatPrice(couponDiscount)}</span>
                         </div>
                     )}
                     {loyaltyDiscount > 0 && (
                         <div className="flex justify-between text-xs text-amber-600">
                             <span>Puntos ({loyaltyPoints} pts)</span>
-                            <span>-${loyaltyDiscount.toFixed(2)}</span>
+                            <span>-{formatPrice(loyaltyDiscount)}</span>
                         </div>
                     )}
                     {giftCardDiscount > 0 && (
                         <div className="flex justify-between text-xs text-violet-600">
                             <span>Tarjeta regalo</span>
-                            <span>-${giftCardDiscount.toFixed(2)}</span>
+                            <span>-{formatPrice(giftCardDiscount)}</span>
                         </div>
                     )}
                     <div className="flex justify-between text-sm text-gray-900 pt-2.5 border-t border-gray-100">
                         <span>Total</span>
-                        <span>${total.toFixed(2)}</span>
+                        <span>{formatPrice(total)}</span>
                     </div>
                 </div>
 

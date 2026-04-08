@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { Zap, Clock, ShoppingCart, ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { Link } from "react-router";
 import { useCart } from "../context/CartContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { useFlashDeals } from "../hooks/useFlashDeals";
 import { toast } from "sonner";
 
@@ -39,6 +40,7 @@ interface FlashDealsProps {
 export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
   const { deals, loading, endDate } = useFlashDeals();
   const { addToCart } = useCart();
+  const { formatPrice } = useCurrency();
   const [secs, setSecs] = useState(() => getSecondsUntil(endDate));
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -175,8 +177,8 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
 
                 {/* Prices */}
                 <div className="flex items-baseline gap-1.5 mb-2.5">
-                  <span className="text-base text-gray-900">${p.price}</span>
-                  <span className="text-xs text-gray-400 line-through">${p.originalPrice}</span>
+                  <span className="text-base text-gray-900">{formatPrice(p.price)}</span>
+                  <span className="text-xs text-gray-400 line-through">{formatPrice(p.originalPrice)}</span>
                 </div>
 
                 {/* Stock bar */}

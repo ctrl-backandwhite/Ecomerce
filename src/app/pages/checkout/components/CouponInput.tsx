@@ -1,4 +1,5 @@
 import { Tag } from "lucide-react";
+import { useCurrency } from "../../../context/CurrencyContext";
 import type { CheckoutAction, CheckoutState } from "../types";
 
 interface CouponInputProps {
@@ -13,6 +14,7 @@ interface CouponInputProps {
 export function CouponInput({
     couponCode, couponLoading, couponResult, couponDiscount, dispatch, applyCoupon,
 }: CouponInputProps) {
+    const { formatPrice } = useCurrency();
     return (
         <div className="px-5 py-3 border-t border-gray-50">
             <div className="flex gap-2">
@@ -35,7 +37,7 @@ export function CouponInput({
             </div>
             {couponResult?.valid && (
                 <p className="text-xs text-green-600 mt-1.5">
-                    Descuento aplicado: -${couponDiscount.toFixed(2)}
+                    Descuento aplicado: -{formatPrice(couponDiscount)}
                 </p>
             )}
         </div>

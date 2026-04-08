@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { useCurrency } from "../../../context/CurrencyContext";
 import type { CheckoutAction } from "../types";
 
 interface LoyaltySectionProps {
@@ -15,6 +16,7 @@ export function LoyaltySection({
     maxRedeemable, dispatch,
 }: LoyaltySectionProps) {
     if (loyaltyBalance <= 0) return null;
+    const { formatPrice } = useCurrency();
 
     return (
         <div className="px-5 py-3 border-t border-gray-50">
@@ -47,7 +49,7 @@ export function LoyaltySection({
             </div>
             {loyaltyPoints > 0 && (
                 <p className="text-xs text-amber-600 mt-1.5">
-                    Descuento: -${loyaltyDiscount.toFixed(2)} ({loyaltyPoints} pts × {loyaltyRate} pts/$1)
+                    Descuento: -{formatPrice(loyaltyDiscount)} ({loyaltyPoints} pts × {loyaltyRate} pts/$1)
                 </p>
             )}
         </div>

@@ -45,13 +45,36 @@ export function Home() {
 
   const resolvedCategory = useMemo(() => {
     if (!catSlug) return null;
-    return categories.find((c) => slugify(c.name) === catSlug) ?? null;
+    // 1. Direct top-level match
+    const topLevel = categories.find((c) => slugify(c.name) === catSlug);
+    if (topLevel) return topLevel;
+    // 2. Featured subcategory navigation (e.g. /store/outerwear-jackets):
+    //    the CategoryBar may link to a level-2 featured category using a flat
+    //    slug.  Find the parent that contains this subcategory — prefer
+    //    featured matches in case of name collisions across parents.
+    let bestParent: typeof categories[0] | null = null;
+    for (const cat of categories) {
+      const match = cat.subCategories.find((sc) => slugify(sc.name) === catSlug);
+      if (match) {
+        if (match.featured) return cat;   // featured → immediate match
+        if (!bestParent) bestParent = cat; // keep first non-featured as fallback
+      }
+    }
+    return bestParent;
   }, [catSlug, categories]);
 
   const resolvedSubcategory = useMemo(() => {
-    if (!subcatSlug || !resolvedCategory) return null;
-    return resolvedCategory.subCategories.find((s) => slugify(s.name) === subcatSlug) ?? null;
-  }, [subcatSlug, resolvedCategory]);
+    if (!resolvedCategory) return null;
+    // Normal two-segment route: /store/:catSlug/:subcatSlug
+    if (subcatSlug) {
+      return resolvedCategory.subCategories.find((s) => slugify(s.name) === subcatSlug) ?? null;
+    }
+    // Single-segment route where catSlug matched a *subcategory* (featured nav)
+    if (catSlug && slugify(resolvedCategory.name) !== catSlug) {
+      return resolvedCategory.subCategories.find((s) => slugify(s.name) === catSlug) ?? null;
+    }
+    return null;
+  }, [catSlug, subcatSlug, resolvedCategory]);
 
   /* ── Search params (legacy + secondary filters) ────────────── */
   const [searchParams, setSearchParams] = useSearchParams();
@@ -188,20 +211,23 @@ export function Home() {
   }, [navigate, setSearchParams]);
 
   /* ── Filter handlers ─────────────────────────────────────────── */
-  const handleCategory = (cat: string, _catId?: string) => {
+  const handleCategory = (cat: string, catId?: string) => {
     if (cat === "Todos") {
       navigate(urls.store(), { preventScrollReset: true });
     } else {
-      navigate(urls.category(cat), { preventScrollReset: true });
+      const dest = urls.category(cat);
+      navigate(catId ? `${dest}?categoryId=${catId}` : dest, { preventScrollReset: true });
     }
   };
 
-  const handleSubcategory = (cat: string, sub: string, _catId?: string, _subId?: string) => {
+  const handleSubcategory = (cat: string, sub: string, catId?: string, subId?: string) => {
     if (sub === selectedSubcat) {
       // Toggle off — go back to parent category
-      navigate(urls.category(cat), { preventScrollReset: true });
+      const dest = urls.category(cat);
+      navigate(catId ? `${dest}?categoryId=${catId}` : dest, { preventScrollReset: true });
     } else {
-      navigate(urls.subcategory(cat, sub), { preventScrollReset: true });
+      const dest = urls.subcategory(cat, sub);
+      navigate(subId ? `${dest}?subcategoryId=${subId}` : dest, { preventScrollReset: true });
     }
   };
 

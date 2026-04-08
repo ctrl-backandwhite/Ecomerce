@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { Printer, Download, X, CheckCircle2, Clock, AlertTriangle, Ban } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
+import { useCurrency } from "../context/CurrencyContext";
 import type { InvoiceStatus } from "../types/invoice";
 
 /* ── Types ─────────────────────────────────────────────────── */
@@ -74,7 +75,7 @@ function buildQRValue(data: InvoiceData): string {
     `Factura: ${data.invoiceNumber}`,
     `Orden: ${data.orderNumber}`,
     `Cliente: ${data.customer.name}`,
-    `Total: $${fmt(data.total)}`,
+    `Total: ${fmt(data.total)}`,
     `Fecha: ${data.date}`,
   ].join("\n");
 }
@@ -100,6 +101,7 @@ export function InvoiceDocument({
   mode?: "page" | "modal";
 }) {
   const printRef = useRef<HTMLDivElement>(null);
+  const { formatPrice } = useCurrency();
   const sm = STATUS_META[data.status];
   const StatusIcon = sm.icon;
   const qrValue = buildQRValue(data);
@@ -242,8 +244,8 @@ export function InvoiceDocument({
                     {line.sku && <p className="text-xs text-gray-400 mt-0.5 font-mono">{line.sku}</p>}
                   </div>
                   <p className="text-sm text-gray-600 text-center w-16">{line.quantity}</p>
-                  <p className="text-sm text-gray-600 text-right w-24">${fmt(line.unitPrice)}</p>
-                  <p className="text-sm text-gray-900 text-right w-24">${fmt(line.total)}</p>
+                  <p className="text-sm text-gray-600 text-right w-24">{formatPrice(line.unitPrice)}</p>
+                  <p className="text-sm text-gray-900 text-right w-24">{formatPrice(line.total)}</p>
                 </div>
               ))}
             </div>
@@ -254,39 +256,39 @@ export function InvoiceDocument({
             <div className="ml-auto max-w-xs space-y-2 border-t border-gray-100 pt-4">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Subtotal</span>
-                <span className="text-gray-900">${fmt(data.subtotal)}</span>
+                <span className="text-gray-900">{formatPrice(data.subtotal)}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">Envío</span>
                 <span className={data.shipping === 0 ? "text-green-600" : "text-gray-900"}>
-                  {data.shipping === 0 ? "Gratuito" : `$${fmt(data.shipping)}`}
+                  {data.shipping === 0 ? "Gratuito" : formatPrice(data.shipping)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-500">IVA (10%)</span>
-                <span className="text-gray-900">${fmt(data.tax)}</span>
+                <span className="text-gray-900">{formatPrice(data.tax)}</span>
               </div>
               {(data.discountAmount ?? 0) > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Cupón de descuento</span>
-                  <span className="text-green-600">−${fmt(data.discountAmount!)}</span>
+                  <span className="text-green-600">−{formatPrice(data.discountAmount!)}</span>
                 </div>
               )}
               {(data.giftCardAmount ?? 0) > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Tarjeta de regalo</span>
-                  <span className="text-green-600">−${fmt(data.giftCardAmount!)}</span>
+                  <span className="text-green-600">−{formatPrice(data.giftCardAmount!)}</span>
                 </div>
               )}
               {(data.loyaltyDiscount ?? 0) > 0 && (
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Puntos de lealtad</span>
-                  <span className="text-green-600">−${fmt(data.loyaltyDiscount!)}</span>
+                  <span className="text-green-600">−{formatPrice(data.loyaltyDiscount!)}</span>
                 </div>
               )}
               <div className="flex justify-between pt-3 border-t border-gray-200">
                 <span className="text-sm text-gray-900">Total</span>
-                <span className="text-xl text-gray-900 tracking-tight">${fmt(data.total)}</span>
+                <span className="text-xl text-gray-900 tracking-tight">{formatPrice(data.total)}</span>
               </div>
               {(() => {
                 const charged = data.total - (data.giftCardAmount ?? 0) - (data.loyaltyDiscount ?? 0);
@@ -294,7 +296,7 @@ export function InvoiceDocument({
                   return (
                     <div className="flex justify-between text-sm pt-1">
                       <span className="text-gray-400">Cobrado vía {fmtPm(data.paymentMethod)}</span>
-                      <span className="text-gray-600">${fmt(charged)}</span>
+                      <span className="text-gray-600">{formatPrice(charged)}</span>
                     </div>
                   );
                 }
