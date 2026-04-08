@@ -21,26 +21,6 @@ export function Cart() {
   const [taxLoading, setTaxLoading] = useState(false);
   const taxTimer = useRef<ReturnType<typeof setTimeout>>();
 
-  if (items.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center px-4">
-          <ShoppingBag className="w-24 h-24 mx-auto text-gray-300 mb-6" />
-          <h2 className="text-3xl font-bold mb-4">Tu carrito está vacío</h2>
-          <p className="text-gray-600 mb-8">
-            ¡Agrega algunos productos increíbles a tu carrito!
-          </p>
-          <Link to="/">
-            <Button size="lg">
-              Explorar Productos
-              <ArrowRight className="ml-2 w-5 h-5" />
-            </Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   const subtotal = getTotalPrice();
   const countryCode = selectedCountry?.code ?? "US";
 
@@ -65,6 +45,26 @@ export function Cart() {
   const roundedSubtotal = Math.round(subtotal * rate * 100) / 100;
   const roundedTax = Math.round(estimatedTax * rate * 100) / 100;
   const estimatedTotalDisplay = (roundedSubtotal + roundedTax) / rate;
+
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center px-4">
+          <ShoppingBag className="w-24 h-24 mx-auto text-gray-300 mb-6" />
+          <h2 className="text-3xl font-bold mb-4">Tu carrito está vacío</h2>
+          <p className="text-gray-600 mb-8">
+            ¡Agrega algunos productos increíbles a tu carrito!
+          </p>
+          <Link to="/">
+            <Button size="lg">
+              Explorar Productos
+              <ArrowRight className="ml-2 w-5 h-5" />
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

@@ -389,19 +389,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
         cartRepository
           .removeItem(backendId)
           .then((cart) => {
+            // Trust the backend response as the source of truth
             const fresh = cart.items.map(dtoToCartItem);
-            const freshIds = new Set(fresh.map((f) => f.id));
-            const freshMap = new Map(fresh.map((i) => [i.id, i]));
-            // Keep current order, drop removed items, merge backend data
-            setItems((prev) => {
-              const merged = prev
-                .filter((p) => freshIds.has(p.id))
-                .map((p) => freshMap.get(p.id) ?? p);
-              // Append any items that exist in backend but not locally
-              const localIds = new Set(prev.map((p) => p.id));
-              fresh.forEach((f) => { if (!localIds.has(f.id)) merged.push(f); });
-              return merged;
-            });
+            setItems(fresh);
           })
           .catch((err) => {
             console.warn("[Cart] removeItem backend sync failed, rolling back:", err);
