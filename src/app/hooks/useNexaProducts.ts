@@ -20,6 +20,7 @@ import {
 } from "../mappers/NexaProductMapper";
 import { nexaCategoryRepository } from "../repositories/NexaCategoryRepository";
 import { useLanguage } from "../context/LanguageContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { buildCategoryMap } from "../lib/categoryUtils";
 import type { Product } from "../types/product";
 
@@ -30,7 +31,7 @@ const PAGE_SIZE = 24;
 /* ── Module-level cache ─────────────────────────────────────────
  * Keeps products across Home mount/unmount so pressing «back»
  * from ProductDetail restores the exact list the user was seeing.
- * Key = `${categoryId ?? "ALL"}|${locale}` */
+ * Key = `${categoryId ?? "ALL"}|${locale}|${currencyCode}` */
 interface CacheEntry {
     products: Product[];
     totalElements: number;
@@ -41,8 +42,8 @@ interface CacheEntry {
 }
 const _cache = new Map<string, CacheEntry>();
 const CACHE_TTL = 5 * 60_000; // 5 minutes
-function cacheKey(categoryId?: string, locale?: string) {
-    return `${categoryId ?? "ALL"}|${locale ?? "en"}`;
+function cacheKey(categoryId?: string, locale?: string, currencyCode?: string) {
+    return `${categoryId ?? "ALL"}|${locale ?? "en"}|${currencyCode ?? "USD"}`;
 }
 
 export interface UseNexaProductsResult {
@@ -80,10 +81,12 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
     const { categoryId, name, sortBy, ascending } = opts;
 
     const { locale } = useLanguage();
+    const { currency } = useCurrency();
+    const currencyCode = currency?.currencyCode ?? "USD";
     const apiLocale = locale === "pt" ? "pt-BR" : locale;
 
     // ── Try to restore from cache on mount ─────────────────────────────────
-    const ck = cacheKey(categoryId, apiLocale);
+    const ck = cacheKey(categoryId, apiLocale, currencyCode);
     const cached = _cache.get(ck);
     const cacheValid = cached && Date.now() - cached.timestamp < CACHE_TTL;
 
@@ -158,7 +161,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 setDataSource("api");
 
                 // ── Update module-level cache ───────────────────────
-                _cache.set(cacheKey(categoryId, apiLocale), {
+                _cache.set(cacheKey(categoryId, apiLocale, currencyCode), {
                     products: updatedProducts,
                     totalElements: result.totalElements,
                     currentPage: page,
@@ -185,7 +188,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 }
             }
         },
-        [apiLocale, categoryId, name, sortBy, ascending],
+        [apiLocale, categoryId, name, sortBy, ascending, currencyCode],
     );
 
     // ── Initial fetch + re-fetch on locale/category change ────────────────────
@@ -199,7 +202,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
         // the cache key is "ALL|<locale>".  Once categories resolve and
         // categoryId changes, the cache key no longer matches → we must fetch.
         if (initialisedFromCacheKey.current) {
-            const currentCk = `${categoryId ?? "ALL"}|${apiLocale ?? "en"}`;
+            const currentCk = `${categoryId ?? "ALL"}|${apiLocale ?? "en"}|${currencyCode}`;
             if (initialisedFromCacheKey.current === currentCk) {
                 // Cache matches what we currently need — safe to skip
                 initialisedFromCacheKey.current = "";

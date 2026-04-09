@@ -48,6 +48,8 @@ export interface Order {
     taxAmount: number;
     discountAmount: number;
     total: number;
+    currencyCode: string;
+    exchangeRateToUsd: number;
     shippingAddress: Record<string, unknown> | null;
     billingAddress: Record<string, unknown> | null;
     paymentMethod: string | null;
@@ -82,6 +84,7 @@ export interface CreateOrderPayload {
     giftCardAmount?: number;
     loyaltyPointsUsed?: number;
     loyaltyDiscount?: number;
+    currencyCode?: string;
     notes?: string;
 }
 

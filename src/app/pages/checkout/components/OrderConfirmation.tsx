@@ -5,6 +5,7 @@ import { useUser } from "../../../context/UserContext";
 import type { CheckoutState } from "../types";
 import { storeLocations, pickupPoints } from "../types";
 import type { PaymentMethod } from "../../../context/UserContext";
+import { extractAmount } from "../../../utils/extractAmount";
 
 interface OrderConfirmationProps {
     state: CheckoutState;
@@ -82,8 +83,8 @@ export function OrderConfirmation({ state }: OrderConfirmationProps) {
                 name: String(l.name ?? ""),
                 sku: String(l.sku ?? ""),
                 quantity: Number(l.quantity ?? 0),
-                unitPrice: Number(l.unitPrice ?? 0),
-                total: Number(l.total ?? 0),
+                unitPrice: extractAmount(l.unitPrice),
+                total: extractAmount(l.total),
             })),
             subtotal: backendInvoice.subtotal,
             shipping: backendInvoice.shipping,

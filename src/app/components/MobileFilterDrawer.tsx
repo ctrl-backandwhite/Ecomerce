@@ -27,7 +27,7 @@ import {
   RefreshCw,
   type LucideIcon,
 } from "lucide-react";
-import { priceRanges } from "../config/priceRanges";
+import { usePriceRanges } from "../hooks/usePriceRanges";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useNexaCategories } from "../hooks/useNexaCategories";
@@ -145,6 +145,7 @@ export function MobileFilterDrawer({
   onReset,
 }: MobileFilterDrawerProps) {
   const { products } = useNexaProducts();
+  const priceRanges = usePriceRanges();
 
   // Lock body scroll when drawer is open
   useEffect(() => {

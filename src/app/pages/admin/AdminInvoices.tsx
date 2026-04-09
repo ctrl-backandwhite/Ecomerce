@@ -8,6 +8,7 @@ import { type Invoice, type InvoiceStatus, invoiceRepository } from "../../repos
 import { InvoiceDocument } from "../../components/InvoiceDocument";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
+import { extractAmount } from "../../utils/extractAmount";
 
 /* ── Status meta ───────────────────────────────────────────── */
 const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; text: string; dot: string; icon: typeof CheckCircle2 }> = {
@@ -123,8 +124,8 @@ export function AdminInvoices() {
         name: String(l.name ?? ""),
         sku: String(l.sku ?? ""),
         quantity: Number(l.quantity ?? 0),
-        unitPrice: Number(l.unitPrice ?? 0),
-        total: Number(l.total ?? 0),
+        unitPrice: extractAmount(l.unitPrice),
+        total: extractAmount(l.total),
       })),
       subtotal: inv.subtotal,
       shipping: inv.shipping,

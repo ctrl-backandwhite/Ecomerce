@@ -55,8 +55,11 @@ function fmtDate(s: string) {
 }
 
 const PM_LABELS: Record<string, string> = {
+  CARD: "Tarjeta de crédito",
   CREDIT_CARD: "Tarjeta de crédito",
   PAYPAL: "PayPal",
+  USDT: "USDT",
+  BTC: "Bitcoin",
   CRYPTO_USDT: "USDT",
   CRYPTO_BTC: "Bitcoin",
   GIFT_CARD: "Tarjeta de regalo",

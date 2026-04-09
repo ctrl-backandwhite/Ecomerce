@@ -21,15 +21,27 @@ const BASE_URL = `${API_BASE}/api/v1/payments`;
 
 export type PaymentStatus = "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
 
+export type PaymentMethodType = "CARD" | "PAYPAL" | "USDT" | "BTC";
+
 export interface Payment {
     id: string;
     orderId: string;
     userId: string;
     amount: number;
     currency: string;
-    method: string;
+    /** Actual amount charged to the payment provider (e.g. in USDT/BTC) */
+    settlementAmount: number | null;
+    /** Currency used for settlement (e.g. "USDT", "BTC", "USD") */
+    settlementCurrency: string | null;
+    /** Exchange rate from display currency to settlement currency */
+    exchangeRate: number | null;
+    paymentMethod: PaymentMethodType;
     status: PaymentStatus;
-    transactionId: string | null;
+    providerRef: string | null;
+    errorMessage: string | null;
+    cryptoAddress: string | null;
+    cryptoExpiresAt: string | null;
+    qrCodeUrl: string | null;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -51,16 +63,6 @@ export interface Refund {
     reason: string;
     status: "PENDING" | "COMPLETED" | "FAILED";
     createdAt: string;
-}
-
-export interface CryptoPayment {
-    id: string;
-    address: string;
-    amount: number;
-    currency: string;
-    network: string;
-    expiresAt: string;
-    status: "AWAITING" | "CONFIRMED" | "EXPIRED";
 }
 
 export interface PaymentQuery {
@@ -126,21 +128,21 @@ class PaymentRepository {
         } catch (err) { wrapErr(err, "No se pudieron obtener los reembolsos"); }
     }
 
-    async createCryptoPayment(data: { orderId: string; network: string; currency: string }): Promise<CryptoPayment> {
+    async createCryptoPayment(data: { orderId: string; network: string; currency: string }): Promise<Payment> {
         try {
             const res = await authFetch(`${BASE_URL}/crypto/create`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
             });
-            return handleRes<CryptoPayment>(res);
+            return handleRes<Payment>(res);
         } catch (err) { wrapErr(err, "No se pudo crear el pago cripto"); }
     }
 
-    async verifyCryptoPayment(id: string): Promise<CryptoPayment> {
+    async verifyCryptoPayment(id: string): Promise<Payment> {
         try {
             const res = await authFetch(`${BASE_URL}/crypto/${id}/verify`);
-            return handleRes<CryptoPayment>(res);
+            return handleRes<Payment>(res);
         } catch (err) { wrapErr(err, "No se pudo verificar el pago cripto"); }
     }
 }

@@ -29,7 +29,7 @@ import {
   RefreshCw,
   type LucideIcon,
 } from "lucide-react";
-import { priceRanges } from "../config/priceRanges";
+import { usePriceRanges } from "../hooks/usePriceRanges";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useCurrency } from "../context/CurrencyContext";
@@ -153,6 +153,7 @@ export function HomeSidebar({
   onReset,
 }: HomeSidebarProps) {
   const { products } = useNexaProducts();
+  const priceRanges = usePriceRanges();
   const [openCats, setOpenCats] = useState<string[]>(
     selectedCategory !== "Todos" ? [selectedCategory] : []
   );

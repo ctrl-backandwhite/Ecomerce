@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTimezone } from "../context/TimezoneContext";
 import { taxRepository, type TaxCalculation } from "../repositories/TaxRepository";
 import { shippingRepository } from "../repositories/ShippingRepository";
+import { resolveCountryCode } from "../utils/resolveCountryCode";
 import { Button } from "../components/ui/button";
 import { Link, useNavigate } from "react-router";
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Heart } from "lucide-react";
@@ -12,12 +13,36 @@ import { Badge } from "../components/ui/badge";
 
 export function Cart() {
   const { items, removeFromCart, updateQuantity, getTotalPrice } = useCart();
-  const { toggleFavorite, isFavorite } = useUser();
+  const { user, toggleFavorite, isFavorite } = useUser();
   const { formatPrice } = useCurrency();
-  const { selectedCountry } = useTimezone();
+  const { selectedCountry, countries } = useTimezone();
   const navigate = useNavigate();
 
-  // ── Estimated tax based on user's selected country ──────────────────────
+  // ── Tax country: prefer default shipping address (same as checkout) ─────
+  const knownCodes = useMemo(() => countries.map((c) => c.code), [countries]);
+
+  const defaultAddr = useMemo(
+    () => user.addresses.find((a) => a.isDefault) ?? user.addresses[0] ?? null,
+    [user.addresses],
+  );
+
+  const taxCountry = useMemo(() => {
+    if (defaultAddr?.country) return resolveCountryCode(defaultAddr.country, knownCodes);
+    return selectedCountry?.code ?? "US";
+  }, [defaultAddr, knownCodes, selectedCountry]);
+
+  const taxState = defaultAddr?.state ?? undefined;
+
+  const taxCountryLabel = useMemo(() => {
+    if (defaultAddr?.country) {
+      const resolved = resolveCountryCode(defaultAddr.country, knownCodes);
+      const match = countries.find((c) => c.code === resolved);
+      return match?.country ?? defaultAddr.country;
+    }
+    return selectedCountry?.country ?? "EE.UU.";
+  }, [defaultAddr, knownCodes, countries, selectedCountry]);
+
+  // ── Estimated tax based on shipping address / selected country ──────────
   const [taxEstimate, setTaxEstimate] = useState<TaxCalculation | null>(null);
   const [taxLoading, setTaxLoading] = useState(false);
   const taxTimer = useRef<ReturnType<typeof setTimeout>>();
@@ -31,13 +56,13 @@ export function Cart() {
     setTaxLoading(true);
     taxTimer.current = setTimeout(() => {
       taxRepository
-        .calculate({ subtotal, country: countryCode })
+        .calculate({ subtotal, country: taxCountry, state: taxState })
         .then(setTaxEstimate)
         .catch(() => setTaxEstimate(null))
         .finally(() => setTaxLoading(false));
     }, 500);
     return () => clearTimeout(taxTimer.current);
-  }, [subtotal, countryCode]);
+  }, [subtotal, taxCountry, taxState]);
 
   const estimatedTax = taxEstimate?.taxAmount ?? 0;
 
@@ -229,7 +254,7 @@ export function Cart() {
                   <span>Calculado en el checkout</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>Impuestos ({selectedCountry?.country ?? "EE.UU."}){taxLoading ? " …" : " (est.)"}</span>
+                  <span>Impuestos ({taxCountryLabel}){taxLoading ? " …" : " (est.)"}</span>
                   <span>{displayTax > 0 ? formatPrice(displayTax) : formatPrice(0)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">

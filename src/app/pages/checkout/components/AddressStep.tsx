@@ -7,6 +7,8 @@ import { StepBadge, Section } from "./StepIndicator";
 import { deliveryMeta, storeLocations, pickupPoints, labelIcon } from "../types";
 import type { CheckoutState, CheckoutAction, DeliveryType } from "../types";
 import type { UserProfile } from "../../../context/UserContext";
+import type { ShippingOption } from "../../../repositories/ShippingRepository";
+import { useCurrency } from "../../../context/CurrencyContext";
 
 interface AddressStepProps {
     state: CheckoutState;
@@ -14,6 +16,9 @@ interface AddressStepProps {
     user: UserProfile;
     step2Valid: boolean;
     deliverySummary: string;
+    shippingOptions: ShippingOption[];
+    selectedShippingId: string | null;
+    shippingLoading: boolean;
 }
 
 const newModeTabs: { id: DeliveryType; label: string; icon: React.ReactNode }[] = [
@@ -22,8 +27,9 @@ const newModeTabs: { id: DeliveryType; label: string; icon: React.ReactNode }[] 
     { id: "pickup", label: "Punto entrega", icon: <Package2 className="w-4 h-4" strokeWidth={1.5} /> },
 ];
 
-export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary }: AddressStepProps) {
+export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary, shippingOptions, selectedShippingId, shippingLoading }: AddressStepProps) {
     const navigate = useNavigate();
+    const { formatPrice } = useCurrency();
     const { step, selectedAddrId, newMode, manualAddr, selectedStoreId, selectedPickupId } = state;
 
     return (
@@ -334,6 +340,59 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                         </div>
 
                     </div>
+
+                    {/* ── Shipping option selector ── */}
+                    {step === 2 && shippingOptions.length > 0 && (
+                        <div className="pt-5 border-t border-gray-100 mt-5">
+                            <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Método de envío</p>
+                            {shippingLoading ? (
+                                <div className="flex items-center gap-2 py-3">
+                                    <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
+                                    <span className="text-xs text-gray-400">Cargando opciones de envío…</span>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {shippingOptions.map((opt) => {
+                                        const isSelected = selectedShippingId === opt.id;
+                                        return (
+                                            <button
+                                                key={opt.id}
+                                                type="button"
+                                                onClick={() => dispatch({ type: "PATCH", payload: { selectedShippingId: opt.id } })}
+                                                className={`w-full text-left rounded-xl border-2 px-4 py-3 flex items-center gap-3 transition-all ${isSelected ? "border-gray-500 bg-gray-50" : "border-gray-200 bg-white hover:border-gray-300"
+                                                    }`}
+                                            >
+                                                <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${isSelected ? "bg-gray-500 text-white" : "bg-gray-100 text-gray-400"
+                                                    }`}>
+                                                    <Truck className="w-4 h-4" strokeWidth={1.5} />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm text-gray-900">{opt.name}</p>
+                                                    <p className="text-xs text-gray-400">
+                                                        {opt.estimatedDays} {opt.estimatedDays === 1 ? "día" : "días"} estimados
+                                                    </p>
+                                                </div>
+                                                <div className="text-right flex-shrink-0">
+                                                    <p className={`text-sm ${opt.price === 0 ? "text-green-600" : "text-gray-900"}`}>
+                                                        {opt.price === 0 ? "Gratis" : formatPrice(opt.price)}
+                                                    </p>
+                                                    {opt.freeAbove != null && opt.price > 0 && (
+                                                        <p className="text-[10px] text-gray-400">
+                                                            Gratis desde {formatPrice(opt.freeAbove)}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                                <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${isSelected ? "border-gray-500 bg-gray-500" : "border-gray-200"
+                                                    }`}>
+                                                    {isSelected && <Check className="w-3 h-3 text-white" strokeWidth={2.5} />}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     <div className="mt-5 flex justify-end">
                         <button

@@ -10,6 +10,7 @@ import { InvoiceDocument } from "../InvoiceDocument";
 import type { InvoiceStatus as DocStatus } from "../../types/invoice";
 import { toast } from "sonner";
 import { useCurrency } from "../../context/CurrencyContext";
+import { extractAmount } from "../../utils/extractAmount";
 
 /* ── Status helpers ────────────────────────────────────────── */
 const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; text: string; dot: string; icon: typeof CheckCircle2 }> = {
@@ -45,8 +46,8 @@ function toDocData(inv: Invoice) {
             name: String(l.name ?? ""),
             sku: String(l.sku ?? ""),
             quantity: Number(l.quantity ?? 0),
-            unitPrice: Number(l.unitPrice ?? 0),
-            total: Number(l.total ?? 0),
+            unitPrice: extractAmount(l.unitPrice),
+            total: extractAmount(l.total),
         })),
         subtotal: inv.subtotal,
         shipping: inv.shipping,

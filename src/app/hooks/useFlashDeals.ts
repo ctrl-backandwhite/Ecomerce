@@ -20,6 +20,7 @@ import {
     nexaCategoryRepository,
 } from "../repositories/NexaCategoryRepository";
 import { useLanguage } from "../context/LanguageContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { buildCategoryMap } from "../lib/categoryUtils";
 import type { Product } from "../types/product";
 
@@ -57,21 +58,33 @@ export interface UseFlashDealsResult {
 }
 
 const CACHE_TTL = 3 * 60_000; // 3 min
-let _cachedDeals: { deals: FlashDeal[]; endDate: Date | null; ts: number } | null = null;
+let _cachedDeals: { deals: FlashDeal[]; endDate: Date | null; ts: number; currencyCode: string } | null = null;
 
 /* ── Hook ───────────────────────────────────────────────────── */
 
 export function useFlashDeals(): UseFlashDealsResult {
     const { locale } = useLanguage();
+    const { currency } = useCurrency();
+    const currencyCode = currency?.currencyCode ?? "USD";
     const apiLocale = locale === "pt" ? "pt-BR" : locale;
 
-    const hasCached = _cachedDeals && Date.now() - _cachedDeals.ts < CACHE_TTL;
+    const hasCached = _cachedDeals
+        && _cachedDeals.currencyCode === currencyCode
+        && Date.now() - _cachedDeals.ts < CACHE_TTL;
 
     const [rawProducts, setRawProducts] = useState<NexaProduct[]>([]);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(!hasCached);
     const fetchedRef = useRef(false);
+
+    // Reset fetchedRef when currency changes so we re-fetch
+    const prevCurrencyRef = useRef(currencyCode);
+    if (prevCurrencyRef.current !== currencyCode) {
+        prevCurrencyRef.current = currencyCode;
+        fetchedRef.current = false;
+        _cachedDeals = null;
+    }
 
     /* ── Fetch products + campaigns in parallel ── */
     useEffect(() => {
@@ -112,7 +125,7 @@ export function useFlashDeals(): UseFlashDealsResult {
 
         return () => controller.abort();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [apiLocale]);
+    }, [apiLocale, currencyCode]);
 
     /* ── Derive deals ── */
     const deals = useMemo<FlashDeal[]>(() => {
@@ -207,9 +220,9 @@ export function useFlashDeals(): UseFlashDealsResult {
     /* ── Persist to module cache ── */
     useEffect(() => {
         if (!loading && deals.length > 0) {
-            _cachedDeals = { deals, endDate, ts: Date.now() };
+            _cachedDeals = { deals, endDate, ts: Date.now(), currencyCode };
         }
-    }, [loading, deals, endDate]);
+    }, [loading, deals, endDate, currencyCode]);
 
     return { deals, loading, endDate };
 }

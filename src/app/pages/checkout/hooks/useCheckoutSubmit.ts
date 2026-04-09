@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useCart } from "../../../context/CartContext";
 import { useUser } from "../../../context/UserContext";
+import { useCurrency } from "../../../context/CurrencyContext";
 import { orderRepository } from "../../../repositories/OrderRepository";
 import { paymentRepository } from "../../../repositories/PaymentRepository";
 import { invoiceRepository } from "../../../repositories/InvoiceRepository";
@@ -19,6 +20,7 @@ export function useCheckoutSubmit(
 ) {
     const { items } = useCart();
     const { user } = useUser();
+    const { currency } = useCurrency();
 
     const handleSubmit = useCallback(async () => {
         const {
@@ -39,7 +41,7 @@ export function useCheckoutSubmit(
         const selectedShipping = state.shippingOptions.find((o) => o.id === state.selectedShippingId);
         const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
         const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
-        const tax = state.taxCalc?.taxAmount ?? subtotal * 0.1;
+        const tax = state.taxCalc?.taxAmount ?? 0;
         const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
         const loyaltyDiscount = loyaltyRate > 0 ? loyaltyPoints / loyaltyRate : 0;
 
@@ -130,14 +132,15 @@ export function useCheckoutSubmit(
             /* 2 ─ Determine paymentMethod string */
             const activePmType = selectedPm ? selectedPm.type : payMethod;
             const paymentMethodMap: Record<string, string> = {
-                card: "CREDIT_CARD", paypal: "PAYPAL", usdt: "CRYPTO_USDT", btc: "CRYPTO_BTC",
+                card: "CARD", paypal: "PAYPAL", usdt: "USDT", btc: "BTC",
             };
             const paymentMethodStr = total === 0
                 ? (giftCardDiscount > 0 ? "GIFT_CARD" : "NONE")
-                : paymentMethodMap[activePmType] ?? "CREDIT_CARD";
+                : paymentMethodMap[activePmType] ?? "CARD";
 
             /* 3 ─ Create order via backend (DRAFT status — no stock deducted yet) */
             const firstGcCode = gcAmounts.find(a => a.applied > 0)?.code;
+            const userCurrency = currency?.currencyCode ?? "USD";
             const order = await orderRepository.createOrder({
                 shippingAddress,
                 paymentMethod: paymentMethodStr,
@@ -146,6 +149,7 @@ export function useCheckoutSubmit(
                 giftCardAmount: giftCardDiscount > 0 ? giftCardDiscount : undefined,
                 loyaltyPointsUsed: loyaltyPoints > 0 ? loyaltyPoints : undefined,
                 loyaltyDiscount: loyaltyDiscount > 0 ? loyaltyDiscount : undefined,
+                currencyCode: userCurrency,
                 notes: undefined,
             });
             dispatch({ type: "PATCH", payload: { createdOrder: order } });
@@ -162,8 +166,8 @@ export function useCheckoutSubmit(
                         orderId: order.id,
                         userId: user.id,
                         email: contact.email || user.email,
-                        amount: total,
-                        currency: "USD",
+                        amount: order.total,
+                        currency: order.currencyCode ?? userCurrency,
                         paymentMethod: methodMap[activeType] ?? "CARD",
                     });
                 } catch (payErr) {

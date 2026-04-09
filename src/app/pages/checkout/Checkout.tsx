@@ -60,7 +60,7 @@ export function Checkout() {
     const subtotal = getTotalPrice();
     const selectedShipping = state.shippingOptions.find((o) => o.id === state.selectedShippingId);
     const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
-    const tax = state.taxCalc?.taxAmount ?? subtotal * 0.1;
+    const tax = state.taxCalc?.taxAmount ?? 0;
     const couponDiscount = state.couponResult?.valid ? (state.couponResult.discount ?? 0) : 0;
     const loyaltyDiscount = state.loyaltyRate > 0 ? state.loyaltyPoints / state.loyaltyRate : 0;
 
@@ -154,7 +154,11 @@ export function Checkout() {
                         <h1 className="text-xl text-gray-900 mb-6">Finalizar compra</h1>
 
                         <ContactStep state={state} dispatch={dispatch} step1Valid={step1Valid} />
-                        <AddressStep state={state} dispatch={dispatch} user={user} step2Valid={step2Valid} deliverySummary={deliverySummary()} />
+                        <AddressStep state={state} dispatch={dispatch} user={user} step2Valid={step2Valid} deliverySummary={deliverySummary()}
+                            shippingOptions={state.shippingOptions}
+                            selectedShippingId={state.selectedShippingId}
+                            shippingLoading={state.shippingLoading}
+                        />
                         <PaymentStep
                             state={state} dispatch={dispatch} user={user}
                             step3Valid={step3Valid} total={total} btcRate={state.btcRate}

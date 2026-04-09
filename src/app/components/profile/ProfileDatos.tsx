@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useUser } from "../../context/UserContext";
 import { useAuth } from "../../context/AuthContext";
 import { profileRepository, type ProfilePayload, type SyncIdentityPayload } from "../../repositories/ProfileRepository";
+import { loyaltyRepository, type LoyaltyTier } from "../../repositories/LoyaltyRepository";
 import { Save, Pencil } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,15 +16,30 @@ const docTypes = [
   { value: "OTHER", label: "OTRO", placeholder: "Número de documento" },
 ];
 
-const TIERS = [
-  { name: "Bronce", min: 0, max: 999, next: 1000, nextName: "Plata" },
-  { name: "Plata", min: 1000, max: 4999, next: 5000, nextName: "Oro" },
-  { name: "Oro", min: 5000, max: 9999, next: 10000, nextName: "Diamante" },
-  { name: "Diamante", min: 10000, max: Infinity, next: null, nextName: null },
-] as const;
+/** Fallback tiers — used while API tiers are loading. */
+const FALLBACK_TIERS: LoyaltyTier[] = [
+  { id: "fb-0", name: "Bronze", minPoints: 0, maxPoints: 999, multiplier: 1, benefits: [], createdAt: "", updatedAt: "" },
+];
 
-function getMembershipTier(points: number) {
-  return TIERS.find((t) => points >= t.min && points <= t.max) ?? TIERS[0];
+/**
+ * Resolve the user's tier given their point balance and the (sorted) tier list.
+ * The last tier whose minPoints ≤ points wins.
+ */
+function getMembershipTier(points: number, tiers: LoyaltyTier[]) {
+  const sorted = [...tiers].sort((a, b) => a.minPoints - b.minPoints);
+  let match = sorted[0];
+  for (const t of sorted) {
+    if (points >= t.minPoints) match = t;
+    else break;
+  }
+  return match;
+}
+
+/** Find the next tier above the current one, or null if already at the top. */
+function getNextTier(currentTier: LoyaltyTier, tiers: LoyaltyTier[]): LoyaltyTier | null {
+  const sorted = [...tiers].sort((a, b) => a.minPoints - b.minPoints);
+  const idx = sorted.findIndex((t) => t.id === currentTier.id);
+  return idx >= 0 && idx < sorted.length - 1 ? sorted[idx + 1] : null;
 }
 
 export function ProfileDatos() {
@@ -31,6 +47,7 @@ export function ProfileDatos() {
   const { user: authUser } = useAuth();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [tiers, setTiers] = useState<LoyaltyTier[]>(FALLBACK_TIERS);
   const [form, setForm] = useState({
     firstName: authUser?.firstName ?? user.firstName,
     lastName: authUser?.lastName ?? user.lastName,
@@ -74,6 +91,13 @@ export function ProfileDatos() {
   }, [authUser]);
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
+
+  /* ── Load loyalty tiers from API ──────────────────────────── */
+  useEffect(() => {
+    loyaltyRepository.findAllTiers()
+      .then((data) => { if (data.length > 0) setTiers(data); })
+      .catch((err) => logger.warn("Failed to load loyalty tiers", err));
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -172,8 +196,10 @@ export function ProfileDatos() {
 
       {/* ── Card: NX036 Rewards ─────────────────────────────────── */}
       {(() => {
-        const tier = getMembershipTier(user.loyaltyPoints);
-        const progress = tier.next ? Math.min((user.loyaltyPoints / tier.next) * 100, 100) : 100;
+        const tier = getMembershipTier(user.loyaltyPoints, tiers);
+        const nextTier = tier ? getNextTier(tier, tiers) : null;
+        const nextMinPoints = nextTier ? nextTier.minPoints : null;
+        const progress = nextMinPoints ? Math.min((user.loyaltyPoints / nextMinPoints) * 100, 100) : 100;
         return (
           <div className="bg-gray-700 rounded-xl p-5 text-white">
             <div className="flex items-center justify-between mb-3">
@@ -184,9 +210,9 @@ export function ProfileDatos() {
             <p className="text-xs text-gray-400">puntos disponibles</p>
             <div className="mt-4 pt-4 border-t border-gray-600">
               <div className="flex justify-between text-xs text-gray-400 mb-1.5">
-                <span>Nivel {tier.name}</span>
-                {tier.next ? (
-                  <span>{tier.next.toLocaleString()} pts → {tier.nextName}</span>
+                <span>Nivel {tier?.name ?? "Bronze"}</span>
+                {nextTier ? (
+                  <span>{nextMinPoints!.toLocaleString()} pts → {nextTier.name}</span>
                 ) : (
                   <span>Nivel máximo</span>
                 )}
@@ -306,7 +332,7 @@ export function ProfileDatos() {
             {[
               { label: "ID de cliente", value: authUser?.id !== undefined ? String(authUser.id) : user.id },
               { label: "Estado", value: "Activo" },
-              { label: "Nivel de membresía", value: getMembershipTier(user.loyaltyPoints).name },
+              { label: "Nivel de membresía", value: getMembershipTier(user.loyaltyPoints, tiers)?.name ?? "Bronze" },
               { label: "Tipo de cuenta", value: user.isSeller ? "Vendedor" : "Comprador" },
             ].map(({ label, value }) => (
               <div key={label} className="bg-gray-50 rounded-xl p-4 border border-gray-100">

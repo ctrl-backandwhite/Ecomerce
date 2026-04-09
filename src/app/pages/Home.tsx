@@ -18,7 +18,7 @@ import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
-import { priceRanges } from "../config/priceRanges";
+import { usePriceRanges } from "../hooks/usePriceRanges";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../config/filters";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useNexaCategories } from "../hooks/useNexaCategories";
@@ -34,6 +34,7 @@ function scrollToProducts() {
 
 export function Home() {
   const { t } = useLanguage();
+  const priceRanges = usePriceRanges();
 
   /* ── Path params (clean URLs) ──────────────────────────────── */
   const { catSlug, subcatSlug, query: routeQuery } = useParams<{

@@ -125,12 +125,14 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         [rates, selectedCode],
     );
 
-    // Locale string for Intl.NumberFormat (e.g. "es", "en", "pt")
+    // Build a BCP-47 locale from the user's language + country (e.g. "es-CO", "en-US", "pt-BR").
+    // This ensures Intl.NumberFormat uses the correct currency symbol, grouping separators,
+    // and decimal separators for each country (e.g. "$ 4.275" for COP in Colombia instead of "4.275,02 COP").
     const intlLocale = useMemo(() => {
-        if (locale === "es") return "es-ES";
-        if (locale === "pt") return "pt-BR";
-        return "en-US";
-    }, [locale]);
+        const lang = locale || "en";
+        const country = selectedCountry?.code || "US";
+        return `${lang}-${country}`;
+    }, [locale, selectedCountry]);
 
     const convertPrice = useCallback(
         (amountUsd: number): number => {
@@ -141,23 +143,32 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         [],
     );
 
+    /** Currencies that conventionally display without decimal places. */
+    const ZERO_DECIMAL_CURRENCIES = useMemo(
+        () => new Set(["CLP", "COP", "JPY", "KRW", "VND", "PYG", "HUF", "ISK", "TWD"]),
+        [],
+    );
+
     const formatPrice = useCallback(
         (amount: number): string => {
             const code = currency?.currencyCode ?? "USD";
+            const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.has(code);
             try {
                 return new Intl.NumberFormat(intlLocale, {
                     style: "currency",
                     currency: code,
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                }).format(amount);
+                    minimumFractionDigits: isZeroDecimal ? 0 : 2,
+                    maximumFractionDigits: isZeroDecimal ? 0 : 2,
+                }).format(isZeroDecimal ? Math.round(amount) : amount);
             } catch {
                 // Fallback if currency code is invalid for Intl
                 const symbol = currency?.currencySymbol ?? "$";
-                return `${symbol}${amount.toFixed(2)}`;
+                return isZeroDecimal
+                    ? `${symbol}${Math.round(amount).toLocaleString()}`
+                    : `${symbol}${amount.toFixed(2)}`;
             }
         },
-        [currency, intlLocale],
+        [currency, intlLocale, ZERO_DECIMAL_CURRENCIES],
     );
 
     // @deprecated — alias for formatPrice, kept for backward compat
