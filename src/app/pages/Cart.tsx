@@ -14,7 +14,7 @@ import { Badge } from "../components/ui/badge";
 export function Cart() {
   const { items, removeFromCart, updateQuantity, getTotalPrice } = useCart();
   const { user, toggleFavorite, isFavorite } = useUser();
-  const { formatPrice } = useCurrency();
+  const { formatPrice, convertFromUsd } = useCurrency();
   const { selectedCountry, countries } = useTimezone();
   const navigate = useNavigate();
 
@@ -265,14 +265,17 @@ export function Cart() {
                 </div>
               </div>
 
-              {subtotal > 0 && minFreeAbove != null && displaySubtotal < minFreeAbove && (
+              {subtotal > 0 && minFreeAbove != null && (() => {
+                const freeAboveLocal = convertFromUsd(minFreeAbove);
+                return displaySubtotal < freeAboveLocal ? (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
                   <p>
-                    ¡Agrega {formatPrice(minFreeAbove - displaySubtotal)} más para posible envío
+                    ¡Agrega {formatPrice(freeAboveLocal - displaySubtotal)} más para posible envío
                     gratis!
                   </p>
                 </div>
-              )}
+                ) : null;
+              })()}
 
               <Button
                 size="lg"

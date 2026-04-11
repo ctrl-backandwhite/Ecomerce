@@ -10,6 +10,7 @@ import { Pagination } from "../../components/admin/Pagination";
 import { BulkUploadModal } from "../../components/admin/BulkUploadModal";
 import { useAdminProducts } from "../../hooks/useAdminProducts";
 import { useLanguage } from "../../context/LanguageContext";
+import { useCurrency } from "../../context/CurrencyContext";
 import {
     nexaProductAdminRepository,
     type AdminProduct,
@@ -32,6 +33,7 @@ import { ProductModal, type ProductForm, productToForm, makeEmptyForm } from "..
 export function AdminProducts() {
     const { locale } = useLanguage();
     const apiLocale = locale === "pt" ? "pt-BR" : locale;
+    const { formatPrice } = useCurrency();
 
     // ── Filters ─────────────────────────────────────────────────
     const [searchInput, setSearchInput] = useState("");
@@ -586,7 +588,7 @@ export function AdminProducts() {
                                             {p.name || "Sin nombre"}
                                         </p>
                                         <span className="inline-flex items-center text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700">
-                                            ${price.toFixed(2)}
+                                            {formatPrice(price)}
                                         </span>
                                         {categoryMap[p.categoryId] && (
                                             <span className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-600">
@@ -687,7 +689,7 @@ export function AdminProducts() {
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                         <div className="flex flex-col items-center text-center">
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Precio</p>
-                                            <p className="text-xs text-gray-700 tabular-nums">${price.toFixed(2)}</p>
+                                            <p className="text-xs text-gray-700 tabular-nums">{formatPrice(price)}</p>
                                         </div>
                                         <div className="flex flex-col items-center text-center">
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Stock</p>

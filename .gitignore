@@ -30,6 +30,10 @@ npm-debug.log*
 # Test coverage
 coverage/
 
+# Cypress results (videos + screenshots)
+cypress/results/
+cypress/downloads/
+
 # Additional cleanup
 .env.production
 *.class

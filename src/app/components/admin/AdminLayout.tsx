@@ -4,6 +4,7 @@ import { AdminSidebar } from "./AdminSidebar";
 import { AdminTour } from "./AdminTour";
 import { TimezoneSidebar } from "../TimezoneSidebar";
 import { useTimezone } from "../../context/TimezoneContext";
+import { useCurrency } from "../../context/CurrencyContext";
 import { Menu, Clock } from "lucide-react";
 import {
   NotificationsPanel,
@@ -39,6 +40,7 @@ const pageTitles: Record<string, string> = {
   "/admin/settings": "Configuración",
   "/admin/reports": "Reportes",
   "/admin/pricing": "Reglas de Precio",
+  "/admin/currency-rates": "Monedas",
 };
 
 export function AdminLayout() {
@@ -47,6 +49,7 @@ export function AdminLayout() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>(DEFAULT_NOTIFICATIONS);
   const { selectedCountry, toggleSidebar } = useTimezone();
+  const { currency } = useCurrency();
   const location = useLocation();
 
   const pageTitle = pageTitles[location.pathname] ?? "Admin";
@@ -101,7 +104,7 @@ export function AdminLayout() {
           <div className="flex items-center gap-2 flex-shrink-0">
             <AdminTour />
 
-            {/* Timezone */}
+            {/* Country / Currency / Timezone */}
             <button
               onClick={toggleSidebar}
               className="flex items-center gap-1.5 px-2 py-1 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
@@ -109,6 +112,7 @@ export function AdminLayout() {
             >
               <Clock className="w-4 h-4" strokeWidth={1.5} />
               <span className="text-sm leading-none">{selectedCountry.flag}</span>
+              <span className="text-xs font-medium text-gray-500">{currency?.currencyCode ?? "USD"}</span>
             </button>
 
             {/* Notifications */}

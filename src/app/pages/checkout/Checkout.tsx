@@ -4,6 +4,7 @@ import { useUser } from "../../context/UserContext";
 import { useNavigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { logger } from "../../lib/logger";
+import { useCurrency } from "../../context/CurrencyContext";
 
 import { storeLocations, pickupPoints } from "./types";
 import type { PaymentMethod } from "../../context/UserContext";
@@ -27,6 +28,7 @@ import { OrderConfirmation } from "./components/OrderConfirmation";
 export function Checkout() {
     const { items, getTotalPrice, clearCart } = useCart();
     const { user } = useUser();
+    const { convertFromUsd } = useCurrency();
     const navigate = useNavigate();
 
     const [state, dispatch] = useCheckoutState(user);
@@ -59,21 +61,39 @@ export function Checkout() {
 
     const subtotal = getTotalPrice();
     const selectedShipping = state.shippingOptions.find((o) => o.id === state.selectedShippingId);
-    const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
+    const shippingUsd = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
+    const shipping = convertFromUsd(shippingUsd);
     const tax = state.taxCalc?.taxAmount ?? 0;
-    const couponDiscount = state.couponResult?.valid ? (state.couponResult.discount ?? 0) : 0;
-    const loyaltyDiscount = state.loyaltyRate > 0 ? state.loyaltyPoints / state.loyaltyRate : 0;
 
-    /* Distribute gift card amounts across all applied cards */
+    /* Coupon: PERCENTAGE discount was computed against the display-currency subtotal,
+       FIXED discount is a raw USD amount that needs conversion. */
+    const couponRaw = state.couponResult?.valid ? (state.couponResult.discount ?? 0) : 0;
+    const couponType = state.couponResult?.coupon?.type;
+    const couponDiscount = couponType === "FIXED" ? convertFromUsd(couponRaw) : couponRaw;
+
+    /* Loyalty: points ÷ rate = USD → convert to display currency */
+    const loyaltyDiscountUsd = state.loyaltyRate > 0 ? state.loyaltyPoints / state.loyaltyRate : 0;
+    const loyaltyDiscount = convertFromUsd(loyaltyDiscountUsd);
+
+    /* Distribute gift card amounts across all applied cards
+       (card.balance is in USD → convert before comparison) */
     let gcRemaining = subtotal + shipping + tax - couponDiscount - loyaltyDiscount;
     const appliedAmounts = state.appliedGiftCards.map(card => {
-        const applied = Math.min(card.balance, Math.max(0, gcRemaining));
+        const balanceLocal = convertFromUsd(card.balance);
+        const applied = Math.min(balanceLocal, Math.max(0, gcRemaining));
         gcRemaining -= applied;
         return { code: card.code, applied };
     });
     const giftCardDiscount = appliedAmounts.reduce((sum, a) => sum + a.applied, 0);
     const total = Math.max(0, subtotal + shipping + tax - couponDiscount - loyaltyDiscount - giftCardDiscount);
-    const maxRedeemable = Math.min(state.loyaltyBalance, Math.floor((subtotal + shipping + tax - couponDiscount) * state.loyaltyRate));
+
+    /* maxRedeemable: convert display-currency total to USD before multiplying by
+       loyaltyRate (points per $1 USD) to get correct point cap. */
+    const xRate = convertFromUsd(1);
+    const totalBeforeLoyaltyUsd = xRate > 0
+        ? (subtotal + shipping + tax - couponDiscount) / xRate
+        : (subtotal + shipping + tax - couponDiscount);
+    const maxRedeemable = Math.min(state.loyaltyBalance, Math.floor(totalBeforeLoyaltyUsd * state.loyaltyRate));
 
     /* ── Tax calculation (debounced) ── */
     useTaxCalculation(subtotal, state.selectedAddrId, selectedAddr, state.manualAddr, state.newMode, dispatch);

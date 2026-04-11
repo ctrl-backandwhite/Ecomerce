@@ -19,6 +19,7 @@ import { CategoryBar } from "../components/CategoryBar";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { usePriceRanges } from "../hooks/usePriceRanges";
+import { useFlashDeals } from "../hooks/useFlashDeals";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../config/filters";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useNexaCategories } from "../hooks/useNexaCategories";
@@ -114,6 +115,13 @@ export function Home() {
   const [filterKey, setFilterKey] = useState(0);
   const [promoClickKey, setPromoClickKey] = useState(0);
 
+  /* ── Flash deals (all campaign products) ── */
+  const { allDeals: campaignDeals } = useFlashDeals();
+  const campaignDealIds = useMemo(
+    () => new Set(campaignDeals.map((d) => d.id)),
+    [campaignDeals],
+  );
+
   /* ── Infinite-scroll refs (callback-ref pattern) ─────────────── */
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef(apiLoadMore);
@@ -136,8 +144,21 @@ export function Home() {
   const filtered = useMemo(() => {
     let list = [...products];
 
-    if (soloOfertas)
-      list = list.filter((p) => p.originalPrice !== undefined);
+    if (soloOfertas) {
+      if (campaignDealIds.size > 0) {
+        // Show only products that match the active campaign
+        list = list.filter((p) => campaignDealIds.has(p.id));
+        // Apply campaign prices from allDeals
+        const priceMap = new Map(campaignDeals.map((d) => [d.id, d]));
+        list = list.map((p) => {
+          const deal = priceMap.get(p.id);
+          if (deal) return { ...p, price: deal.price, originalPrice: deal.originalPrice };
+          return p;
+        });
+      } else {
+        list = list.filter((p) => p.originalPrice !== undefined);
+      }
+    }
 
     // Skip client-side subcategory filter when API already filtered by subcategoryId
     if (selectedSubcat && !selectedSubcategoryId)
@@ -175,7 +196,8 @@ export function Home() {
     }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products]);
+    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products,
+    campaignDealIds, campaignDeals]);
 
   /* ── Reset filterKey when local filters change ─────────────── */
   useEffect(() => {

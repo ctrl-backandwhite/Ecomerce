@@ -13,11 +13,20 @@ export interface Campaign {
     type: ApiCampaignType;
     value: number | null;
     badge: string | null;
+    badgeColor: string | null;
     startDate: string;
     endDate: string;
     appliesToCategories: string[] | null;
     appliesToProducts: string[] | null;
     active: boolean;
+    description: string | null;
+    minOrder: number | null;
+    maxDiscount: number | null;
+    buyQty: number | null;
+    getQty: number | null;
+    isFlash: boolean | null;
+    showOnHome: boolean | null;
+    priority: number | null;
     createdAt: string;
     updatedAt: string | null;
 }
@@ -27,11 +36,20 @@ export interface CampaignPayload {
     type: ApiCampaignType;
     value: number;
     badge?: string;
+    badgeColor?: string;
     startDate: string;
     endDate: string;
     appliesToCategories?: string[];
     appliesToProducts?: string[];
     active?: boolean;
+    description?: string;
+    minOrder?: number;
+    maxDiscount?: number | null;
+    buyQty?: number;
+    getQty?: number;
+    isFlash?: boolean;
+    showOnHome?: boolean;
+    priority?: number;
 }
 
 class CampaignRepository {

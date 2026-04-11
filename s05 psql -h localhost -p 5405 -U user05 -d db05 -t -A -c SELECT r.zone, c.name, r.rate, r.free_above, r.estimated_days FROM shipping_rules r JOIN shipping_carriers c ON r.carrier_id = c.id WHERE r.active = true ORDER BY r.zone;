@@ -1,9 +1,0 @@
-                  id                  | zone | rate | free_above | estimated_days |     carrier     
---------------------------------------+------+------+------------+----------------+-----------------
- SR-006                               | ES   | 7.50 |      79.99 |              2 | SEUR
- SR-011                               | ES   | 3.00 |     129.99 |              4 | UPS
- SR-001                               | ES   | 3.50 |     120.00 |              2 | Correos Express
- SR-010                               | ES   | 3.50 |     120.00 |              5 | DHL Express
- 04ffda81-fe89-4a3c-9a6a-00d855fccd23 | ES   | 3.00 |            |              5 | MRW
-(5 rows)
-

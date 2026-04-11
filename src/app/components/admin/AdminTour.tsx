@@ -162,12 +162,12 @@ export function AdminTour() {
     setTimeout(() => driverObj.drive(), 300);
   }, []);
 
-  // Auto-start only on first visit (single check, stable)
-  useEffect(() => {
-    if (!localStorage.getItem(TOUR_KEY)) {
-      startTour();
-    }
-  }, [startTour]);
+  // Tour disabled — only manual via help button
+  // useEffect(() => {
+  //   if (!localStorage.getItem(TOUR_KEY)) {
+  //     startTour();
+  //   }
+  // }, [startTour]);
 
   return (
     <>

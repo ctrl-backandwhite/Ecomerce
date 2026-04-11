@@ -69,11 +69,11 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
   if (loading || deals.length === 0) return null;
 
   return (
-    <section className="bg-white border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <section className="bg-white border-b border-gray-100 w-full">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
 
         {/* ── Header ── */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-red-50 border border-red-100">
               <Zap className="w-4 h-4 text-red-500" strokeWidth={2} />
@@ -130,16 +130,16 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
           </div>
         </div>
 
-        {/* ── Horizontal scroll strip ── */}
+        {/* ── Horizontal scroll strip (full width) ── */}
         <div
           ref={scrollRef}
-          className="flex gap-3 overflow-x-auto scrollbar-hide pb-1"
+          className="flex justify-center gap-3 overflow-x-auto scrollbar-hide pb-1"
           style={{ scrollSnapType: "x mandatory" }}
         >
           {deals.map((p) => (
             <div
               key={p.id}
-              className="flex-shrink-0 w-[200px] bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow group"
+              className="flex-shrink-0 w-[200px] flex flex-col bg-white border border-gray-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow group"
               style={{ scrollSnapAlign: "start" }}
             >
               {/* Image */}
@@ -165,18 +165,18 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
               </Link>
 
               {/* Info */}
-              <div className="p-3">
-                <Link to={`/product/${p.id}`}>
+              <div className="flex flex-col flex-1 p-3">
+                <Link to={`/product/${p.id}`} className="block min-h-[52px]">
                   <p className="text-[11px] text-gray-400 uppercase tracking-wider mb-0.5 truncate">
                     {p.brand}
                   </p>
-                  <p className="text-xs text-gray-800 line-clamp-2 leading-snug mb-2 group-hover:text-gray-600 transition-colors">
+                  <p className="text-xs text-gray-800 line-clamp-2 leading-snug group-hover:text-gray-600 transition-colors">
                     {p.name}
                   </p>
                 </Link>
 
                 {/* Prices */}
-                <div className="flex items-baseline gap-1.5 mb-2.5">
+                <div className="flex items-baseline gap-1.5 mt-auto pt-2 mb-2.5">
                   <span className="text-base text-gray-900">{formatPrice(p.price)}</span>
                   <span className="text-xs text-gray-400 line-through">{formatPrice(p.originalPrice)}</span>
                 </div>

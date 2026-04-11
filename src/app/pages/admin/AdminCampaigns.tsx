@@ -111,24 +111,24 @@ function mapApiToUi(c: ApiCampaign): Campaign {
   return {
     id: c.id,
     name: c.name,
-    description: "",
+    description: c.description ?? "",
     type,
     status,
     discountValue: c.value ?? 0,
-    minOrder: 0,
-    maxDiscount: null,
+    minOrder: c.minOrder ?? 0,
+    maxDiscount: c.maxDiscount ?? null,
     appliesTo: c.appliesToCategories?.length ? "categories" : c.appliesToProducts?.length ? "products" : "all",
     categoryIds: c.appliesToCategories ?? [],
     productIds: c.appliesToProducts ?? [],
-    buyQty: 2,
-    getQty: 1,
+    buyQty: c.buyQty ?? 2,
+    getQty: c.getQty ?? 1,
     startDate: c.startDate.split("T")[0],
     endDate: c.endDate.split("T")[0],
-    isFlash: c.type === "FLASH",
+    isFlash: c.isFlash ?? false,
     badgeText: c.badge ?? "",
-    badgeColor: "#111827",
-    showOnHome: false,
-    priority: 3,
+    badgeColor: c.badgeColor ?? "#111827",
+    showOnHome: c.showOnHome ?? false,
+    priority: c.priority ?? 3,
     revenue: 0,
     ordersCount: 0,
     usesCount: 0,
@@ -142,11 +142,20 @@ function uiToPayload(c: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesC
     type: apiType,
     value: c.discountValue ?? 0,
     badge: c.badgeText || undefined,
+    badgeColor: c.badgeColor || undefined,
     startDate: c.startDate.includes("T") ? c.startDate : `${c.startDate}T00:00:00Z`,
     endDate: c.endDate.includes("T") ? c.endDate : `${c.endDate}T23:59:59Z`,
     appliesToCategories: c.appliesTo === "categories" ? c.categoryIds : undefined,
     appliesToProducts: c.appliesTo === "products" ? c.productIds : undefined,
     active: c.status === "active" || c.status === "scheduled",
+    description: c.description || undefined,
+    minOrder: c.minOrder || undefined,
+    maxDiscount: c.maxDiscount,
+    buyQty: c.buyQty,
+    getQty: c.getQty,
+    isFlash: c.isFlash,
+    showOnHome: c.showOnHome,
+    priority: c.priority,
   };
 }
 
@@ -192,9 +201,11 @@ interface CampaignPanelProps {
   initial: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesCount"> & { id?: string };
   onSave: (data: Omit<Campaign, "id" | "revenue" | "ordersCount" | "usesCount"> & { id?: string }) => void;
   onClose: () => void;
+  /** All other campaigns — used to detect products already in another campaign */
+  otherCampaigns?: Campaign[];
 }
 
-function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
+function CampaignPanel({ initial, onSave, onClose, otherCampaigns = [] }: CampaignPanelProps) {
   const [form, setForm] = useState({ ...initial });
   const [section, setSection] = useState<"basics" | "discount" | "scope" | "dates" | "display">("basics");
   const [productSearch, setProductSearch] = useState("");
@@ -226,7 +237,64 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
     p.sku.toLowerCase().includes(productSearch.toLowerCase()),
   );
 
-  const parentCategories = allCategories.filter(c => c.status === "active");
+  const parentCategories = allCategories.filter(c => !c.parentId);
+
+  // Build set of product IDs and category IDs already claimed by other active campaigns
+  const claimedProductIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const c of otherCampaigns) {
+      if (c.status !== "active" && c.status !== "scheduled") continue;
+      for (const pid of c.productIds) ids.add(pid);
+    }
+    return ids;
+  }, [otherCampaigns]);
+
+  const claimedCategoryMap = useMemo(() => {
+    const map = new Map<string, string>(); // categoryId -> campaignName
+    for (const c of otherCampaigns) {
+      if (c.status !== "active" && c.status !== "scheduled") continue;
+      for (const catId of c.categoryIds) {
+        if (!map.has(catId)) map.set(catId, c.name);
+      }
+    }
+    return map;
+  }, [otherCampaigns]);
+
+  const claimedProductMap = useMemo(() => {
+    const map = new Map<string, string>(); // productId -> campaignName
+    // Build category name → ID lookup for matching products to campaign categories
+    const catNameToIds = new Map<string, string[]>();
+    for (const cat of allCategories) {
+      const existing = catNameToIds.get(cat.name) ?? [];
+      existing.push(cat.id);
+      catNameToIds.set(cat.name, existing);
+      for (const sub of cat.subCategories ?? []) {
+        const subExisting = catNameToIds.get(sub.name) ?? [];
+        subExisting.push(sub.id);
+        catNameToIds.set(sub.name, subExisting);
+      }
+    }
+
+    for (const c of otherCampaigns) {
+      if (c.status !== "active" && c.status !== "scheduled") continue;
+      for (const pid of c.productIds) {
+        if (!map.has(pid)) map.set(pid, c.name);
+      }
+      // Also mark products that belong to claimed categories
+      if (c.categoryIds.length > 0) {
+        const catSet = new Set(c.categoryIds);
+        for (const p of allProducts) {
+          if (map.has(p.id)) continue;
+          // Match product.category (name) to campaign categoryIds (IDs)
+          const pCatIds = catNameToIds.get(p.category) ?? [];
+          if (pCatIds.some(id => catSet.has(id))) {
+            map.set(p.id, c.name);
+          }
+        }
+      }
+    }
+    return map;
+  }, [otherCampaigns, allProducts, allCategories]);
 
   const validate = (): string | null => {
     if (!form.name.trim()) return "El nombre es obligatorio";
@@ -535,22 +603,33 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                 <div>
                   <label className={lbl}>Selecciona categorías</label>
                   <div className="border border-gray-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
-                    {parentCategories.map(cat => (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => toggleCategory(cat.id)}
-                        className={`flex items-center justify-between w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${form.categoryIds.includes(cat.id) ? "bg-gray-50" : ""}`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${form.categoryIds.includes(cat.id) ? "bg-gray-600 border-gray-600" : "border-gray-300"}`}>
-                            {form.categoryIds.includes(cat.id) && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                    {parentCategories.map(cat => {
+                      const claimedBy = claimedCategoryMap.get(cat.id);
+                      const isSelected = form.categoryIds.includes(cat.id);
+                      const isClaimed = !!claimedBy && !isSelected;
+                      return (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => !isClaimed && toggleCategory(cat.id)}
+                          disabled={isClaimed}
+                          className={`flex items-center justify-between w-full px-3 py-2.5 text-left transition-colors border-b border-gray-50 last:border-0 ${isClaimed ? "opacity-50 cursor-not-allowed bg-gray-50" : "hover:bg-gray-50"} ${isSelected ? "bg-gray-50" : ""}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? "bg-gray-600 border-gray-600" : "border-gray-300"}`}>
+                              {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-900">{cat.name}</p>
+                              {isClaimed && (
+                                <p className="text-[10px] text-amber-500">Ya en: {claimedBy}</p>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-xs text-gray-900">{cat.name}</p>
-                        </div>
-                        <span className="text-[10px] text-gray-400">{cat.productCount} productos</span>
-                      </button>
-                    ))}
+                          <span className="text-[10px] text-gray-400">{(cat as any).productCount ?? 0} productos</span>
+                        </button>
+                      );
+                    })}
                   </div>
                   {form.categoryIds.length > 0 && (
                     <p className="text-[10px] text-gray-500 mt-1">{form.categoryIds.length} categoría{form.categoryIds.length !== 1 ? "s" : ""} seleccionada{form.categoryIds.length !== 1 ? "s" : ""}</p>
@@ -572,23 +651,32 @@ function CampaignPanel({ initial, onSave, onClose }: CampaignPanelProps) {
                     />
                   </div>
                   <div className="border border-gray-200 rounded-xl overflow-hidden max-h-56 overflow-y-auto">
-                    {filteredProducts.map(p => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => toggleProduct(p.id)}
-                        className={`flex items-center gap-3 w-full px-3 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-50 last:border-0 ${form.productIds.includes(p.id) ? "bg-gray-50" : ""}`}
-                      >
-                        <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${form.productIds.includes(p.id) ? "bg-gray-600 border-gray-600" : "border-gray-300"}`}>
-                          {form.productIds.includes(p.id) && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
-                        </div>
-                        <img src={p.image} alt={p.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
-                        <div className="min-w-0">
-                          <p className="text-xs text-gray-900 truncate">{p.name}</p>
-                          <p className="text-[10px] text-gray-400">{p.sku} · ${p.price}</p>
-                        </div>
-                      </button>
-                    ))}
+                    {filteredProducts.map(p => {
+                      const claimedBy = claimedProductMap.get(p.id);
+                      const isSelected = form.productIds.includes(p.id);
+                      const isClaimed = !!claimedBy && !isSelected;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => !isClaimed && toggleProduct(p.id)}
+                          disabled={isClaimed}
+                          className={`flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors border-b border-gray-50 last:border-0 ${isClaimed ? "opacity-50 cursor-not-allowed bg-gray-50" : "hover:bg-gray-50"} ${isSelected ? "bg-gray-50" : ""}`}
+                        >
+                          <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${isSelected ? "bg-gray-600 border-gray-600" : "border-gray-300"}`}>
+                            {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                          </div>
+                          <img src={p.image} alt={p.name} className="w-7 h-7 rounded-lg object-cover flex-shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-gray-900 truncate">{p.name}</p>
+                            <p className="text-[10px] text-gray-400">{p.sku} · ${p.price}</p>
+                            {isClaimed && (
+                              <p className="text-[10px] text-amber-500">Ya en: {claimedBy}</p>
+                            )}
+                          </div>
+                        </button>
+                      );
+                    })}
                     {filteredProducts.length === 0 && (
                       <p className="px-3 py-4 text-xs text-gray-400 text-center">Sin resultados</p>
                     )}
@@ -792,11 +880,13 @@ function DeleteDialog({ name, onConfirm, onClose }: { name: string; onConfirm: (
 function CampaignCard({
   campaign,
   onEdit,
+  onClone,
   onToggle,
   onDelete,
 }: {
   campaign: Campaign;
   onEdit: () => void;
+  onClone: () => void;
   onToggle: () => void;
   onDelete: () => void;
 }) {
@@ -874,6 +964,7 @@ function CampaignCard({
         </button>
         <div className="flex gap-1">
           <button onClick={onEdit} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Editar"><Pencil className="w-3 h-3" /></button>
+          <button onClick={onClone} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Clonar"><Copy className="w-3 h-3" /></button>
           <button onClick={onDelete} className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar"><Trash2 className="w-3 h-3" /></button>
         </div>
       </div>
@@ -1073,6 +1164,10 @@ export function AdminCampaigns() {
               key={c.id}
               campaign={c}
               onEdit={() => setPanelData({ mode: "edit", data: c })}
+              onClone={() => {
+                const { id, revenue, ordersCount, usesCount, ...rest } = c;
+                setPanelData({ mode: "new", data: { ...rest, name: `${c.name} (copia)`, status: "draft" } });
+              }}
               onToggle={() => handleToggle(c.id)}
               onDelete={() => setDeleteTarget({ id: c.id, name: c.name })}
             />
@@ -1094,6 +1189,7 @@ export function AdminCampaigns() {
           initial={panelData.mode === "edit" ? panelData.data : panelData.data}
           onSave={handleSave}
           onClose={() => setPanelData(null)}
+          otherCampaigns={campaigns.filter(c => c.id !== (panelData.data as Campaign).id)}
         />
       )}
 

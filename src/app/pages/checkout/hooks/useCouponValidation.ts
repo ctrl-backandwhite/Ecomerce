@@ -10,7 +10,7 @@ export function useCouponValidation(
     subtotal: number,
     dispatch: React.Dispatch<CheckoutAction>,
 ) {
-    const { formatPrice } = useCurrency();
+    const { formatPrice, formatFromUsd } = useCurrency();
     const applyCoupon = useCallback(async () => {
         if (!couponCode.trim()) return;
         dispatch({ type: "PATCH", payload: { couponLoading: true } });
@@ -18,7 +18,12 @@ export function useCouponValidation(
             const res = await couponRepository.validate(couponCode.trim(), subtotal);
             dispatch({ type: "PATCH", payload: { couponResult: res } });
             if (!res.valid) toast.error(res.message ?? "Cupón no válido");
-            else toast.success(`Cupón aplicado: -${formatPrice(res.discount ?? 0)}`);
+            else {
+                const fmt = res.coupon?.type === "FIXED"
+                    ? formatFromUsd(res.discount ?? 0)
+                    : formatPrice(res.discount ?? 0);
+                toast.success(`Cupón aplicado: -${fmt}`);
+            }
         } catch (err) {
             logger.warn("Coupon validation failed", err);
             toast.error("No se pudo validar el cupón");
@@ -26,7 +31,7 @@ export function useCouponValidation(
         } finally {
             dispatch({ type: "PATCH", payload: { couponLoading: false } });
         }
-    }, [couponCode, subtotal, dispatch, formatPrice]);
+    }, [couponCode, subtotal, dispatch, formatPrice, formatFromUsd]);
 
     return applyCoupon;
 }

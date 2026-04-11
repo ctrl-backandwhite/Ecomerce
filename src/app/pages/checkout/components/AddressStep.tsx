@@ -29,7 +29,7 @@ const newModeTabs: { id: DeliveryType; label: string; icon: React.ReactNode }[] 
 
 export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary, shippingOptions, selectedShippingId, shippingLoading }: AddressStepProps) {
     const navigate = useNavigate();
-    const { formatPrice } = useCurrency();
+    const { formatPrice, formatFromUsd } = useCurrency();
     const { step, selectedAddrId, newMode, manualAddr, selectedStoreId, selectedPickupId } = state;
 
     return (
@@ -374,11 +374,11 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                                                 </div>
                                                 <div className="text-right flex-shrink-0">
                                                     <p className={`text-sm ${opt.price === 0 ? "text-green-600" : "text-gray-900"}`}>
-                                                        {opt.price === 0 ? "Gratis" : formatPrice(opt.price)}
+                                                        {opt.price === 0 ? "Gratis" : formatFromUsd(opt.price)}
                                                     </p>
                                                     {opt.freeAbove != null && opt.price > 0 && (
                                                         <p className="text-[10px] text-gray-400">
-                                                            Gratis desde {formatPrice(opt.freeAbove)}
+                                                            Gratis desde {formatFromUsd(opt.freeAbove)}
                                                         </p>
                                                     )}
                                                 </div>

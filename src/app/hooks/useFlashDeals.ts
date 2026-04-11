@@ -51,14 +51,17 @@ export interface FlashDeal extends Product {
 }
 
 export interface UseFlashDealsResult {
+    /** Top 8 deals for the carousel. */
     deals: FlashDeal[];
+    /** ALL campaign deals (no limit). */
+    allDeals: FlashDeal[];
     loading: boolean;
     /** Earliest FLASH campaign end date (for the countdown). */
     endDate: Date | null;
 }
 
 const CACHE_TTL = 3 * 60_000; // 3 min
-let _cachedDeals: { deals: FlashDeal[]; endDate: Date | null; ts: number; currencyCode: string } | null = null;
+let _cachedDeals: { deals: FlashDeal[]; allDeals: FlashDeal[]; endDate: Date | null; ts: number; currencyCode: string } | null = null;
 
 /* ── Hook ───────────────────────────────────────────────────── */
 
@@ -127,9 +130,9 @@ export function useFlashDeals(): UseFlashDealsResult {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [apiLocale, currencyCode]);
 
-    /* ── Derive deals ── */
-    const deals = useMemo<FlashDeal[]>(() => {
-        if (hasCached) return _cachedDeals!.deals;
+    /* ── Derive all deals ── */
+    const allDeals = useMemo<FlashDeal[]>(() => {
+        if (hasCached) return _cachedDeals!.allDeals;
         if (rawProducts.length === 0) return [];
 
         // ── Campaign-based flash deals ──
@@ -148,18 +151,21 @@ export function useFlashDeals(): UseFlashDealsResult {
                     if (!mapped) continue;
 
                     const originalPrice = mapped.price;
+                    const cost = mapped.costPrice ?? 0;
+                    const margin = Math.max(0, originalPrice - cost);
                     let discountedPrice: number;
 
                     if (camp.type === "FIXED") {
-                        discountedPrice = Math.max(
-                            0,
-                            originalPrice - (camp.value ?? 0),
-                        );
+                        // Fixed discount capped at margin (never below cost)
+                        const fixedOff = Math.min(camp.value ?? 0, margin);
+                        discountedPrice = originalPrice - fixedOff;
                     } else {
-                        // PERCENTAGE / FLASH → treat value as %
+                        // PERCENTAGE / FLASH → apply % only to the margin
                         discountedPrice =
-                            originalPrice * (1 - (camp.value ?? 0) / 100);
+                            cost + margin * (1 - (camp.value ?? 0) / 100);
                     }
+                    // Ensure price never drops below cost
+                    discountedPrice = Math.max(cost, discountedPrice);
                     discountedPrice =
                         Math.round(discountedPrice * 100) / 100;
 
@@ -185,7 +191,7 @@ export function useFlashDeals(): UseFlashDealsResult {
                 }
             }
 
-            return result.sort((a, b) => b.pct - a.pct).slice(0, 8);
+            return result.sort((a, b) => b.pct - a.pct);
         }
 
         // ── Fallback: products that already have originalPrice > price ──
@@ -200,9 +206,11 @@ export function useFlashDeals(): UseFlashDealsResult {
                 campaignEndDate: null,
                 campaignBadge: null,
             }))
-            .sort((a, b) => b.pct - a.pct)
-            .slice(0, 8);
+            .sort((a, b) => b.pct - a.pct);
     }, [rawProducts, campaigns, categoryMap, hasCached]);
+
+    /** Top 8 for the carousel */
+    const deals = useMemo(() => allDeals.slice(0, 8), [allDeals]);
 
     /* ── Campaign end date (earliest) ── */
     const endDate = useMemo<Date | null>(() => {
@@ -219,10 +227,10 @@ export function useFlashDeals(): UseFlashDealsResult {
 
     /* ── Persist to module cache ── */
     useEffect(() => {
-        if (!loading && deals.length > 0) {
-            _cachedDeals = { deals, endDate, ts: Date.now(), currencyCode };
+        if (!loading && allDeals.length > 0) {
+            _cachedDeals = { deals, allDeals, endDate, ts: Date.now(), currencyCode };
         }
-    }, [loading, deals, endDate, currencyCode]);
+    }, [loading, deals, allDeals, endDate, currencyCode]);
 
-    return { deals, loading, endDate };
+    return { deals, allDeals, loading, endDate };
 }

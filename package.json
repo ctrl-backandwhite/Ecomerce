@@ -5,7 +5,18 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "vite"
+    "dev": "vite",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "cy:run:headed": "cypress run --headed",
+    "cy:run:chrome": "cypress run --browser chrome",
+    "test:e2e": "cypress run --browser chrome --headless",
+    "test:e2e:auth": "cypress run --spec 'cypress/e2e/auth/**'",
+    "test:e2e:home": "cypress run --spec 'cypress/e2e/home/**'",
+    "test:e2e:products": "cypress run --spec 'cypress/e2e/products/**'",
+    "test:e2e:cart": "cypress run --spec 'cypress/e2e/cart/**'",
+    "test:e2e:checkout": "cypress run --spec 'cypress/e2e/checkout/**'",
+    "test:e2e:admin": "cypress run --spec 'cypress/e2e/admin/**'"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
@@ -71,9 +82,12 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "4.1.12",
+    "@testing-library/cypress": "^10.1.0",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "4.7.0",
+    "cypress": "^15.13.1",
     "tailwindcss": "4.1.12",
+    "typescript": "5.7",
     "vite": "6.3.5"
   },
   "peerDependencies": {

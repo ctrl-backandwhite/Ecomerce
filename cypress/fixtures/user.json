@@ -1,0 +1,8 @@
+{
+  "email": "jfinol02@gmail.com",
+  "password": "Motorola25*",
+  "firstName": "Test",
+  "lastName": "User",
+  "phone": "+1234567890",
+  "roles": ["ROLE_USER", "ROLE_ADMIN"]
+}

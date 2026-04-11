@@ -56,10 +56,8 @@ export function OrderSummary({
 }: OrderSummaryProps) {
     const { formatPrice } = useCurrency();
 
-    /* ── Rounding-safe total ──
-     * All amounts now come pre-converted from the backend via X-Currency header.
-     * No client-side currency conversion needed — just round for display.
-     */
+    /* All amounts are pre-converted to display currency by Checkout.tsx.
+     * Rounding here is just for floating-point precision in subtraction. */
     const roundRaw = (n: number) => Math.round(n * 100) / 100;
     const rSubtotal = roundRaw(subtotal);
     const rShipping = roundRaw(shipping);

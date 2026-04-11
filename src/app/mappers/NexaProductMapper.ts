@@ -176,12 +176,12 @@ export function mapNexaProduct(
         allowBackorder: false,
         attributes: [],
         variants: raw.variants ? raw.variants.map(v => mapVariant(v)) : [],
-        weight: firstVariant ? firstVariant.variantWeight : 0,
+        weight: firstVariant ? firstVariant.variantWeight / 1000 : 0,        // CJ reports grams → convert to kg
         dimensions: firstVariant
             ? {
-                length: firstVariant.variantLength,
-                width: firstVariant.variantWidth,
-                height: firstVariant.variantHeight,
+                length: firstVariant.variantLength / 10,   // CJ reports mm → convert to cm
+                width: firstVariant.variantWidth / 10,
+                height: firstVariant.variantHeight / 10,
             }
             : { length: 0, width: 0, height: 0 },
         shippingClass: "standard",
@@ -288,12 +288,14 @@ export function mapNexaProductDetail(raw: NexaProductDetail): Product {
 
     // Fallback stock: if no real inventory data, use listedNum as availability signal
     const effectiveStock = totalInventory > 0 ? totalInventory : (raw.listedNum > 0 ? raw.listedNum : 0);
-    const hasAnyInventory = raw.variants?.some(v =>
-        v.inventories && v.inventories.length > 0 &&
-        v.inventories.some(inv => (inv.totalInventory ?? 0) > 0)
-    ) ?? false;
-    // Use real inventory data only — no artificial fallback (M-09)
-    const variantFallbackStock = 0;
+
+    // Variant stock fallback: distribute effectiveStock across variants when
+    // no real inventory records exist. This prevents "out of stock" on products
+    // that have warehouse/listedNum data but empty variant inventories.
+    const variantCount = raw.variants?.length ?? 1;
+    const variantFallbackStock = effectiveStock > 0
+        ? Math.ceil(effectiveStock / variantCount)
+        : 0;
 
     // ── Build attributes ("Ficha técnica") from detail fields ──
     const attrs: { name: string; value: string }[] = [];
@@ -353,12 +355,12 @@ export function mapNexaProductDetail(raw: NexaProductDetail): Product {
         variants: raw.variants
             ? raw.variants.map(v => mapVariant(v, raw.productKeyEn, variantFallbackStock))
             : [],
-        weight: firstVariant ? firstVariant.variantWeight : 0,
+        weight: firstVariant ? firstVariant.variantWeight / 1000 : 0,        // CJ reports grams → convert to kg
         dimensions: firstVariant
             ? {
-                length: firstVariant.variantLength,
-                width: firstVariant.variantWidth,
-                height: firstVariant.variantHeight,
+                length: firstVariant.variantLength / 10,   // CJ reports mm → convert to cm
+                width: firstVariant.variantWidth / 10,
+                height: firstVariant.variantHeight / 10,
             }
             : { length: 0, width: 0, height: 0 },
         shippingClass: "standard",

@@ -641,8 +641,20 @@ export function ProductDetail() {
     if (!product) return [];
     const keys = new Set<string>();
     product.variants.forEach((v) => Object.keys(v.attributes).forEach((k) => keys.add(k)));
+    // Hide meaningless generic attribute names from single-variant / default products
+    keys.delete("default");
+    keys.delete("key");
     return Array.from(keys);
   }, [product]);
+
+  // Auto-select the only variant when there are no meaningful attribute selectors
+  useEffect(() => {
+    if (!product) return;
+    if (variantAttrNames.length === 0 && product.variants.length === 1) {
+      const v = product.variants[0];
+      setSelectedAttrs(v.attributes);
+    }
+  }, [product, variantAttrNames]);
 
   const selectedVariant = useMemo(() => {
     if (!product || !variantAttrNames.length) return null;

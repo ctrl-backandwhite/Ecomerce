@@ -27,7 +27,7 @@ export function GiftCardSection({
     dispatch, applyManualCard,
 }: GiftCardSectionProps) {
     const isApplied = (code: string) => appliedGiftCards.some(c => c.code === code);
-    const { formatPrice } = useCurrency();
+    const { formatPrice, formatFromUsd } = useCurrency();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropRef = useRef<HTMLDivElement>(null);
 
@@ -73,7 +73,7 @@ export function GiftCardSection({
                 </div>
                 <div className="text-right flex-shrink-0">
                     <span className={`text-[11px] ${selected ? "text-violet-600 font-medium" : "text-gray-500"}`}>
-                        {formatPrice(card.balance)}
+                        {formatFromUsd(card.balance)}
                     </span>
                     {selected && amt && amt.applied > 0 && amt.applied < card.balance && (
                         <span className="block text-[10px] text-violet-400">
@@ -143,7 +143,7 @@ export function GiftCardSection({
                                                 key={card.code}
                                                 className="inline-flex items-center gap-1 text-[10px] text-violet-700 bg-violet-50 border border-violet-200 rounded-full px-2 py-0.5"
                                             >
-                                                ····{card.code.slice(-4)} · {amt && amt.applied > 0 ? formatPrice(amt.applied) : formatPrice(card.balance)}
+                                                ····{card.code.slice(-4)} · {amt && amt.applied > 0 ? formatPrice(amt.applied) : formatFromUsd(card.balance)}
                                                 <button
                                                     type="button"
                                                     onClick={() => dispatch({ type: "REMOVE_GIFT_CARD", code: card.code })}
@@ -196,7 +196,7 @@ export function GiftCardSection({
                                 <div key={card.code} className="flex items-center gap-2 px-3 py-1.5 bg-violet-50/60 border border-violet-200 rounded-lg text-xs">
                                     <Gift className="w-3 h-3 text-violet-400 flex-shrink-0" strokeWidth={1.5} />
                                     <span className="font-mono text-violet-700 text-[11px]">····{card.code.slice(-4)}</span>
-                                    <span className="text-violet-500 text-[11px]">{formatPrice(card.balance)}</span>
+                                    <span className="text-violet-500 text-[11px]">{formatFromUsd(card.balance)}</span>
                                     {amt && amt.applied > 0 && amt.applied < card.balance && (
                                         <span className="text-[10px] text-violet-400">−{formatPrice(amt.applied)}</span>
                                     )}

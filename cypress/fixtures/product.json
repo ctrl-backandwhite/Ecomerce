@@ -1,0 +1,13 @@
+{
+  "sampleProduct": {
+    "name": "Test Product",
+    "sku": "TEST-SKU-001",
+    "price": 29.99,
+    "category": "Electronics"
+  },
+  "searchQueries": {
+    "valid": "phone",
+    "empty": "xyznonexistent12345",
+    "special": "cáble & usb"
+  }
+}

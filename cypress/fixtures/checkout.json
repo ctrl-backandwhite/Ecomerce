@@ -1,0 +1,22 @@
+{
+  "contact": {
+    "firstName": "E2E",
+    "lastName": "Test",
+    "email": "e2e@test.com",
+    "phone": "+1999999999"
+  },
+  "address": {
+    "street": "456 Test Avenue",
+    "city": "Miami",
+    "state": "FL",
+    "zip": "33101",
+    "country": "US"
+  },
+  "newAddress": {
+    "street": "789 Cypress Blvd",
+    "city": "Test City",
+    "state": "TS",
+    "zip": "12345",
+    "country": "CO"
+  }
+}

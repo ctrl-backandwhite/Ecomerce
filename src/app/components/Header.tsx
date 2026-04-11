@@ -5,6 +5,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTimezone } from "../context/TimezoneContext";
+import { useCurrency } from "../context/CurrencyContext";
 import { useState, useRef, useEffect } from "react";
 
 export function Header() {
@@ -13,6 +14,7 @@ export function Header() {
   const isAdmin = roles.includes("ROLE_ADMIN");
   const { t } = useLanguage();
   const { selectedCountry, toggleSidebar } = useTimezone();
+  const { currency } = useCurrency();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -108,7 +110,7 @@ export function Header() {
               )}
             </Link>
 
-            {/* ── Country / Timezone Selector (also sets language) ── */}
+            {/* ── Country / Currency / Timezone ── */}
             <button
               onClick={toggleSidebar}
               className="flex items-center gap-1.5 px-2 py-1.5 text-gray-700 hover:text-gray-900 transition-colors rounded-lg hover:bg-gray-50"
@@ -116,6 +118,7 @@ export function Header() {
             >
               <Clock className="w-4 h-4" strokeWidth={1.5} />
               <span className="text-base leading-none">{selectedCountry.flag}</span>
+              <span className="text-xs font-medium text-gray-600">{currency?.currencyCode ?? "USD"}</span>
             </button>
 
             {/* ── User Dropdown ── */}
@@ -243,7 +246,7 @@ export function Header() {
           <div className="md:hidden py-4 border-t border-gray-200">
             {/* Mobile Search */}
 
-            {/* Mobile Country / Timezone Button (also sets language) */}
+            {/* Mobile Country / Currency / Timezone */}
             <button
               onClick={() => { setIsMenuOpen(false); toggleSidebar(); }}
               className="flex items-center gap-2 w-full px-3 py-2 mb-3 rounded-lg text-sm text-gray-700 bg-gray-50 hover:bg-gray-100 transition-colors"
@@ -251,7 +254,9 @@ export function Header() {
               <Clock className="w-4 h-4" strokeWidth={1.5} />
               <span>{selectedCountry.flag}</span>
               <span>{t("tz.tooltip")}</span>
-              <span className="ml-auto text-xs text-gray-400">{selectedCountry.country}</span>
+              <span className="ml-auto text-xs text-gray-400">
+                {selectedCountry.country} · {currency?.currencyCode ?? "USD"}
+              </span>
             </button>
 
             <form onSubmit={handleSearch} className="mb-4">

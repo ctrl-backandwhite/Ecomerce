@@ -42,6 +42,17 @@ interface CurrencyContextType {
      * Kept temporarily for backward compatibility during migration.
      */
     formatDirect: (amount: number) => string;
+    /**
+     * Convert a USD-base amount to the selected currency (number only).
+     * Use for prices that are NOT pre-converted by the backend
+     * (e.g. shipping rates, coupon fixed amounts, gift-card balances).
+     */
+    convertFromUsd: (amountUsd: number) => number;
+    /**
+     * Convert a USD-base amount to the selected currency AND format it.
+     * Shorthand for `formatPrice(convertFromUsd(amountUsd))`.
+     */
+    formatFromUsd: (amountUsd: number) => string;
     /** True while rates are being loaded */
     loading: boolean;
 }
@@ -102,16 +113,6 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         }
     }, [rates, selectedCountry.code]);
 
-    // When user changes country, always update currency to match
-    useEffect(() => {
-        if (rates.length === 0 || !initialRestoreDone.current) return;
-        const mapped = COUNTRY_CURRENCY_MAP[selectedCountry.code];
-        if (mapped && rates.some((r) => r.currencyCode === mapped)) {
-            setSelectedCode(mapped);
-            storeCurrency(mapped);
-        }
-    }, [selectedCountry.code, rates]);
-
     // Set currency code and reload so all data is re-fetched with the new X-Currency header
     const setCurrencyCode = useCallback((code: string) => {
         if (code === selectedCode) return;
@@ -125,14 +126,15 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         [rates, selectedCode],
     );
 
-    // Build a BCP-47 locale from the user's language + country (e.g. "es-CO", "en-US", "pt-BR").
+    // Build a BCP-47 locale from the user's language + the currency's country (e.g. "es-CO", "en-US", "pt-BR").
     // This ensures Intl.NumberFormat uses the correct currency symbol, grouping separators,
-    // and decimal separators for each country (e.g. "$ 4.275" for COP in Colombia instead of "4.275,02 COP").
+    // and decimal separators for the selected currency's region.
     const intlLocale = useMemo(() => {
         const lang = locale || "en";
-        const country = selectedCountry?.code || "US";
+        // Prefer the currency's own country for correct formatting, fall back to timezone country
+        const country = currency?.countryCode || selectedCountry?.code || "US";
         return `${lang}-${country}`;
-    }, [locale, selectedCountry]);
+    }, [locale, currency, selectedCountry]);
 
     const convertPrice = useCallback(
         (amountUsd: number): number => {
@@ -174,9 +176,31 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
     // @deprecated — alias for formatPrice, kept for backward compat
     const formatDirect = formatPrice;
 
+    /**
+     * Convert a USD amount to the selected currency using the exchange rate.
+     * For prices NOT pre-converted by the product-catalog backend
+     * (shipping rates, coupon/gift-card amounts, freeAbove thresholds, etc.).
+     */
+    const convertFromUsd = useCallback(
+        (amountUsd: number): number => {
+            if (!currency || currency.rate === 0) return amountUsd;
+            return amountUsd * currency.rate;
+        },
+        [currency],
+    );
+
+    /**
+     * Convert a USD amount AND format it in the display currency.
+     * Shorthand for `formatPrice(convertFromUsd(amountUsd))`.
+     */
+    const formatFromUsd = useCallback(
+        (amountUsd: number): string => formatPrice(convertFromUsd(amountUsd)),
+        [formatPrice, convertFromUsd],
+    );
+
     const value = useMemo<CurrencyContextType>(
-        () => ({ currency, rates, setCurrencyCode, formatPrice, convertPrice, formatDirect, loading }),
-        [currency, rates, setCurrencyCode, formatPrice, convertPrice, formatDirect, loading],
+        () => ({ currency, rates, setCurrencyCode, formatPrice, convertPrice, formatDirect, convertFromUsd, formatFromUsd, loading }),
+        [currency, rates, setCurrencyCode, formatPrice, convertPrice, formatDirect, convertFromUsd, formatFromUsd, loading],
     );
 
     return (
