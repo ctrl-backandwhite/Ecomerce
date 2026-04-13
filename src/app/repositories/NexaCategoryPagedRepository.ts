@@ -395,6 +395,33 @@ class NexaCategoryPagedRepository {
     }
 
     /**
+     * Publish all DRAFT categories at once. Returns the count of updated categories.
+     */
+    async publishAllDrafts(): Promise<{ updated: number }> {
+        try {
+            const res = await authFetch(`${CATEGORIES_URL}/publish-all-drafts`, {
+                method: "PATCH",
+                headers: { accept: "application/json" },
+            });
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody: CategoryApiError = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch (err) { logger.warn("Suppressed error", err); }
+                throw new ApiError(res.status, errorMsg);
+            }
+            return (await res.json()) as { updated: number };
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo publicar las categorías en borrador",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
+
+    /**
      * Bulk update category status (DRAFT / PUBLISHED).
      */
     async bulkUpdateStatus(ids: string[], status: "DRAFT" | "PUBLISHED"): Promise<void> {

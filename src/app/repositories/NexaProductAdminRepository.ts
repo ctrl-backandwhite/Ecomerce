@@ -137,6 +137,46 @@ interface ApiErrorBody {
     timeStamp: string;
 }
 
+/** Progress info emitted during discover-by-category */
+export interface DiscoverProgress {
+    current: number;
+    total: number;
+    created: number;
+    updated: number;
+}
+
+/** Persisted discover state so it survives page refreshes */
+export interface DiscoverState {
+    running: boolean;
+    offset: number;
+    totalCategories: number;
+    created: number;
+    updated: number;
+    startedAt: number; // epoch ms
+}
+
+const DISCOVER_STATE_KEY = "nx036_discover_state";
+
+function saveDiscoverState(state: DiscoverState): void {
+    try { localStorage.setItem(DISCOVER_STATE_KEY, JSON.stringify(state)); } catch { /* quota */ }
+}
+function clearDiscoverState(): void {
+    try { localStorage.removeItem(DISCOVER_STATE_KEY); } catch { /* noop */ }
+}
+export function loadDiscoverState(): DiscoverState | null {
+    try {
+        const raw = localStorage.getItem(DISCOVER_STATE_KEY);
+        if (!raw) return null;
+        const state = JSON.parse(raw) as DiscoverState;
+        // Expire after 24 hours to avoid stale state
+        if (Date.now() - state.startedAt > 24 * 60 * 60 * 1000) {
+            clearDiscoverState();
+            return null;
+        }
+        return state;
+    } catch { return null; }
+}
+
 // ── Repository ───────────────────────────────────────────────────────────────
 
 class NexaProductAdminRepository {
@@ -363,9 +403,17 @@ class NexaProductAdminRepository {
     /** Active AbortController for the current sync – null when idle */
     private syncAbortController: AbortController | null = null;
 
+    /** Active AbortController for the current discover – null when idle */
+    private discoverAbortController: AbortController | null = null;
+
     /** Returns true when a sync loop is in progress */
     get isSyncing(): boolean {
         return this.syncAbortController !== null;
+    }
+
+    /** Returns true when a discover loop is in progress */
+    get isDiscovering(): boolean {
+        return this.discoverAbortController !== null;
     }
 
     /** Cancels the running sync (if any). Safe to call when idle. */
@@ -380,16 +428,28 @@ class NexaProductAdminRepository {
         }
     }
 
+    /** Cancels the running discover (if any). Safe to call when idle. */
+    cancelDiscover(): void {
+        if (this.discoverAbortController) {
+            this.discoverAbortController.abort();
+            this.discoverAbortController = null;
+            logger.debug(
+                "%c[CJ Discover] ⏹ Descubrimiento detenido por el usuario.",
+                "color: #f59e0b; font-weight: bold",
+            );
+        }
+    }
+
     /**
      * Syncs products from CJ Dropshipping, iterating page by page (100 per page).
      * Waits 10 seconds between each page call and logs progress to the console.
      * Can be cancelled at any time by calling cancelSync().
      */
-    async syncProducts(): Promise<{ created: number; updated: number; total: number }> {
+    async syncProducts(forceOverwrite = true, categoryIds: string[] = []): Promise<{ created: number; updated: number; skipped: number; total: number }> {
         // If already syncing, cancel first
         if (this.syncAbortController) {
             this.cancelSync();
-            return { created: 0, updated: 0, total: 0 };
+            return { created: 0, updated: 0, skipped: 0, total: 0 };
         }
 
         const abortCtrl = new AbortController();
@@ -400,6 +460,7 @@ class NexaProductAdminRepository {
 
         let totalCreated = 0;
         let totalUpdated = 0;
+        let totalSkipped = 0;
         let page = 1;
         let cancelled = false;
 
@@ -426,8 +487,10 @@ class NexaProductAdminRepository {
                     "color: #0891b2",
                 );
 
+                const catParam = categoryIds.length > 0 ? `&categoryIds=${categoryIds.join(",")}` : "";
+
                 const res = await authFetch(
-                    `${BASE_URL}/sync/page?page=${page}&size=${PAGE_SIZE}`,
+                    `${BASE_URL}/sync/page?page=${page}&size=${PAGE_SIZE}&forceOverwrite=${forceOverwrite}${catParam}`,
                     { method: "POST", headers: { accept: "*/*" }, signal: abortCtrl.signal },
                 );
 
@@ -443,6 +506,7 @@ class NexaProductAdminRepository {
                 const result = (await res.json()) as {
                     created: number;
                     updated: number;
+                    skipped: number;
                     total: number;
                     page: number;
                     hasMore: boolean;
@@ -450,18 +514,19 @@ class NexaProductAdminRepository {
 
                 totalCreated += result.created;
                 totalUpdated += result.updated;
+                totalSkipped += result.skipped;
 
                 logger.debug(
                     `%c[CJ Sync] Página ${page} completada: ` +
-                    `+${result.created} creados, ~${result.updated} actualizados ` +
-                    `(acumulado: ${totalCreated} creados, ${totalUpdated} actualizados)`,
+                    `+${result.created} creados, ~${result.updated} actualizados, =${result.skipped} sin cambios ` +
+                    `(acumulado: ${totalCreated} creados, ${totalUpdated} actualizados, ${totalSkipped} sin cambios)`,
                     "color: #16a34a",
                 );
 
                 if (!result.hasMore) {
                     logger.debug(
                         "%c[CJ Sync] ✓ Sincronización finalizada. " +
-                        `Total: ${totalCreated} creados, ${totalUpdated} actualizados ` +
+                        `Total: ${totalCreated} creados, ${totalUpdated} actualizados, ${totalSkipped} sin cambios ` +
                         `(${totalCreated + totalUpdated} procesados)`,
                         "color: #2563eb; font-weight: bold",
                     );
@@ -502,8 +567,179 @@ class NexaProductAdminRepository {
         if (cancelled) {
             logger.debug(
                 "%c[CJ Sync] ⏹ Detenida. " +
-                `Parcial: ${totalCreated} creados, ${totalUpdated} actualizados ` +
+                `Parcial: ${totalCreated} creados, ${totalUpdated} actualizados, ${totalSkipped} sin cambios ` +
                 `(${totalCreated + totalUpdated} procesados hasta página ${page})`,
+                "color: #f59e0b; font-weight: bold",
+            );
+        }
+
+        return { created: totalCreated, updated: totalUpdated, skipped: totalSkipped, total: totalCreated + totalUpdated };
+    }
+
+    /**
+     * Discovers NEW products from CJ by iterating synced L3 categories.
+     * Processes one category per backend call, iterating offset until done.
+     * Waits 2 seconds between calls to respect rate limits.
+     * Can be cancelled at any time by calling cancelDiscover().
+     *
+     * @param onProgress Optional callback invoked after each category is processed.
+     * @param startOffset Resume from this category offset (default 0).
+     * @param accCreated Accumulated created count when resuming.
+     * @param accUpdated Accumulated updated count when resuming.
+     */
+    async discoverByCategory(
+        onProgress?: (progress: DiscoverProgress) => void,
+        startOffset = 0,
+        accCreated = 0,
+        accUpdated = 0,
+    ): Promise<{ created: number; updated: number; total: number }> {
+        if (this.discoverAbortController) {
+            this.cancelDiscover();
+            return { created: 0, updated: 0, total: 0 };
+        }
+
+        const abortCtrl = new AbortController();
+        this.discoverAbortController = abortCtrl;
+
+        const DELAY_MS = 2_000;
+
+        let totalCreated = accCreated;
+        let totalUpdated = accUpdated;
+        let offset = startOffset;
+        let totalCategories = 0;
+        let cancelled = false;
+
+        saveDiscoverState({
+            running: true, offset, totalCategories: 0,
+            created: totalCreated, updated: totalUpdated,
+            startedAt: Date.now(),
+        });
+
+        logger.debug(
+            "%c[CJ Discover] Iniciando descubrimiento de productos por categoría…",
+            "color: #7c3aed; font-weight: bold",
+        );
+
+        try {
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                if (abortCtrl.signal.aborted) {
+                    cancelled = true;
+                    break;
+                }
+
+                logger.debug(
+                    `%c[CJ Discover] Categoría ${offset + 1}${totalCategories ? "/" + totalCategories : ""}…`,
+                    "color: #7c3aed",
+                );
+
+                const res = await authFetch(
+                    `${BASE_URL}/sync/discover/page?offset=${offset}`,
+                    { method: "POST", headers: { accept: "*/*" }, signal: abortCtrl.signal },
+                );
+
+                if (!res.ok) {
+                    let errorMsg = `HTTP ${res.status}`;
+                    try {
+                        const errBody: ApiErrorBody = await res.json();
+                        errorMsg = errBody.message || errorMsg;
+                    } catch (err) { logger.warn("Suppressed error", err); }
+                    throw new ApiError(res.status, errorMsg);
+                }
+
+                const result = (await res.json()) as {
+                    created: number;
+                    updated: number;
+                    total: number;
+                    page: number;
+                    hasMore: boolean;
+                    totalCategories: number;
+                };
+
+                if (result.totalCategories > 0) totalCategories = result.totalCategories;
+
+                totalCreated += result.created;
+                totalUpdated += result.updated;
+
+                // Persist state so it survives page refresh
+                saveDiscoverState({
+                    running: true, offset, totalCategories,
+                    created: totalCreated, updated: totalUpdated,
+                    startedAt: Date.now(),
+                });
+
+                // Notify progress to caller
+                onProgress?.({
+                    current: offset + 1,
+                    total: totalCategories,
+                    created: totalCreated,
+                    updated: totalUpdated,
+                });
+
+                if (result.created > 0 || result.updated > 0) {
+                    logger.debug(
+                        `%c[CJ Discover] Cat ${offset + 1}/${totalCategories}: ` +
+                        `+${result.created} nuevos, ~${result.updated} actualizados ` +
+                        `(acumulado: ${totalCreated} nuevos, ${totalUpdated} actualizados)`,
+                        "color: #16a34a",
+                    );
+                }
+
+                if (!result.hasMore) {
+                    clearDiscoverState();
+                    logger.debug(
+                        "%c[CJ Discover] ✓ Descubrimiento finalizado. " +
+                        `${totalCategories} categorías procesadas. ` +
+                        `Total: ${totalCreated} nuevos, ${totalUpdated} actualizados`,
+                        "color: #7c3aed; font-weight: bold",
+                    );
+                    break;
+                }
+
+                // Short delay between categories (2s) — CJ rate limited
+                await new Promise<void>((resolve) => {
+                    const timer = setTimeout(resolve, DELAY_MS);
+                    abortCtrl.signal.addEventListener("abort", () => { clearTimeout(timer); resolve(); }, { once: true });
+                });
+                offset++;
+            }
+        } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") {
+                cancelled = true;
+            } else {
+                // Save state so user can resume from the failed offset
+                saveDiscoverState({
+                    running: false, offset, totalCategories,
+                    created: totalCreated, updated: totalUpdated,
+                    startedAt: Date.now(),
+                });
+                console.error(
+                    `%c[CJ Discover] ✗ Error en categoría ${offset + 1}:`,
+                    "color: #dc2626; font-weight: bold",
+                    err,
+                );
+                throw err instanceof ApiError
+                    ? err
+                    : new NetworkError(
+                        "No se pudo descubrir productos nuevos",
+                        err instanceof Error ? err : undefined,
+                    );
+            }
+        } finally {
+            this.discoverAbortController = null;
+        }
+
+        if (cancelled) {
+            // Save interrupted state so user can resume after refresh
+            saveDiscoverState({
+                running: false, offset: offset + 1, totalCategories,
+                created: totalCreated, updated: totalUpdated,
+                startedAt: Date.now(),
+            });
+            logger.debug(
+                "%c[CJ Discover] ⏹ Detenido. " +
+                `Parcial: ${totalCreated} nuevos, ${totalUpdated} actualizados ` +
+                `(hasta categoría ${offset + 1}/${totalCategories})`,
                 "color: #f59e0b; font-weight: bold",
             );
         }

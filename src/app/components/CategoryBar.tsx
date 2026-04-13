@@ -94,7 +94,13 @@ export function CategoryBar() {
       name: cat.name,
       count: cat.subCategories.length,
       subcategories: cat.subCategories
-        .map((sc) => ({ id: sc.id, name: sc.name }))
+        .map((sc) => ({
+          id: sc.id,
+          name: sc.name,
+          children: (sc.subCategories ?? [])
+            .map((ch) => ({ id: ch.id, name: ch.name }))
+            .sort((a, b) => a.name.localeCompare(b.name)),
+        }))
         .sort((a, b) => a.name.localeCompare(b.name)),
     }));
   }, [categories]);
@@ -259,21 +265,38 @@ export function CategoryBar() {
 
                 {/* Right panel */}
                 {openCat.subcategories.length > 0 ? (
-                  <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-6 gap-y-1.5 content-start">
+                  <div className="flex-1 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-4 content-start">
                     {openCat.subcategories.map((sub) => {
                       const SubIcon = getSubIcon(sub.name);
                       return (
-                        <button
-                          key={sub.id}
-                          onClick={() => goToSubcategory(openCat.name, sub.name, openCat.id, sub.id)}
-                          className="flex items-center gap-2 text-left py-2 px-2.5 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors group"
-                        >
-                          <SubIcon
-                            className="w-3.5 h-3.5 text-gray-300 group-hover:text-gray-500 transition-colors flex-shrink-0"
-                            strokeWidth={1.5}
-                          />
-                          <span className="truncate flex-1 text-xs">{sub.name}</span>
-                        </button>
+                        <div key={sub.id}>
+                          <button
+                            onClick={() => goToSubcategory(openCat.name, sub.name, openCat.id, sub.id)}
+                            className="flex items-center gap-2 text-left py-1.5 px-2.5 rounded-lg text-sm text-gray-800 font-medium hover:bg-gray-50 transition-colors group w-full"
+                          >
+                            <SubIcon
+                              className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0"
+                              strokeWidth={1.5}
+                            />
+                            <span className="truncate flex-1 text-xs">{sub.name}</span>
+                            {sub.children.length > 0 && (
+                              <span className="text-[9px] text-gray-300 flex-shrink-0">{sub.children.length}</span>
+                            )}
+                          </button>
+                          {sub.children.length > 0 && (
+                            <div className="pl-7 mt-0.5">
+                              {sub.children.map((child) => (
+                                <button
+                                  key={child.id}
+                                  onClick={() => goToSubcategory(openCat.name, child.name, openCat.id, child.id)}
+                                  className="block w-full text-left text-[11px] text-gray-400 hover:text-gray-700 py-0.5 px-2 rounded transition-colors truncate"
+                                >
+                                  {child.name}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       );
                     })}
                   </div>
@@ -347,21 +370,38 @@ export function CategoryBar() {
                 <p className="text-[10px] tracking-widest uppercase text-gray-400 mb-2">
                   {mobileOpenCat.subcategories.length} subcategorías
                 </p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-3">
                   {mobileOpenCat.subcategories.map((sub) => {
                     const SubIcon = getSubIcon(sub.name);
                     return (
-                      <button
-                        key={sub.id}
-                        onClick={() => goToSubcategory(mobileOpenCat.name, sub.name, mobileOpenCat.id, sub.id)}
-                        className="flex items-center gap-2 text-left py-2.5 px-3 rounded-xl bg-gray-50 active:bg-gray-100 transition-colors group"
-                      >
-                        <SubIcon
-                          className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"
-                          strokeWidth={1.5}
-                        />
-                        <span className="truncate flex-1 text-xs text-gray-700">{sub.name}</span>
-                      </button>
+                      <div key={sub.id}>
+                        <button
+                          onClick={() => goToSubcategory(mobileOpenCat.name, sub.name, mobileOpenCat.id, sub.id)}
+                          className="flex items-center gap-2 text-left w-full py-2.5 px-3 rounded-xl bg-gray-50 active:bg-gray-100 transition-colors group"
+                        >
+                          <SubIcon
+                            className="w-3.5 h-3.5 text-gray-400 flex-shrink-0"
+                            strokeWidth={1.5}
+                          />
+                          <span className="truncate flex-1 text-xs text-gray-700 font-medium">{sub.name}</span>
+                          {sub.children.length > 0 && (
+                            <span className="text-[9px] text-gray-300 flex-shrink-0">{sub.children.length}</span>
+                          )}
+                        </button>
+                        {sub.children.length > 0 && (
+                          <div className="grid grid-cols-2 gap-1 pl-4 mt-1">
+                            {sub.children.map((child) => (
+                              <button
+                                key={child.id}
+                                onClick={() => goToSubcategory(mobileOpenCat.name, child.name, mobileOpenCat.id, child.id)}
+                                className="text-left text-[11px] text-gray-400 hover:text-gray-700 py-1 px-2 rounded transition-colors truncate"
+                              >
+                                {child.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

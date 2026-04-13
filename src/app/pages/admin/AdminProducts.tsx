@@ -3,7 +3,7 @@ import {
     Search, Plus, Trash2, Eye, X, Check, Pencil,
     Package, ChevronDown, Filter, ArrowUpDown,
     AlertTriangle, Loader2,
-    RefreshCw, Copy, Upload,
+    RefreshCw, Copy, Upload, Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
@@ -13,9 +13,11 @@ import { useLanguage } from "../../context/LanguageContext";
 import { useCurrency } from "../../context/CurrencyContext";
 import {
     nexaProductAdminRepository,
+    loadDiscoverState,
     type AdminProduct,
     type ProductPayload,
     type AdminProductQuery,
+    type DiscoverProgress,
 } from "../../repositories/NexaProductAdminRepository";
 import {
     nexaCategoryPagedRepository,
@@ -103,6 +105,7 @@ export function AdminProducts() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [showBulk, setShowBulk] = useState(false);
     const [syncing, setSyncing] = useState(false);
+    const [discovering, setDiscovering] = useState(false);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -161,11 +164,35 @@ export function AdminProducts() {
             return;
         }
 
+        // Ask for optional category IDs to filter the sync
+        const catInput = window.prompt(
+            "Sincronizar productos de CJ Dropshipping\n\n" +
+            "Ingresa IDs de categorías separados por coma para sincronizar solo esas categorías.\n" +
+            "Déjalo vacío para sincronizar TODOS los productos.",
+            ""
+        );
+        // User pressed Cancel → abort
+        if (catInput === null) return;
+
+        const categoryIds = catInput
+            .split(",")
+            .map(s => s.trim())
+            .filter(Boolean);
+
+        // Ask user whether to overwrite all data or only update changed fields
+        const forceOverwrite = window.confirm(
+            "¿Sobreescribir TODOS los datos de los productos?\n\n" +
+            "• Aceptar → Sobreescribe todos los campos con los datos de CJ\n" +
+            "• Cancelar → Solo actualiza los campos que hayan cambiado (más rápido)"
+        );
+
         setSyncing(true);
         try {
-            const result = await nexaProductAdminRepository.syncProducts();
+            const result = await nexaProductAdminRepository.syncProducts(forceOverwrite, categoryIds);
+            const skippedMsg = result.skipped > 0 ? `, ${result.skipped} sin cambios` : "";
+            const catMsg = categoryIds.length > 0 ? ` (categorías: ${categoryIds.join(", ")})` : "";
             toast.success(
-                `Sincronización completada: ${result.created} creados, ${result.updated} actualizados (${result.total} total)`
+                `Sincronización completada${catMsg}: ${result.created} creados, ${result.updated} actualizados${skippedMsg} (${result.total} total)`
             );
             refetch();
         } catch (err) {
@@ -173,6 +200,86 @@ export function AdminProducts() {
         } finally {
             setSyncing(false);
         }
+    }
+
+    // ── Auto-resume discover after page refresh ──────────────
+    useEffect(() => {
+        const saved = loadDiscoverState();
+        if (!saved) return;
+
+        if (saved.running) {
+            // The previous session was interrupted by a page refresh — resume
+            const pct = saved.totalCategories > 0
+                ? Math.round((saved.offset / saved.totalCategories) * 100) : 0;
+            toast.loading(
+                `Reanudando descubrimiento — categoría ${saved.offset} / ${saved.totalCategories} (${pct}%)  —  ${saved.created} nuevos, ${saved.updated} actualizados`,
+                { id: "discover-progress", duration: Infinity },
+            );
+            setDiscovering(true);
+            runDiscover(saved.offset, saved.created, saved.updated);
+        } else {
+            // Cancelled or errored — show info about partial progress
+            toast.info(
+                `Descubrimiento interrumpido: categoría ${saved.offset}/${saved.totalCategories} — ${saved.created} nuevos, ${saved.updated} actualizados. Pulsa ▶ para reanudar.`,
+                { duration: 8000 },
+            );
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    async function runDiscover(startOffset = 0, accCreated = 0, accUpdated = 0) {
+        setDiscovering(true);
+        if (startOffset === 0) {
+            toast.loading("Iniciando descubrimiento por categoría…", { id: "discover-progress", duration: Infinity });
+        }
+        try {
+            const result = await nexaProductAdminRepository.discoverByCategory(
+                (progress: DiscoverProgress) => {
+                    const pct = progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
+                    toast.loading(
+                        `Categoría ${progress.current} / ${progress.total} (${pct}%)  —  ${progress.created} nuevos, ${progress.updated} actualizados`,
+                        { id: "discover-progress", duration: Infinity },
+                    );
+                },
+                startOffset,
+                accCreated,
+                accUpdated,
+            );
+            toast.dismiss("discover-progress");
+            toast.success(
+                `Descubrimiento completado: ${result.created} nuevos, ${result.updated} actualizados (${result.total} total)`
+            );
+            refetch();
+        } catch (err) {
+            toast.dismiss("discover-progress");
+            toast.error(err instanceof Error ? err.message : "Error al descubrir productos");
+        } finally {
+            setDiscovering(false);
+        }
+    }
+
+    async function handleDiscover() {
+        if (discovering) {
+            nexaProductAdminRepository.cancelDiscover();
+            setDiscovering(false);
+            toast.dismiss("discover-progress");
+            toast.info("Descubrimiento detenido");
+            refetch();
+            return;
+        }
+
+        // Check if there's a saved partial state to resume
+        const saved = loadDiscoverState();
+        if (saved && !saved.running && saved.offset > 0) {
+            toast.loading(
+                `Reanudando desde categoría ${saved.offset}/${saved.totalCategories}…`,
+                { id: "discover-progress", duration: Infinity },
+            );
+            runDiscover(saved.offset, saved.created, saved.updated);
+            return;
+        }
+
+        runDiscover();
     }
 
     // ── Handlers ───────────────────────────────────────────────
@@ -286,11 +393,26 @@ export function AdminProducts() {
                 </div>
                 <div className="flex items-center gap-2">
                     <button
+                        onClick={handleDiscover}
+                        disabled={syncing}
+                        className={`w-9 h-9 border rounded-full transition-all flex items-center justify-center ${discovering
+                            ? "bg-red-50 border-red-300 text-red-500 hover:bg-red-100"
+                            : "bg-white border-gray-200 text-violet-500 hover:bg-violet-50 hover:border-violet-200"
+                            } ${syncing ? "opacity-40 cursor-not-allowed" : ""}`}
+                        title={discovering ? "Detener descubrimiento" : "Descubrir productos nuevos por categoría"}
+                    >
+                        {discovering
+                            ? <X className="w-4 h-4" strokeWidth={2} />
+                            : <Compass className="w-4 h-4" strokeWidth={1.5} />
+                        }
+                    </button>
+                    <button
                         onClick={handleSync}
+                        disabled={discovering}
                         className={`w-9 h-9 border rounded-full transition-all flex items-center justify-center ${syncing
                             ? "bg-red-50 border-red-300 text-red-500 hover:bg-red-100"
                             : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                            }`}
+                            } ${discovering ? "opacity-40 cursor-not-allowed" : ""}`}
                         title={syncing ? "Detener sincronización" : "Sincronizar productos desde CJ"}
                     >
                         {syncing

@@ -1,9 +1,10 @@
 /**
- * useFlashDeals — fetches active FLASH campaigns + real products,
- * matches products against campaign scope and applies discounts.
+ * useFlashDeals — fetches active campaigns (FLASH, PERCENTAGE, FIXED)
+ * + real products, matches products against campaign scope and applies
+ * margin-only discounts respecting maxDiscount cap.
  *
  * Falls back to products that already have originalPrice > price
- * when no FLASH campaigns are active.
+ * when no applicable campaigns are active.
  */
 
 import { useState, useEffect, useMemo, useRef } from "react";
@@ -56,7 +57,7 @@ export interface UseFlashDealsResult {
     /** ALL campaign deals (no limit). */
     allDeals: FlashDeal[];
     loading: boolean;
-    /** Earliest FLASH campaign end date (for the countdown). */
+    /** Earliest campaign end date (for the countdown). */
     endDate: Date | null;
 }
 
@@ -108,8 +109,9 @@ export function useFlashDeals(): UseFlashDealsResult {
                 if (controller.signal.aborted) return;
 
                 setRawProducts(productsRes.content);
+                const DISCOUNT_TYPES = new Set(["FLASH", "PERCENTAGE", "FIXED"]);
                 setCampaigns(
-                    campaignsRes.filter((c) => c.type === "FLASH" && c.active),
+                    campaignsRes.filter((c) => DISCOUNT_TYPES.has(c.type) && c.active),
                 );
 
                 try {
@@ -164,6 +166,15 @@ export function useFlashDeals(): UseFlashDealsResult {
                         discountedPrice =
                             cost + margin * (1 - (camp.value ?? 0) / 100);
                     }
+
+                    // Apply maxDiscount cap if configured
+                    if (camp.maxDiscount != null && camp.maxDiscount > 0) {
+                        const rawOff = originalPrice - discountedPrice;
+                        if (rawOff > camp.maxDiscount) {
+                            discountedPrice = originalPrice - camp.maxDiscount;
+                        }
+                    }
+
                     // Ensure price never drops below cost
                     discountedPrice = Math.max(cost, discountedPrice);
                     discountedPrice =

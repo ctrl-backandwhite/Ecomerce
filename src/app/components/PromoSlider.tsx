@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { slideRepository, type Slide } from "../repositories/SlideRepository";
 import { useLanguage } from "../context/LanguageContext";
@@ -53,64 +53,6 @@ function slideToPromo(s: Slide, index: number, t: (key: string) => string): Prom
   };
 }
 
-/* ── Fallback static promos (used when API has no active slides) ── */
-function getFallbackPromos(t: (key: string) => string): Promo[] {
-  return [
-    {
-      id: "fallback-1",
-      title: t("slide.fb1.title"),
-      subtitle: t("slide.fb1.subtitle"),
-      description: t("slide.fb1.desc"),
-      badge: t("slide.fb1.badge"),
-      badgeColor: "bg-white/20 text-white border-white/30",
-      buttonText: t("slide.fb1.btn"),
-      filterParams: { ofertas: "true" },
-      image:
-        "https://images.unsplash.com/photo-1738520420654-87cd2ad005d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxlbGVjdHJvbmljcyUyMHRlY2hub2xvZ3klMjBtb2Rlcm4lMjBnYWRnZXRzfGVufDF8fHx8MTc3MzMxMjk4N3ww&ixlib=rb-4.1.0&q=80&w=1080",
-      align: "left",
-    },
-    {
-      id: "fallback-2",
-      title: t("slide.fb2.title"),
-      subtitle: t("slide.fb2.subtitle"),
-      description: t("slide.fb2.desc"),
-      badge: t("slide.fb2.badge"),
-      badgeColor: "bg-rose-500/80 text-white border-rose-400/50",
-      buttonText: t("slide.fb2.btn"),
-      filterParams: { category: "Moda", ofertas: "true" },
-      image:
-        "https://images.unsplash.com/photo-1771435416537-fdad7cbf4ef8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwY2xvdGhpbmclMjBzYWxlJTIwZGlzY291bnQlMjBzaG9wcGluZ3xlbnwxfHx8fDE3NzMzMTI5ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      align: "right",
-    },
-    {
-      id: "fallback-3",
-      title: t("slide.fb3.title"),
-      subtitle: t("slide.fb3.subtitle"),
-      description: t("slide.fb3.desc"),
-      badge: t("slide.fb3.badge"),
-      badgeColor: "bg-violet-500/80 text-white border-violet-400/50",
-      buttonText: t("slide.fb3.btn"),
-      filterParams: { category: "Gaming" },
-      image:
-        "https://images.unsplash.com/photo-1771014817844-327a14245bd1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnYW1pbmclMjBzZXR1cCUyMHJnYiUyMG5lb24lMjBkYXJrfGVufDF8fHx8MTc3MzMxMjk4OHww&ixlib=rb-4.1.0&q=80&w=1080",
-      align: "left",
-    },
-    {
-      id: "fallback-4",
-      title: t("slide.fb4.title"),
-      subtitle: t("slide.fb4.subtitle"),
-      description: t("slide.fb4.desc"),
-      badge: t("slide.fb4.badge"),
-      badgeColor: "bg-amber-500/80 text-white border-amber-400/50",
-      buttonText: t("slide.fb4.btn"),
-      filterParams: { category: "Electrónica", ofertas: "true" },
-      image:
-        "https://images.unsplash.com/photo-1759588071814-1ba7c5761af4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsYXB0b3AlMjB3aGl0ZSUyMGJhY2tncm91bmQlMjBwcm9kdWN0JTIwc3R1ZGlvfGVufDF8fHx8MTc3MzMxNzYxOHww&ixlib=rb-4.1.0&q=80&w=1080",
-      align: "right",
-    },
-  ];
-}
-
 const TRANSITION_MS = 900;
 
 interface PromoSliderProps {
@@ -118,42 +60,26 @@ interface PromoSliderProps {
 }
 
 export function PromoSlider({ onCtaClick }: PromoSliderProps) {
-  const { t, locale } = useLanguage();
-  const fallbackPromos = useMemo(() => getFallbackPromos(t), [t]);
-  const [promos, setPromos] = useState<Promo[]>(fallbackPromos);
+  const { t } = useLanguage();
+  const [promos, setPromos] = useState<Promo[]>([]);
   const [current, setCurrent] = useState(0);
   const [contentVisible, setContentVisible] = useState(true);
   const locked = useRef(false);
-  const apiLoaded = useRef(false);
 
-  /* keep fallback promos in sync with locale changes */
+  /* ── Load active slides from API ── */
   useEffect(() => {
-    if (!apiLoaded.current) setPromos(fallbackPromos);
-  }, [fallbackPromos]);
-
-  /* ── Load active slides from API (only for "es" — API content is Spanish) ── */
-  useEffect(() => {
-    if (locale !== "es") {
-      apiLoaded.current = false;
-      setPromos(fallbackPromos);
-      setCurrent(0);
-      return;
-    }
     let cancelled = false;
     slideRepository
       .findActive()
       .then((slides) => {
         if (!cancelled && slides.length > 0) {
-          apiLoaded.current = true;
           setPromos(slides.map((s, i) => slideToPromo(s, i, t)));
           setCurrent(0);
         }
       })
-      .catch(() => {
-        /* keep fallback promos on error */
-      });
+      .catch(() => { /* no slides available */ });
     return () => { cancelled = true; };
-  }, [t, locale, fallbackPromos]);
+  }, [t]);
 
   const goTo = useCallback((index: number) => {
     if (locked.current) return;
@@ -168,7 +94,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
         locked.current = false;
       }, 200);
     }, 250);
-  }, []);
+  }, [promos.length]);
 
   const next = useCallback(() => goTo(current + 1), [current, goTo]);
   const prev = useCallback(() => goTo(current - 1), [current, goTo]);
@@ -177,6 +103,9 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
     const timer = setInterval(next, 10000);
     return () => clearInterval(timer);
   }, [next]);
+
+  /* No active slides → hide slider entirely */
+  if (promos.length === 0) return null;
 
   return (
     <div className="relative w-full overflow-hidden h-64 sm:h-80 md:h-[420px] lg:h-[580px]">

@@ -26,9 +26,9 @@ export function ProductDetailDrawer({ product, categoryName, onClose, onEdit }: 
 
         <div className="p-6 space-y-6">
           {/* Image */}
-          <div className="aspect-video bg-gray-100 rounded-xl overflow-hidden">
+          <div className="bg-gray-100 rounded-xl overflow-hidden">
             {product.bigImage ? (
-              <img src={product.bigImage} alt={product.name} className="w-full h-full object-cover" />
+              <img src={product.bigImage} alt={product.name} className="w-full max-h-80 object-contain mx-auto" />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <Package className="w-16 h-16 text-gray-200" strokeWidth={1} />

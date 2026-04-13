@@ -157,6 +157,7 @@ export function HomeSidebar({
   const [openCats, setOpenCats] = useState<string[]>(
     selectedCategory !== "Todos" ? [selectedCategory] : []
   );
+  const [openSubs, setOpenSubs] = useState<string[]>([]);
 
   /* Auto-expand the selected category when it changes externally */
   useEffect(() => {
@@ -167,9 +168,23 @@ export function HomeSidebar({
     }
   }, [selectedCategory]);
 
+  /* Auto-expand the selected level-2 subcategory when it changes externally */
+  useEffect(() => {
+    if (selectedSubcat) {
+      setOpenSubs((prev) =>
+        prev.includes(selectedSubcat) ? prev : [...prev, selectedSubcat]
+      );
+    }
+  }, [selectedSubcat]);
+
   const toggle = (name: string) =>
     setOpenCats((prev) =>
       prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
+    );
+
+  const toggleSub = (name: string) =>
+    setOpenSubs((prev) =>
+      prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name]
     );
 
   /* ── Categories from NX036 API ──────────────────────────────── */
@@ -365,22 +380,66 @@ export function HomeSidebar({
                     <div className="bg-gray-50 border-t border-gray-100">
                       {subCats.map((sub) => {
                         const isSubActive = selectedSubcat === sub.name;
+                        const subChildren = sub.subCategories ?? [];
+                        const isSubOpen = openSubs.includes(sub.name);
                         return (
-                          <button
-                            key={sub.id}
-                            onClick={() => onSubcategory(cat.name, sub.name, cat.id, sub.id)}
-                            className={`w-full flex items-center justify-between pl-6 pr-3 py-1.5 text-xs transition-colors ${isSubActive
+                          <div key={sub.id}>
+                            <div className={`flex items-center transition-colors ${isSubActive
                               ? "text-gray-900 bg-gray-100"
                               : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                              }`}
-                          >
-                            <span className="flex items-center gap-2">
-                              {isSubActive
-                                ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
-                                : <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />}
-                              <span className="truncate">{sub.name}</span>
-                            </span>
-                          </button>
+                              }`}>
+                              <button
+                                onClick={() => {
+                                  onSubcategory(cat.name, sub.name, cat.id, sub.id);
+                                  if (subChildren.length > 0 && !isSubOpen) toggleSub(sub.name);
+                                }}
+                                className="flex-1 flex items-center gap-2 pl-6 pr-1 py-1.5 text-xs text-left"
+                              >
+                                {isSubActive
+                                  ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
+                                  : <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />}
+                                <span className="truncate">{sub.name}</span>
+                                {subChildren.length > 0 && (
+                                  <span className="ml-auto text-[10px] text-gray-400 flex-shrink-0">
+                                    {subChildren.length}
+                                  </span>
+                                )}
+                              </button>
+                              {subChildren.length > 0 && (
+                                <button
+                                  onClick={() => toggleSub(sub.name)}
+                                  className="px-2 py-1.5"
+                                >
+                                  {isSubOpen
+                                    ? <ChevronDown className="w-3 h-3 opacity-40" />
+                                    : <ChevronRight className="w-3 h-3 opacity-40" />}
+                                </button>
+                              )}
+                            </div>
+
+                            {isSubOpen && subChildren.length > 0 && (
+                              <div className="bg-white border-t border-gray-50">
+                                {subChildren.map((child) => {
+                                  const isChildActive = selectedSubcat === child.name;
+                                  return (
+                                    <button
+                                      key={child.id}
+                                      onClick={() => onSubcategory(cat.name, child.name, cat.id, child.id)}
+                                      className={`w-full flex items-center gap-2 pl-10 pr-3 py-1 text-[11px] transition-colors ${isChildActive
+                                        ? "text-gray-900 bg-gray-100"
+                                        : "text-gray-400 hover:bg-gray-50 hover:text-gray-700"
+                                        }`}
+                                    >
+                                      {isChildActive
+                                        ? <Check className="w-2.5 h-2.5 text-gray-700 flex-shrink-0" strokeWidth={2} />
+                                        : <span className="w-0.5 h-0.5 rounded-full bg-gray-300 flex-shrink-0" />}
+                                      <span className="truncate">{child.name}</span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
                         );
                       })}
                     </div>

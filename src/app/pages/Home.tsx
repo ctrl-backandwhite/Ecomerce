@@ -70,13 +70,23 @@ export function Home() {
 
   const resolvedSubcategory = useMemo(() => {
     if (!resolvedCategory) return null;
+    // Helper: search level-2 and level-3 children
+    const findInTree = (slug: string) => {
+      for (const s of resolvedCategory.subCategories) {
+        if (slugify(s.name) === slug) return s;
+        for (const ch of (s.subCategories ?? [])) {
+          if (slugify(ch.name) === slug) return ch;
+        }
+      }
+      return null;
+    };
     // Normal two-segment route: /store/:catSlug/:subcatSlug
     if (subcatSlug) {
-      return resolvedCategory.subCategories.find((s) => slugify(s.name) === subcatSlug) ?? null;
+      return findInTree(subcatSlug);
     }
     // Single-segment route where catSlug matched a *subcategory* (featured nav)
     if (catSlug && slugify(resolvedCategory.name) !== catSlug) {
-      return resolvedCategory.subCategories.find((s) => slugify(s.name) === catSlug) ?? null;
+      return findInTree(catSlug);
     }
     return null;
   }, [catSlug, subcatSlug, resolvedCategory]);

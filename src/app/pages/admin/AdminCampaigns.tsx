@@ -13,6 +13,7 @@ import {
   type Campaign as ApiCampaign, type CampaignPayload, type ApiCampaignType,
   campaignRepository,
 } from "../../repositories/CampaignRepository";
+import { ApiError } from "../../lib/AppError";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type CampaignType =
@@ -1022,8 +1023,8 @@ export function AdminCampaigns() {
         toast.success("Campaña creada");
       }
       setPanelData(null);
-    } catch {
-      toast.error("Error al guardar campaña");
+    } catch (err: unknown) {
+      toast.error(err instanceof ApiError ? err.message : "Error al guardar campaña");
     }
   };
 
@@ -1036,8 +1037,8 @@ export function AdminCampaigns() {
         toast.success(`Campaña ${next === "active" ? "activada" : "pausada"}`);
         return { ...c, status: next };
       }));
-    } catch {
-      toast.error("Error al cambiar estado de campaña");
+    } catch (err: unknown) {
+      toast.error(err instanceof ApiError ? err.message : "Error al cambiar estado de campaña");
     }
   };
 

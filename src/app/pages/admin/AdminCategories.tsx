@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import {
   Search, Tag, Filter, ChevronDown, Check,
   ToggleLeft, ToggleRight, RefreshCw, AlertTriangle,
-  Loader2, X, Copy, Eye, Plus, Pencil, Trash2, TriangleAlert, Upload,
+  Loader2, X, Copy, Eye, Plus, Pencil, Trash2, TriangleAlert, Upload, CheckCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { usePagedCategories } from "../../hooks/usePagedCategories";
@@ -52,6 +52,9 @@ const tr = {
     detail: "Ver detalle",
     newCategory: "Nueva categoría",
     bulkUpload: "Carga masiva",
+    publishAllDrafts: "Publicar todos los borradores",
+    publishAllDraftsSuccess: (n: number) => `${n} categoría(s) publicada(s)`,
+    publishAllDraftsNone: "No hay categorías en borrador",
     edit: "Editar",
     delete: "Eliminar",
     addSub: "Agregar subcategoría",
@@ -99,6 +102,9 @@ const tr = {
     detail: "View detail",
     newCategory: "New category",
     bulkUpload: "Bulk upload",
+    publishAllDrafts: "Publish all drafts",
+    publishAllDraftsSuccess: (n: number) => `${n} categor${n !== 1 ? "ies" : "y"} published`,
+    publishAllDraftsNone: "No draft categories found",
     edit: "Edit",
     delete: "Delete",
     addSub: "Add subcategory",
@@ -146,6 +152,9 @@ const tr = {
     detail: "Ver detalhe",
     newCategory: "Nova categoria",
     bulkUpload: "Carga em massa",
+    publishAllDrafts: "Publicar todos os rascunhos",
+    publishAllDraftsSuccess: (n: number) => `${n} categoria(s) publicada(s)`,
+    publishAllDraftsNone: "Nenhuma categoria em rascunho",
     edit: "Editar",
     delete: "Excluir",
     addSub: "Adicionar subcategoria",
@@ -320,9 +329,12 @@ function CategoryRow({
         />
 
         {/* Info */}
-        <button
+        <div
           onClick={onToggleExpand}
-          className="flex-1 min-w-0 text-left group"
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onToggleExpand(); }}
+          className="flex-1 min-w-0 text-left group cursor-pointer"
         >
           <div className="flex items-center gap-2 flex-wrap">
             <p className="text-sm text-gray-900 group-hover:text-gray-700 transition-colors flex items-center gap-1">
@@ -376,7 +388,7 @@ function CategoryRow({
               <> · {category.subCategories.length} {labels.subcategories}</>
             )}
           </p>
-        </button>
+        </div>
 
         {/* View detail */}
         <button
@@ -771,6 +783,27 @@ export function AdminCategories() {
     }
   }
 
+  const [publishingAll, setPublishingAll] = useState(false);
+
+  async function handlePublishAllDrafts() {
+    if (publishingAll) return;
+    setPublishingAll(true);
+    try {
+      const result = await nexaCategoryPagedRepository.publishAllDrafts();
+      if (result.updated > 0) {
+        toast.success(labels.publishAllDraftsSuccess(result.updated));
+        refetch();
+      } else {
+        toast.info(labels.publishAllDraftsNone);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error";
+      toast.error(msg);
+    } finally {
+      setPublishingAll(false);
+    }
+  }
+
   function clearFilters() {
     setStatusFilter("");
     setActiveFilter("");
@@ -811,6 +844,16 @@ export function AdminCategories() {
             title={syncing ? labels.syncing : labels.sync}
           >
             <RefreshCw className={`w-4 h-4 ${syncing ? "animate-spin" : ""}`} strokeWidth={1.5} />
+          </button>
+          <button
+            onClick={handlePublishAllDrafts}
+            disabled={publishingAll}
+            className="w-9 h-9 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all flex items-center justify-center flex-shrink-0"
+            title={labels.publishAllDrafts}
+          >
+            {publishingAll
+              ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+              : <CheckCheck className="w-4 h-4" strokeWidth={1.5} />}
           </button>
           <button
             onClick={() => setBulkModalOpen(true)}
