@@ -3,9 +3,10 @@
  * ║  NexaCategoryRepository                                      ║
  * ║                                                              ║
  * ║  Fetches categories from the NX036 mic-productcategory API.  ║
- * ║  Endpoint: /api/v1/categories                                ║
- * ║  Supports locale, status, and active query params.           ║
- * ║  Uses TTLCache for 10 minutes by locale key.                ║
+ * ║  Public endpoints (no auth required):                        ║
+ * ║    GET /api/v1/public/categories        (featured=true/false) ║
+ * ║    GET /api/v1/public/categories/{id}                         ║
+ * ║  Uses TTLCache for 10 minutes by locale key.                 ║
  * ╚══════════════════════════════════════════════════════════════╝
  */
 
@@ -17,7 +18,7 @@ import { API_CATALOG } from "../config/api";
 import { logger } from "../lib/logger";
 
 // ── API base URL ─────────────────────────────────────────────────────────────
-const NX036_CATEGORIES_BASE = `${API_CATALOG}/api/v1/categories`;
+const NX036_PUBLIC_CATEGORIES_BASE = `${API_CATALOG}/api/v1/public/categories`;
 
 const CACHE_TTL_MS = 10 * 60_000; // 10 minutes
 
@@ -64,7 +65,7 @@ class NexaCategoryRepository {
         if (cached) return cached;
 
         try {
-            const url = `${NX036_CATEGORIES_BASE}?locale=${encodeURIComponent(locale)}&status=PUBLISHED&active=true`;
+            const url = `${NX036_PUBLIC_CATEGORIES_BASE}?locale=${encodeURIComponent(locale)}&featured=false`;
             const res = await nxFetch(url);
 
             if (!res.ok) {
@@ -98,7 +99,7 @@ class NexaCategoryRepository {
         if (cached) return cached;
 
         try {
-            const url = `${NX036_CATEGORIES_BASE}/featured?locale=${encodeURIComponent(locale)}`;
+            const url = `${NX036_PUBLIC_CATEGORIES_BASE}?locale=${encodeURIComponent(locale)}&featured=true`;
             const res = await nxFetch(url);
 
             if (!res.ok) {

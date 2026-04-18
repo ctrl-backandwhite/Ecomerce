@@ -17,7 +17,8 @@ export function useBrands(): UseBrandsResult {
         setLoading(true);
         setError(null);
         try {
-            const data = await brandRepository.findAll();
+            // Storefront hook: hit the public endpoint (no token required)
+            const data = await brandRepository.findPublic();
             setBrands(data);
         } catch (err) {
             const msg =

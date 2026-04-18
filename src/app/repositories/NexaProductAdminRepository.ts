@@ -746,6 +746,63 @@ class NexaProductAdminRepository {
 
         return { created: totalCreated, updated: totalUpdated, total: totalCreated + totalUpdated };
     }
+
+    /**
+     * Triggers an incremental reindex of all products from PostgreSQL → Elasticsearch.
+     * Does NOT delete the existing index; only upserts documents.
+     * Returns the total number of documents indexed.
+     */
+    async reindexFromDb(): Promise<{ status: string; operation: string; totalIndexed: number }> {
+        try {
+            const res = await authFetch(`${API_CATALOG}/api/v1/sync/reindex/elasticsearch/from-db`, {
+                method: "POST",
+                headers: { accept: "application/json" },
+            });
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody: ApiErrorBody = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch (err) { logger.warn("Suppressed error", err); }
+                throw new ApiError(res.status, errorMsg);
+            }
+            return (await res.json()) as { status: string; operation: string; totalIndexed: number };
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo reindexar los productos en Elasticsearch",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
+
+    /**
+     * Triggers a full reindex (delete index + recreate + reindex all) from PostgreSQL → Elasticsearch.
+     * Use when the mapping changes. Slower than reindexFromDb.
+     */
+    async reindexAll(): Promise<{ status: string; operation: string; totalIndexed: number }> {
+        try {
+            const res = await authFetch(`${API_CATALOG}/api/v1/sync/reindex/elasticsearch`, {
+                method: "POST",
+                headers: { accept: "application/json" },
+            });
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody: ApiErrorBody = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch (err) { logger.warn("Suppressed error", err); }
+                throw new ApiError(res.status, errorMsg);
+            }
+            return (await res.json()) as { status: string; operation: string; totalIndexed: number };
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo reindexar los productos en Elasticsearch",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
 }
 
 export const nexaProductAdminRepository = new NexaProductAdminRepository();

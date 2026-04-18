@@ -9,6 +9,7 @@
 
 import type { Product, ProductImage, ProductVariant } from "../types/product";
 import type { NexaProduct, NexaProductDetail, NexaDetailVariant } from "../repositories/NexaProductRepository";
+import type { ProductSearchHit } from "../repositories/SearchRepository";
 import { slugify } from "../lib/urls";
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -371,5 +372,42 @@ export function mapNexaProductDetail(raw: NexaProductDetail): Product {
         featured: false,
         currencyCode: raw.currencyCode,
         currencySymbol: raw.currencySymbol,
+    };
+}
+
+export function mapSearchHitToProduct(hit: ProductSearchHit): Product {
+    return {
+        id: hit.id,
+        name: hit.name,
+        slug: hit.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        sku: "",
+        brand: hit.brandName ?? "",
+        description: hit.description ?? hit.name,
+        shortDescription: hit.description ? hit.description.substring(0, 200) : hit.name,
+        price: hit.price ?? 0,
+        originalPrice: hit.originalPrice ?? undefined,
+        taxClass: "standard",
+        category: hit.categoryName ?? "",
+        subcategory: "",
+        keywords: [],
+        image: hit.imageUrl ?? "",
+        images: [],
+        rating: 0,
+        reviews: 0,
+        stock: hit.totalStock,
+        barcode: "",
+        stockStatus: hit.inStock ? "in_stock" : "out_of_stock",
+        manageStock: false,
+        allowBackorder: false,
+        attributes: [],
+        variants: [],
+        weight: 0,
+        dimensions: { length: 0, width: 0, height: 0 },
+        shippingClass: "",
+        metaTitle: "",
+        metaDescription: "",
+        status: "active",
+        visibility: "public",
+        featured: false,
     };
 }

@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
     Search, Plus, Trash2, Eye, X, Check, Pencil,
     Package, ChevronDown, Filter, ArrowUpDown,
     AlertTriangle, Loader2,
-    RefreshCw, Copy, Upload, Compass,
+    RefreshCw, Copy, Upload, Compass, Database,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
@@ -106,6 +106,19 @@ export function AdminProducts() {
     const [showBulk, setShowBulk] = useState(false);
     const [syncing, setSyncing] = useState(false);
     const [discovering, setDiscovering] = useState(false);
+    const [reindexing, setReindexing] = useState(false);
+    const [showReindexMenu, setShowReindexMenu] = useState(false);
+    const reindexMenuRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        if (!showReindexMenu) return;
+        function handleClickOutside(e: MouseEvent) {
+            if (reindexMenuRef.current && !reindexMenuRef.current.contains(e.target as Node)) {
+                setShowReindexMenu(false);
+            }
+        }
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [showReindexMenu]);
     const [togglingId, setTogglingId] = useState<string | null>(null);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
@@ -282,6 +295,40 @@ export function AdminProducts() {
         runDiscover();
     }
 
+    async function handleReindex(mode: "incremental" | "full") {
+        if (reindexing) return;
+
+        if (mode === "full") {
+            const confirmed = window.confirm(
+                "¿Reindexar TODO en Elasticsearch?\n\n" +
+                "Esta operación BORRA el índice actual, lo recrea y reindexa todos los productos desde PostgreSQL.\n\n" +
+                "Úsala solo cuando cambie el mapping. Los productos no estarán disponibles en búsqueda mientras dura el proceso."
+            );
+            if (!confirmed) return;
+        }
+
+        setReindexing(true);
+        const toastId = "reindex-progress";
+        const label = mode === "incremental" ? "incremental" : "completo";
+        toast.loading(`Reindexando productos (${label})…`, { id: toastId, duration: Infinity });
+
+        try {
+            const result = mode === "incremental"
+                ? await nexaProductAdminRepository.reindexFromDb()
+                : await nexaProductAdminRepository.reindexAll();
+
+            toast.dismiss(toastId);
+            toast.success(
+                `Reindexación ${label} completada: ${result.totalIndexed.toLocaleString()} productos indexados en Elasticsearch`
+            );
+        } catch (err) {
+            toast.dismiss(toastId);
+            toast.error(err instanceof Error ? err.message : `Error al reindexar (${label})`);
+        } finally {
+            setReindexing(false);
+        }
+    }
+
     // ── Handlers ───────────────────────────────────────────────
     async function handleSave(payload: ProductPayload, id?: string) {
         try {
@@ -420,6 +467,45 @@ export function AdminProducts() {
                             : <RefreshCw className="w-4 h-4" strokeWidth={1.5} />
                         }
                     </button>
+                    {/* Reindex Elasticsearch */}
+                    <div className="relative" ref={reindexMenuRef}>
+                        <button
+                            onClick={() => { if (!reindexing && !syncing && !discovering) setShowReindexMenu(v => !v); }}
+                            disabled={reindexing || syncing || discovering}
+                            className={`w-9 h-9 border rounded-full transition-all flex items-center justify-center ${reindexing
+                                ? "bg-violet-50 border-violet-300 text-violet-500 animate-pulse cursor-not-allowed"
+                                : showReindexMenu
+                                    ? "bg-violet-50 border-violet-300 text-violet-600"
+                                    : "bg-white border-gray-200 text-violet-500 hover:bg-violet-50 hover:border-violet-200"
+                                } ${(syncing || discovering) ? "opacity-40 cursor-not-allowed" : ""}`}
+                            title="Reindexar en Elasticsearch"
+                        >
+                            {reindexing
+                                ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                                : <Database className="w-4 h-4" strokeWidth={1.5} />
+                            }
+                        </button>
+                        {showReindexMenu && (
+                            <div className="absolute right-0 top-full mt-1.5 w-56 bg-white border border-gray-100 rounded-xl shadow-lg z-20">
+                                <div className="p-1.5 space-y-0.5">
+                                    <button
+                                        onClick={() => { setShowReindexMenu(false); handleReindex("incremental"); }}
+                                        className="w-full text-left text-[11px] text-gray-700 px-3 py-2 rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors"
+                                    >
+                                        <span className="font-medium block">Reindexar incremental</span>
+                                        <span className="text-gray-400">Upsert desde BD, sin borrar índice</span>
+                                    </button>
+                                    <button
+                                        onClick={() => { setShowReindexMenu(false); handleReindex("full"); }}
+                                        className="w-full text-left text-[11px] text-gray-700 px-3 py-2 rounded-lg hover:bg-red-50 hover:text-red-600 transition-colors"
+                                    >
+                                        <span className="font-medium block">Reindexar completo</span>
+                                        <span className="text-gray-400">Borra índice y reindexa todo</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={() => setShowBulk(true)}
                         className="w-9 h-9 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all flex items-center justify-center"

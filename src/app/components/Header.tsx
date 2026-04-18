@@ -1,4 +1,4 @@
-import { ShoppingCart, Menu, Search, X, Heart, User, LogOut, LogIn, LayoutDashboard, Gift, Clock } from "lucide-react";
+import { ShoppingCart, Menu, X, Heart, User, LogOut, LogIn, LayoutDashboard, Gift, Clock } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router";
 import { urls } from "../lib/urls";
 import { useCart } from "../context/CartContext";
@@ -7,6 +7,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { useTimezone } from "../context/TimezoneContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useState, useRef, useEffect } from "react";
+import { SearchAutocomplete } from "./SearchAutocomplete";
 
 export function Header() {
   const { getTotalItems } = useCart();
@@ -17,7 +18,6 @@ export function Header() {
   const { currency } = useCurrency();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -37,17 +37,13 @@ export function Header() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(urls.search(searchQuery));
-      setSearchQuery("");
-      setIsMenuOpen(false);
-      setTimeout(() => {
-        const el = document.getElementById("productos");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 150);
-    }
+  const handleSearch = (query: string) => {
+    navigate(urls.search(query));
+    setIsMenuOpen(false);
+    setTimeout(() => {
+      const el = document.getElementById("productos");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 150);
   };
 
   const handleProductos = () => {
@@ -82,18 +78,13 @@ export function Header() {
           </Link>
 
           {/* Desktop Search */}
-          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder={t("search.placeholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-              />
-            </div>
-          </form>
+          <div className="hidden md:flex flex-1 max-w-md mx-8">
+            <SearchAutocomplete
+              placeholder={t("search.placeholder")}
+              onSearch={handleSearch}
+              onSelect={(s) => s.pid ? navigate(urls.product(s.pid)) : handleSearch(s.text)}
+            />
+          </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
@@ -259,18 +250,13 @@ export function Header() {
               </span>
             </button>
 
-            <form onSubmit={handleSearch} className="mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder={t("search.placeholder")}
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                />
-              </div>
-            </form>
+            <div className="mb-4">
+              <SearchAutocomplete
+                placeholder={t("search.placeholder")}
+                onSearch={handleSearch}
+                onSelect={(s) => { setIsMenuOpen(false); s.pid ? navigate(urls.product(s.pid)) : handleSearch(s.text); }}
+              />
+            </div>
 
             <nav className="flex flex-col gap-1">
               <Link

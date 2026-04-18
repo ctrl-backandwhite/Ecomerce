@@ -25,6 +25,8 @@ import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useNexaCategories } from "../hooks/useNexaCategories";
 import { useLanguage } from "../context/LanguageContext";
 import { slugify, urls } from "../lib/urls";
+import { useProductSearch } from "../hooks/useProductSearch";
+import { mapSearchHitToProduct } from "../mappers/NexaProductMapper";
 
 const PAGE_SIZE = 24;
 
@@ -118,6 +120,15 @@ export function Home() {
     refetch: refreshProducts,
   } = useNexaProducts(activeCategoryId);
 
+  const isSearching = searchQuery.trim().length >= 2;
+  const {
+    results: esResults,
+    totalHits: esTotalHits,
+    loading: esLoading,
+    hasMore: esHasMore,
+    loadMore: esLoadMore,
+  } = useProductSearch(searchQuery);
+
   const [selectedPriceIdx, setSelectedPriceIdx] = useState(0);
   const [selectedRating, setSelectedRating] = useState(0);
   const [sortBy, setSortBy] = useState("featured");
@@ -135,7 +146,7 @@ export function Home() {
   /* ── Infinite-scroll refs (callback-ref pattern) ─────────────── */
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef(apiLoadMore);
-  useEffect(() => { loadMoreRef.current = apiLoadMore; });
+  useEffect(() => { loadMoreRef.current = isSearching ? esLoadMore : apiLoadMore; });
 
   const sentinelRef = useCallback((node: HTMLDivElement | null) => {
     if (observerRef.current) {
@@ -459,7 +470,7 @@ export function Home() {
                       {sectionTitle}
                     </h2>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {filtered.length} {t("home.products")}
+                      {isSearching ? esTotalHits : filtered.length} {t("home.products")}
                     </p>
                   </div>
 
@@ -598,7 +609,7 @@ export function Home() {
               )}
 
               {/* ── Initial loading skeleton ── */}
-              {productsLoading && products.length === 0 && (
+              {((isSearching ? esLoading && esResults.length === 0 : productsLoading && products.length === 0)) && (
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
                   {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="border border-gray-100 rounded-2xl overflow-hidden animate-pulse">
@@ -618,7 +629,44 @@ export function Home() {
               )}
 
               {/* ── Product grid ── */}
-              {!productsLoading || products.length > 0 ? (
+              {isSearching ? (
+                esResults.length > 0 ? (
+                  <div key={filterKey} className="nx036-grid-enter">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                      {esResults.map((hit) => (
+                        <ProductCard key={hit.id} product={mapSearchHitToProduct(hit)} />
+                      ))}
+                    </div>
+                    <div ref={sentinelRef} className="mt-12 flex items-center justify-center min-h-[48px]">
+                      {esLoading && (
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          {t("home.loadingMore")}
+                        </div>
+                      )}
+                      {!esHasMore && esResults.length > PAGE_SIZE && (
+                        <p className="text-xs text-gray-300 tracking-widest uppercase">
+                          {t("home.allLoaded")}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ) : !esLoading ? (
+                  <div className="flex flex-col items-center justify-center py-28 text-center">
+                    <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+                      <Search className="w-6 h-6 text-gray-300" />
+                    </div>
+                    <h3 className="text-lg text-gray-900 mb-2">{t("home.noResults")}</h3>
+                    <p className="text-sm text-gray-400 mb-6">{t("home.noResultsHint")}</p>
+                    <button
+                      onClick={handleReset}
+                      className="text-sm px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                    >
+                      {t("home.clearFilters")}
+                    </button>
+                  </div>
+                ) : null
+              ) : (!productsLoading || products.length > 0) ? (
                 filtered.length > 0 ? (
                   <div key={filterKey} className="nx036-grid-enter">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">

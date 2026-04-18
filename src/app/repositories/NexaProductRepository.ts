@@ -3,19 +3,26 @@
  * ║  NexaProductRepository                                       ║
  * ║                                                              ║
  * ║  Fetches products from the NX036 mic-productcategory API.     ║
- * ║  Endpoint: /api/v1/products                                  ║
- * ║  Supports locale, categoryId, page, and size query params.   ║
+ * ║  Public endpoints (no auth):                                 ║
+ * ║    GET /api/v1/public/products          (paged list)         ║
+ * ║    GET /api/v1/public/products/{id}     (detail)             ║
+ * ║  Admin-only detail fetch from CJ (requires ADMIN token):     ║
+ * ║    GET /api/v1/products/detail/{pid}                         ║
  * ╚══════════════════════════════════════════════════════════════╝
  */
 
 import { ApiError, NetworkError } from "../lib/AppError";
+import { authFetch } from "../lib/authFetch";
 import { nxFetch } from "../lib/nxFetch";
 import { API_CATALOG } from "../config/api";
 
 import { logger } from "../lib/logger";
 
-// ── API base URL ─────────────────────────────────────────────────────────────
-const NX036_PRODUCTS_BASE = `${API_CATALOG}/api/v1/products`;
+// ── API base URLs ───────────────────────────────────────────────────────────
+/** Public storefront endpoints — no auth required */
+const NX036_PUBLIC_PRODUCTS_BASE = `${API_CATALOG}/api/v1/public/products`;
+/** Admin-only detail endpoints (CJ auto-fetch + catalog write access) */
+const NX036_ADMIN_PRODUCTS_BASE = `${API_CATALOG}/api/v1/products`;
 
 // ── API response types ───────────────────────────────────────────────────────
 
@@ -180,7 +187,7 @@ class NexaProductRepository {
             if (query.sortBy) params.set("sortBy", query.sortBy);
             if (query.ascending !== undefined) params.set("ascending", String(query.ascending));
 
-            const url = `${NX036_PRODUCTS_BASE}?${params.toString()}`;
+            const url = `${NX036_PUBLIC_PRODUCTS_BASE}?${params.toString()}`;
             logger.debug('[NexaProductRepository] fetch URL:', url);
             const res = await nxFetch(url, { signal });
 
@@ -210,7 +217,7 @@ class NexaProductRepository {
     async findById(id: string, locale: string = "es"): Promise<NexaProduct> {
         try {
             const params = new URLSearchParams({ locale });
-            const url = `${NX036_PRODUCTS_BASE}/${id}?${params.toString()}`;
+            const url = `${NX036_PUBLIC_PRODUCTS_BASE}/${id}?${params.toString()}`;
             const res = await nxFetch(url);
 
             if (!res.ok) {
@@ -233,17 +240,17 @@ class NexaProductRepository {
     }
 
     /**
-     * Fetches product detail by CJ pid.
-     * If the product doesn't exist in the local DB, the backend will fetch it
-     * from CJ Dropshipping, persist it, and return it.
-     * Returns the full ProductDetail shape (separate table architecture).
+     * Fetches product detail by CJ pid. ADMIN-ONLY: if the product doesn't
+     * exist in the local DB the backend fetches it from CJ Dropshipping,
+     * persists it and returns it. Uses authFetch because the endpoint is
+     * protected by @NxAdmin in mic-productcategory.
      */
     async findDetailByPid(pid: string, locale: string, signal?: AbortSignal): Promise<NexaProductDetail> {
         try {
             const params = new URLSearchParams({ locale });
-            const url = `${NX036_PRODUCTS_BASE}/detail/${pid}?${params.toString()}`;
+            const url = `${NX036_ADMIN_PRODUCTS_BASE}/detail/${pid}?${params.toString()}`;
             logger.debug('[NexaProductRepository] detail URL:', url);
-            const res = await nxFetch(url, { signal });
+            const res = await authFetch(url, { signal });
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;
