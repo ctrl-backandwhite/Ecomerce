@@ -118,6 +118,12 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
 
             try {
                 logger.debug('[useNexaProducts] fetchPage:', { page, append, categoryId, apiLocale });
+                // sortBy=random is a "one-shot" query: the backend ignores
+                // the page and always returns a fresh random sample, so
+                // asking for more pages would just duplicate ids. Bump size
+                // once and disable infinite-scroll for this mode.
+                const isRandom = sortBy === "random";
+                const requestedSize = isRandom ? Math.min(60, PAGE_SIZE * 2) : PAGE_SIZE;
                 const result = await nexaProductRepository.findMany(
                     {
                         locale: apiLocale,
@@ -125,8 +131,8 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                         name: name || undefined,
                         sortBy: sortBy || undefined,
                         ascending,
-                        page,
-                        size: PAGE_SIZE,
+                        page: isRandom ? 0 : page,
+                        size: requestedSize,
                     },
                     signal,
                 );
@@ -144,7 +150,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 }
 
                 const mapped = mapNexaProducts(result.content, categoryMapRef.current);
-                const nextHasMore = page < result.totalPages - 1;
+                const nextHasMore = sortBy === "random" ? false : page < result.totalPages - 1;
 
                 let updatedProducts: Product[];
                 if (append) {

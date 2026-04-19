@@ -30,6 +30,7 @@ import { slugify, urls } from "../lib/urls";
 import { useProductSearch } from "../hooks/useProductSearch";
 import { mapSearchHitToProduct } from "../mappers/NexaProductMapper";
 import { getSessionShuffleSeed, seededShuffle } from "../lib/shuffle";
+import { useRecentlyViewed } from "../context/RecentlyViewedContext";
 
 const PAGE_SIZE = 24;
 
@@ -41,6 +42,7 @@ function scrollToProducts() {
 export function Home() {
   const { t } = useLanguage();
   const priceRanges = usePriceRanges();
+  const { viewed: recentlyViewed } = useRecentlyViewed();
 
   /* ── Path params (clean URLs) ──────────────────────────────── */
   const { catSlug, subcatSlug, query: routeQuery } = useParams<{
@@ -141,7 +143,13 @@ export function Home() {
     dataSource,
     loadMore: apiLoadMore,
     refetch: refreshProducts,
-  } = useNexaProducts(activeCategoryId);
+  } = useNexaProducts({
+    categoryId: activeCategoryId,
+    // On the landing (no category, no brand, no search) ask the backend
+    // for a random sample so each visit sees a fresh slice of the catalogue
+    // instead of the first 24 rows by createdAt.
+    sortBy: (!activeCategoryId && !searchQuery && !selectedBrand) ? "random" : undefined,
+  });
 
   const isSearching = searchQuery.trim().length >= 2;
   const {
@@ -261,10 +269,22 @@ export function Home() {
         list = seededShuffle(list, getSessionShuffleSeed());
         break;
     }
+
+    // On the landing (no filters/search), prepend the user's recently-viewed
+    // products so they can jump back to what they were looking at.
+    const isLandingView =
+      selectedCategory === "Todos" && !selectedSubcat && !selectedBrand &&
+      !selectedAttr && !searchQuery && !soloOfertas &&
+      Object.keys(variantValues).length === 0 && selectedKeywords.length === 0;
+    if (isLandingView && sortBy === "featured" && recentlyViewed.length > 0) {
+      const viewedIds = new Set(recentlyViewed.map((p) => p.id));
+      list = [...recentlyViewed, ...list.filter((p) => !viewedIds.has(p.id))];
+    }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
     selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products,
-    campaignDealIds, campaignDeals, variantValues, selectedKeywords, selectedSubcategoryId]);
+    campaignDealIds, campaignDeals, variantValues, selectedKeywords, selectedSubcategoryId,
+    recentlyViewed]);
 
   /* ── Reset filterKey when local filters change ─────────────── */
   useEffect(() => {
