@@ -46,8 +46,12 @@ export function clearTokens(): void {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXPIRES_AT_KEY);
     localStorage.removeItem(TOKEN_TYPE_KEY);
-    // Extra auth-related keys that should not survive a logout
+    // Extra auth-related keys that should not survive a logout — otherwise
+    // the cart context and other consumers think the user is still logged in
+    // while the bearer token is gone, producing silent 401s everywhere.
     localStorage.removeItem("rememberedUsername");
+    localStorage.removeItem("nx036_cart_is_auth");
+    localStorage.removeItem("nexa_user");
     sessionStorage.removeItem(RETURN_URL_KEY);
 }
 

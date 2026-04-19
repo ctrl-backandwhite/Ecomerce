@@ -107,8 +107,13 @@ export async function authFetch(
         if (refreshed) {
             return fetch(input, attachHeaders(init));
         }
-        // Refresh failed — clear tokens; AuthContext will detect and redirect
+        // Refresh failed — drop every auth remnant and notify the app so it
+        // can push the user back through OAuth2 instead of leaving them on a
+        // half-rendered page piling 401s.
         clearTokens();
+        if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("auth:session-expired"));
+        }
     }
 
     return response;
