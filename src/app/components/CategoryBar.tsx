@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useNexaFeaturedCategories } from "../hooks/useNexaFeaturedCategories";
+import { useNexaCategories } from "../hooks/useNexaCategories";
 import type { NexaCategory } from "../repositories/NexaCategoryRepository";
 
 // ── Icon resolver by category name ───────────────────────────────────────────
@@ -79,7 +80,12 @@ function getSubIcon(name: string): LucideIcon {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function CategoryBar() {
-  const { categories, loading } = useNexaFeaturedCategories();
+  const { categories: featured, loading: featLoading } = useNexaFeaturedCategories();
+  const { categories: allCats, loading: allLoading } = useNexaCategories();
+  // Fallback to the full tree when the backend has no featured categories yet,
+  // so the mega menu always has something to show.
+  const categories = featured.length > 0 ? featured : allCats.slice(0, 8);
+  const loading = featLoading && allLoading;
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState<string | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

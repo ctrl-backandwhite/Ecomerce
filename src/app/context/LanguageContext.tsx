@@ -107,6 +107,8 @@ const translations: Record<Locale, Record<string, string>> = {
         "home.noResultsHint": "Prueba ajustando los filtros o cambia la búsqueda",
         "home.clearFilters": "Limpiar filtros",
         "home.loadingMore": "Cargando más productos...",
+        "home.topBrands": "Marcas destacadas",
+        "home.viewAll": "Ver todo",
         "home.allLoaded": "Todos los productos cargados",
         // ── Features strip ──
         "features.shipping": "Envío Gratis",
@@ -201,6 +203,8 @@ const translations: Record<Locale, Record<string, string>> = {
         "home.clearFilters": "Clear filters",
         "home.loadingMore": "Loading more products...",
         "home.allLoaded": "All products loaded",
+        "home.topBrands": "Top brands",
+        "home.viewAll": "View all",
         // ── Features strip ──
         "features.shipping": "Free Shipping",
         "features.shipping.sub": "On orders over $100",
@@ -294,6 +298,8 @@ const translations: Record<Locale, Record<string, string>> = {
         "home.clearFilters": "Limpar filtros",
         "home.loadingMore": "Carregando mais produtos...",
         "home.allLoaded": "Todos os produtos carregados",
+        "home.topBrands": "Marcas em destaque",
+        "home.viewAll": "Ver tudo",
         // ── Features strip ──
         "features.shipping": "Frete Grátis",
         "features.shipping.sub": "Em compras acima de $100",
