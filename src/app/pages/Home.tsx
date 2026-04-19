@@ -18,7 +18,6 @@ import { CategoryBar } from "../components/CategoryBar";
 import { CategoryShowcase } from "../components/CategoryShowcase";
 import { CategoryPageHeader } from "../components/CategoryPageHeader";
 import { SiblingCategoriesRow } from "../components/SiblingCategoriesRow";
-import { DualPromoBanner } from "../components/DualPromoBanner";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { usePriceRanges } from "../hooks/usePriceRanges";
@@ -479,10 +478,7 @@ export function Home() {
       {/* Info Banner */}
       <InfoBanner />
 
-      {/* Landing-only marketing blocks */}
-      {isLanding && <CategoryShowcase />}
-
-      {/* Flash Deals */}
+      {/* Flash Deals — campaign offers first */}
       <FlashDeals
         onVerOfertas={() => {
           setSelectedPriceIdx(0);
@@ -493,8 +489,8 @@ export function Home() {
         }}
       />
 
-      {/* Dual promo banner (sign-up + newsletter) — landing only */}
-      {isLanding && <DualPromoBanner />}
+      {/* Category showcase — landing only, below the deals strip */}
+      {isLanding && <CategoryShowcase />}
 
       {/* ── Products + Sidebar ── */}
       <section className="py-12 bg-white border-t border-gray-200" id="productos">

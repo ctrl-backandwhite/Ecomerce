@@ -6,6 +6,7 @@ import { useCompare } from "../context/CompareContext";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
 import { toast } from "sonner";
 import { useState } from "react";
 import { QuickViewModal } from "./QuickViewModal";
@@ -20,17 +21,18 @@ export function ProductCard({ product }: ProductCardProps) {
   const { toggleFavorite, isFavorite } = useUser();
   const { isAuthenticated } = useAuth();
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
   const liked = isFavorite(product.id);
   const [quickView, setQuickView] = useState(false);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     if (product.variants?.length > 1) {
-      toast.message("Selecciona las opciones del producto");
+      toast.message(t("card.selectOptions"));
       return;
     }
     addToCart(product);
-    toast.success("Producto agregado al carrito");
+    toast.success(t("card.addedToCart"));
   };
 
   const handleCompare = (e: React.MouseEvent) => {
@@ -51,7 +53,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const isOutOfStock = product.stockStatus === "out_of_stock" || stockCount === 0;
   const lowStock = !isOutOfStock && stockCount > 0 && stockCount < 10;
   const soldText = product.reviews > 0
-    ? `${product.reviews} ${product.reviews === 1 ? "reseña" : "reseñas"}`
+    ? `${product.reviews} ${product.reviews === 1 ? t("card.review") : t("card.reviews")}`
     : null;
 
   return (
@@ -79,7 +81,7 @@ export function ProductCard({ product }: ProductCardProps) {
             )}
             {product.featured && (
               <span className="inline-flex items-center h-5 px-1.5 text-[10px] tracking-wide bg-gray-900 text-white rounded">
-                Destacado
+                {t("card.featured")}
               </span>
             )}
           </div>
@@ -91,10 +93,10 @@ export function ProductCard({ product }: ProductCardProps) {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (!isAuthenticated) { toast.error("Inicia sesión para agregar favoritos"); return; }
+                if (!isAuthenticated) { toast.error(t("card.loginToFav")); return; }
                 toggleFavorite(product.id);
               }}
-              title={liked ? "Quitar de favoritos" : "Agregar a favoritos"}
+              title={liked ? t("card.removeFromFav") : t("card.addToFav")}
             >
               <Heart className={`w-3.5 h-3.5 ${liked ? "fill-red-500 text-red-500" : "text-gray-500"}`} strokeWidth={1.5} />
             </button>
@@ -103,7 +105,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 ? "bg-gray-900 text-white border border-gray-900"
                 : "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200"}`}
               onClick={handleCompare}
-              title="Comparar"
+              title={t("card.compare")}
             >
               {inCompare(product.id)
                 ? <Check className="w-3.5 h-3.5" />
@@ -112,7 +114,7 @@ export function ProductCard({ product }: ProductCardProps) {
             <button
               className="w-8 h-8 flex items-center justify-center rounded-full shadow-sm transition-colors bg-white hover:bg-gray-50 text-gray-500 border border-gray-200"
               onClick={handleQuickView}
-              title="Vista rápida"
+              title={t("card.quickView")}
             >
               <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
@@ -121,12 +123,12 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Stock ribbon */}
           {lowStock && (
             <div className="absolute bottom-0 inset-x-0 bg-amber-500/95 text-white text-[11px] px-3 py-1 backdrop-blur-sm">
-              ¡Solo {stockCount} disponibles!
+              {t("card.onlyN").replace("{n}", String(stockCount))}
             </div>
           )}
           {isOutOfStock && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center">
-              <span className="px-3 py-1 bg-gray-900 text-white text-xs rounded-full">Sin stock</span>
+              <span className="px-3 py-1 bg-gray-900 text-white text-xs rounded-full">{t("card.outOfStock")}</span>
             </div>
           )}
         </div>
@@ -161,7 +163,7 @@ export function ProductCard({ product }: ProductCardProps) {
                 )}
               </>
             ) : (
-              <span className="text-[11px] text-gray-400">Sin reseñas aún</span>
+              <span className="text-[11px] text-gray-400">{t("card.noReviewsYet")}</span>
             )}
           </div>
 
@@ -179,14 +181,14 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
             {discount > 0 && product.originalPrice && (
               <p className="text-[11px] text-green-700 mt-1">
-                Ahorras {formatPrice(product.originalPrice - product.price)}
+                {t("card.save")} {formatPrice(product.originalPrice - product.price)}
               </p>
             )}
 
             {/* Shipping hint */}
             <div className="flex items-center gap-1 mt-2 text-[11px] text-gray-500">
               <Truck className="w-3 h-3" strokeWidth={1.5} />
-              <span>Envío disponible</span>
+              <span>{t("card.shippingAvailable")}</span>
             </div>
 
             {/* CTA */}
@@ -196,7 +198,7 @@ export function ProductCard({ product }: ProductCardProps) {
               className="mt-3 w-full px-3 py-2 bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5"
             >
               <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
-              <span>Agregar al carrito</span>
+              <span>{t("card.addToCart")}</span>
             </button>
           </div>
         </div>
