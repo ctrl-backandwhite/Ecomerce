@@ -3,6 +3,7 @@ import { Zap, Clock, ShoppingCart, ArrowRight, ChevronLeft, ChevronRight } from 
 import { Link } from "react-router";
 import { useCart } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
 import { useFlashDeals } from "../hooks/useFlashDeals";
 import { toast } from "sonner";
 
@@ -41,6 +42,7 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
   const { deals, loading, endDate } = useFlashDeals();
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
   const [secs, setSecs] = useState(() => getSecondsUntil(endDate));
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -79,14 +81,14 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
               <Zap className="w-4 h-4 text-red-500" strokeWidth={2} />
             </div>
             <div>
-              <h2 className="text-gray-900 tracking-tight">Ofertas Flash</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Descuentos exclusivos por tiempo limitado</p>
+              <h2 className="text-gray-900 tracking-tight">{t("flash.title")}</h2>
+              <p className="text-xs text-gray-400 mt-0.5">{t("flash.subtitle")}</p>
             </div>
 
             {/* Countdown */}
             <div className="hidden sm:flex items-center gap-2 ml-4 pl-4 border-l border-gray-100">
               <Clock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-              <span className="text-[11px] text-gray-400 mr-1">Termina en</span>
+              <span className="text-[11px] text-gray-400 mr-1">{t("flash.endsIn")}</span>
               {time.d && (
                 <span className="flex flex-col items-center">
                   <span className="tabular-nums text-sm text-gray-900 bg-gray-50 border border-gray-200 rounded-md px-2 py-0.5 min-w-[32px] text-center">
@@ -125,7 +127,7 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
               onClick={onVerOfertas}
               className="hidden sm:flex items-center gap-1.5 h-8 px-3 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
             >
-              Ver todas <ArrowRight className="w-3 h-3" />
+              {t("flash.viewAll")} <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         </div>
@@ -159,7 +161,7 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
                 {/* Stock warning */}
                 {p.stock < 15 && (
                   <span className="absolute bottom-2 right-2 bg-amber-500 text-white text-[10px] px-1.5 py-0.5 rounded-md">
-                    ¡Últimas!
+                    {t("flash.lastUnits")}
                   </span>
                 )}
               </Link>
@@ -184,8 +186,8 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
                 {/* Stock bar */}
                 <div className="mb-2.5">
                   <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                    <span>Quedan {p.stock}</span>
-                    <span>{Math.min(100, Math.round((1 - p.stock / 150) * 100))}% vendido</span>
+                    <span>{t("flash.remaining")} {p.stock}</span>
+                    <span>{Math.min(100, Math.round((1 - p.stock / 150) * 100))}% {t("flash.sold")}</span>
                   </div>
                   <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
                     <div
@@ -197,10 +199,10 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
 
                 {/* Add to cart */}
                 <button
-                  onClick={() => { addToCart(p); toast.success("Añadido al carrito"); }}
+                  onClick={() => { addToCart(p); toast.success(t("flash.addedToast")); }}
                   className="w-full flex items-center justify-center gap-1.5 h-7 text-[11px] bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg transition-colors"
                 >
-                  <ShoppingCart className="w-3 h-3" /> Agregar
+                  <ShoppingCart className="w-3 h-3" /> {t("flash.addToCart")}
                 </button>
               </div>
             </div>
@@ -213,7 +215,7 @@ export function FlashDeals({ onVerOfertas }: FlashDealsProps) {
             onClick={onVerOfertas}
             className="inline-flex items-center gap-1.5 h-8 px-4 text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
           >
-            Ver todas las ofertas <ArrowRight className="w-3 h-3" />
+            {t("flash.viewAllMobile")} <ArrowRight className="w-3 h-3" />
           </button>
         </div>
 

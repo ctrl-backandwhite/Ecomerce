@@ -17,6 +17,8 @@ export interface ProductVariant {
     price: number;
     stock_quantity: number;
     attributes: Record<string, string>;
+    /** Optional variant cover image (eg. CJ variantImage). */
+    image?: string;
 }
 
 export interface Product {
@@ -34,6 +36,8 @@ export interface Product {
     costPrice?: number;
     taxClass: string;
     category: string;
+    /** Original category UUID from the backend; stable across locale changes. */
+    categoryId?: string;
     subcategory: string;
     keywords: string[];
     image: string;

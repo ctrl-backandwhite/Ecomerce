@@ -1,4 +1,4 @@
-import { Star, ShoppingCart, Heart, BarChart2, Eye, Check } from "lucide-react";
+import { Star, ShoppingCart, Heart, BarChart2, Eye, Check, Truck } from "lucide-react";
 import { Link } from "react-router";
 import { Product } from "../types/product";
 import { useCart } from "../context/CartContext";
@@ -6,8 +6,9 @@ import { useCompare } from "../context/CompareContext";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
 import { toast } from "sonner";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { QuickViewModal } from "./QuickViewModal";
 
 interface ProductCardProps {
@@ -20,37 +21,18 @@ export function ProductCard({ product }: ProductCardProps) {
   const { toggleFavorite, isFavorite } = useUser();
   const { isAuthenticated } = useAuth();
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
   const liked = isFavorite(product.id);
-  const imgRef = useRef<HTMLDivElement>(null);
-  const [transform, setTransform] = useState("perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)");
-  const [glare, setGlare] = useState({ x: 50, y: 50, opacity: 0 });
   const [quickView, setQuickView] = useState(false);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const el = imgRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    const cx = rect.width / 2;
-    const cy = rect.height / 2;
-    const rotateX = ((y - cy) / cy) * -15;
-    const rotateY = ((x - cx) / cx) * 15;
-    setTransform(
-      `perspective(600px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.06,1.06,1.06)`
-    );
-    setGlare({ x: (x / rect.width) * 100, y: (y / rect.height) * 100, opacity: 0.22 });
-  };
-
-  const handleMouseLeave = () => {
-    setTransform("perspective(600px) rotateX(0deg) rotateY(0deg) scale3d(1,1,1)");
-    setGlare((g) => ({ ...g, opacity: 0 }));
-  };
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (product.variants?.length > 1) {
+      toast.message(t("card.selectOptions"));
+      return;
+    }
     addToCart(product);
-    toast.success("Producto agregado al carrito");
+    toast.success(t("card.addedToCart"));
   };
 
   const handleCompare = (e: React.MouseEvent) => {
@@ -67,147 +49,161 @@ export function ProductCard({ product }: ProductCardProps) {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+  const stockCount = typeof product.stock === "number" ? product.stock : Number.POSITIVE_INFINITY;
+  const isOutOfStock = product.stockStatus === "out_of_stock" || stockCount === 0;
+  const lowStock = !isOutOfStock && stockCount > 0 && stockCount < 10;
+  const soldText = product.reviews > 0
+    ? `${product.reviews} ${product.reviews === 1 ? t("card.review") : t("card.reviews")}`
+    : null;
+
   return (
     <>
       <Link
         to={`/product/${product.id}`}
         state={{ from: window.location.pathname + window.location.search }}
-        className="group"
-        style={{ display: "block" }}
+        className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg hover:border-gray-300 transition-all duration-200 h-full flex flex-col"
       >
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-300 h-full flex flex-col">
+        {/* Image */}
+        <div className="relative aspect-square bg-white overflow-hidden">
+          <img
+            src={product.image}
+            alt={product.name}
+            loading="lazy"
+            className="w-full h-full object-contain p-4 group-hover:scale-[1.04] transition-transform duration-300"
+          />
 
-          {/* Image with 3D effect */}
-          <div
-            ref={imgRef}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseLeave}
-            style={{ transformStyle: "preserve-3d" }}
-            className="relative aspect-square bg-white overflow-hidden cursor-pointer"
-          >
-            <div
-              style={{
-                transform,
-                transition: glare.opacity === 0 ? "transform 0.55s ease" : "transform 0.08s ease",
-                willChange: "transform",
-                width: "100%",
-                height: "100%",
-                position: "relative",
-              }}
-            >
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-contain p-3"
-              />
-              {/* Glare */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  pointerEvents: "none",
-                  background: `radial-gradient(circle at ${glare.x}% ${glare.y}%, rgba(255,255,255,${glare.opacity}) 0%, transparent 65%)`,
-                  transition: "opacity 0.2s ease",
-                }}
-              />
-            </div>
-
+          {/* Top-left badges */}
+          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
             {discount > 0 && (
-              <div className="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded z-10">
+              <span className="inline-flex items-center h-5 px-1.5 text-[10px] font-semibold tracking-wide bg-red-500 text-white rounded">
                 -{discount}%
-              </div>
+              </span>
             )}
-
-            {/* Action buttons overlay */}
-            <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10">
-              <button
-                className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-colors ${liked ? "bg-red-50 border border-red-200" : "bg-white/90 hover:bg-white"
-                  }`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (!isAuthenticated) { toast.error("Inicia sesión para agregar favoritos"); return; }
-                  toggleFavorite(product.id);
-                }}
-                title={liked ? "Quitar de favoritos" : "Agregar a favoritos"}
-              >
-                <Heart className={`w-3.5 h-3.5 ${liked ? "fill-red-500 text-red-500" : ""}`} strokeWidth={1.5} />
-              </button>
-              <button
-                className={`w-7 h-7 flex items-center justify-center rounded-full shadow-sm transition-colors ${inCompare(product.id)
-                  ? "bg-gray-600 text-white"
-                  : "bg-white/90 hover:bg-white text-gray-600"
-                  }`}
-                onClick={handleCompare}
-                title="Comparar"
-              >
-                {inCompare(product.id)
-                  ? <Check className="w-3.5 h-3.5" />
-                  : <BarChart2 className="w-3.5 h-3.5" strokeWidth={1.5} />
-                }
-              </button>
-            </div>
-
-            {/* Quick view — aparece en hover */}
-            <button
-              onClick={handleQuickView}
-              className="absolute bottom-3 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center gap-1.5 h-7 px-3 bg-white/95 text-gray-700 text-xs rounded-full shadow-sm border border-gray-100 z-10 whitespace-nowrap"
-            >
-              <Eye className="w-3 h-3" strokeWidth={1.5} /> Vista rápida
-            </button>
-
-            {product.stock < 10 && (
-              <div className="absolute bottom-3 left-3 bg-amber-500 text-white text-xs px-2 py-1 rounded z-10">
-                ¡Últimas unidades!
-              </div>
+            {product.featured && (
+              <span className="inline-flex items-center h-5 px-1.5 text-[10px] tracking-wide bg-gray-900 text-white rounded">
+                {t("card.featured")}
+              </span>
             )}
           </div>
 
-          {/* Content */}
-          <div className="p-4 flex-1 flex flex-col">
-            <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1 truncate">
-              {product.category}
+          {/* Top-right action buttons (visible on hover) */}
+          <div className="absolute top-3 right-3 flex flex-col gap-1.5 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <button
+              className={`w-8 h-8 flex items-center justify-center rounded-full shadow-sm transition-colors ${liked ? "bg-red-50 border border-red-200" : "bg-white hover:bg-gray-50 border border-gray-200"}`}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isAuthenticated) { toast.error(t("card.loginToFav")); return; }
+                toggleFavorite(product.id);
+              }}
+              title={liked ? t("card.removeFromFav") : t("card.addToFav")}
+            >
+              <Heart className={`w-3.5 h-3.5 ${liked ? "fill-red-500 text-red-500" : "text-gray-500"}`} strokeWidth={1.5} />
+            </button>
+            <button
+              className={`w-8 h-8 flex items-center justify-center rounded-full shadow-sm transition-colors ${inCompare(product.id)
+                ? "bg-gray-900 text-white border border-gray-900"
+                : "bg-white hover:bg-gray-50 text-gray-500 border border-gray-200"}`}
+              onClick={handleCompare}
+              title={t("card.compare")}
+            >
+              {inCompare(product.id)
+                ? <Check className="w-3.5 h-3.5" />
+                : <BarChart2 className="w-3.5 h-3.5" strokeWidth={1.5} />}
+            </button>
+            <button
+              className="w-8 h-8 flex items-center justify-center rounded-full shadow-sm transition-colors bg-white hover:bg-gray-50 text-gray-500 border border-gray-200"
+              onClick={handleQuickView}
+              title={t("card.quickView")}
+            >
+              <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />
+            </button>
+          </div>
+
+          {/* Stock ribbon */}
+          {lowStock && (
+            <div className="absolute bottom-0 inset-x-0 bg-amber-500/95 text-white text-[11px] px-3 py-1 backdrop-blur-sm">
+              {t("card.onlyN").replace("{n}", String(stockCount))}
             </div>
-            <h3 className="text-base mb-2 line-clamp-2 group-hover:text-gray-600 transition-colors">
-              {product.name}
-            </h3>
+          )}
+          {isOutOfStock && (
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center">
+              <span className="px-3 py-1 bg-gray-900 text-white text-xs rounded-full">{t("card.outOfStock")}</span>
+            </div>
+          )}
+        </div>
 
-            {/* Rating */}
-            {product.rating > 0 && (
-              <div className="flex items-center gap-1 text-sm mb-2">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                <span className="text-gray-900">{product.rating}</span>
-                <span className="text-gray-500">({product.reviews})</span>
-              </div>
-            )}
-            <div className="mb-3 min-h-[32px]" />
+        {/* Body */}
+        <div className="p-3.5 flex-1 flex flex-col">
+          {/* Brand / category */}
+          <div className="text-[10px] text-gray-400 uppercase tracking-wider mb-1 truncate">
+            {product.brand || product.category}
+          </div>
 
-            {/* Price */}
-            <div className="mt-auto">
-              <div className="flex items-baseline gap-2 mb-3">
-                <span className="text-2xl text-gray-900">
-                  {formatPrice(product.price)}
-                </span>
-                {product.originalPrice && product.originalPrice > product.price && (
-                  <span className="text-sm text-gray-500 line-through">
-                    {formatPrice(product.originalPrice)}
-                  </span>
+          {/* Title */}
+          <h3 className="text-[13px] text-gray-900 leading-snug line-clamp-2 mb-1.5 group-hover:text-blue-700 transition-colors">
+            {product.name}
+          </h3>
+
+          {/* Rating row */}
+          <div className="flex items-center gap-1 mb-2 min-h-[16px]">
+            {product.rating > 0 ? (
+              <>
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Star
+                      key={i}
+                      className={`w-3 h-3 ${i <= Math.round(product.rating) ? "fill-amber-400 text-amber-400" : "text-gray-200"}`}
+                      strokeWidth={1}
+                    />
+                  ))}
+                </div>
+                {soldText && (
+                  <span className="text-[11px] text-gray-500 ml-1">({product.reviews})</span>
                 )}
-              </div>
+              </>
+            ) : (
+              <span className="text-[11px] text-gray-400">{t("card.noReviewsYet")}</span>
+            )}
+          </div>
 
-              <button
-                onClick={handleAddToCart}
-                className="w-full px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 transition-colors flex items-center justify-center gap-2"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span className="hidden sm:inline">Agregar al carrito</span>
-              </button>
+          {/* Price block */}
+          <div className="mt-auto">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="text-xl text-gray-900 tracking-tight leading-none">
+                {formatPrice(product.price)}
+              </span>
+              {product.originalPrice && product.originalPrice > product.price && (
+                <span className="text-xs text-gray-400 line-through leading-none">
+                  {formatPrice(product.originalPrice)}
+                </span>
+              )}
             </div>
+            {discount > 0 && product.originalPrice && (
+              <p className="text-[11px] text-green-700 mt-1">
+                {t("card.save")} {formatPrice(product.originalPrice - product.price)}
+              </p>
+            )}
+
+            {/* Shipping hint */}
+            <div className="flex items-center gap-1 mt-2 text-[11px] text-gray-500">
+              <Truck className="w-3 h-3" strokeWidth={1.5} />
+              <span>{t("card.shippingAvailable")}</span>
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={handleAddToCart}
+              disabled={isOutOfStock}
+              className="mt-3 w-full px-3 py-2 bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
+              <span>{t("card.addToCart")}</span>
+            </button>
           </div>
         </div>
       </Link>
 
-      {/* Quick View Modal */}
       <QuickViewModal product={quickView ? product : null} onClose={() => setQuickView(false)} />
     </>
   );

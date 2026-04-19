@@ -46,6 +46,9 @@ export function clearTokens(): void {
     localStorage.removeItem(REFRESH_TOKEN_KEY);
     localStorage.removeItem(TOKEN_EXPIRES_AT_KEY);
     localStorage.removeItem(TOKEN_TYPE_KEY);
+    // Extra auth-related keys that should not survive a logout
+    localStorage.removeItem("rememberedUsername");
+    sessionStorage.removeItem(RETURN_URL_KEY);
 }
 
 // ── Checks ──────────────────────────────────────────────────────────────────

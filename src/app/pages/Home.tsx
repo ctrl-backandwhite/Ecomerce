@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useSearchParams, useParams, useNavigate, Link } from "react-router";
+import { useSearchParams, useParams, useNavigate } from "react-router";
 import {
-  Gift,
   ChevronRight,
   SlidersHorizontal,
   AlertTriangle,
@@ -16,6 +15,9 @@ import { ProductCard } from "../components/ProductCard";
 import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
+import { CategoryShowcase } from "../components/CategoryShowcase";
+import { CategoryPageHeader } from "../components/CategoryPageHeader";
+import { SiblingCategoriesRow } from "../components/SiblingCategoriesRow";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { usePriceRanges } from "../hooks/usePriceRanges";
@@ -106,6 +108,26 @@ export function Home() {
   const selectedBrand = searchParams.get("brand") ?? "";
   const selectedAttr = searchParams.get("attr") ?? "";
 
+  /* ── Variant attribute filters (dynamic, URL-driven) ──────────
+   * Serialized as `v=color:Red,size:M`. Each entry is attr:value. */
+  const variantValues = useMemo<Record<string, string>>(() => {
+    const raw = searchParams.get("v") ?? "";
+    if (!raw) return {};
+    const out: Record<string, string> = {};
+    raw.split(",").forEach((pair) => {
+      const [k, ...rest] = pair.split(":");
+      const v = rest.join(":").trim();
+      if (k && v) out[k.trim()] = v;
+    });
+    return out;
+  }, [searchParams]);
+
+  /* Keyword facets selected from the sidebar (CSV in `kw` param) */
+  const selectedKeywords = useMemo<string[]>(() => {
+    const raw = searchParams.get("kw") ?? "";
+    return raw ? raw.split(",").map(s => s.trim()).filter(Boolean) : [];
+  }, [searchParams]);
+
   // When a subcategory is selected, use its ID to filter; otherwise use the parent category ID
   const activeCategoryId = selectedSubcategoryId || selectedCategoryId;
 
@@ -193,6 +215,25 @@ export function Home() {
       if (matchFn) list = list.filter(matchFn);
     }
 
+    // Dynamic variant-attribute filter: product passes if at least one of
+    // its variants matches every selected (attr -> value) pair.
+    const variantEntries = Object.entries(variantValues);
+    if (variantEntries.length > 0) {
+      list = list.filter((p) =>
+        (p.variants ?? []).some((v) =>
+          variantEntries.every(([k, val]) => v.attributes?.[k] === val)
+        )
+      );
+    }
+
+    // Keyword facets: every selected keyword must appear in product name.
+    if (selectedKeywords.length > 0) {
+      list = list.filter((p) => {
+        const hay = p.name.toLowerCase();
+        return selectedKeywords.every((kw) => hay.includes(kw));
+      });
+    }
+
     const pr = priceRanges[selectedPriceIdx];
     if (selectedPriceIdx !== 0)
       list = list.filter((p) => p.price >= pr.min && p.price <= pr.max);
@@ -218,13 +259,13 @@ export function Home() {
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
     selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products,
-    campaignDealIds, campaignDeals]);
+    campaignDealIds, campaignDeals, variantValues, selectedKeywords, selectedSubcategoryId]);
 
   /* ── Reset filterKey when local filters change ─────────────── */
   useEffect(() => {
     setFilterKey((k) => k + 1);
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas]);
+    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, variantValues, selectedKeywords]);
 
   /* ── Scroll to products when category/subcategory/search changes from URL ── */
   const isFirstRender = useRef(true);
@@ -285,6 +326,30 @@ export function Home() {
     const next = new URLSearchParams(searchParams.toString());
     if (!attr) next.delete("attr");
     else next.set("attr", attr);
+    setSearchParams(next, { preventScrollReset: true });
+  };
+
+  const handleToggleKeyword = (kw: string) => {
+    const current = new Set(selectedKeywords);
+    if (current.has(kw)) current.delete(kw);
+    else current.add(kw);
+    const next = new URLSearchParams(searchParams.toString());
+    const serialized = [...current].join(",");
+    if (serialized) next.set("kw", serialized);
+    else next.delete("kw");
+    setSearchParams(next, { preventScrollReset: true });
+  };
+
+  const handleVariantValue = (attrName: string, value: string) => {
+    const draft = { ...variantValues };
+    if (!value) delete draft[attrName];
+    else draft[attrName] = value;
+    const serialized = Object.entries(draft)
+      .map(([k, v]) => `${k}:${v}`)
+      .join(",");
+    const next = new URLSearchParams(searchParams.toString());
+    if (serialized) next.set("v", serialized);
+    else next.delete("v");
     setSearchParams(next, { preventScrollReset: true });
   };
 
@@ -352,6 +417,14 @@ export function Home() {
       label: `"${searchQuery}"`,
       clear: () => navigate(urls.store(), { preventScrollReset: true }),
     },
+    ...Object.entries(variantValues).map(([k, v]) => ({
+      label: `${k}: ${v}`,
+      clear: () => handleVariantValue(k, ""),
+    })),
+    ...selectedKeywords.map((kw) => ({
+      label: kw,
+      clear: () => handleToggleKeyword(kw),
+    })),
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
   const hasFilters = pills.length > 0;
@@ -369,48 +442,43 @@ export function Home() {
     return t("home.allProducts");
   })();
 
+  // Landing view: homepage without category/subcategory filters or a search
+  // query. Used to decide which marketing sections to render.
+  const isLanding =
+    selectedCategory === "Todos" &&
+    !selectedSubcat &&
+    !searchQuery &&
+    !soloOfertas &&
+    !selectedBrand;
+
   return (
     <div className="min-h-screen">
 
-      {/* Category Bar */}
+      {/* Category Bar — mega menu (untouched) */}
       <CategoryBar />
 
-      {/* Promo Slider */}
-      <PromoSlider onCtaClick={handlePromoCta} />
+      {/* Hero slider — only on the landing; feels wrong on category pages */}
+      {isLanding && <PromoSlider onCtaClick={handlePromoCta} />}
+
+      {/* Category hero banner — replaces the slider on category pages */}
+      {!isLanding && selectedCategory !== "Todos" && (
+        <>
+          <CategoryPageHeader
+            category={selectedCategory}
+            subcategory={selectedSubcat || undefined}
+            total={filtered.length}
+          />
+          <SiblingCategoriesRow
+            currentCategoryId={selectedCategoryId}
+            currentSubcategoryId={selectedSubcategoryId}
+          />
+        </>
+      )}
 
       {/* Info Banner */}
       <InfoBanner />
 
-      {/* Gift Card Banner */}
-      <div className="hidden sm:block bg-gray-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center flex-shrink-0">
-              <Gift className="w-7 h-7 text-white" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-white tracking-tight text-lg">{t("gift.title")}</p>
-              <p className="text-white/60 text-sm mt-0.5">{t("gift.subtitle")}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-white/50">
-              {["$25", "$50", "$100", "$200"].map((a) => (
-                <span key={a} className="bg-white/10 border border-white/20 rounded-full px-2.5 py-0.5">{a}</span>
-              ))}
-            </div>
-            <Link
-              to="/gift-cards"
-              className="flex items-center gap-2 h-10 px-5 text-sm text-gray-900 bg-white rounded-xl hover:bg-gray-100 transition-colors whitespace-nowrap"
-            >
-              {t("gift.cta")}
-              <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Flash Deals */}
+      {/* Flash Deals — campaign offers first */}
       <FlashDeals
         onVerOfertas={() => {
           setSelectedPriceIdx(0);
@@ -420,6 +488,9 @@ export function Home() {
           setSearchParams({ ofertas: "true" }, { preventScrollReset: true });
         }}
       />
+
+      {/* Category showcase — landing only, below the deals strip */}
+      {isLanding && <CategoryShowcase />}
 
       {/* ── Products + Sidebar ── */}
       <section className="py-12 bg-white border-t border-gray-200" id="productos">
@@ -437,14 +508,17 @@ export function Home() {
                 selectedRating={selectedRating}
                 sortBy={sortBy}
                 total={filtered.length}
+                variantValues={variantValues}
+                selectedKeywords={selectedKeywords}
                 onCategory={handleCategory}
-                onSubcategory={handleSubcategory}
                 onBrand={handleBrand}
                 onAttr={handleAttr}
                 onPrice={setSelectedPriceIdx}
                 onRating={setSelectedRating}
                 onSort={setSortBy}
                 onReset={handleReset}
+                onVariantValue={handleVariantValue}
+                onToggleKeyword={handleToggleKeyword}
               />
             </div>
 
@@ -610,8 +684,8 @@ export function Home() {
 
               {/* ── Initial loading skeleton ── */}
               {((isSearching ? esLoading && esResults.length === 0 : productsLoading && products.length === 0)) && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-                  {Array.from({ length: 8 }).map((_, i) => (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {Array.from({ length: 10 }).map((_, i) => (
                     <div key={i} className="border border-gray-100 rounded-2xl overflow-hidden animate-pulse">
                       <div className="aspect-square bg-gray-100" />
                       <div className="p-3.5 space-y-2">
@@ -632,7 +706,7 @@ export function Home() {
               {isSearching ? (
                 esResults.length > 0 ? (
                   <div key={filterKey} className="nx036-grid-enter">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {esResults.map((hit) => (
                         <ProductCard key={hit.id} product={mapSearchHitToProduct(hit)} />
                       ))}
@@ -669,7 +743,7 @@ export function Home() {
               ) : (!productsLoading || products.length > 0) ? (
                 filtered.length > 0 ? (
                   <div key={filterKey} className="nx036-grid-enter">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {filtered.map((product) => (
                         <ProductCard key={product.id} product={product} />
                       ))}

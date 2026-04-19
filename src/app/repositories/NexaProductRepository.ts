@@ -240,17 +240,17 @@ class NexaProductRepository {
     }
 
     /**
-     * Fetches product detail by CJ pid. ADMIN-ONLY: if the product doesn't
-     * exist in the local DB the backend fetches it from CJ Dropshipping,
-     * persists it and returns it. Uses authFetch because the endpoint is
-     * protected by @NxAdmin in mic-productcategory.
+     * Fetches product detail by CJ pid. Public endpoint: if the product
+     * doesn't exist in the local DB the backend fetches it from CJ
+     * Dropshipping, persists it and returns it. Uses nxFetch (no auth)
+     * so anonymous storefront visitors can browse product pages.
      */
     async findDetailByPid(pid: string, locale: string, signal?: AbortSignal): Promise<NexaProductDetail> {
         try {
             const params = new URLSearchParams({ locale });
-            const url = `${NX036_ADMIN_PRODUCTS_BASE}/detail/${pid}?${params.toString()}`;
+            const url = `${NX036_PUBLIC_PRODUCTS_BASE}/detail/${pid}?${params.toString()}`;
             logger.debug('[NexaProductRepository] detail URL:', url);
-            const res = await authFetch(url, { signal });
+            const res = await nxFetch(url, { signal });
 
             if (!res.ok) {
                 let errorMsg = `HTTP ${res.status}`;

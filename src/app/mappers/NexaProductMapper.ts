@@ -76,6 +76,7 @@ function mapVariant(
         price: v.retailPrice ?? v.variantSellPrice,
         stock_quantity: stock > 0 ? stock : (fallbackStock ?? 0),
         attributes: parseVariantAttributes(productKeyEn, v.variantKey),
+        image: v.variantImage ?? undefined,
     };
 }
 
@@ -151,6 +152,16 @@ export function mapNexaProduct(
                 : 0), 0)
         : 0;
 
+    // Fallback stock: listing endpoint rarely ships real inventory rows, so use
+    // warehouseInventoryNum, then listedNum (CJ active-seller count) as an
+    // availability signal — same policy as mapNexaProductDetail to avoid
+    // mismatches between the listing and the product page.
+    const effectiveStock = totalInventory > 0
+        ? totalInventory
+        : (raw.warehouseInventoryNum > 0
+            ? raw.warehouseInventoryNum
+            : (raw.listedNum > 0 ? raw.listedNum : 0));
+
     return {
         id: raw.id,
         name: raw.name,
@@ -164,15 +175,16 @@ export function mapNexaProduct(
         costPrice: cost || undefined,
         taxClass: "standard",
         category: categoryName ?? raw.categoryId,
+        categoryId: raw.categoryId,
         subcategory: "",
         keywords: [],
         image: raw.bigImage,
         images: buildImages(raw),
         rating: 0,
         reviews: 0,
-        stock: totalInventory || raw.warehouseInventoryNum,
+        stock: effectiveStock,
         barcode: raw.sku,
-        stockStatus: (totalInventory || raw.warehouseInventoryNum) > 0 ? "in_stock" : "out_of_stock",
+        stockStatus: effectiveStock > 0 ? "in_stock" : "out_of_stock",
         manageStock: true,
         allowBackorder: false,
         attributes: [],
@@ -341,6 +353,7 @@ export function mapNexaProductDetail(raw: NexaProductDetail): Product {
         originalPrice: (suggestedPrice && suggestedPrice > price) ? suggestedPrice : undefined,
         taxClass: "standard",
         category: topCategory,
+        categoryId: raw.categoryId,
         subcategory: subCategory,
         keywords: [],
         image: raw.bigImage,
