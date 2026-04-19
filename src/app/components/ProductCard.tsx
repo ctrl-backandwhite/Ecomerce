@@ -47,7 +47,9 @@ export function ProductCard({ product }: ProductCardProps) {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const lowStock = product.stock > 0 && product.stock < 10;
+  const stockCount = typeof product.stock === "number" ? product.stock : Number.POSITIVE_INFINITY;
+  const isOutOfStock = product.stockStatus === "out_of_stock" || stockCount === 0;
+  const lowStock = !isOutOfStock && stockCount > 0 && stockCount < 10;
   const soldText = product.reviews > 0
     ? `${product.reviews} ${product.reviews === 1 ? "reseña" : "reseñas"}`
     : null;
@@ -119,10 +121,10 @@ export function ProductCard({ product }: ProductCardProps) {
           {/* Stock ribbon */}
           {lowStock && (
             <div className="absolute bottom-0 inset-x-0 bg-amber-500/95 text-white text-[11px] px-3 py-1 backdrop-blur-sm">
-              ¡Solo {product.stock} disponibles!
+              ¡Solo {stockCount} disponibles!
             </div>
           )}
-          {product.stock === 0 && (
+          {isOutOfStock && (
             <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex items-center justify-center">
               <span className="px-3 py-1 bg-gray-900 text-white text-xs rounded-full">Sin stock</span>
             </div>
@@ -190,7 +192,7 @@ export function ProductCard({ product }: ProductCardProps) {
             {/* CTA */}
             <button
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
+              disabled={isOutOfStock}
               className="mt-3 w-full px-3 py-2 bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5"
             >
               <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />

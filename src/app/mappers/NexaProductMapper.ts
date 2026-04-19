@@ -151,6 +151,16 @@ export function mapNexaProduct(
                 : 0), 0)
         : 0;
 
+    // Fallback stock: listing endpoint rarely ships real inventory rows, so use
+    // warehouseInventoryNum, then listedNum (CJ active-seller count) as an
+    // availability signal — same policy as mapNexaProductDetail to avoid
+    // mismatches between the listing and the product page.
+    const effectiveStock = totalInventory > 0
+        ? totalInventory
+        : (raw.warehouseInventoryNum > 0
+            ? raw.warehouseInventoryNum
+            : (raw.listedNum > 0 ? raw.listedNum : 0));
+
     return {
         id: raw.id,
         name: raw.name,
@@ -170,9 +180,9 @@ export function mapNexaProduct(
         images: buildImages(raw),
         rating: 0,
         reviews: 0,
-        stock: totalInventory || raw.warehouseInventoryNum,
+        stock: effectiveStock,
         barcode: raw.sku,
-        stockStatus: (totalInventory || raw.warehouseInventoryNum) > 0 ? "in_stock" : "out_of_stock",
+        stockStatus: effectiveStock > 0 ? "in_stock" : "out_of_stock",
         manageStock: true,
         allowBackorder: false,
         attributes: [],
