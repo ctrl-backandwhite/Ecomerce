@@ -76,6 +76,7 @@ function mapVariant(
         price: v.retailPrice ?? v.variantSellPrice,
         stock_quantity: stock > 0 ? stock : (fallbackStock ?? 0),
         attributes: parseVariantAttributes(productKeyEn, v.variantKey),
+        image: v.variantImage ?? undefined,
     };
 }
 

@@ -645,6 +645,18 @@ export function ProductDetail() {
     ) ?? null;
   }, [product, variantAttrNames, selectedAttrs]);
 
+  /**
+   * Keep the active image in sync with the selected variant: when the user
+   * picks a colour/size combination that has its own variant image, switch
+   * the gallery to that image automatically.
+   */
+  useEffect(() => {
+    if (!selectedVariant?.image || !product) return;
+    const baseImages = product.images?.length ? product.images : [];
+    const idx = baseImages.findIndex((img) => img.url === selectedVariant.image);
+    if (idx >= 0) setActiveImage(idx);
+  }, [selectedVariant, product]);
+
   const variantOptions = useMemo(() => {
     if (!product) return {} as Record<string, string[]>;
     const map: Record<string, string[]> = {};
@@ -1140,21 +1152,21 @@ export function ProductDetail() {
                   </div>
                 </div>
 
-                {/* Primary CTA */}
+                {/* Primary CTA — dark, matches the rest of the storefront */}
                 <button
                   onClick={handleAddToCart}
                   disabled={displayStock === 0}
-                  className="w-full h-11 bg-amber-400 hover:bg-amber-500 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-gray-900 text-sm rounded-full transition-colors flex items-center justify-center gap-2 mb-2 shadow-sm"
+                  className="w-full h-11 bg-gray-900 hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2 mb-2 shadow-sm"
                 >
                   <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
                   Agregar al carrito
                 </button>
 
-                {/* Secondary CTA — Buy now */}
+                {/* Secondary CTA — outline variant of the primary */}
                 <button
                   onClick={() => { handleAddToCart(); if (displayStock > 0) navigate("/cart"); }}
                   disabled={displayStock === 0}
-                  className="w-full h-11 bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm rounded-full transition-colors flex items-center justify-center gap-2 mb-3"
+                  className="w-full h-11 bg-white hover:bg-gray-900 border border-gray-900 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-gray-900 hover:text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2 mb-3"
                 >
                   Comprar ahora
                 </button>

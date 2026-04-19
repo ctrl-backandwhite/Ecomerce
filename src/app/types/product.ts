@@ -17,6 +17,8 @@ export interface ProductVariant {
     price: number;
     stock_quantity: number;
     attributes: Record<string, string>;
+    /** Optional variant cover image (eg. CJ variantImage). */
+    image?: string;
 }
 
 export interface Product {
