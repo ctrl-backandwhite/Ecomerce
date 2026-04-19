@@ -34,6 +34,8 @@ export interface Product {
     costPrice?: number;
     taxClass: string;
     category: string;
+    /** Original category UUID from the backend; stable across locale changes. */
+    categoryId?: string;
     subcategory: string;
     keywords: string[];
     image: string;

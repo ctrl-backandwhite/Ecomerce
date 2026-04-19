@@ -18,15 +18,22 @@ export function CategoryShowcase() {
   const tiles = useMemo(() => {
     return categories
       .map((cat) => {
-        const inCat = products.filter((p) => p.category === cat.name);
+        // Match by id first (stable UUID) and fall back to name (for detail
+        // mappings that already carry the translated category name).
+        const inCat = products.filter(
+          (p) => p.categoryId === cat.id || p.category === cat.name,
+        );
         return {
           id: cat.id,
           name: cat.name,
-          thumbs: inCat.slice(0, 4).map((p) => ({ src: p.image, alt: p.name })),
+          thumbs: inCat
+            .filter((p) => !!p.image)
+            .slice(0, 4)
+            .map((p) => ({ src: p.image, alt: p.name })),
           count: inCat.length,
         };
       })
-      .filter((t) => t.thumbs.length >= 2)
+      .filter((t) => t.thumbs.length >= 1)
       .slice(0, 8);
   }, [categories, products]);
 
