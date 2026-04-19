@@ -15,6 +15,9 @@ import { ProductCard } from "../components/ProductCard";
 import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
+import { CategoryShowcase } from "../components/CategoryShowcase";
+import { CategoryPageHeader } from "../components/CategoryPageHeader";
+import { DualPromoBanner } from "../components/DualPromoBanner";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { usePriceRanges } from "../hooks/usePriceRanges";
@@ -439,17 +442,38 @@ export function Home() {
     return t("home.allProducts");
   })();
 
+  // Landing view: homepage without category/subcategory filters or a search
+  // query. Used to decide which marketing sections to render.
+  const isLanding =
+    selectedCategory === "Todos" &&
+    !selectedSubcat &&
+    !searchQuery &&
+    !soloOfertas &&
+    !selectedBrand;
+
   return (
     <div className="min-h-screen">
 
-      {/* Category Bar */}
+      {/* Category Bar — mega menu (untouched) */}
       <CategoryBar />
 
-      {/* Promo Slider */}
-      <PromoSlider onCtaClick={handlePromoCta} />
+      {/* Hero slider — only on the landing; feels wrong on category pages */}
+      {isLanding && <PromoSlider onCtaClick={handlePromoCta} />}
+
+      {/* Category hero banner — replaces the slider on category pages */}
+      {!isLanding && selectedCategory !== "Todos" && (
+        <CategoryPageHeader
+          category={selectedCategory}
+          subcategory={selectedSubcat || undefined}
+          total={filtered.length}
+        />
+      )}
 
       {/* Info Banner */}
       <InfoBanner />
+
+      {/* Landing-only marketing blocks */}
+      {isLanding && <CategoryShowcase />}
 
       {/* Flash Deals */}
       <FlashDeals
@@ -461,6 +485,9 @@ export function Home() {
           setSearchParams({ ofertas: "true" }, { preventScrollReset: true });
         }}
       />
+
+      {/* Dual promo banner (sign-up + newsletter) — landing only */}
+      {isLanding && <DualPromoBanner />}
 
       {/* ── Products + Sidebar ── */}
       <section className="py-12 bg-white border-t border-gray-200" id="productos">
