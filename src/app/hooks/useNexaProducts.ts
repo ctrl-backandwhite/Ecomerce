@@ -26,7 +26,7 @@ import type { Product } from "../types/product";
 
 import { logger } from "../lib/logger";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 25;
 
 /* ── Module-level cache ─────────────────────────────────────────
  * Keeps products across Home mount/unmount so pressing «back»
@@ -124,7 +124,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 // the backend still reports the real total so hasMore works.
                 const isRandomInitial = sortBy === "random" && !append;
                 const effectiveSortBy = append && sortBy === "random" ? "createdAt" : sortBy;
-                const requestedSize = isRandomInitial ? Math.min(60, PAGE_SIZE * 2) : PAGE_SIZE;
+                const requestedSize = isRandomInitial ? PAGE_SIZE * 2 : PAGE_SIZE;
                 const result = await nexaProductRepository.findMany(
                     {
                         locale: apiLocale,

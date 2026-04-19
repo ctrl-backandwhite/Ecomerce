@@ -32,7 +32,7 @@ import { mapSearchHitToProduct } from "../mappers/NexaProductMapper";
 import { getSessionShuffleSeed, seededShuffle } from "../lib/shuffle";
 import { useRecentlyViewed } from "../context/RecentlyViewedContext";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 25;
 
 function scrollToProducts() {
   const el = document.getElementById("productos");
