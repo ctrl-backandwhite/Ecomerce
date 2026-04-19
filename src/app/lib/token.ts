@@ -10,7 +10,7 @@ const RETURN_URL_KEY = "auth_return_url";
 
 export interface TokenResponse {
     access_token: string;
-    refresh_token: string;
+    refresh_token?: string;
     token_type: string;
     expires_in: number;
 }
@@ -22,7 +22,9 @@ export function getAccessToken(): string | null {
 }
 
 export function getRefreshToken(): string | null {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    const value = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!value || value === "undefined" || value === "null") return null;
+    return value;
 }
 
 export function getTokenType(): string {
@@ -33,7 +35,11 @@ export function getTokenType(): string {
 
 export function storeTokens(response: TokenResponse): void {
     localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
-    localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+    if (response.refresh_token) {
+        localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+    } else {
+        localStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
     localStorage.setItem(TOKEN_TYPE_KEY, response.token_type);
     localStorage.setItem(
         TOKEN_EXPIRES_AT_KEY,
