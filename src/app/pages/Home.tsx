@@ -17,6 +17,7 @@ import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
 import { CategoryShowcase } from "../components/CategoryShowcase";
 import { CategoryPageHeader } from "../components/CategoryPageHeader";
+import { SiblingCategoriesRow } from "../components/SiblingCategoriesRow";
 import { DualPromoBanner } from "../components/DualPromoBanner";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
@@ -462,11 +463,17 @@ export function Home() {
 
       {/* Category hero banner — replaces the slider on category pages */}
       {!isLanding && selectedCategory !== "Todos" && (
-        <CategoryPageHeader
-          category={selectedCategory}
-          subcategory={selectedSubcat || undefined}
-          total={filtered.length}
-        />
+        <>
+          <CategoryPageHeader
+            category={selectedCategory}
+            subcategory={selectedSubcat || undefined}
+            total={filtered.length}
+          />
+          <SiblingCategoriesRow
+            currentCategoryId={selectedCategoryId}
+            currentSubcategoryId={selectedSubcategoryId}
+          />
+        </>
       )}
 
       {/* Info Banner */}

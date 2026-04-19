@@ -2,40 +2,53 @@ import { useMemo } from "react";
 import { Link } from "react-router";
 import { ArrowRight } from "lucide-react";
 import { useNexaCategories } from "../hooks/useNexaCategories";
-import { useNexaProducts } from "../hooks/useNexaProducts";
+import { useCategoryTopProducts } from "../hooks/useCategoryTopProducts";
 import { urls } from "../lib/urls";
 
+const MAX_TILES = 8;
+const THUMBS_PER_TILE = 4;
+
+const TILE_BGS = [
+  "from-blue-50 to-indigo-100",
+  "from-amber-50 to-orange-100",
+  "from-emerald-50 to-teal-100",
+  "from-rose-50 to-pink-100",
+  "from-violet-50 to-purple-100",
+  "from-sky-50 to-cyan-100",
+  "from-lime-50 to-green-100",
+  "from-fuchsia-50 to-rose-100",
+];
+
 /**
- * Amazon-style category showcase tiles. Each tile shows the category name
- * plus a 2x2 grid of product thumbnails pulled from the current catalogue.
- * Categories with zero products in scope are skipped so we never render an
- * empty tile.
+ * Amazon-style category tiles. Each tile fetches its own top products so
+ * thumbnails reflect the real catalogue of that category (not just what's
+ * on the first global page). Empty slots in the 2x2 grid show a soft
+ * gradient placeholder so the layout is always complete.
  */
 export function CategoryShowcase() {
   const { categories, loading: catsLoading } = useNexaCategories();
-  const { products, loading: productsLoading } = useNexaProducts();
 
+  // Use featured categories first, then fall back to all for the next slots
+  const tileCategories = useMemo(() => {
+    const featured = categories.filter((c) => c.featured);
+    const rest = categories.filter((c) => !c.featured);
+    return [...featured, ...rest].filter((c) => c.active).slice(0, MAX_TILES);
+  }, [categories]);
+
+  const tileIds = useMemo(() => tileCategories.map((c) => c.id), [tileCategories]);
+  const { map: productsByCat, loading: productsLoading } = useCategoryTopProducts(tileIds, THUMBS_PER_TILE);
+
+  // Only keep tiles that actually have at least one product — no empty cards.
   const tiles = useMemo(() => {
-    return categories
-      .map((cat) => {
-        // Match by id first (stable UUID) and fall back to name (for detail
-        // mappings that already carry the translated category name).
-        const inCat = products.filter(
-          (p) => p.categoryId === cat.id || p.category === cat.name,
-        );
-        return {
-          id: cat.id,
-          name: cat.name,
-          thumbs: inCat
-            .filter((p) => !!p.image)
-            .slice(0, 4)
-            .map((p) => ({ src: p.image, alt: p.name })),
-          count: inCat.length,
-        };
-      })
-      .filter((t) => t.thumbs.length >= 1)
-      .slice(0, 8);
-  }, [categories, products]);
+    if (productsLoading) return [];
+    return tileCategories
+      .map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        products: productsByCat[cat.id] ?? [],
+      }))
+      .filter((t) => t.products.length > 0);
+  }, [tileCategories, productsByCat, productsLoading]);
 
   if (catsLoading || productsLoading) {
     return (
@@ -70,50 +83,57 @@ export function CategoryShowcase() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {tiles.map((tile) => (
-            <Link
-              key={tile.id}
-              to={urls.category(tile.name)}
-              className="group bg-white rounded-2xl p-5 flex flex-col hover:shadow-lg transition-all duration-200 border border-transparent hover:border-gray-200"
-            >
-              <div className="flex items-baseline justify-between mb-3">
-                <h3 className="text-base text-gray-900 tracking-tight group-hover:text-blue-700 transition-colors line-clamp-1">
-                  {tile.name}
-                </h3>
-                <span className="text-[11px] text-gray-400 flex-shrink-0 ml-2">
-                  {tile.count}
+          {tiles.map((tile, tileIdx) => {
+            const gradient = TILE_BGS[tileIdx % TILE_BGS.length];
+            return (
+              <Link
+                key={tile.id}
+                to={urls.category(tile.name)}
+                className="group bg-white rounded-2xl p-5 flex flex-col hover:shadow-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+              >
+                <div className="flex items-baseline justify-between mb-3">
+                  <h3 className="text-base text-gray-900 tracking-tight group-hover:text-blue-700 transition-colors line-clamp-1">
+                    {tile.name}
+                  </h3>
+                  <span className="text-[11px] text-gray-400 flex-shrink-0 ml-2">
+                    {tile.products.length}+ items
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 mb-4">
+                  {Array.from({ length: THUMBS_PER_TILE }).map((_, i) => {
+                    const thumb = tile.products[i];
+                    if (thumb) {
+                      return (
+                        <div
+                          key={i}
+                          className="aspect-square bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center"
+                        >
+                          <img
+                            src={thumb.image}
+                            alt={thumb.name}
+                            loading="lazy"
+                            className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-200"
+                          />
+                        </div>
+                      );
+                    }
+                    return (
+                      <div
+                        key={i}
+                        className={`aspect-square rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center opacity-70`}
+                      />
+                    );
+                  })}
+                </div>
+
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 group-hover:text-gray-900 transition-colors mt-auto">
+                  Descubre {tile.name}
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" strokeWidth={1.5} />
                 </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mb-4">
-                {Array.from({ length: 4 }).map((_, i) => {
-                  const thumb = tile.thumbs[i];
-                  return (
-                    <div
-                      key={i}
-                      className="aspect-square bg-gray-50 rounded-lg overflow-hidden flex items-center justify-center"
-                    >
-                      {thumb ? (
-                        <img
-                          src={thumb.src}
-                          alt={thumb.alt}
-                          loading="lazy"
-                          className="w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-200"
-                        />
-                      ) : (
-                        <span className="text-[10px] text-gray-300">—</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 group-hover:text-gray-900 transition-colors mt-auto">
-                Descubre {tile.name}
-                <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" strokeWidth={1.5} />
-              </span>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>
