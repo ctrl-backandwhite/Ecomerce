@@ -25,6 +25,7 @@ interface HomeSidebarProps {
   selectedRating: number;
   sortBy: string;
   total: number;
+  variantValues?: Record<string, string>;
   onCategory: (cat: string, catId?: string) => void;
   onBrand: (brand: string) => void;
   onAttr: (attr: string) => void;
@@ -32,7 +33,11 @@ interface HomeSidebarProps {
   onRating: (r: number) => void;
   onSort: (s: string) => void;
   onReset: () => void;
+  onVariantValue?: (attrName: string, value: string) => void;
 }
+
+/* Generic attribute keys we never want to surface as filters */
+const IGNORED_ATTR_KEYS = new Set(["default", "key", "sku", "id"]);
 
 /* ── Top rated mini-widget ───────────────────────────────────── */
 function TopRated() {
@@ -85,6 +90,7 @@ export function HomeSidebar({
   selectedRating,
   sortBy,
   total,
+  variantValues = {},
   onCategory,
   onBrand,
   onAttr,
@@ -92,9 +98,41 @@ export function HomeSidebar({
   onRating,
   onSort,
   onReset,
+  onVariantValue,
 }: HomeSidebarProps) {
   const { products } = useNexaProducts();
   const priceRanges = usePriceRanges();
+
+  /* ── Dynamic variant-attribute filters (brand-agnostic) ───────
+   * Pulls the unique {attrName → values[]} map from the variants of the
+   * products currently in scope. Also tags each value with its count so
+   * we can render "Red (12)" style chips. */
+  const variantAttrGroups = useMemo(() => {
+    const base = products.filter((p) => {
+      if (selectedCategory !== "Todos" && p.category !== selectedCategory) return false;
+      if (selectedSubcat && p.subcategory !== selectedSubcat) return false;
+      return true;
+    });
+    const map: Record<string, Map<string, number>> = {};
+    base.forEach((p) => {
+      p.variants?.forEach((v) => {
+        Object.entries(v.attributes ?? {}).forEach(([k, val]) => {
+          if (!val) return;
+          const key = k.trim();
+          if (!key || IGNORED_ATTR_KEYS.has(key.toLowerCase())) return;
+          const values = map[key] ?? (map[key] = new Map<string, number>());
+          values.set(String(val), (values.get(String(val)) ?? 0) + 1);
+        });
+      });
+    });
+    return Object.entries(map)
+      .map(([name, values]) => ({
+        name,
+        values: [...values.entries()].sort((a, b) => b[1] - a[1]).slice(0, 12),
+      }))
+      .filter((g) => g.values.length > 1)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [products, selectedCategory, selectedSubcat]);
 
   /* ── Brands in scope ─────────────────────────────────────────── */
   const brandsInScope = useMemo(() => {
@@ -211,6 +249,39 @@ export function HomeSidebar({
                   </span>
                   <span className="text-[10px] text-gray-400">{count}</span>
                 </button>
+              ))}
+            </div>
+          )}
+
+          {/* ── Filtros dinámicos por variante ── */}
+          {variantAttrGroups.length > 0 && onVariantValue && (
+            <div className="border-b border-gray-100">
+              {variantAttrGroups.map((group) => (
+                <div key={group.name} className="pt-3 pb-2.5 px-4">
+                  <p className="text-[10px] tracking-widest uppercase text-gray-400 mb-2 flex items-center gap-1">
+                    <Layers className="w-3 h-3" /> {group.name}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.values.map(([val, count]) => {
+                      const isActive = variantValues[group.name] === val;
+                      return (
+                        <button
+                          key={val}
+                          onClick={() => onVariantValue(group.name, isActive ? "" : val)}
+                          className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-all ${isActive
+                            ? "border-gray-900 bg-gray-900 text-white"
+                            : "border-gray-200 bg-white text-gray-600 hover:border-gray-400"}`}
+                        >
+                          <span className="truncate max-w-[120px]">{val}</span>
+                          <span className={`text-[10px] ${isActive ? "text-white/60" : "text-gray-400"}`}>
+                            {count}
+                          </span>
+                          {isActive && <X className="w-2.5 h-2.5 ml-0.5" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </div>
           )}

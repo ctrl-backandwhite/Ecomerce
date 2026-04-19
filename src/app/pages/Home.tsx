@@ -107,6 +107,20 @@ export function Home() {
   const selectedBrand = searchParams.get("brand") ?? "";
   const selectedAttr = searchParams.get("attr") ?? "";
 
+  /* ── Variant attribute filters (dynamic, URL-driven) ──────────
+   * Serialized as `v=color:Red,size:M`. Each entry is attr:value. */
+  const variantValues = useMemo<Record<string, string>>(() => {
+    const raw = searchParams.get("v") ?? "";
+    if (!raw) return {};
+    const out: Record<string, string> = {};
+    raw.split(",").forEach((pair) => {
+      const [k, ...rest] = pair.split(":");
+      const v = rest.join(":").trim();
+      if (k && v) out[k.trim()] = v;
+    });
+    return out;
+  }, [searchParams]);
+
   // When a subcategory is selected, use its ID to filter; otherwise use the parent category ID
   const activeCategoryId = selectedSubcategoryId || selectedCategoryId;
 
@@ -194,6 +208,17 @@ export function Home() {
       if (matchFn) list = list.filter(matchFn);
     }
 
+    // Dynamic variant-attribute filter: product passes if at least one of
+    // its variants matches every selected (attr -> value) pair.
+    const variantEntries = Object.entries(variantValues);
+    if (variantEntries.length > 0) {
+      list = list.filter((p) =>
+        (p.variants ?? []).some((v) =>
+          variantEntries.every(([k, val]) => v.attributes?.[k] === val)
+        )
+      );
+    }
+
     const pr = priceRanges[selectedPriceIdx];
     if (selectedPriceIdx !== 0)
       list = list.filter((p) => p.price >= pr.min && p.price <= pr.max);
@@ -219,13 +244,13 @@ export function Home() {
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
     selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products,
-    campaignDealIds, campaignDeals]);
+    campaignDealIds, campaignDeals, variantValues, selectedSubcategoryId]);
 
   /* ── Reset filterKey when local filters change ─────────────── */
   useEffect(() => {
     setFilterKey((k) => k + 1);
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas]);
+    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, variantValues]);
 
   /* ── Scroll to products when category/subcategory/search changes from URL ── */
   const isFirstRender = useRef(true);
@@ -286,6 +311,19 @@ export function Home() {
     const next = new URLSearchParams(searchParams.toString());
     if (!attr) next.delete("attr");
     else next.set("attr", attr);
+    setSearchParams(next, { preventScrollReset: true });
+  };
+
+  const handleVariantValue = (attrName: string, value: string) => {
+    const draft = { ...variantValues };
+    if (!value) delete draft[attrName];
+    else draft[attrName] = value;
+    const serialized = Object.entries(draft)
+      .map(([k, v]) => `${k}:${v}`)
+      .join(",");
+    const next = new URLSearchParams(searchParams.toString());
+    if (serialized) next.set("v", serialized);
+    else next.delete("v");
     setSearchParams(next, { preventScrollReset: true });
   };
 
@@ -353,6 +391,10 @@ export function Home() {
       label: `"${searchQuery}"`,
       clear: () => navigate(urls.store(), { preventScrollReset: true }),
     },
+    ...Object.entries(variantValues).map(([k, v]) => ({
+      label: `${k}: ${v}`,
+      clear: () => handleVariantValue(k, ""),
+    })),
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
   const hasFilters = pills.length > 0;
@@ -441,6 +483,7 @@ export function Home() {
                 selectedRating={selectedRating}
                 sortBy={sortBy}
                 total={filtered.length}
+                variantValues={variantValues}
                 onCategory={handleCategory}
                 onBrand={handleBrand}
                 onAttr={handleAttr}
@@ -448,6 +491,7 @@ export function Home() {
                 onRating={setSelectedRating}
                 onSort={setSortBy}
                 onReset={handleReset}
+                onVariantValue={handleVariantValue}
               />
             </div>
 
