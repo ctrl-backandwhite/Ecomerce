@@ -29,6 +29,7 @@ import { useLanguage } from "../context/LanguageContext";
 import { slugify, urls } from "../lib/urls";
 import { useProductSearch } from "../hooks/useProductSearch";
 import { mapSearchHitToProduct } from "../mappers/NexaProductMapper";
+import { getSessionShuffleSeed, seededShuffle } from "../lib/shuffle";
 
 const PAGE_SIZE = 24;
 
@@ -254,7 +255,11 @@ export function Home() {
       case "price-high": list.sort((a, b) => b.price - a.price); break;
       case "rating": list.sort((a, b) => b.rating - a.rating); break;
       case "name": list.sort((a, b) => a.name.localeCompare(b.name)); break;
-      default: break;
+      default:
+        // "featured": shuffle deterministically per session so each visit
+        // sees a fresh order but the order stays stable while browsing.
+        list = seededShuffle(list, getSessionShuffleSeed());
+        break;
     }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
