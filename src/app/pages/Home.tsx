@@ -765,7 +765,7 @@ export function Home() {
                     </button>
                   </div>
                 ) : null
-              ) : (!productsLoading && !productsError || products.length > 0) ? (
+              ) : ((!productsLoading && !productsError) || products.length > 0) ? (
                 filtered.length > 0 ? (
                   <div key={filterKey} className="nx036-grid-enter">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
