@@ -213,17 +213,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const logout = useCallback(async () => {
+        // 1) Best-effort: ask the API to revoke the current access token.
         try {
             await authFetch(`${GATEWAY_URL}/api/v1/auth/logout`, {
                 method: "POST",
                 credentials: "include",
             });
         } catch (err) { logger.warn("Suppressed error", err); }
+
+        // 2) Wipe every auth-related item from browser storage.
         clearTokens();
-        // Redirect immediately — full page reload resets React state naturally.
-        // Do NOT call setIsAuthenticated(false) before redirect: it triggers
-        // AuthGuard's useEffect which redirects to OAuth2 login first.
-        window.location.href = "/";
+
+        // 3) Invalidate the Spring Security session + OAuth2 client cookies
+        //    by hitting the canonical /logout endpoint. A hidden form POST is
+        //    used so CSRF + cookies flow correctly and the browser handles
+        //    the final redirect, leaving the SPA with no stale session.
+        const form = document.createElement("form");
+        form.method = "POST";
+        form.action = `${GATEWAY_URL}/logout`;
+        form.style.display = "none";
+        const redirect = document.createElement("input");
+        redirect.type = "hidden";
+        redirect.name = "redirect_uri";
+        redirect.value = "/";
+        form.appendChild(redirect);
+        document.body.appendChild(form);
+        form.submit();
     }, []);
 
     const accessToken = useMemo(() => (isAuthenticated ? getAccessToken() : null), [isAuthenticated]);
