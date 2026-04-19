@@ -16,6 +16,8 @@ import { ProductCard } from "../components/ProductCard";
 import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
+import { CategoryTiles } from "../components/CategoryTiles";
+import { BrandStrip } from "../components/BrandStrip";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { usePriceRanges } from "../hooks/usePriceRanges";
@@ -381,6 +383,23 @@ export function Home() {
       {/* Info Banner */}
       <InfoBanner />
 
+      {/* Shop by Category — Amazon-style tiles */}
+      <CategoryTiles />
+
+      {/* Flash Deals */}
+      <FlashDeals
+        onVerOfertas={() => {
+          setSelectedPriceIdx(0);
+          setSelectedRating(0);
+          setSortBy("featured");
+          setPromoClickKey((k) => k + 1);
+          setSearchParams({ ofertas: "true" }, { preventScrollReset: true });
+        }}
+      />
+
+      {/* Top Brands strip */}
+      <BrandStrip />
+
       {/* Gift Card Banner */}
       <div className="hidden sm:block bg-gray-700 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -409,17 +428,6 @@ export function Home() {
           </div>
         </div>
       </div>
-
-      {/* Flash Deals */}
-      <FlashDeals
-        onVerOfertas={() => {
-          setSelectedPriceIdx(0);
-          setSelectedRating(0);
-          setSortBy("featured");
-          setPromoClickKey((k) => k + 1);
-          setSearchParams({ ofertas: "true" }, { preventScrollReset: true });
-        }}
-      />
 
       {/* ── Products + Sidebar ── */}
       <section className="py-12 bg-white border-t border-gray-200" id="productos">
@@ -610,8 +618,8 @@ export function Home() {
 
               {/* ── Initial loading skeleton ── */}
               {((isSearching ? esLoading && esResults.length === 0 : productsLoading && products.length === 0)) && (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-                  {Array.from({ length: 8 }).map((_, i) => (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                  {Array.from({ length: 10 }).map((_, i) => (
                     <div key={i} className="border border-gray-100 rounded-2xl overflow-hidden animate-pulse">
                       <div className="aspect-square bg-gray-100" />
                       <div className="p-3.5 space-y-2">
@@ -632,7 +640,7 @@ export function Home() {
               {isSearching ? (
                 esResults.length > 0 ? (
                   <div key={filterKey} className="nx036-grid-enter">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {esResults.map((hit) => (
                         <ProductCard key={hit.id} product={mapSearchHitToProduct(hit)} />
                       ))}
@@ -669,7 +677,7 @@ export function Home() {
               ) : (!productsLoading || products.length > 0) ? (
                 filtered.length > 0 ? (
                   <div key={filterKey} className="nx036-grid-enter">
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                       {filtered.map((product) => (
                         <ProductCard key={product.id} product={product} />
                       ))}
