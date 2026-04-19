@@ -16,7 +16,6 @@ import { ProductCard } from "../components/ProductCard";
 import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
-import { CategoryTiles } from "../components/CategoryTiles";
 import { BrandStrip } from "../components/BrandStrip";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
@@ -383,9 +382,6 @@ export function Home() {
       {/* Info Banner */}
       <InfoBanner />
 
-      {/* Shop by Category — Amazon-style tiles */}
-      <CategoryTiles />
-
       {/* Flash Deals */}
       <FlashDeals
         onVerOfertas={() => {
@@ -446,7 +442,6 @@ export function Home() {
                 sortBy={sortBy}
                 total={filtered.length}
                 onCategory={handleCategory}
-                onSubcategory={handleSubcategory}
                 onBrand={handleBrand}
                 onAttr={handleAttr}
                 onPrice={setSelectedPriceIdx}

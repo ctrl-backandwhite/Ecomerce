@@ -1,40 +1,20 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { Link } from "react-router";
 import {
-  ChevronDown,
   ChevronRight,
-  Tag,
   TrendingUp,
   Star,
   SlidersHorizontal,
   X,
-  ShoppingBag,
   Check,
   Layers,
   ArrowUpDown,
   DollarSign,
-  Shirt,
-  Snowflake,
-  Sparkles,
-  Baby,
-  Heart,
-  Wind,
-  Zap,
-  Scissors,
-  Cpu,
-  Watch,
-  Sofa,
-  Loader2,
-  AlertCircle,
-  RefreshCw,
-  type LucideIcon,
 } from "lucide-react";
 import { usePriceRanges } from "../hooks/usePriceRanges";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useCurrency } from "../context/CurrencyContext";
-import { useNexaCategories } from "../hooks/useNexaCategories";
-import type { NexaCategory } from "../repositories/NexaCategoryRepository";
 
 interface HomeSidebarProps {
   selectedCategory: string;
@@ -46,7 +26,6 @@ interface HomeSidebarProps {
   sortBy: string;
   total: number;
   onCategory: (cat: string, catId?: string) => void;
-  onSubcategory: (cat: string, sub: string, catId?: string, subId?: string) => void;
   onBrand: (brand: string) => void;
   onAttr: (attr: string) => void;
   onPrice: (idx: number) => void;
@@ -96,43 +75,6 @@ function TopRated() {
   );
 }
 
-/* ── Category icon resolver (matches CategoryBar logic) ──────────────────────── */
-
-const ICON_RULES: [RegExp, LucideIcon][] = [
-  // ── Top-level categories (matched first for precision) ─────────────────
-  [/consumer electronics/i, Cpu],
-  [/jewelry.*watch|watch.*jewelry/i, Watch],
-  [/home.*garden|home.*furniture|garden/i, Sofa],
-  [/health.*beauty|beauty.*hair/i, Sparkles],
-  [/pet supplies|^pet\b/i, Heart],
-  [/bags.*shoes|shoes.*bags/i, ShoppingBag],
-  [/sports.*outdoor|outdoor.*sport/i, Zap],
-  [/toys.*kid|kid.*bab|babies/i, Baby],
-  // ── Generic keyword rules ─────────────────────────────────────────────────
-  [/hoodie|sweatshirt/i, Shirt],
-  [/women|mujer|lady|ladies|female/i, Heart],
-  [/men'?s|hombre|male\b/i, Shirt],
-  [/kid|child|children|boy|girl|junior|baby/i, Baby],
-  [/suit|set\b|tracksuit|sportswear/i, Layers],
-  [/accessori|hat\b|cap\b|scarf|glove|sock/i, Tag],
-  [/sport|active|gym|fitness/i, Zap],
-  [/winter|jacket|coat|down\b|thermal/i, Snowflake],
-  [/dress|skirt|romper|jumpsuit/i, Sparkles],
-  [/shirt|blouse|top\b|tee\b/i, Shirt],
-  [/pant|jean|short\b|legging|bottom/i, Scissors],
-  [/sweater|knit/i, Wind],
-  [/watch|jewelry|jewel|ring|necklace/i, Watch],
-  [/electronic|gadget|device|tech/i, Cpu],
-  [/home|garden|furniture|kitchen/i, Sofa],
-];
-
-function getCategoryIcon(name: string): LucideIcon {
-  for (const [re, icon] of ICON_RULES) {
-    if (re.test(name)) return icon;
-  }
-  return ShoppingBag;
-}
-
 /* ── Main export ─────────────────────────────────────────────── */
 export function HomeSidebar({
   selectedCategory,
@@ -144,7 +86,6 @@ export function HomeSidebar({
   sortBy,
   total,
   onCategory,
-  onSubcategory,
   onBrand,
   onAttr,
   onPrice,
@@ -154,41 +95,6 @@ export function HomeSidebar({
 }: HomeSidebarProps) {
   const { products } = useNexaProducts();
   const priceRanges = usePriceRanges();
-  const [openCats, setOpenCats] = useState<string[]>(
-    selectedCategory !== "Todos" ? [selectedCategory] : []
-  );
-  const [openSubs, setOpenSubs] = useState<string[]>([]);
-
-  /* Auto-expand the selected category when it changes externally */
-  useEffect(() => {
-    if (selectedCategory !== "Todos") {
-      setOpenCats((prev) =>
-        prev.includes(selectedCategory) ? prev : [...prev, selectedCategory]
-      );
-    }
-  }, [selectedCategory]);
-
-  /* Auto-expand the selected level-2 subcategory when it changes externally */
-  useEffect(() => {
-    if (selectedSubcat) {
-      setOpenSubs((prev) =>
-        prev.includes(selectedSubcat) ? prev : [...prev, selectedSubcat]
-      );
-    }
-  }, [selectedSubcat]);
-
-  const toggle = (name: string) =>
-    setOpenCats((prev) =>
-      prev.includes(name) ? prev.filter((c) => c !== name) : [...prev, name]
-    );
-
-  const toggleSub = (name: string) =>
-    setOpenSubs((prev) =>
-      prev.includes(name) ? prev.filter((s) => s !== name) : [...prev, name]
-    );
-
-  /* ── Categories from NX036 API ──────────────────────────────── */
-  const { categories: apiCategories, loading: catsLoading, error: catsError, refetch: catsRefetch } = useNexaCategories();
 
   /* ── Brands in scope ─────────────────────────────────────────── */
   const brandsInScope = useMemo(() => {
@@ -280,173 +186,6 @@ export function HomeSidebar({
             <span className="text-[11px] text-gray-400">
               <span className="text-gray-900">{total}</span> productos
             </span>
-          </div>
-
-          {/* ── Categorías ─────────────────────────────────────── */}
-          <div className="border-b border-gray-100">
-            <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
-              <Tag className="w-3 h-3" /> Categorías
-            </p>
-
-            {/* Todos */}
-            <button
-              onClick={() => onCategory("Todos")}
-              className={`w-full flex items-center justify-between px-3 py-2 text-xs transition-colors ${selectedCategory === "Todos"
-                ? "bg-gray-600 text-white"
-                : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                }`}
-            >
-              <span className="flex items-center gap-2">
-                <ShoppingBag
-                  className={`w-3.5 h-3.5 flex-shrink-0 ${selectedCategory === "Todos" ? "text-white" : "text-gray-400"}`}
-                  strokeWidth={1.5}
-                />
-                Todos
-              </span>
-              <span className={`text-[10px] ${selectedCategory === "Todos" ? "text-white/50" : "text-gray-400"}`}>
-                {products.length}
-              </span>
-            </button>
-
-            {/* API Categories — loading state */}
-            {catsLoading && (
-              <div className="flex items-center justify-center gap-2 px-4 py-6">
-                <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
-                <span className="text-xs text-gray-400">Cargando categorías…</span>
-              </div>
-            )}
-
-            {/* API Categories — error state */}
-            {!catsLoading && catsError && (
-              <div className="px-4 py-4 text-center">
-                <AlertCircle className="w-5 h-5 text-red-400 mx-auto mb-2" />
-                <p className="text-xs text-red-500 mb-2">{catsError}</p>
-                <button
-                  onClick={catsRefetch}
-                  className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-800 transition-colors"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  Reintentar
-                </button>
-              </div>
-            )}
-
-            {/* API Categories — data */}
-            {!catsLoading && !catsError && apiCategories.map((cat) => {
-              const isActive = selectedCategory === cat.name;
-              const isOpen = openCats.includes(cat.name);
-              const CatIcon = getCategoryIcon(cat.name);
-              const subCats = cat.subCategories ?? [];
-
-              return (
-                <div key={cat.id}>
-                  <div
-                    className={`flex items-center transition-colors ${isActive
-                      ? "bg-gray-600 text-white"
-                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-                      }`}
-                  >
-                    <button
-                      onClick={() => {
-                        onCategory(cat.name, cat.id);
-                        if (!isOpen) toggle(cat.name);
-                      }}
-                      className="flex-1 flex items-center gap-2 px-3 py-2 text-xs text-left"
-                    >
-                      <CatIcon
-                        className={`w-3.5 h-3.5 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`}
-                        strokeWidth={1.5}
-                      />
-                      <span className="truncate">{cat.name}</span>
-                      {subCats.length > 0 && (
-                        <span className={`ml-auto text-[10px] flex-shrink-0 ${isActive ? "text-white/50" : "text-gray-400"}`}>
-                          {subCats.length}
-                        </span>
-                      )}
-                    </button>
-                    {subCats.length > 0 && (
-                      <button
-                        onClick={() => toggle(cat.name)}
-                        className="px-2.5 py-2"
-                      >
-                        {isOpen
-                          ? <ChevronDown className="w-3.5 h-3.5 opacity-40" />
-                          : <ChevronRight className="w-3.5 h-3.5 opacity-40" />}
-                      </button>
-                    )}
-                  </div>
-
-                  {isOpen && subCats.length > 0 && (
-                    <div className="bg-gray-50 border-t border-gray-100">
-                      {subCats.map((sub) => {
-                        const isSubActive = selectedSubcat === sub.name;
-                        const subChildren = sub.subCategories ?? [];
-                        const isSubOpen = openSubs.includes(sub.name);
-                        return (
-                          <div key={sub.id}>
-                            <div className={`flex items-center transition-colors ${isSubActive
-                              ? "text-gray-900 bg-gray-100"
-                              : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
-                              }`}>
-                              <button
-                                onClick={() => {
-                                  onSubcategory(cat.name, sub.name, cat.id, sub.id);
-                                  if (subChildren.length > 0 && !isSubOpen) toggleSub(sub.name);
-                                }}
-                                className="flex-1 flex items-center gap-2 pl-6 pr-1 py-1.5 text-xs text-left"
-                              >
-                                {isSubActive
-                                  ? <Check className="w-3 h-3 text-gray-700 flex-shrink-0" strokeWidth={2} />
-                                  : <span className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />}
-                                <span className="truncate">{sub.name}</span>
-                                {subChildren.length > 0 && (
-                                  <span className="ml-auto text-[10px] text-gray-400 flex-shrink-0">
-                                    {subChildren.length}
-                                  </span>
-                                )}
-                              </button>
-                              {subChildren.length > 0 && (
-                                <button
-                                  onClick={() => toggleSub(sub.name)}
-                                  className="px-2 py-1.5"
-                                >
-                                  {isSubOpen
-                                    ? <ChevronDown className="w-3 h-3 opacity-40" />
-                                    : <ChevronRight className="w-3 h-3 opacity-40" />}
-                                </button>
-                              )}
-                            </div>
-
-                            {isSubOpen && subChildren.length > 0 && (
-                              <div className="bg-white border-t border-gray-50">
-                                {subChildren.map((child) => {
-                                  const isChildActive = selectedSubcat === child.name;
-                                  return (
-                                    <button
-                                      key={child.id}
-                                      onClick={() => onSubcategory(cat.name, child.name, cat.id, child.id)}
-                                      className={`w-full flex items-center gap-2 pl-10 pr-3 py-1 text-[11px] transition-colors ${isChildActive
-                                        ? "text-gray-900 bg-gray-100"
-                                        : "text-gray-400 hover:bg-gray-50 hover:text-gray-700"
-                                        }`}
-                                    >
-                                      {isChildActive
-                                        ? <Check className="w-2.5 h-2.5 text-gray-700 flex-shrink-0" strokeWidth={2} />
-                                        : <span className="w-0.5 h-0.5 rounded-full bg-gray-300 flex-shrink-0" />}
-                                      <span className="truncate">{child.name}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
           </div>
 
           {/* ── Marcas ── */}
