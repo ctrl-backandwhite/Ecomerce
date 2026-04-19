@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate, useLocation } from "react-router";
 import { ArrowRight } from "lucide-react";
 import { useNexaCategories } from "../hooks/useNexaCategories";
 import { useCategoryTopProducts } from "../hooks/useCategoryTopProducts";
@@ -27,6 +27,26 @@ const TILE_BGS = [
  */
 export function CategoryShowcase() {
   const { categories, loading: catsLoading } = useNexaCategories();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  /**
+   * "Ver todo" = bring the user to the full product grid section of this
+   * same page. When already on /store we just scroll; otherwise we route
+   * there and let the landing page render with the grid in view.
+   */
+  const handleViewAll = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const target = document.getElementById("productos");
+    if (target) {
+      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {
+      navigate(urls.store() + "#productos");
+    }
+    if (!location.pathname.startsWith("/store") && location.pathname !== "/") {
+      navigate(urls.store() + "#productos");
+    }
+  };
 
   // Use featured categories first, then fall back to all for the next slots
   const tileCategories = useMemo(() => {
@@ -73,13 +93,14 @@ export function CategoryShowcase() {
           <h2 className="text-xl sm:text-2xl text-gray-900 tracking-tight">
             Explora nuestras categorías
           </h2>
-          <Link
-            to={urls.store()}
+          <button
+            type="button"
+            onClick={handleViewAll}
             className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1"
           >
             Ver todo
             <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
-          </Link>
+          </button>
         </div>
       </div>
 
