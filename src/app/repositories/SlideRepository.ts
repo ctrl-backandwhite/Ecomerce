@@ -30,8 +30,8 @@ export interface SlidePayload {
 class SlideRepository {
     private url = `${API_BASE}/api/v1/slides`;
 
-    async findActive(): Promise<Slide[]> {
-        try { return handleRes<Slide[]>(await nxFetch(`${this.url}/active`)); }
+    async findActive(locale = "es"): Promise<Slide[]> {
+        try { return handleRes<Slide[]>(await nxFetch(`${this.url}/active?locale=${encodeURIComponent(locale)}`)); }
         catch (err) { wrapErr(err, "No se pudieron obtener los slides"); }
     }
 
