@@ -15,7 +15,7 @@ import { useCurrency } from "../context/CurrencyContext";
 export function TimezoneSidebar() {
     const { selectedCountry, setCountry, countries, isSidebarOpen, closeSidebar } =
         useTimezone();
-    const { t } = useLanguage();
+    const { t, setLocale } = useLanguage();
     const { currency, rates, setCurrencyCode } = useCurrency();
     const [search, setSearch] = useState("");
     const searchRef = useRef<HTMLInputElement>(null);
@@ -52,6 +52,14 @@ export function TimezoneSidebar() {
         const rate = rates.find((r) => r.currencyCode === code);
         if (rate && rate.countryCode !== "XX" && countries.some((c) => c.code === rate.countryCode)) {
             setCountry(rate.countryCode);
+        }
+        // Persist the locale explicitly before setCurrencyCode() triggers a
+        // full page reload. Using rate.language avoids relying on the
+        // countries list already containing the selected entry.
+        if (rate?.language) {
+            const nextLocale = rate.language === "es" ? "es" : rate.language === "pt" ? "pt" : "en";
+            setLocale(nextLocale);
+            try { localStorage.setItem("nexa-locale", nextLocale); } catch { /* ignore */ }
         }
         closeSidebar();
         setCurrencyCode(code);

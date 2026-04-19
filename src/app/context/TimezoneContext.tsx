@@ -161,13 +161,13 @@ export function TimezoneProvider({ children }: { children: ReactNode }) {
         catch (err) { logger.warn("Suppressed error", err); }
     }, [countries, setLocale]);
 
-    // Sync locale when countries finish loading
+    // Keep the locale in sync with the selected country: runs after the
+    // countries list is populated and again whenever the country changes.
     useEffect(() => {
         if (loading) return;
         const country = countries.find((c) => c.code === countryCode);
         if (country) setLocale(country.locale);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loading]);
+    }, [loading, countryCode, countries, setLocale]);
 
     const toggleSidebar = useCallback(() => setIsSidebarOpen((v) => !v), []);
     const closeSidebar = useCallback(() => setIsSidebarOpen(false), []);
