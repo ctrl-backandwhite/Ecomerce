@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { useSearchParams, useParams, useNavigate, Link } from "react-router";
+import { useSearchParams, useParams, useNavigate } from "react-router";
 import {
-  Gift,
   ChevronRight,
   SlidersHorizontal,
   AlertTriangle,
@@ -16,7 +15,6 @@ import { ProductCard } from "../components/ProductCard";
 import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
-import { BrandStrip } from "../components/BrandStrip";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
 import { usePriceRanges } from "../hooks/usePriceRanges";
@@ -121,6 +119,12 @@ export function Home() {
     return out;
   }, [searchParams]);
 
+  /* Keyword facets selected from the sidebar (CSV in `kw` param) */
+  const selectedKeywords = useMemo<string[]>(() => {
+    const raw = searchParams.get("kw") ?? "";
+    return raw ? raw.split(",").map(s => s.trim()).filter(Boolean) : [];
+  }, [searchParams]);
+
   // When a subcategory is selected, use its ID to filter; otherwise use the parent category ID
   const activeCategoryId = selectedSubcategoryId || selectedCategoryId;
 
@@ -219,6 +223,14 @@ export function Home() {
       );
     }
 
+    // Keyword facets: every selected keyword must appear in product name.
+    if (selectedKeywords.length > 0) {
+      list = list.filter((p) => {
+        const hay = p.name.toLowerCase();
+        return selectedKeywords.every((kw) => hay.includes(kw));
+      });
+    }
+
     const pr = priceRanges[selectedPriceIdx];
     if (selectedPriceIdx !== 0)
       list = list.filter((p) => p.price >= pr.min && p.price <= pr.max);
@@ -244,13 +256,13 @@ export function Home() {
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
     selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products,
-    campaignDealIds, campaignDeals, variantValues, selectedSubcategoryId]);
+    campaignDealIds, campaignDeals, variantValues, selectedKeywords, selectedSubcategoryId]);
 
   /* ── Reset filterKey when local filters change ─────────────── */
   useEffect(() => {
     setFilterKey((k) => k + 1);
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, variantValues]);
+    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, variantValues, selectedKeywords]);
 
   /* ── Scroll to products when category/subcategory/search changes from URL ── */
   const isFirstRender = useRef(true);
@@ -311,6 +323,17 @@ export function Home() {
     const next = new URLSearchParams(searchParams.toString());
     if (!attr) next.delete("attr");
     else next.set("attr", attr);
+    setSearchParams(next, { preventScrollReset: true });
+  };
+
+  const handleToggleKeyword = (kw: string) => {
+    const current = new Set(selectedKeywords);
+    if (current.has(kw)) current.delete(kw);
+    else current.add(kw);
+    const next = new URLSearchParams(searchParams.toString());
+    const serialized = [...current].join(",");
+    if (serialized) next.set("kw", serialized);
+    else next.delete("kw");
     setSearchParams(next, { preventScrollReset: true });
   };
 
@@ -395,6 +418,10 @@ export function Home() {
       label: `${k}: ${v}`,
       clear: () => handleVariantValue(k, ""),
     })),
+    ...selectedKeywords.map((kw) => ({
+      label: kw,
+      clear: () => handleToggleKeyword(kw),
+    })),
   ].filter(Boolean) as { label: string; clear: () => void }[];
 
   const hasFilters = pills.length > 0;
@@ -435,38 +462,6 @@ export function Home() {
         }}
       />
 
-      {/* Top Brands strip */}
-      <BrandStrip />
-
-      {/* Gift Card Banner */}
-      <div className="hidden sm:block bg-gray-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-5">
-            <div className="w-14 h-14 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center flex-shrink-0">
-              <Gift className="w-7 h-7 text-white" strokeWidth={1.5} />
-            </div>
-            <div>
-              <p className="text-white tracking-tight text-lg">{t("gift.title")}</p>
-              <p className="text-white/60 text-sm mt-0.5">{t("gift.subtitle")}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-white/50">
-              {["$25", "$50", "$100", "$200"].map((a) => (
-                <span key={a} className="bg-white/10 border border-white/20 rounded-full px-2.5 py-0.5">{a}</span>
-              ))}
-            </div>
-            <Link
-              to="/gift-cards"
-              className="flex items-center gap-2 h-10 px-5 text-sm text-gray-900 bg-white rounded-xl hover:bg-gray-100 transition-colors whitespace-nowrap"
-            >
-              {t("gift.cta")}
-              <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
-            </Link>
-          </div>
-        </div>
-      </div>
-
       {/* ── Products + Sidebar ── */}
       <section className="py-12 bg-white border-t border-gray-200" id="productos">
         <div className="w-full">
@@ -484,6 +479,7 @@ export function Home() {
                 sortBy={sortBy}
                 total={filtered.length}
                 variantValues={variantValues}
+                selectedKeywords={selectedKeywords}
                 onCategory={handleCategory}
                 onBrand={handleBrand}
                 onAttr={handleAttr}
@@ -492,6 +488,7 @@ export function Home() {
                 onSort={setSortBy}
                 onReset={handleReset}
                 onVariantValue={handleVariantValue}
+                onToggleKeyword={handleToggleKeyword}
               />
             </div>
 

@@ -10,6 +10,7 @@ import {
   Layers,
   ArrowUpDown,
   DollarSign,
+  Gift,
 } from "lucide-react";
 import { usePriceRanges } from "../hooks/usePriceRanges";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
@@ -26,6 +27,7 @@ interface HomeSidebarProps {
   sortBy: string;
   total: number;
   variantValues?: Record<string, string>;
+  selectedKeywords?: string[];
   onCategory: (cat: string, catId?: string) => void;
   onBrand: (brand: string) => void;
   onAttr: (attr: string) => void;
@@ -34,10 +36,18 @@ interface HomeSidebarProps {
   onSort: (s: string) => void;
   onReset: () => void;
   onVariantValue?: (attrName: string, value: string) => void;
+  onToggleKeyword?: (kw: string) => void;
 }
 
 /* Generic attribute keys we never want to surface as filters */
 const IGNORED_ATTR_KEYS = new Set(["default", "key", "sku", "id"]);
+
+/* Stopwords excluded from keyword facets */
+const KW_STOPWORDS = new Set([
+  "the", "and", "for", "with", "from", "que", "para", "con", "por", "los", "las",
+  "una", "uno", "del", "este", "esta", "todo", "todos", "pro", "new", "set", "pcs",
+  "x", "de", "en", "un", "y", "o", "a", "al", "es", "la", "el",
+]);
 
 /* ── Top rated mini-widget ───────────────────────────────────── */
 function TopRated() {
@@ -91,6 +101,7 @@ export function HomeSidebar({
   sortBy,
   total,
   variantValues = {},
+  selectedKeywords = [],
   onCategory,
   onBrand,
   onAttr,
@@ -99,9 +110,46 @@ export function HomeSidebar({
   onSort,
   onReset,
   onVariantValue,
+  onToggleKeyword,
 }: HomeSidebarProps) {
   const { products } = useNexaProducts();
   const priceRanges = usePriceRanges();
+
+  /* ── Keyword facets mined from product names ──────────────────
+   * When the listing doesn't expose variant attributes we still want
+   * useful filters. Extract the most frequent non-stopword tokens from
+   * the visible products and offer them as chips. "Wireless", "Bluetooth",
+   * "USB" etc. fall out of this naturally. */
+  const keywordFacets = useMemo(() => {
+    const base = products.filter((p) => {
+      if (selectedCategory !== "Todos" && p.category !== selectedCategory) return false;
+      if (selectedSubcat && p.subcategory !== selectedSubcat) return false;
+      return true;
+    });
+    if (base.length < 3) return [];
+    const counts = new Map<string, number>();
+    base.forEach((p) => {
+      const seen = new Set<string>();
+      p.name
+        .toLowerCase()
+        .replace(/[^a-z0-9áéíóúñ\s]/gi, " ")
+        .split(/\s+/)
+        .forEach((raw) => {
+          const tok = raw.trim();
+          if (tok.length < 4 || tok.length > 18) return;
+          if (/^\d+$/.test(tok)) return;
+          if (KW_STOPWORDS.has(tok)) return;
+          if (seen.has(tok)) return;
+          seen.add(tok);
+          counts.set(tok, (counts.get(tok) ?? 0) + 1);
+        });
+    });
+    return [...counts.entries()]
+      .filter(([, n]) => n >= 2 && n < base.length)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([kw, n]) => ({ kw, count: n }));
+  }, [products, selectedCategory, selectedSubcat]);
 
   /* ── Dynamic variant-attribute filters (brand-agnostic) ───────
    * Pulls the unique {attrName → values[]} map from the variants of the
@@ -178,24 +226,27 @@ export function HomeSidebar({
     <aside className="w-64 flex-shrink-0 hidden lg:block">
       <div className="sticky top-4 flex flex-col gap-3">
 
-        {/* ── Catalog banner ───────────────────────────────────── */}
-        <div className="bg-gray-700 rounded-xl p-4 text-white">
-          <p className="text-[10px] tracking-widest uppercase text-white/50 mb-1">
-            Catálogo activo
-          </p>
-          <p className="text-sm mb-3 leading-snug">
-            {products.length > 0
-              ? `${products.length} productos disponibles`
-              : "Cargando catálogo..."}
-          </p>
-          <button
-            onClick={() => onCategory("Todos")}
-            className="inline-flex items-center gap-1.5 text-xs text-white/80 hover:text-white transition-colors border-b border-white/20 hover:border-white/60 pb-0.5"
-          >
-            Ver todos
-            <ChevronRight className="w-3 h-3" />
-          </button>
-        </div>
+        {/* ── Gift-card banner ─────────────────────────────────── */}
+        <Link
+          to="/gift-cards"
+          className="group bg-gray-700 rounded-xl p-4 text-white flex items-start gap-3 hover:bg-gray-800 transition-colors"
+        >
+          <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
+            <Gift className="w-4 h-4 text-white" strokeWidth={1.5} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] tracking-widest uppercase text-white/50 mb-0.5">
+              NX036 Gift Cards
+            </p>
+            <p className="text-sm leading-snug mb-2">
+              Regala lo que quieran — envío directo por email
+            </p>
+            <span className="inline-flex items-center gap-1.5 text-xs text-white/80 group-hover:text-white transition-colors border-b border-white/20 group-hover:border-white/60 pb-0.5">
+              Regalar ahora
+              <ChevronRight className="w-3 h-3" />
+            </span>
+          </div>
+        </Link>
 
         {/* ── Filters panel ────────────────────────────────────── */}
         <div className="border border-gray-200 rounded-xl overflow-hidden">
@@ -250,6 +301,37 @@ export function HomeSidebar({
                   <span className="text-[10px] text-gray-400">{count}</span>
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* ── Keyword facets (from product names) ── */}
+          {keywordFacets.length > 0 && onToggleKeyword && (
+            <div className="border-b border-gray-100">
+              <div className="pt-3 pb-2.5 px-4">
+                <p className="text-[10px] tracking-widest uppercase text-gray-400 mb-2 flex items-center gap-1">
+                  <Layers className="w-3 h-3" /> Características
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {keywordFacets.map(({ kw, count }) => {
+                    const isActive = selectedKeywords.includes(kw);
+                    return (
+                      <button
+                        key={kw}
+                        onClick={() => onToggleKeyword(kw)}
+                        className={`inline-flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg border transition-all capitalize ${isActive
+                          ? "border-gray-900 bg-gray-900 text-white"
+                          : "border-gray-200 bg-white text-gray-600 hover:border-gray-400"}`}
+                      >
+                        <span>{kw}</span>
+                        <span className={`text-[10px] ${isActive ? "text-white/60" : "text-gray-400"}`}>
+                          {count}
+                        </span>
+                        {isActive && <X className="w-2.5 h-2.5 ml-0.5" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           )}
 
