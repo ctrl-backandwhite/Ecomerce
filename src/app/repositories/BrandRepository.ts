@@ -91,7 +91,12 @@ class BrandRepository extends BaseRepository<Brand, BrandPayload, BrandPayload> 
             const qs = this.buildParams(query);
             const url = `${API_BASE}/api/v1/public/brands?${qs}`;
             const res = await nxFetch(url);
-            return this.handleResponse<Brand[]>(res);
+            const body = await this.handleResponse<Brand[] | Page<Brand>>(res);
+            if (Array.isArray(body)) return body;
+            if (body && typeof body === "object" && Array.isArray((body as Page<Brand>).content)) {
+                return (body as Page<Brand>).content;
+            }
+            return [];
         } catch (err) {
             this.wrapError(err, `No se pudo obtener las marcas`);
         }

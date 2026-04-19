@@ -19,7 +19,7 @@ export function useBrands(): UseBrandsResult {
         try {
             // Storefront hook: hit the public endpoint (no token required)
             const data = await brandRepository.findPublic();
-            setBrands(data);
+            setBrands(Array.isArray(data) ? data : []);
         } catch (err) {
             const msg =
                 err instanceof Error ? err.message : "Error al cargar marcas";

@@ -73,10 +73,10 @@ export function CategoryTiles() {
   const { t } = useLanguage();
   const { categories, loading } = useNexaCategories();
 
-  const topCategories = useMemo(
-    () => categories.filter(c => c.active).slice(0, 8),
-    [categories],
-  );
+  const topCategories = useMemo(() => {
+    const list = Array.isArray(categories) ? categories : [];
+    return list.filter(c => c?.active).slice(0, 8);
+  }, [categories]);
 
   if (loading) {
     return (

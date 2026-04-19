@@ -6,9 +6,12 @@ import { urls } from "../lib/urls";
 export function BrandStrip() {
   const navigate = useNavigate();
   const { t } = useLanguage();
-  const { brands, loading } = useBrands();
+  const { brands, loading, error } = useBrands();
 
-  const activeBrands = brands.filter(b => b.status === "ACTIVE").slice(0, 14);
+  const brandList = Array.isArray(brands) ? brands : [];
+  const activeBrands = brandList.filter(b => b?.status === "ACTIVE").slice(0, 14);
+
+  if (error) return null;
 
   if (loading) {
     return (
