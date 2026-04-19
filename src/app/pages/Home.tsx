@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { useSearchParams, useParams, useNavigate } from "react-router";
 import {
   ChevronRight,
@@ -178,6 +178,23 @@ export function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef(apiLoadMore);
   useEffect(() => { loadMoreRef.current = isSearching ? esLoadMore : apiLoadMore; });
+
+  // Preserve the viewport scroll when the product list grows by append. If a
+  // parent re-render happens to reset the scroll (route params, react-router
+  // navigation, layout shift…), we lock the user back to where they were.
+  const savedScrollRef = useRef<number | null>(null);
+  const prevLoadingMoreRef = useRef(false);
+  useLayoutEffect(() => {
+    if (loadingMore && !prevLoadingMoreRef.current) {
+      savedScrollRef.current = window.scrollY;
+    } else if (!loadingMore && prevLoadingMoreRef.current && savedScrollRef.current !== null) {
+      const target = savedScrollRef.current;
+      savedScrollRef.current = null;
+      // Run after paint so the new rows are in the DOM.
+      requestAnimationFrame(() => window.scrollTo({ top: target, behavior: "instant" as ScrollBehavior }));
+    }
+    prevLoadingMoreRef.current = loadingMore;
+  }, [loadingMore]);
 
   const sentinelRef = useCallback((node: HTMLDivElement | null) => {
     if (observerRef.current) {
