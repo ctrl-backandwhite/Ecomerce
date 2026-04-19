@@ -53,10 +53,10 @@ export function CategoryShowcase() {
   if (catsLoading || productsLoading) {
     return (
       <section className="py-10 bg-gray-50 border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-2xl p-5 h-64 animate-pulse" />
+        <div className="w-full px-4 sm:px-6 lg:px-8">
+          <div className="flex gap-4 overflow-hidden">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-2xl h-64 w-[300px] flex-shrink-0 animate-pulse" />
             ))}
           </div>
         </div>
@@ -68,7 +68,7 @@ export function CategoryShowcase() {
 
   return (
     <section className="py-10 bg-gray-50 border-b border-gray-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-baseline justify-between mb-6">
           <h2 className="text-xl sm:text-2xl text-gray-900 tracking-tight">
             Explora nuestras categorías
@@ -81,15 +81,18 @@ export function CategoryShowcase() {
             <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
           </Link>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Full-bleed horizontal strip */}
+      <div className="w-full overflow-x-auto scrollbar-thin">
+        <div className="flex gap-4 px-4 sm:px-6 lg:px-8 pb-2">
           {tiles.map((tile, tileIdx) => {
             const gradient = TILE_BGS[tileIdx % TILE_BGS.length];
             return (
               <Link
                 key={tile.id}
                 to={urls.category(tile.name)}
-                className="group bg-white rounded-2xl p-5 flex flex-col hover:shadow-lg transition-all duration-200 border border-transparent hover:border-gray-200"
+                className="group bg-white rounded-2xl p-5 flex flex-col w-[280px] sm:w-[300px] flex-shrink-0 hover:shadow-lg transition-all duration-200 border border-transparent hover:border-gray-200"
               >
                 <div className="flex items-baseline justify-between mb-3">
                   <h3 className="text-base text-gray-900 tracking-tight group-hover:text-blue-700 transition-colors line-clamp-1">
