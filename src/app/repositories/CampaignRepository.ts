@@ -55,8 +55,8 @@ export interface CampaignPayload {
 class CampaignRepository {
     private url = `${API_BASE}/api/v1/campaigns`;
 
-    async findActive(): Promise<Campaign[]> {
-        try { return handleRes<Campaign[]>(await nxFetch(`${this.url}/active`)); }
+    async findActive(locale = "es"): Promise<Campaign[]> {
+        try { return handleRes<Campaign[]>(await nxFetch(`${this.url}/active?locale=${encodeURIComponent(locale)}`)); }
         catch (err) { wrapErr(err, "No se pudieron obtener las campañas activas"); }
     }
 
