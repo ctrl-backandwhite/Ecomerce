@@ -229,23 +229,23 @@ export function HomeSidebar({
         {/* ── Gift-card banner ─────────────────────────────────── */}
         <Link
           to="/gift-cards"
-          className="group bg-gray-700 rounded-xl p-4 text-white flex items-start gap-3 hover:bg-gray-800 transition-colors"
+          className="group bg-gray-700 rounded-xl p-4 text-white hover:bg-gray-800 transition-colors block"
         >
-          <div className="w-9 h-9 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
-            <Gift className="w-4 h-4 text-white" strokeWidth={1.5} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[10px] tracking-widest uppercase text-white/50 mb-0.5">
-              NX036 Gift Cards
+          <div className="flex items-center gap-2.5 mb-2.5">
+            <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
+              <Gift className="w-4 h-4 text-white" strokeWidth={1.5} />
+            </div>
+            <p className="text-[10px] tracking-widest uppercase text-white/60 leading-tight">
+              Tarjetas Regalo
             </p>
-            <p className="text-sm leading-snug mb-2">
-              Regala lo que quieran — envío directo por email
-            </p>
-            <span className="inline-flex items-center gap-1.5 text-xs text-white/80 group-hover:text-white transition-colors border-b border-white/20 group-hover:border-white/60 pb-0.5">
-              Regalar ahora
-              <ChevronRight className="w-3 h-3" />
-            </span>
           </div>
+          <p className="text-sm leading-snug mb-3">
+            El regalo perfecto, entregado al instante.
+          </p>
+          <span className="inline-flex items-center gap-1 text-xs text-white/80 group-hover:text-white transition-colors">
+            Regalar ahora
+            <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+          </span>
         </Link>
 
         {/* ── Filters panel ────────────────────────────────────── */}
