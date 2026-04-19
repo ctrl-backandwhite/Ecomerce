@@ -1,7 +1,6 @@
-import { Star, ShoppingCart, Heart, BarChart2, Eye, Check, Truck } from "lucide-react";
+import { Star, Heart, BarChart2, Eye, Check, Truck } from "lucide-react";
 import { Link } from "react-router";
 import { Product } from "../types/product";
-import { useCart } from "../context/CartContext";
 import { useCompare } from "../context/CompareContext";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
@@ -16,7 +15,6 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { addToCart } = useCart();
   const { add: addCompare, has: inCompare } = useCompare();
   const { toggleFavorite, isFavorite } = useUser();
   const { isAuthenticated } = useAuth();
@@ -24,16 +22,6 @@ export function ProductCard({ product }: ProductCardProps) {
   const { t } = useLanguage();
   const liked = isFavorite(product.id);
   const [quickView, setQuickView] = useState(false);
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (product.variants?.length > 1) {
-      toast.message(t("card.selectOptions"));
-      return;
-    }
-    addToCart(product);
-    toast.success(t("card.addedToCart"));
-  };
 
   const handleCompare = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -190,16 +178,6 @@ export function ProductCard({ product }: ProductCardProps) {
               <Truck className="w-3 h-3" strokeWidth={1.5} />
               <span>{t("card.shippingAvailable")}</span>
             </div>
-
-            {/* CTA */}
-            <button
-              onClick={handleAddToCart}
-              disabled={isOutOfStock}
-              className="mt-3 w-full px-3 py-2 bg-gray-900 hover:bg-black disabled:bg-gray-300 disabled:cursor-not-allowed text-white text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5"
-            >
-              <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
-              <span>{t("card.addToCart")}</span>
-            </button>
           </div>
         </div>
       </Link>

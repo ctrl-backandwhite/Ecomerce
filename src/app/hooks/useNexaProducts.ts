@@ -185,7 +185,6 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 setError(msg);
                 if (!append) {
                     setProducts([]);
-                    setDataSource("mock");
                 }
             } finally {
                 if (!signal?.aborted) {
