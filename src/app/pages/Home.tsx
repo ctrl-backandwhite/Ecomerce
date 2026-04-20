@@ -16,6 +16,7 @@ import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
 import { CategoryShowcase } from "../components/CategoryShowcase";
+import { ProductSuggestions } from "../components/ProductSuggestions";
 import { CategoryPageHeader } from "../components/CategoryPageHeader";
 import { SiblingCategoriesRow } from "../components/SiblingCategoriesRow";
 import { HomeSidebar } from "../components/HomeSidebar";
@@ -534,6 +535,11 @@ export function Home() {
 
       {/* Category showcase — landing only, below the deals strip */}
       {isLanding && <CategoryShowcase />}
+
+      {/* Personalised recommendations based on browsing history — silent
+          on first-time visitors (empty RecentlyViewedContext) so there's no
+          awkward empty rail. */}
+      {isLanding && <ProductSuggestions limit={10} />}
 
       {/* ── Products + Sidebar ── */}
       <section className="py-12 bg-white border-t border-gray-200" id="productos">

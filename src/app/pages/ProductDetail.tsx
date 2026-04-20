@@ -4,6 +4,7 @@ import { type Review } from "../types/review";
 import { reviewRepository } from "../repositories/ReviewRepository";
 import { useCart } from "../context/CartContext";
 import { useRecentlyViewed } from "../context/RecentlyViewedContext";
+import { ProductSuggestions } from "../components/ProductSuggestions";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useLanguage } from "../context/LanguageContext";
 import { useUser } from "../context/UserContext";
@@ -1246,6 +1247,9 @@ export function ProductDetail() {
           productName={product.name}
           productCategory={product.category}
         />
+
+        {/* Personalised suggestions — horizontal strip */}
+        <ProductSuggestions limit={10} variant="strip" />
 
       </div>
 
