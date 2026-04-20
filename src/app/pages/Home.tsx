@@ -16,6 +16,7 @@ import { PromoSlider, type PromoFilter } from "../components/PromoSlider";
 import { InfoBanner } from "../components/InfoBanner";
 import { CategoryBar } from "../components/CategoryBar";
 import { CategoryShowcase } from "../components/CategoryShowcase";
+import { ProductSuggestions } from "../components/ProductSuggestions";
 import { CategoryPageHeader } from "../components/CategoryPageHeader";
 import { SiblingCategoriesRow } from "../components/SiblingCategoriesRow";
 import { HomeSidebar } from "../components/HomeSidebar";
@@ -296,7 +297,11 @@ export function Home() {
       Object.keys(variantValues).length === 0 && selectedKeywords.length === 0;
     if (isLandingView && sortBy === "featured" && recentlyViewed.length > 0) {
       const viewedIds = new Set(recentlyViewed.map((p) => p.id));
-      list = [...recentlyViewed, ...list.filter((p) => !viewedIds.has(p.id))];
+      // Strip stale originalPrice on the prepended history items: pricing
+      // captured during an old campaign shouldn't show up as a discount
+      // badge when that campaign is long gone.
+      const cleanViewed = recentlyViewed.map((p) => ({ ...p, originalPrice: undefined }));
+      list = [...cleanViewed, ...list.filter((p) => !viewedIds.has(p.id))];
     }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
@@ -534,6 +539,11 @@ export function Home() {
 
       {/* Category showcase — landing only, below the deals strip */}
       {isLanding && <CategoryShowcase />}
+
+      {/* Personalised recommendations based on browsing history — silent
+          on first-time visitors (empty RecentlyViewedContext) so there's no
+          awkward empty rail. */}
+      {isLanding && <ProductSuggestions limit={10} />}
 
       {/* ── Products + Sidebar ── */}
       <section className="py-12 bg-white border-t border-gray-200" id="productos">
