@@ -3,6 +3,7 @@ import { useParams, useNavigate, useLocation, Link } from "react-router";
 import { type Review } from "../types/review";
 import { reviewRepository } from "../repositories/ReviewRepository";
 import { useCart } from "../context/CartContext";
+import { useRecentlyViewed } from "../context/RecentlyViewedContext";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useLanguage } from "../context/LanguageContext";
 import { useUser } from "../context/UserContext";
@@ -556,6 +557,7 @@ export function ProductDetail() {
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
+  const { track: trackRecentlyViewed } = useRecentlyViewed();
   const { formatPrice, currency } = useCurrency();
   const currencyCode = currency?.currencyCode ?? "USD";
 
@@ -592,6 +594,15 @@ export function ProductDetail() {
 
     return () => controller.abort();
   }, [id, apiLocale, currencyCode]);
+
+  // Remember this product once its details resolve so the home grid can
+  // surface it under "últimos productos visitados" on the next visit.
+  useEffect(() => {
+    if (product) {
+      trackRecentlyViewed(product);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id]);
 
   const backTo: string = (location.state as any)?.from || "/";
   /** Use browser history back when the user came from within the app,

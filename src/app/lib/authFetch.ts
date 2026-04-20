@@ -107,8 +107,17 @@ export async function authFetch(
         if (refreshed) {
             return fetch(input, attachHeaders(init));
         }
-        // Refresh failed — clear tokens; AuthContext will detect and redirect
-        clearTokens();
+        // Refresh failed. Only treat this as a dead session — and bounce the
+        // user through OAuth2 again — when the local access token is actually
+        // expired. A 401 with a still-valid token typically means the backend
+        // rejected this specific endpoint for permission reasons; wiping the
+        // session there would punish the user for clicking the wrong page.
+        if (isTokenExpired() || !getAccessToken()) {
+            clearTokens();
+            if (typeof window !== "undefined") {
+                window.dispatchEvent(new CustomEvent("auth:session-expired"));
+            }
+        }
     }
 
     return response;

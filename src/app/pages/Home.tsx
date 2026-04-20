@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { useSearchParams, useParams, useNavigate } from "react-router";
 import {
   ChevronRight,
@@ -20,6 +20,7 @@ import { CategoryPageHeader } from "../components/CategoryPageHeader";
 import { SiblingCategoriesRow } from "../components/SiblingCategoriesRow";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
+import { BackToTop } from "../components/BackToTop";
 import { usePriceRanges } from "../hooks/usePriceRanges";
 import { useFlashDeals } from "../hooks/useFlashDeals";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../config/filters";
@@ -29,8 +30,10 @@ import { useLanguage } from "../context/LanguageContext";
 import { slugify, urls } from "../lib/urls";
 import { useProductSearch } from "../hooks/useProductSearch";
 import { mapSearchHitToProduct } from "../mappers/NexaProductMapper";
+import { getSessionShuffleSeed, seededShuffle } from "../lib/shuffle";
+import { useRecentlyViewed } from "../context/RecentlyViewedContext";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 25;
 
 function scrollToProducts() {
   const el = document.getElementById("productos");
@@ -40,6 +43,7 @@ function scrollToProducts() {
 export function Home() {
   const { t } = useLanguage();
   const priceRanges = usePriceRanges();
+  const { viewed: recentlyViewed } = useRecentlyViewed();
 
   /* ── Path params (clean URLs) ──────────────────────────────── */
   const { catSlug, subcatSlug, query: routeQuery } = useParams<{
@@ -140,7 +144,13 @@ export function Home() {
     dataSource,
     loadMore: apiLoadMore,
     refetch: refreshProducts,
-  } = useNexaProducts(activeCategoryId);
+  } = useNexaProducts({
+    categoryId: activeCategoryId,
+    // On the landing (no category, no brand, no search) ask the backend
+    // for a random sample so each visit sees a fresh slice of the catalogue
+    // instead of the first 24 rows by createdAt.
+    sortBy: (!activeCategoryId && !searchQuery && !selectedBrand) ? "random" : undefined,
+  });
 
   const isSearching = searchQuery.trim().length >= 2;
   const {
@@ -169,6 +179,23 @@ export function Home() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef(apiLoadMore);
   useEffect(() => { loadMoreRef.current = isSearching ? esLoadMore : apiLoadMore; });
+
+  // Preserve the viewport scroll when the product list grows by append. If a
+  // parent re-render happens to reset the scroll (route params, react-router
+  // navigation, layout shift…), we lock the user back to where they were.
+  const savedScrollRef = useRef<number | null>(null);
+  const prevLoadingMoreRef = useRef(false);
+  useLayoutEffect(() => {
+    if (loadingMore && !prevLoadingMoreRef.current) {
+      savedScrollRef.current = window.scrollY;
+    } else if (!loadingMore && prevLoadingMoreRef.current && savedScrollRef.current !== null) {
+      const target = savedScrollRef.current;
+      savedScrollRef.current = null;
+      // Run after paint so the new rows are in the DOM.
+      requestAnimationFrame(() => window.scrollTo({ top: target, behavior: "instant" as ScrollBehavior }));
+    }
+    prevLoadingMoreRef.current = loadingMore;
+  }, [loadingMore]);
 
   const sentinelRef = useCallback((node: HTMLDivElement | null) => {
     if (observerRef.current) {
@@ -254,12 +281,28 @@ export function Home() {
       case "price-high": list.sort((a, b) => b.price - a.price); break;
       case "rating": list.sort((a, b) => b.rating - a.rating); break;
       case "name": list.sort((a, b) => a.name.localeCompare(b.name)); break;
-      default: break;
+      default:
+        // "featured": shuffle deterministically per session so each visit
+        // sees a fresh order but the order stays stable while browsing.
+        list = seededShuffle(list, getSessionShuffleSeed());
+        break;
+    }
+
+    // On the landing (no filters/search), prepend the user's recently-viewed
+    // products so they can jump back to what they were looking at.
+    const isLandingView =
+      selectedCategory === "Todos" && !selectedSubcat && !selectedBrand &&
+      !selectedAttr && !searchQuery && !soloOfertas &&
+      Object.keys(variantValues).length === 0 && selectedKeywords.length === 0;
+    if (isLandingView && sortBy === "featured" && recentlyViewed.length > 0) {
+      const viewedIds = new Set(recentlyViewed.map((p) => p.id));
+      list = [...recentlyViewed, ...list.filter((p) => !viewedIds.has(p.id))];
     }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
     selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products,
-    campaignDealIds, campaignDeals, variantValues, selectedKeywords, selectedSubcategoryId]);
+    campaignDealIds, campaignDeals, variantValues, selectedKeywords, selectedSubcategoryId,
+    recentlyViewed]);
 
   /* ── Reset filterKey when local filters change ─────────────── */
   useEffect(() => {
@@ -740,7 +783,7 @@ export function Home() {
                     </button>
                   </div>
                 ) : null
-              ) : (!productsLoading || products.length > 0) ? (
+              ) : ((!productsLoading && !productsError) || products.length > 0) ? (
                 filtered.length > 0 ? (
                   <div key={filterKey} className="nx036-grid-enter">
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -849,6 +892,8 @@ export function Home() {
         onSort={setSortBy}
         onReset={() => { handleReset(); setMobileOpen(false); }}
       />
+
+      <BackToTop />
     </div>
   );
 }

@@ -26,7 +26,7 @@ import type { Product } from "../types/product";
 
 import { logger } from "../lib/logger";
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 25;
 
 /* ── Module-level cache ─────────────────────────────────────────
  * Keeps products across Home mount/unmount so pressing «back»
@@ -118,15 +118,22 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
 
             try {
                 logger.debug('[useNexaProducts] fetchPage:', { page, append, categoryId, apiLocale });
+                // sortBy=random gives a fresh shuffled slice on page 0.  For
+                // subsequent pages (loadMore) switch to a deterministic sort
+                // (createdAt desc) so pagination returns consistent batches;
+                // the backend still reports the real total so hasMore works.
+                const isRandomInitial = sortBy === "random" && !append;
+                const effectiveSortBy = append && sortBy === "random" ? "createdAt" : sortBy;
+                const requestedSize = isRandomInitial ? PAGE_SIZE * 2 : PAGE_SIZE;
                 const result = await nexaProductRepository.findMany(
                     {
                         locale: apiLocale,
                         categoryId: categoryId || undefined,
                         name: name || undefined,
-                        sortBy: sortBy || undefined,
+                        sortBy: effectiveSortBy || undefined,
                         ascending,
-                        page,
-                        size: PAGE_SIZE,
+                        page: isRandomInitial ? 0 : page,
+                        size: requestedSize,
                     },
                     signal,
                 );
@@ -143,8 +150,14 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                     } catch (err) { logger.warn("Suppressed error", err); }
                 }
 
-                const mapped = mapNexaProducts(result.content, categoryMapRef.current);
-                const nextHasMore = page < result.totalPages - 1;
+                let mapped = mapNexaProducts(result.content, categoryMapRef.current);
+                // When appending onto a random initial page, drop ids already
+                // in state so the random sample and the sequential pages don't
+                // overlap visibly.
+                if (append && productsRef.current.length > 0) {
+                    const seen = new Set(productsRef.current.map((p) => p.id));
+                    mapped = mapped.filter((p) => !seen.has(p.id));
+                }
 
                 let updatedProducts: Product[];
                 if (append) {
@@ -152,6 +165,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 } else {
                     updatedProducts = mapped;
                 }
+                const nextHasMore = updatedProducts.length < result.totalElements;
                 productsRef.current = updatedProducts;
                 setProducts(updatedProducts);
 
@@ -179,7 +193,6 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 setError(msg);
                 if (!append) {
                     setProducts([]);
-                    setDataSource("mock");
                 }
             } finally {
                 if (!signal?.aborted) {

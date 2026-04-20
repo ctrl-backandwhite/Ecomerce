@@ -148,6 +148,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         init();
     }, []);
 
+    // ── Recover from silent session loss ──────────────────────────────────────
+    // authFetch fires `auth:session-expired` when a 401 comes back and the
+    // refresh token is already dead. Wipe every auth remnant and send the user
+    // through the OAuth2 flow again so they never sit on a broken admin page
+    // piling up 401s with no clue what's happening.
+    useEffect(() => {
+        function handleSessionExpired() {
+            clearTokens();
+            setIsAuthenticated(false);
+            setRoles([]);
+            setUser(null);
+            const current = window.location.pathname + window.location.search;
+            // Only force a login redirect for protected areas. For public
+            // pages (home, product detail…) a silent downgrade to guest is
+            // enough and avoids an annoying redirect loop for logged-out
+            // visitors.
+            if (current.startsWith("/admin") || current.startsWith("/profile")
+                    || current.startsWith("/checkout")) {
+                storeReturnUrl(current);
+                window.location.href = "/";
+            }
+        }
+        window.addEventListener("auth:session-expired", handleSessionExpired);
+        return () => window.removeEventListener("auth:session-expired", handleSessionExpired);
+    }, []);
+
     const login = useCallback(async (returnUrl?: string) => {
         if (returnUrl) storeReturnUrl(returnUrl);
 

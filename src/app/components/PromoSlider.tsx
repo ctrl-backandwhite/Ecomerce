@@ -60,17 +60,17 @@ interface PromoSliderProps {
 }
 
 export function PromoSlider({ onCtaClick }: PromoSliderProps) {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [promos, setPromos] = useState<Promo[]>([]);
   const [current, setCurrent] = useState(0);
   const [contentVisible, setContentVisible] = useState(true);
   const locked = useRef(false);
 
-  /* ── Load active slides from API ── */
+  /* ── Load active slides from API (refetch on locale change) ── */
   useEffect(() => {
     let cancelled = false;
     slideRepository
-      .findActive()
+      .findActive(locale)
       .then((slides) => {
         if (!cancelled && slides.length > 0) {
           setPromos(slides.map((s, i) => slideToPromo(s, i, t)));
@@ -79,7 +79,7 @@ export function PromoSlider({ onCtaClick }: PromoSliderProps) {
       })
       .catch(() => { /* no slides available */ });
     return () => { cancelled = true; };
-  }, [t]);
+  }, [t, locale]);
 
   const goTo = useCallback((index: number) => {
     if (locked.current) return;

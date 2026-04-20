@@ -82,10 +82,12 @@ export function useFlashDeals(): UseFlashDealsResult {
     const [loading, setLoading] = useState(!hasCached);
     const fetchedRef = useRef(false);
 
-    // Reset fetchedRef when currency changes so we re-fetch
+    // Reset fetchedRef when currency or locale changes so we re-fetch
     const prevCurrencyRef = useRef(currencyCode);
-    if (prevCurrencyRef.current !== currencyCode) {
+    const prevLocaleRef = useRef(apiLocale);
+    if (prevCurrencyRef.current !== currencyCode || prevLocaleRef.current !== apiLocale) {
         prevCurrencyRef.current = currencyCode;
+        prevLocaleRef.current = apiLocale;
         fetchedRef.current = false;
         _cachedDeals = null;
     }
@@ -104,7 +106,7 @@ export function useFlashDeals(): UseFlashDealsResult {
                         { locale: apiLocale, page: 0, size: 100 },
                         controller.signal,
                     ),
-                    campaignRepository.findActive(),
+                    campaignRepository.findActive(apiLocale),
                 ]);
                 if (controller.signal.aborted) return;
 
