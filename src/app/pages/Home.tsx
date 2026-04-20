@@ -20,6 +20,7 @@ import { CategoryPageHeader } from "../components/CategoryPageHeader";
 import { SiblingCategoriesRow } from "../components/SiblingCategoriesRow";
 import { HomeSidebar } from "../components/HomeSidebar";
 import { MobileFilterDrawer } from "../components/MobileFilterDrawer";
+import { BackToTop } from "../components/BackToTop";
 import { usePriceRanges } from "../hooks/usePriceRanges";
 import { useFlashDeals } from "../hooks/useFlashDeals";
 import { ATTR_MATCH, CATEGORY_ATTR_FILTERS } from "../config/filters";
@@ -891,6 +892,8 @@ export function Home() {
         onSort={setSortBy}
         onReset={() => { handleReset(); setMobileOpen(false); }}
       />
+
+      <BackToTop />
     </div>
   );
 }
