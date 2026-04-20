@@ -1248,8 +1248,8 @@ export function ProductDetail() {
           productCategory={product.category}
         />
 
-        {/* Personalised suggestions — horizontal strip */}
-        <ProductSuggestions limit={10} variant="strip" />
+        {/* Personalised suggestions — compact horizontal rail */}
+        <ProductSuggestions limit={12} />
 
       </div>
 

@@ -297,7 +297,11 @@ export function Home() {
       Object.keys(variantValues).length === 0 && selectedKeywords.length === 0;
     if (isLandingView && sortBy === "featured" && recentlyViewed.length > 0) {
       const viewedIds = new Set(recentlyViewed.map((p) => p.id));
-      list = [...recentlyViewed, ...list.filter((p) => !viewedIds.has(p.id))];
+      // Strip stale originalPrice on the prepended history items: pricing
+      // captured during an old campaign shouldn't show up as a discount
+      // badge when that campaign is long gone.
+      const cleanViewed = recentlyViewed.map((p) => ({ ...p, originalPrice: undefined }));
+      list = [...cleanViewed, ...list.filter((p) => !viewedIds.has(p.id))];
     }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
