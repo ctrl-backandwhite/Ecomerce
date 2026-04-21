@@ -105,13 +105,16 @@ export function Checkout() {
 
     /* ── Step validation ── */
     const step1Valid = !!(state.contact.email && state.contact.phone);
-    const step2Valid = state.selectedAddrId !== "new"
+    const addressProvided = state.selectedAddrId !== "new"
         ? !!selectedAddr
         : state.newMode === "home"
             ? !!(state.manualAddr.name && state.manualAddr.street && state.manualAddr.city)
             : state.newMode === "store"
                 ? !!state.selectedStoreId
                 : !!state.selectedPickupId;
+    // Block step 2 when CJ replied that the country is not on the allowlist —
+    // paying would create a customer charge we cannot fulfil.
+    const step2Valid = addressProvided && !state.cjCountryBlocked;
     const step3Valid = total === 0
         ? true
         : state.selectedPmId !== "new"

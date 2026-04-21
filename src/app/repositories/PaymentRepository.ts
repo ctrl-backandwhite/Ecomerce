@@ -81,7 +81,14 @@ class PaymentRepository {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),
             });
-            return handleRes<Payment>(res);
+            const payment = await handleRes<Payment>(res);
+            // Defensive: if the backend ever returns 200 with a FAILED
+            // payment (older deployments), surface it as an error so the
+            // checkout stops before calling confirmOrder.
+            if (payment?.status === "FAILED") {
+                throw new Error("Gateway rejected the payment");
+            }
+            return payment;
         } catch (err) { wrapErr(err, "No se pudo procesar el pago"); }
     }
 

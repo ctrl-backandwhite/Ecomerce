@@ -5,11 +5,14 @@
  * Strategy (cheap and explainable):
  *   1. Look at the last N products the user opened (RecentlyViewedContext
  *      already keeps up to 8 in localStorage).
- *   2. Count how many times each categoryId shows up.
- *   3. For the top 2 categories by frequency, fetch a random sample from
- *      the backend (`/public/products?categoryId=X&sortBy=random`).
- *   4. Drop anything the user already viewed and merge results, preserving
- *      the order (top category first).
+ *   2. Count how many times each categoryId shows up; keep the top K
+ *      categories ordered by frequency.
+ *   3. Fetch a random sample per category in parallel.
+ *   4. Interleave the results in round-robin order (one from cat1, one from
+ *      cat2, one from cat3, …, then back to cat1) so the rail never shows
+ *      only one type of product. The most-viewed category still starts the
+ *      rotation.
+ *   5. Drop anything the user already viewed.
  *
  * Stays 100% on the frontend — no new backend tables, no server-side
  * recommendation job. The backend sees only plain product-by-category
@@ -31,8 +34,8 @@ interface UseProductSuggestionsResult {
     basedOn: string[];
 }
 
-const MAX_TOP_CATEGORIES = 2;
-const PER_CATEGORY = 10;
+/** How many of the user's top categories to pull from. */
+const MAX_TOP_CATEGORIES = 4;
 
 export function useProductSuggestions(limit = 12): UseProductSuggestionsResult {
     const { viewed } = useRecentlyViewed();
@@ -72,6 +75,10 @@ export function useProductSuggestions(limit = 12): UseProductSuggestionsResult {
             return;
         }
 
+        // Fetch a small buffer per category so round-robin interleaving has
+        // room to skip already-viewed products without running out of picks.
+        const perCategory = Math.max(3, Math.ceil(limit / topCategories.length) + 2);
+
         let cancelled = false;
         setLoading(true);
         setBasedOn(topCategories.map(([, v]) => v.name).filter(Boolean));
@@ -82,7 +89,7 @@ export function useProductSuggestions(limit = 12): UseProductSuggestionsResult {
                     .findMany({
                         locale: apiLocale,
                         categoryId: catId,
-                        size: PER_CATEGORY,
+                        size: perCategory,
                         sortBy: "random",
                     })
                     .catch((err) => {
@@ -93,15 +100,27 @@ export function useProductSuggestions(limit = 12): UseProductSuggestionsResult {
         )
             .then((results) => {
                 if (cancelled) return;
+                const buckets: Product[][] = results.map((r) =>
+                    (r.content ?? []).map((raw) => mapNexaProduct(raw as never)),
+                );
                 const seen = new Set(viewed.map((v) => v.id));
                 const merged: Product[] = [];
-                for (const result of results) {
-                    for (const raw of result.content ?? []) {
-                        const product = mapNexaProduct(raw as never);
-                        if (!seen.has(product.id) && merged.length < limit) {
-                            seen.add(product.id);
-                            merged.push(product);
+                // Round-robin interleave: pick one from each bucket in turn
+                // until we hit the limit or all buckets are empty.
+                let exhausted = false;
+                while (merged.length < limit && !exhausted) {
+                    exhausted = true;
+                    for (const bucket of buckets) {
+                        while (bucket.length > 0) {
+                            const next = bucket.shift()!;
+                            if (!seen.has(next.id)) {
+                                seen.add(next.id);
+                                merged.push(next);
+                                exhausted = false;
+                                break;
+                            }
                         }
+                        if (merged.length >= limit) break;
                     }
                 }
                 setSuggestions(merged);

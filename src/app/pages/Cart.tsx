@@ -3,6 +3,7 @@ import { useCart } from "../context/CartContext";
 import { useUser } from "../context/UserContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { useTimezone } from "../context/TimezoneContext";
+import { useLanguage } from "../context/LanguageContext";
 import { taxRepository, type TaxCalculation } from "../repositories/TaxRepository";
 import { shippingRepository } from "../repositories/ShippingRepository";
 import { resolveCountryCode } from "../utils/resolveCountryCode";
@@ -16,6 +17,7 @@ export function Cart() {
   const { user, toggleFavorite, isFavorite } = useUser();
   const { formatPrice, convertFromUsd } = useCurrency();
   const { selectedCountry, countries } = useTimezone();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   // ── Tax country: prefer default shipping address (same as checkout) ─────
@@ -92,13 +94,13 @@ export function Cart() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center px-4">
           <ShoppingBag className="w-24 h-24 mx-auto text-gray-300 mb-6" />
-          <h2 className="text-3xl font-bold mb-4">Tu carrito está vacío</h2>
+          <h2 className="text-3xl font-bold mb-4">{t("cart.empty.title")}</h2>
           <p className="text-gray-600 mb-8">
-            ¡Agrega algunos productos increíbles a tu carrito!
+            {t("cart.empty.subtitle")}
           </p>
           <Link to="/">
             <Button size="lg">
-              Explorar Productos
+              {t("cart.empty.cta")}
               <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
           </Link>
@@ -110,7 +112,7 @@ export function Cart() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-xl tracking-tight mb-6">Carrito de Compras</h1>
+        <h1 className="text-xl tracking-tight mb-6">{t("cart.title")}</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Cart items */}
@@ -160,7 +162,7 @@ export function Cart() {
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <button
-                          title={isFavorite(item.productId ?? item.id) ? "Quitar de favoritos" : "Mover a favoritos"}
+                          title={isFavorite(item.productId ?? item.id) ? t("cart.removeFav") : t("cart.moveToFav")}
                           onClick={async () => {
                             const wasAlreadyFavorite = isFavorite(item.productId ?? item.id);
                             await toggleFavorite(item.productId ?? item.id);
@@ -181,7 +183,7 @@ export function Cart() {
                         </button>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          title="Eliminar del carrito"
+                          title={t("cart.remove")}
                           className="w-8 h-8 rounded-full border border-gray-200 hover:border-red-300 bg-white hover:bg-red-50 flex items-center justify-center transition-all"
                         >
                           <Trash2 className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" strokeWidth={1.5} />
@@ -193,7 +195,7 @@ export function Cart() {
                       {/* Quantity */}
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-600 mr-2">
-                          Cantidad:
+                          {t("cart.quantity")}
                         </span>
                         <Button
                           variant="outline"
@@ -229,7 +231,7 @@ export function Cart() {
                           {formatPrice(item.price * item.quantity)}
                         </p>
                         <p className="text-xs text-gray-400">
-                          {formatPrice(item.price)} c/u
+                          {formatPrice(item.price)} {t("cart.each")}
                         </p>
                       </div>
                     </div>
@@ -242,23 +244,23 @@ export function Cart() {
           {/* Order summary */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg p-6 shadow-sm sticky top-24">
-              <h2 className="text-sm tracking-widest uppercase text-gray-400 mb-5">Resumen del Pedido</h2>
+              <h2 className="text-sm tracking-widest uppercase text-gray-400 mb-5">{t("cart.summary")}</h2>
 
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-gray-600">
-                  <span>Subtotal</span>
+                  <span>{t("cart.subtotal")}</span>
                   <span>{formatPrice(displaySubtotal)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>Envío</span>
-                  <span>Calculado en el checkout</span>
+                  <span>{t("cart.shipping")}</span>
+                  <span>{t("cart.shipping.calc")}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
-                  <span>Impuestos ({taxCountryLabel}){taxLoading ? " …" : " (est.)"}</span>
+                  <span>{t("cart.taxes")} ({taxCountryLabel}){taxLoading ? " …" : ` ${t("cart.taxes.est")}`}</span>
                   <span>{displayTax > 0 ? formatPrice(displayTax) : formatPrice(0)}</span>
                 </div>
                 <div className="border-t pt-3 flex justify-between items-center">
-                  <span className="text-sm text-gray-900">Total estimado</span>
+                  <span className="text-sm text-gray-900">{t("cart.total")}</span>
                   <span className="text-lg text-gray-900">
                     {formatPrice(displayTotal)}
                   </span>
@@ -270,8 +272,7 @@ export function Cart() {
                 return displaySubtotal < freeAboveLocal ? (
                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
                   <p>
-                    ¡Agrega {formatPrice(freeAboveLocal - displaySubtotal)} más para posible envío
-                    gratis!
+                    {t("cart.addMoreFreeShipping").replace("{amount}", formatPrice(freeAboveLocal - displaySubtotal))}
                   </p>
                 </div>
                 ) : null;
@@ -282,20 +283,20 @@ export function Cart() {
                 className="w-full mb-3"
                 onClick={() => navigate("/checkout")}
               >
-                Proceder al Pago
+                {t("cart.checkout")}
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
 
               <Link to="/">
                 <Button variant="outline" size="lg" className="w-full">
-                  Continuar Comprando
+                  {t("cart.continue")}
                 </Button>
               </Link>
 
               <div className="mt-6 pt-6 border-t text-sm text-gray-600 space-y-2">
-                <p>✓ Compra 100% segura</p>
-                <p>✓ Devoluciones gratuitas en 30 días</p>
-                <p>✓ Garantía de satisfacción</p>
+                <p>{t("cart.trust.secure")}</p>
+                <p>{t("cart.trust.returns")}</p>
+                <p>{t("cart.trust.warranty")}</p>
               </div>
             </div>
           </div>

@@ -87,9 +87,18 @@ export interface CheckoutState {
     copiedAddr: boolean;
     savedCardCvv: string;
     pmDropdownOpen: boolean;
+    /** When true, the new payment method entered at checkout will be persisted
+     *  to the user's profile after a successful order. */
+    saveNewPaymentMethod: boolean;
     shippingOptions: ShippingOption[];
     selectedShippingId: string | null;
     shippingLoading: boolean;
+    /** Set when CJ responds 422 — destination country is not in the allowlist. */
+    cjCountryBlocked: boolean;
+    /** ISO code that came back blocked, for UI messaging. */
+    cjBlockedCountry: string | null;
+    /** Set when the CJ quote endpoint fails for any other reason (network, 5xx). */
+    cjQuoteError: string | null;
     taxCalc: TaxCalculation | null;
     taxLoading: boolean;
     couponCode: string;

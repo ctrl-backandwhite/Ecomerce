@@ -79,6 +79,7 @@ export interface AdminProduct {
     listedNum: number;
     warehouseInventoryNum: number;
     isVideo: boolean;
+    warrantyId?: string | null;
     createdAt: string;
     updatedAt: string | null;
     translations: ProductTranslation[];
@@ -119,6 +120,7 @@ export interface ProductPayload {
     listedNum?: number;
     warehouseInventoryNum?: number;
     isVideo?: boolean;
+    warrantyId?: string | null;
     translations: { locale: string; name: string }[];
 }
 

@@ -11,6 +11,7 @@ import { StepBadge, Section } from "./StepIndicator";
 import { MOCK_USDT_ADDRESS, MOCK_BTC_ADDRESS } from "../types";
 import type { CheckoutState, CheckoutAction } from "../types";
 import type { UserProfile, PaymentMethod } from "../../../context/UserContext";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface PaymentStepProps {
     state: CheckoutState;
@@ -42,6 +43,7 @@ export function PaymentStep({
     state, dispatch, user, step3Valid, total, btcRate, isProcessing,
     paymentSummaryLabel, handleSubmit,
 }: PaymentStepProps) {
+    const { t } = useLanguage();
     const { formatPrice } = useCurrency();
     const { step, selectedPmId, payMethod, payment, paypalEmail, savedCardCvv, pmDropdownOpen, copiedAddr } = state;
 
@@ -64,7 +66,7 @@ export function PaymentStep({
             >
                 <StepBadge n={3} active={step === 3} done={false} />
                 <div className="flex-1">
-                    <p className="text-sm text-gray-900">Pago</p>
+                    <p className="text-sm text-gray-900">{t("checkout.payment.title") || "Pago"}</p>
                     {step !== 3 && paymentSummaryLabel && (
                         <p className="text-xs text-gray-400 mt-0.5">{paymentSummaryLabel}</p>
                     )}
@@ -82,8 +84,8 @@ export function PaymentStep({
                                     <Gift className="w-4 h-4 text-green-600" strokeWidth={1.5} />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-green-800">El total está completamente cubierto</p>
-                                    <p className="text-xs text-green-600 mt-0.5">No se requiere método de pago adicional</p>
+                                    <p className="text-sm text-green-800">{t("checkout.payment.fullyCovered") || "El total está completamente cubierto"}</p>
+                                    <p className="text-xs text-green-600 mt-0.5">{t("checkout.payment.fullyCoveredSub") || "No se requiere método de pago adicional"}</p>
                                 </div>
                             </div>
 
@@ -111,7 +113,7 @@ export function PaymentStep({
                     ) : (
                         <div className="pt-5 space-y-3">
 
-                            <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Método de pago</p>
+                            <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">{t("checkout.payment.method") || "Método de pago"}</p>
 
                             {/* ── Saved method dropdown ── */}
                             {user.paymentMethods.length > 0 && selectedPmId !== "new" && selectedPm && (
@@ -128,7 +130,7 @@ export function PaymentStep({
                                                 <p className="text-xs text-gray-400 truncate">{pmDetailLabel(selectedPm)}</p>
                                             </div>
                                             {selectedPm.isDefault && (
-                                                <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex-shrink-0">Predeterminado</span>
+                                                <span className="text-[10px] text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t("checkout.payment.default") || "Predeterminado"}</span>
                                             )}
                                             <ChevronDown className={`w-4 h-4 text-gray-400 flex-shrink-0 transition-transform ${pmDropdownOpen ? "rotate-180" : ""}`} strokeWidth={1.5} />
                                         </button>
@@ -158,7 +160,7 @@ export function PaymentStep({
                                                     <div className="w-[18px] h-[18px] rounded flex items-center justify-center bg-gray-100 flex-shrink-0">
                                                         <Plus className="w-3 h-3 text-gray-500" strokeWidth={2} />
                                                     </div>
-                                                    <p className="text-sm text-gray-600">Usar otro método de pago</p>
+                                                    <p className="text-sm text-gray-600">{t("checkout.payment.useOther") || "Usar otro método de pago"}</p>
                                                 </button>
                                             </div>
                                         )}
@@ -240,7 +242,7 @@ export function PaymentStep({
                                             {payMethod === "card" && (
                                                 <div className="space-y-4">
                                                     <div className="flex items-center gap-3 px-4 py-2.5 bg-gray-50 rounded-xl border border-gray-100">
-                                                        <span className="text-[11px] text-gray-400 flex-shrink-0">Aceptamos:</span>
+                                                        <span className="text-[11px] text-gray-400 flex-shrink-0">{t("checkout.payment.weAccept") || "Aceptamos:"}</span>
                                                         <VisaLogo size={18} />
                                                         <MastercardLogo size={22} />
                                                         <span className="ml-auto">
@@ -249,7 +251,7 @@ export function PaymentStep({
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-xs text-gray-400 mb-1.5">Número de tarjeta</label>
+                                                        <label className="block text-xs text-gray-400 mb-1.5">{t("checkout.payment.cardNumber") || "Número de tarjeta"}</label>
                                                         <div className="relative">
                                                             <input
                                                                 value={payment.cardNumber}
@@ -270,7 +272,7 @@ export function PaymentStep({
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-xs text-gray-400 mb-1.5">Nombre en la tarjeta</label>
+                                                        <label className="block text-xs text-gray-400 mb-1.5">{t("checkout.payment.cardName") || "Nombre en la tarjeta"}</label>
                                                         <input
                                                             value={payment.cardName}
                                                             onChange={(e) => dispatch({ type: "SET_PAYMENT", payload: { cardName: e.target.value.toUpperCase() } })}
@@ -281,7 +283,7 @@ export function PaymentStep({
 
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
-                                                            <label className="block text-xs text-gray-400 mb-1.5">Vencimiento</label>
+                                                            <label className="block text-xs text-gray-400 mb-1.5">{t("checkout.payment.expiry") || "Vencimiento"}</label>
                                                             <input
                                                                 value={payment.expiry}
                                                                 onChange={(e) => {
@@ -310,9 +312,22 @@ export function PaymentStep({
                                                         </div>
                                                     </div>
 
+                                                    <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={state.saveNewPaymentMethod}
+                                                            onChange={(e) => dispatch({ type: "PATCH",
+                                                                payload: { saveNewPaymentMethod: e.target.checked } })}
+                                                            className="w-3.5 h-3.5 accent-gray-700 cursor-pointer"
+                                                        />
+                                                        <span className="text-xs text-gray-600">
+                                                            Guardar esta tarjeta para compras futuras
+                                                        </span>
+                                                    </label>
+
                                                     <div className="flex items-center gap-2 pt-1">
                                                         <Lock className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                                                        <p className="text-xs text-gray-400">Todos tus datos de pago están encriptados y seguros.</p>
+                                                        <p className="text-xs text-gray-400">{t("checkout.payment.secureCard") || "Todos tus datos de pago están encriptados y seguros."}</p>
                                                     </div>
                                                 </div>
                                             )}
@@ -339,9 +354,22 @@ export function PaymentStep({
                                                             placeholder="your@paypal.com"
                                                         />
                                                     </div>
+                                                    <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={state.saveNewPaymentMethod}
+                                                            onChange={(e) => dispatch({ type: "PATCH",
+                                                                payload: { saveNewPaymentMethod: e.target.checked } })}
+                                                            className="w-3.5 h-3.5 accent-gray-700 cursor-pointer"
+                                                        />
+                                                        <span className="text-xs text-gray-600">
+                                                            Guardar esta cuenta PayPal para compras futuras
+                                                        </span>
+                                                    </label>
+
                                                     <div className="flex items-center gap-2 pt-1">
                                                         <Shield className="w-3.5 h-3.5 text-[#179BD7] flex-shrink-0" strokeWidth={1.5} />
-                                                        <p className="text-xs text-gray-400">PayPal protege tus datos bancarios con cifrado de extremo a extremo.</p>
+                                                        <p className="text-xs text-gray-400">{t("checkout.payment.securePaypal") || "PayPal protege tus datos bancarios con cifrado de extremo a extremo."}</p>
                                                     </div>
                                                 </div>
                                             )}
@@ -357,7 +385,7 @@ export function PaymentStep({
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-xs text-gray-400 mb-1.5">Red de pago</label>
+                                                        <label className="block text-xs text-gray-400 mb-1.5">{t("checkout.payment.network") || "Red de pago"}</label>
                                                         <div className="flex gap-2 flex-wrap">
                                                             {[
                                                                 { label: "TRC-20 (TRON)", active: true },
@@ -379,12 +407,12 @@ export function PaymentStep({
                                                     </div>
 
                                                     <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                        <span className="text-xs text-gray-400">Importe exacto a enviar</span>
+                                                        <span className="text-xs text-gray-400">{t("checkout.payment.exactAmount") || "Importe exacto a enviar"}</span>
                                                         <span className="text-sm text-gray-900 font-mono">{total.toFixed(2)} USDT</span>
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-xs text-gray-400 mb-1.5">Dirección de wallet USDT (TRC-20)</label>
+                                                        <label className="block text-xs text-gray-400 mb-1.5">{t("checkout.payment.usdtAddress") || "Dirección de wallet USDT (TRC-20)"}</label>
                                                         <div className="flex gap-2">
                                                             <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
                                                                 <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_USDT_ADDRESS}</span>
@@ -423,7 +451,7 @@ export function PaymentStep({
                                                     </div>
 
                                                     <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
-                                                        <span className="text-xs text-gray-400">Importe exacto a enviar</span>
+                                                        <span className="text-xs text-gray-400">{t("checkout.payment.exactAmount") || "Importe exacto a enviar"}</span>
                                                         <div className="text-right">
                                                             <p className="text-sm text-gray-900 font-mono">{(total / btcRate).toFixed(6)} BTC</p>
                                                             <p className="text-[11px] text-gray-400">≈ ${total.toFixed(2)} USD · 1 BTC ≈ ${btcRate.toLocaleString()}</p>
@@ -431,7 +459,7 @@ export function PaymentStep({
                                                     </div>
 
                                                     <div>
-                                                        <label className="block text-xs text-gray-400 mb-1.5">Dirección Bitcoin (Native SegWit · bc1q…)</label>
+                                                        <label className="block text-xs text-gray-400 mb-1.5">{t("checkout.payment.btcAddress") || "Dirección Bitcoin (Native SegWit · bc1q…)"}</label>
                                                         <div className="flex gap-2">
                                                             <div className="flex-1 flex items-center px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-lg overflow-hidden">
                                                                 <span className="text-xs text-gray-700 font-mono truncate select-all">{MOCK_BTC_ADDRESS}</span>

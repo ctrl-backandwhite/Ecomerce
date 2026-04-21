@@ -12,6 +12,7 @@ type Order = AdminOrder;
 type Status = OrderStatus;
 
 const STATUS_META: Record<Status, { label: string; dot: string; bg: string; text: string; icon: React.ElementType }> = {
+  DRAFT: { label: "Borrador", dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-700", icon: Clock },
   PENDING: { label: "Pendiente", dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-700", icon: Clock },
   CONFIRMED: { label: "Confirmado", dot: "bg-cyan-400", bg: "bg-cyan-50", text: "text-cyan-700", icon: ThumbsUp },
   PROCESSING: { label: "Procesando", dot: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-700", icon: Package },
@@ -22,10 +23,15 @@ const STATUS_META: Record<Status, { label: string; dot: string; bg: string; text
   REFUNDED: { label: "Reembolsado", dot: "bg-orange-400", bg: "bg-orange-50", text: "text-orange-700", icon: RotateCcw },
 };
 
+const UNKNOWN_STATUS_META = {
+  label: "Desconocido", dot: "bg-gray-300", bg: "bg-gray-50", text: "text-gray-500", icon: Clock,
+} as const;
+
 const STATUS_FLOW: Status[] = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
 
 function StatusBadge({ status }: { status: Status }) {
-  const m = STATUS_META[status];
+  // Fallback for any status the backend introduces that the UI hasn't mapped yet.
+  const m = STATUS_META[status] ?? UNKNOWN_STATUS_META;
   return (
     <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full ${m.bg} ${m.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />

@@ -12,6 +12,7 @@ import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { nexaProductRepository } from "../repositories/NexaProductRepository";
 import { mapNexaProductDetail } from "../mappers/NexaProductMapper";
+import { warrantyRepository, type Warranty } from "../repositories/WarrantyRepository";
 import DOMPurify from "dompurify";
 import {
   Star, ShoppingCart, Heart, Truck, Shield,
@@ -23,12 +24,12 @@ import { ProductCard } from "../components/ProductCard";
 import { toast } from "sonner";
 import type { Product } from "../types/product";
 
-// ── Trust badges data ──────────────────────────────────────────
+// ── Trust badges data (titles/subs resolved at render time via t()) ────────
 const TRUST_BADGES = [
-  { icon: Truck, title: "Envío gratis", sub: "En compras superiores a $100" },
-  { icon: Shield, title: "Garantía de 1 año", sub: "Protección total del producto" },
-  { icon: RefreshCw, title: "Devoluciones gratuitas", sub: "30 días para devolver" },
-  { icon: Award, title: "Producto oficial", sub: "Distribuidor autorizado" },
+  { icon: Truck, titleKey: "pd.trust.freeShipping", subKey: "pd.trust.freeShipping.sub" },
+  { icon: Shield, titleKey: "pd.trust.warranty", subKey: "pd.trust.warranty.sub" },
+  { icon: RefreshCw, titleKey: "pd.trust.returns", subKey: "pd.trust.returns.sub" },
+  { icon: Award, titleKey: "pd.trust.secure", subKey: "pd.trust.secure.sub" },
 ];
 
 // ── Stars helper ──────────────────────────────────────────────
@@ -118,7 +119,8 @@ function ReviewCard({ review, onHelpful }: { review: Review; onHelpful: (id: str
 // ── Star picker ───────────────────────────────────────────────
 function StarPicker({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [hover, setHover] = useState(0);
-  const labels = ["", "Muy malo", "Malo", "Regular", "Bueno", "Excelente"];
+  const { t } = useLanguage();
+  const labels = ["", t("pd.rating.veryBad"), t("pd.rating.bad"), t("pd.rating.regular"), t("pd.rating.good"), t("pd.rating.excellent")];
   return (
     <div className="flex items-center gap-1">
       {[1, 2, 3, 4, 5].map((i) => (
@@ -165,6 +167,7 @@ function ReviewsSection({
   const [newBody, setNewBody] = useState("");
   const [newName, setNewName] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const { t } = useLanguage();
 
   // Load reviews from API on mount (M-10)
   useEffect(() => {
@@ -230,10 +233,10 @@ function ReviewsSection({
   }
 
   function handleSubmit() {
-    if (newRating === 0) { toast.error("Selecciona una valoración"); return; }
-    if (!newTitle.trim()) { toast.error("Escribe un título para tu reseña"); return; }
-    if (newBody.trim().length < 20) { toast.error("La reseña debe tener al menos 20 caracteres"); return; }
-    if (!newName.trim()) { toast.error("Escribe tu nombre"); return; }
+    if (newRating === 0) { toast.error(t("pd.review.selectRating")); return; }
+    if (!newTitle.trim()) { toast.error(t("pd.review.needTitle")); return; }
+    if (newBody.trim().length < 20) { toast.error(t("pd.review.minLength")); return; }
+    if (!newName.trim()) { toast.error(t("pd.review.needName")); return; }
 
     // Submit to API (M-10)
     reviewRepository.create(productId, {
@@ -331,11 +334,11 @@ function ReviewsSection({
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs text-gray-400 mb-1.5">Tu nombre *</label>
-                    <input value={newName} onChange={(e) => setNewName(e.target.value)} className={field} placeholder="Ej: Carlos M." />
+                    <input value={newName} onChange={(e) => setNewName(e.target.value)} className={field} placeholder={t("pd.review.namePlaceholder")} />
                   </div>
                   <div>
                     <label className="block text-xs text-gray-400 mb-1.5">Título *</label>
-                    <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className={field} placeholder="Resumen de tu experiencia" maxLength={80} />
+                    <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className={field} placeholder={t("pd.review.titlePlaceholder")} maxLength={80} />
                   </div>
                 </div>
                 <div>
@@ -346,7 +349,7 @@ function ReviewsSection({
                     value={newBody}
                     onChange={(e) => setNewBody(e.target.value)}
                     className={`${field} h-28 resize-none`}
-                    placeholder="Cuéntanos tu experiencia con el producto..."
+                    placeholder={t("pd.review.bodyPlaceholder")}
                     maxLength={500}
                   />
                 </div>
@@ -442,7 +445,7 @@ function ReviewsSection({
                     : "border-gray-200 text-gray-600 hover:border-gray-300"
                     }`}
                 >
-                  {f === "all" ? "Todas" : `${f} ★`}
+                  {f === "all" ? t("pd.review.all") : `${f} ★`}
                 </button>
               ))}
             </div>
@@ -473,7 +476,7 @@ function ReviewsSection({
               <p className="text-sm text-gray-400">
                 {filter !== "all"
                   ? `No hay reseñas con ${filter} estrellas`
-                  : "Sé el primero en dejar una reseña"}
+                  : t("pd.review.beFirst")}
               </p>
             </div>
           ) : (
@@ -554,7 +557,7 @@ function resolveColor(name: string): string {
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const { products } = useNexaProducts();
-  const { locale } = useLanguage();
+  const { locale, t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
@@ -566,6 +569,18 @@ export function ProductDetail() {
 
   const [product, setProduct] = useState<Product | null | undefined>(undefined);
   const [detailLoading, setDetailLoading] = useState(true);
+  const [warranty, setWarranty] = useState<Warranty | null>(null);
+
+  useEffect(() => {
+    const wid = product?.warrantyId;
+    if (!wid) { setWarranty(null); return; }
+    let cancelled = false;
+    warrantyRepository
+      .findById(wid)
+      .then((w) => { if (!cancelled) setWarranty(w); })
+      .catch(() => { if (!cancelled) setWarranty(null); });
+    return () => { cancelled = true; };
+  }, [product?.warrantyId]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "instant" });
@@ -924,15 +939,15 @@ export function ProductDetail() {
 
             {/* Trust row — under the gallery */}
             <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-2">
-              {TRUST_BADGES.map(({ icon: Icon, title, sub }) => (
+              {TRUST_BADGES.map(({ icon: Icon, titleKey, subKey }) => (
                 <div
-                  key={title}
+                  key={titleKey}
                   className="flex items-center gap-2 bg-white border border-gray-100 rounded-lg px-2.5 py-2"
                 >
                   <Icon className="w-3.5 h-3.5 text-gray-500 flex-shrink-0" strokeWidth={1.5} />
                   <div className="min-w-0">
-                    <p className="text-[10px] text-gray-800 leading-tight truncate">{title}</p>
-                    <p className="text-[9px] text-gray-400 leading-tight truncate">{sub}</p>
+                    <p className="text-[10px] text-gray-800 leading-tight truncate">{t(titleKey)}</p>
+                    <p className="text-[9px] text-gray-400 leading-tight truncate">{t(subKey)}</p>
                   </div>
                 </div>
               ))}
@@ -1115,13 +1130,13 @@ export function ProductDetail() {
                     <>
                       <span className="inline-flex w-2 h-2 rounded-full bg-green-500" />
                       <span className="text-sm text-green-700">
-                        {displayStock < 10 ? `¡Solo quedan ${displayStock}!` : "En stock"}
+                        {displayStock < 10 ? t("pd.onlyLeft").replace("{n}", String(displayStock)) : t("pd.stock")}
                       </span>
                     </>
                   ) : (
                     <>
                       <span className="inline-flex w-2 h-2 rounded-full bg-red-500" />
-                      <span className="text-sm text-red-600">Sin stock</span>
+                      <span className="text-sm text-red-600">{t("pd.outOfStock")}</span>
                     </>
                   )}
                 </div>
@@ -1130,21 +1145,44 @@ export function ProductDetail() {
                 <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2.5 mb-4 space-y-1.5">
                   <div className="flex items-start gap-2 text-xs text-gray-700">
                     <Truck className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                    <span>Envío <span className="text-gray-900 capitalize">{product.shippingClass}</span> disponible</span>
+                    {(() => {
+                      const parts = t("pd.shippingAvailable").split("{class}");
+                      return (
+                        <span>
+                          {parts[0]}
+                          <span className="text-gray-900 capitalize">{product.shippingClass}</span>
+                          {parts[1]}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-start gap-2 text-xs text-gray-700">
                     <RefreshCw className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                    <span>Devolución gratuita en 30 días</span>
+                    <span>{t("pd.freeReturns")}</span>
                   </div>
-                  <div className="flex items-start gap-2 text-xs text-gray-700">
-                    <Shield className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                    <span>Garantía oficial del fabricante</span>
-                  </div>
+                  {warranty ? (
+                    <div className="flex items-start gap-2 text-xs text-gray-700">
+                      <Shield className="w-3.5 h-3.5 text-gray-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
+                      <span>
+                        <span className="text-gray-900">{warranty.name}</span>
+                        <span className="text-gray-500"> · {warranty.durationMonths} meses</span>
+                        {(warranty.includesLabor || warranty.includesParts) && (
+                          <span className="text-gray-400">
+                            {" · "}
+                            {[
+                              warranty.includesLabor ? "mano de obra" : null,
+                              warranty.includesParts ? "repuestos" : null,
+                            ].filter(Boolean).join(" y ")}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+                  ) : null}
                 </div>
 
                 {/* Qty selector */}
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs text-gray-600">Cantidad</label>
+                  <label className="text-xs text-gray-600">{t("pd.quantity")}</label>
                   <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden h-9">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -1171,7 +1209,7 @@ export function ProductDetail() {
                   className="w-full h-11 bg-gray-900 hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2 mb-2 shadow-sm"
                 >
                   <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
-                  Agregar al carrito
+                  {t("pd.addToCart")}
                 </button>
 
                 {/* Secondary CTA — outline variant of the primary */}
@@ -1180,20 +1218,20 @@ export function ProductDetail() {
                   disabled={displayStock === 0}
                   className="w-full h-11 bg-white hover:bg-gray-900 border border-gray-900 disabled:bg-gray-100 disabled:border-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed text-gray-900 hover:text-white text-sm rounded-lg transition-colors flex items-center justify-center gap-2 mb-3"
                 >
-                  Comprar ahora
+                  {t("pd.buyNowBtn")}
                 </button>
 
                 {/* Wishlist & compare row */}
                 <div className="flex items-center justify-center gap-4 text-xs">
                   <button
                     onClick={() => {
-                      if (!isAuthenticated) { toast.error("Inicia sesión para agregar favoritos"); return; }
+                      if (!isAuthenticated) { toast.error(t("pd.fav.loginRequired")); return; }
                       if (product) toggleFavorite(product.id);
                     }}
                     className={`flex items-center gap-1.5 transition-colors ${wishlist ? "text-red-600" : "text-gray-500 hover:text-gray-900"}`}
                   >
                     <Heart className={`w-3.5 h-3.5 ${wishlist ? "fill-red-500 text-red-500" : ""}`} strokeWidth={1.5} />
-                    {wishlist ? "Favorito" : "Añadir a favoritos"}
+                    {wishlist ? t("pd.fav.added") : t("pd.fav.add")}
                   </button>
                 </div>
 
@@ -1201,7 +1239,7 @@ export function ProductDetail() {
                 <div className="border-t border-gray-100 mt-4 pt-4">
                   <p className="text-[11px] text-gray-500 leading-relaxed flex items-start gap-1.5">
                     <Shield className="w-3 h-3 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                    Compra segura: tus datos y pago están protegidos durante toda la transacción.
+                    {t("pd.safeBuy")}
                   </p>
                 </div>
               </div>

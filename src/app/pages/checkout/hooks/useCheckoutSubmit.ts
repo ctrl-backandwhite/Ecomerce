@@ -6,6 +6,8 @@ import { orderRepository } from "../../../repositories/OrderRepository";
 import { paymentRepository } from "../../../repositories/PaymentRepository";
 import { invoiceRepository } from "../../../repositories/InvoiceRepository";
 import { loyaltyRepository } from "../../../repositories/LoyaltyRepository";
+import { cartRepository } from "../../../repositories/CartRepository";
+import { profileRepository } from "../../../repositories/ProfileRepository";
 import { adminGiftCardRepository as giftCardRepository } from "../../../repositories/AdminGiftCardRepository";
 import { logger } from "../../../lib/logger";
 import { toast } from "sonner";
@@ -138,6 +140,48 @@ export function useCheckoutSubmit(
                 ? (giftCardDiscount > 0 ? "GIFT_CARD" : "NONE")
                 : paymentMethodMap[activePmType] ?? "CARD";
 
+            /* 2b ─ Ensure the backend has the same cart we're showing.
+             *
+             * The cart lives locally in CartContext (localStorage + optimistic
+             * backend sync). If guest-merge was skipped at login time the
+             * backend cart may be empty, and `/api/v1/orders/from-cart`
+             * rejects with OR002 "No active cart found for this user/session".
+             *
+             * Strategy: fetch the backend cart. If it matches the local one
+             * (same line count), skip. Otherwise wipe + repopulate so the
+             * backend sees exactly what the user is paying for.
+             */
+            if (items.length > 0) {
+                try {
+                    let backendEmptyOrMismatch = true;
+                    try {
+                        const existing = await cartRepository.getActiveCart();
+                        backendEmptyOrMismatch = !existing?.items || existing.items.length !== items.length;
+                    } catch {
+                        // 404 / no active cart → treat as empty, will populate below
+                        backendEmptyOrMismatch = true;
+                    }
+
+                    if (backendEmptyOrMismatch) {
+                        try { await cartRepository.clearCart(); } catch (err) { logger.warn("Suppressed error", err); }
+                        for (const it of items) {
+                            await cartRepository.addItem({
+                                productId: it.productId ?? it.id,
+                                variantId: it.variantId,
+                                quantity: it.quantity,
+                                unitPrice: it.price,
+                                productName: it.name,
+                                productImage: it.image,
+                                selectedAttrs: it.selectedAttrs,
+                            });
+                        }
+                    }
+                } catch (syncErr) {
+                    logger.warn("[Checkout] cart sync failed before createOrder", syncErr);
+                    // Keep going; createOrder will surface the real error in the toast.
+                }
+            }
+
             /* 3 ─ Create order via backend (DRAFT status — no stock deducted yet) */
             const firstGcCode = gcAmounts.find(a => a.applied > 0)?.code;
             const userCurrency = currency?.currencyCode ?? "USD";
@@ -173,6 +217,62 @@ export function useCheckoutSubmit(
                 } catch (payErr) {
                     try { await orderRepository.cancelOrder(order.id); } catch (err) { logger.warn("Suppressed error", err); }
                     throw payErr;
+                }
+
+                /* 4b ─ Save the new payment method to the user's profile so the
+                 *      next checkout offers it in the saved-methods list.
+                 *      Runs only when the user just typed a new method AND
+                 *      ticked the "save for future" checkbox. Failures are
+                 *      non-fatal — the order is already paid.
+                 */
+                if (selectedPmId === "new" && state.saveNewPaymentMethod) {
+                    try {
+                        if (payMethod === "card" && state.payment.cardNumber) {
+                            const digits = state.payment.cardNumber.replace(/\s/g, "");
+                            const last4 = digits.slice(-4);
+                            const brand = digits.startsWith("4") ? "visa" : "mastercard";
+                            // Dedup: if the user already has a card with the
+                            // same brand + last4, skip — we don't want
+                            // duplicates in the saved-methods dropdown.
+                            const alreadySaved = user.paymentMethods.some(
+                                (pm) => pm.type === "card"
+                                    && pm.cardLast4 === last4
+                                    && (pm.cardBrand ?? "").toLowerCase() === brand,
+                            );
+                            if (!alreadySaved) {
+                                const [mm, yy] = state.payment.expiry.split("/").map((s) => s.trim());
+                                await profileRepository.createPaymentMethod({
+                                    type: "CARD",
+                                    label: `${brand === "visa" ? "Visa" : "Mastercard"} ···· ${last4}`,
+                                    last4,
+                                    brand,
+                                    expiryMonth: parseInt(mm, 10) || undefined,
+                                    expiryYear: yy ? (2000 + parseInt(yy, 10)) : undefined,
+                                    isDefault: user.paymentMethods.length === 0,
+                                });
+                            } else {
+                                logger.debug("[Checkout] card already saved — skipping createPaymentMethod");
+                            }
+                        } else if (payMethod === "paypal" && state.paypalEmail) {
+                            const email = state.paypalEmail.trim().toLowerCase();
+                            const alreadySaved = user.paymentMethods.some(
+                                (pm) => pm.type === "paypal"
+                                    && (pm.paypalEmail ?? "").trim().toLowerCase() === email,
+                            );
+                            if (!alreadySaved) {
+                                await profileRepository.createPaymentMethod({
+                                    type: "PAYPAL",
+                                    label: `PayPal · ${state.paypalEmail}`,
+                                    paypalEmail: state.paypalEmail,
+                                    isDefault: user.paymentMethods.length === 0,
+                                });
+                            } else {
+                                logger.debug("[Checkout] PayPal already saved — skipping createPaymentMethod");
+                            }
+                        }
+                    } catch (saveErr) {
+                        logger.warn("[Checkout] could not persist payment method", saveErr);
+                    }
                 }
             }
 

@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   X, Check, Plus, ChevronDown,
   Package, DollarSign, BarChart2, Image, Truck, Globe,
-  Loader2,
+  Loader2, Shield,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { AdminProduct, ProductPayload } from "../../repositories/NexaProductAdminRepository";
 import type { PagedCategory } from "../../repositories/NexaCategoryPagedRepository";
+import { warrantyRepository, type Warranty } from "../../repositories/WarrantyRepository";
 
 // ── Tabs ─────────────────────────────────────────────────────────────────────
 export const TABS = [
@@ -32,6 +33,7 @@ export interface ProductForm {
   listedNum: number;
   warehouseInventoryNum: number;
   isVideo: boolean;
+  warrantyId: string;
   translations: TranslationRow[];
 }
 
@@ -39,7 +41,7 @@ export interface ProductForm {
 export function makeEmptyForm(): ProductForm {
   return {
     sku: "", categoryId: "", bigImage: "", sellPrice: "", productType: "NORMAL",
-    listedNum: 0, warehouseInventoryNum: 0, isVideo: false,
+    listedNum: 0, warehouseInventoryNum: 0, isVideo: false, warrantyId: "",
     translations: [{ locale: "es", name: "" }],
   };
 }
@@ -54,6 +56,7 @@ export function productToForm(p: AdminProduct): ProductForm {
     listedNum: p.listedNum || 0,
     warehouseInventoryNum: p.warehouseInventoryNum || 0,
     isVideo: p.isVideo || false,
+    warrantyId: p.warrantyId || "",
     translations: p.translations?.length
       ? p.translations.map(t => ({ locale: t.locale, name: t.name }))
       : [{ locale: "es", name: p.name || "" }],
@@ -70,6 +73,7 @@ export function formToPayload(form: ProductForm): ProductPayload {
     listedNum: form.listedNum,
     warehouseInventoryNum: form.warehouseInventoryNum,
     isVideo: form.isVideo,
+    warrantyId: form.warrantyId || null,
     translations: form.translations.filter(t => t.name.trim()),
   };
 }
@@ -88,6 +92,14 @@ export function ProductModal({ product, onSave, onClose, categories, initialForm
     initialForm ? initialForm : product ? productToForm(product) : makeEmptyForm(),
   );
   const [saving, setSaving] = useState(false);
+  const [warranties, setWarranties] = useState<Warranty[]>([]);
+
+  useEffect(() => {
+    warrantyRepository
+      .findAll({ active: true })
+      .then(setWarranties)
+      .catch(() => setWarranties([]));
+  }, []);
 
   const set = <K extends keyof ProductForm>(k: K, v: ProductForm[K]) =>
     setForm(f => ({ ...f, [k]: v }));
@@ -218,6 +230,31 @@ export function ProductModal({ product, onSave, onClose, categories, initialForm
                   </div>
                   <span className="text-xs text-gray-600">Tiene video</span>
                 </label>
+              </div>
+
+              <div>
+                <label className={`${lbl} flex items-center gap-1.5`}>
+                  <Shield className="w-3 h-3 text-gray-400" strokeWidth={1.5} />
+                  Garantía
+                </label>
+                <div className="relative">
+                  <select
+                    value={form.warrantyId}
+                    onChange={e => set("warrantyId", e.target.value)}
+                    className={`${field} appearance-none pr-8`}
+                  >
+                    <option value="">Sin garantía</option>
+                    {warranties.map(w => (
+                      <option key={w.id} value={w.id}>
+                        {w.name} · {w.durationMonths} meses
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" strokeWidth={1.5} />
+                </div>
+                <p className="text-[11px] text-gray-400 mt-1">
+                  La garantía seleccionada se mostrará en la página del producto.
+                </p>
               </div>
             </div>
           )}

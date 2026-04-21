@@ -19,22 +19,31 @@ const BASE_USD = [
 const fmt = (n: number) =>
     n >= 10_000 ? n.toLocaleString("es", { maximumFractionDigits: 0 }) : String(n);
 
+export interface PriceRangeLabels {
+    all: string;
+    upTo: string;
+    moreThan: string;
+}
+
+const DEFAULT_LABELS: PriceRangeLabels = { all: "Todos", upTo: "Hasta", moreThan: "Más de" };
+
 /**
  * Build price-range filter options converted to the given currency.
  * @param rate  Exchange rate vs USD (1 for USD).
  * @param symbol  Currency symbol (e.g. "$", "€", "R$").
+ * @param labels  Locale-aware labels for the "all", "up-to" and "over" buckets.
  */
-export function getPriceRanges(rate = 1, symbol = "$"): PriceRange[] {
+export function getPriceRanges(rate = 1, symbol = "$", labels: PriceRangeLabels = DEFAULT_LABELS): PriceRange[] {
     return BASE_USD.map(({ min, max }) => {
         const cMin = Math.round(min * rate);
         const cMax = max === Infinity ? Infinity : Math.round(max * rate);
 
         if (min === 0 && max === Infinity)
-            return { label: "Todos", min: 0, max: Infinity };
+            return { label: labels.all, min: 0, max: Infinity };
         if (min === 0)
-            return { label: `Hasta ${symbol}${fmt(cMax)}`, min: 0, max: cMax };
+            return { label: `${labels.upTo} ${symbol}${fmt(cMax)}`, min: 0, max: cMax };
         if (max === Infinity)
-            return { label: `Más de ${symbol}${fmt(cMin)}`, min: cMin, max: Infinity };
+            return { label: `${labels.moreThan} ${symbol}${fmt(cMin)}`, min: cMin, max: Infinity };
         return { label: `${symbol}${fmt(cMin)} – ${symbol}${fmt(cMax)}`, min: cMin, max: cMax };
     });
 }

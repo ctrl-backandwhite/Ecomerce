@@ -140,7 +140,19 @@ export function AdminProducts() {
         }
     }
 
-    const lowStock = products.filter(p => p.warehouseInventoryNum > 0 && p.warehouseInventoryNum < 10).length;
+    /**
+     * Effective stock shown in the admin list. The CJ sync currently pushes
+     * `listed_num` (active sellers) but leaves `warehouse_inventory_num` at 0,
+     * which otherwise painted every row as "0 stock". Same fallback used by
+     * `mapNexaProductDetail` on the storefront so both views stay aligned.
+     */
+    const effectiveStock = (p: AdminProduct) =>
+        p.warehouseInventoryNum > 0 ? p.warehouseInventoryNum : (p.listedNum || 0);
+
+    const lowStock = products.filter(p => {
+        const s = effectiveStock(p);
+        return s > 0 && s < 10;
+    }).length;
 
     function handleCloneProduct(p: AdminProduct) {
         const cloned = productToForm(p);
@@ -804,8 +816,8 @@ export function AdminProducts() {
                                             </span>
                                         )}
                                         <Badge
-                                            label={`${p.warehouseInventoryNum}`}
-                                            variant={stockVariant(p.warehouseInventoryNum)}
+                                            label={`${effectiveStock(p)}`}
+                                            variant={stockVariant(effectiveStock(p))}
                                         />
                                         <StatusBadge
                                             status={p.status || "DRAFT"}
@@ -901,7 +913,7 @@ export function AdminProducts() {
                                         </div>
                                         <div className="flex flex-col items-center text-center">
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Stock</p>
-                                            <p className="text-xs text-gray-700">{p.warehouseInventoryNum}</p>
+                                            <p className="text-xs text-gray-700">{effectiveStock(p)}</p>
                                         </div>
                                         <div className="flex flex-col items-center text-center">
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Listados</p>

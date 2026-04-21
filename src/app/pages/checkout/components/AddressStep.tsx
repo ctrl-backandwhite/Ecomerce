@@ -9,6 +9,7 @@ import type { CheckoutState, CheckoutAction, DeliveryType } from "../types";
 import type { UserProfile } from "../../../context/UserContext";
 import type { ShippingOption } from "../../../repositories/ShippingRepository";
 import { useCurrency } from "../../../context/CurrencyContext";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface AddressStepProps {
     state: CheckoutState;
@@ -28,6 +29,7 @@ const newModeTabs: { id: DeliveryType; label: string; icon: React.ReactNode }[] 
 ];
 
 export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary, shippingOptions, selectedShippingId, shippingLoading }: AddressStepProps) {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const { formatPrice, formatFromUsd } = useCurrency();
     const { step, selectedAddrId, newMode, manualAddr, selectedStoreId, selectedPickupId } = state;
@@ -40,7 +42,7 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
             >
                 <StepBadge n={2} active={step === 2} done={step > 2 && !!step2Valid} />
                 <div className="flex-1">
-                    <p className="text-sm text-gray-900">Dirección de entrega</p>
+                    <p className="text-sm text-gray-900">{t("checkout.address.title") || "Dirección de entrega"}</p>
                     {step !== 2 && step2Valid && (
                         <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{deliverySummary}</p>
                     )}
@@ -55,7 +57,7 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                         {/* ── Saved addresses ── */}
                         {user.addresses.length > 0 && (
                             <>
-                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">Mis direcciones guardadas</p>
+                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">{t("checkout.address.saved") || "Mis direcciones guardadas"}</p>
                                 {user.addresses.map((addr) => {
                                     const dt = deliveryMeta[addr.deliveryType ?? "home"];
                                     const isSelected = selectedAddrId === addr.id;
@@ -125,8 +127,8 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                                     <Plus className="w-4 h-4" strokeWidth={1.5} />
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-sm text-gray-700">Usar otra dirección de entrega</p>
-                                    <p className="text-xs text-gray-400">Domicilio, tienda NX036 o punto de entrega</p>
+                                    <p className="text-sm text-gray-700">{t("checkout.address.useOther") || "Usar otra dirección de entrega"}</p>
+                                    <p className="text-xs text-gray-400">{t("checkout.address.useOtherSub") || "Domicilio, tienda NX036 o punto de entrega"}</p>
                                 </div>
                                 <div className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${selectedAddrId === "new" ? "border-gray-500 bg-gray-500" : "border-gray-200"
                                     }`}>
@@ -239,7 +241,7 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                                     {/* Store pickup list */}
                                     {newMode === "store" && (
                                         <div className="space-y-2">
-                                            <p className="text-xs text-gray-400 mb-1">Selecciona tu tienda NX036 más cercana</p>
+                                            <p className="text-xs text-gray-400 mb-1">{t("checkout.address.storePickerHint") || "Selecciona tu tienda NX036 más cercana"}</p>
                                             {storeLocations.map((store) => {
                                                 const isSelected = selectedStoreId === store.id;
                                                 return (
@@ -286,7 +288,7 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                                     {/* Pickup point list */}
                                     {newMode === "pickup" && (
                                         <div className="space-y-2">
-                                            <p className="text-xs text-gray-400 mb-1">Selecciona un punto de entrega o locker cercano</p>
+                                            <p className="text-xs text-gray-400 mb-1">{t("checkout.address.pickupHint") || "Selecciona un punto de entrega o locker cercano"}</p>
                                             {pickupPoints.map((point) => {
                                                 const isSelected = selectedPickupId === point.id;
                                                 return (
@@ -341,14 +343,47 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
 
                     </div>
 
+                    {/* ── CJ country blocked banner ── */}
+                    {step === 2 && state.cjCountryBlocked && state.cjBlockedCountry && (
+                        <div className="pt-5 border-t border-gray-100 mt-5">
+                            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 flex items-start gap-3">
+                                <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5"
+                                    strokeWidth={1.5} />
+                                <div>
+                                    <p className="text-sm text-red-700">
+                                        Lo sentimos — no podemos enviar a <strong>{state.cjBlockedCountry}</strong>
+                                    </p>
+                                    <p className="text-xs text-red-600 mt-1">
+                                        Este destino no está disponible en este momento. Elige otra dirección
+                                        o cambia el país para continuar.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ── CJ service degraded notice ── */}
+                    {step === 2 && state.cjQuoteError && !state.cjCountryBlocked && (
+                        <div className="pt-5 border-t border-gray-100 mt-5">
+                            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 flex items-start gap-3">
+                                <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5"
+                                    strokeWidth={1.5} />
+                                <p className="text-xs text-amber-700">
+                                    Mostrando tarifas estándar. Las opciones en vivo no están disponibles en este
+                                    momento; la tarifa real se confirmará antes de procesar tu pago.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     {/* ── Shipping option selector ── */}
                     {step === 2 && shippingOptions.length > 0 && (
                         <div className="pt-5 border-t border-gray-100 mt-5">
-                            <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">Método de envío</p>
+                            <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">{t("checkout.shipping.method") || "Método de envío"}</p>
                             {shippingLoading ? (
                                 <div className="flex items-center gap-2 py-3">
                                     <div className="w-4 h-4 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" />
-                                    <span className="text-xs text-gray-400">Cargando opciones de envío…</span>
+                                    <span className="text-xs text-gray-400">{t("checkout.shipping.loading") || "Cargando opciones de envío…"}</span>
                                 </div>
                             ) : (
                                 <div className="space-y-2">

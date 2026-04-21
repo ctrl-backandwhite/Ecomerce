@@ -7,6 +7,7 @@ import { LoyaltySection } from "./LoyaltySection";
 import { GiftCardSection } from "./GiftCardSection";
 import { useCurrency } from "../../../context/CurrencyContext";
 import type { CheckoutAction, AppliedGiftCard, MyGiftCard } from "../types";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface OrderSummaryProps {
     items: CartItem[];
@@ -54,6 +55,7 @@ export function OrderSummary({
     deliverySummary, selectedAddrId, newMode,
     dispatch, applyCoupon, applyManualCard,
 }: OrderSummaryProps) {
+    const { t } = useLanguage();
     const { formatPrice } = useCurrency();
 
     /* All amounts are pre-converted to display currency by Checkout.tsx.
@@ -71,7 +73,7 @@ export function OrderSummary({
         <div className="lg:col-span-1">
             <div className="bg-white border border-gray-100 rounded-2xl shadow-sm sticky top-24 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-100">
-                    <h2 className="text-sm text-gray-900">Resumen del pedido</h2>
+                    <h2 className="text-sm text-gray-900">{t("checkout.summary.title") || "Resumen del pedido"}</h2>
                     <p className="text-xs text-gray-400 mt-0.5">{items.length} {items.length === 1 ? "producto" : "productos"}</p>
                 </div>
 

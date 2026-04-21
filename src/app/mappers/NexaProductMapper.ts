@@ -203,6 +203,7 @@ export function mapNexaProduct(
         status: "active",
         visibility: "public",
         featured: false,
+        warrantyId: raw.warrantyId ?? undefined,
         currencyCode: raw.currencyCode,
         currencySymbol: raw.currencySymbol,
     };
@@ -383,6 +384,7 @@ export function mapNexaProductDetail(raw: NexaProductDetail): Product {
         status: "active",
         visibility: "public",
         featured: false,
+        warrantyId: raw.warrantyId ?? undefined,
         currencyCode: raw.currencyCode,
         currencySymbol: raw.currencySymbol,
     };

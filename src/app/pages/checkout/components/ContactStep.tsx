@@ -1,6 +1,7 @@
 import { ChevronRight, Mail, Phone } from "lucide-react";
 import { StepBadge, Section } from "./StepIndicator";
 import type { CheckoutState, CheckoutAction } from "../types";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface ContactStepProps {
     state: CheckoutState;
@@ -9,6 +10,7 @@ interface ContactStepProps {
 }
 
 export function ContactStep({ state, dispatch, step1Valid }: ContactStepProps) {
+    const { t } = useLanguage();
     const { step, contact } = state;
 
     return (
@@ -19,7 +21,7 @@ export function ContactStep({ state, dispatch, step1Valid }: ContactStepProps) {
             >
                 <StepBadge n={1} active={step === 1} done={step > 1 && !!step1Valid} />
                 <div className="flex-1">
-                    <p className="text-sm text-gray-900">Información de contacto</p>
+                    <p className="text-sm text-gray-900">{t("checkout.contact.title") || "Información de contacto"}</p>
                     {step !== 1 && contact.email && (
                         <p className="text-xs text-gray-400 mt-0.5">{contact.email} · {contact.phone}</p>
                     )}
@@ -46,7 +48,7 @@ export function ContactStep({ state, dispatch, step1Valid }: ContactStepProps) {
                         <div>
                             <label className="block text-xs text-gray-400 mb-1.5">
                                 <Phone className="inline w-3 h-3 mr-1" strokeWidth={1.5} />
-                                Teléfono
+                                {t("checkout.contact.phone") || "Teléfono"}
                             </label>
                             <input
                                 type="tel"
@@ -64,7 +66,7 @@ export function ContactStep({ state, dispatch, step1Valid }: ContactStepProps) {
                             className={`inline-flex items-center gap-2 text-sm rounded-xl px-5 py-2.5 transition-colors ${step1Valid ? "bg-gray-200 text-gray-700 hover:bg-gray-300" : "bg-gray-100 text-gray-300 cursor-not-allowed"
                                 }`}
                         >
-                            Continuar
+                            {t("checkout.continue") || "Continuar"}
                             <ChevronRight className="w-4 h-4" strokeWidth={1.5} />
                         </button>
                     </div>

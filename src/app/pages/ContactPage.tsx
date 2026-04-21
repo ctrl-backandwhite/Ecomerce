@@ -1,26 +1,29 @@
 import { useState } from "react";
 import { Mail, Phone, MapPin, Clock, Send, CheckCircle2, MessageSquare, Headphones, FileText } from "lucide-react";
 import { toast } from "sonner";
-
-const channels = [
-  { icon: MessageSquare, title: "Chat en vivo", desc: "Respuesta en menos de 2 min", action: "Iniciar chat", color: "text-blue-600", bg: "bg-blue-50" },
-  { icon: Mail, title: "Email", desc: "Respuesta en menos de 24 h", action: "Enviar email", color: "text-violet-600", bg: "bg-violet-50" },
-  { icon: Headphones, title: "Teléfono", desc: "Lun–Vie 9:00–18:00 CET", action: "Llamar ahora", color: "text-emerald-600", bg: "bg-emerald-50" },
-  { icon: FileText, title: "Centro de ayuda", desc: "Más de 200 artículos", action: "Ver artículos", color: "text-amber-600", bg: "bg-amber-50" },
-];
+import { useLanguage } from "../context/LanguageContext";
 
 export function ContactPage() {
+  const { t } = useLanguage();
+
+  const channels = [
+    { icon: MessageSquare, title: t("contact.channel.chat"), desc: t("contact.channel.chat.desc"), action: t("contact.channel.chat.action"), color: "text-blue-600", bg: "bg-blue-50" },
+    { icon: Mail, title: t("contact.channel.email"), desc: t("contact.channel.email.desc"), action: t("contact.channel.email.action"), color: "text-violet-600", bg: "bg-violet-50" },
+    { icon: Headphones, title: t("contact.channel.phone"), desc: t("contact.channel.phone.desc"), action: t("contact.channel.phone.action"), color: "text-emerald-600", bg: "bg-emerald-50" },
+    { icon: FileText, title: t("contact.channel.help"), desc: t("contact.channel.help.desc"), action: t("contact.channel.help.action"), color: "text-amber-600", bg: "bg-amber-50" },
+  ];
+
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "", type: "consulta" });
   const [sent, setSent] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.message) {
-      toast.error("Por favor completa todos los campos obligatorios");
+      toast.error(t("contact.form.required"));
       return;
     }
     setSent(true);
-    toast.success("Mensaje enviado correctamente");
+    toast.success(t("contact.success"));
   };
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
@@ -31,9 +34,9 @@ export function ContactPage() {
 
       {/* Hero */}
       <section className="border-b border-gray-100 py-14 px-4 text-center">
-        <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Contacto</p>
-        <h1 className="text-4xl text-gray-900 tracking-tight mb-3">¿En qué podemos ayudarte?</h1>
-        <p className="text-sm text-gray-500 max-w-md mx-auto">Estamos aquí para resolver cualquier duda sobre tus pedidos, productos o devoluciones.</p>
+        <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">{t("contact.eyebrow")}</p>
+        <h1 className="text-4xl text-gray-900 tracking-tight mb-3">{t("contact.hero.title")}</h1>
+        <p className="text-sm text-gray-500 max-w-md mx-auto">{t("contact.hero.subtitle")}</p>
       </section>
 
       {/* Channels */}
@@ -60,57 +63,57 @@ export function ContactPage() {
 
           {/* Form */}
           <div>
-            <h2 className="text-lg text-gray-900 tracking-tight mb-6">Envíanos un mensaje</h2>
+            <h2 className="text-lg text-gray-900 tracking-tight mb-6">{t("contact.form.title")}</h2>
             {sent ? (
               <div className="flex flex-col items-center py-16 text-center">
                 <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center mb-4">
                   <CheckCircle2 className="w-7 h-7 text-green-500" strokeWidth={1.5} />
                 </div>
-                <p className="text-sm text-gray-900 mb-2">¡Mensaje enviado!</p>
-                <p className="text-xs text-gray-400 mb-5">Te respondemos en menos de 24 horas.</p>
+                <p className="text-sm text-gray-900 mb-2">{t("contact.form.sent.title")}</p>
+                <p className="text-xs text-gray-400 mb-5">{t("contact.form.sent.subtitle")}</p>
                 <button onClick={() => setSent(false)} className="text-xs text-gray-500 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors">
-                  Nuevo mensaje
+                  {t("contact.form.sent.new")}
                 </button>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Nombre *</label>
-                    <input value={form.name} onChange={set("name")} placeholder="Tu nombre"
+                    <label className="block text-xs text-gray-400 mb-1.5">{t("contact.form.name")}</label>
+                    <input value={form.name} onChange={set("name")} placeholder={t("contact.placeholder.name")}
                       className="w-full h-9 px-3 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 placeholder-gray-300" />
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Email *</label>
-                    <input type="email" value={form.email} onChange={set("email")} placeholder="tu@email.com"
+                    <label className="block text-xs text-gray-400 mb-1.5">{t("contact.form.email")}</label>
+                    <input type="email" value={form.email} onChange={set("email")} placeholder={t("contact.placeholder.email")}
                       className="w-full h-9 px-3 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 placeholder-gray-300" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">Tipo de consulta</label>
+                  <label className="block text-xs text-gray-400 mb-1.5">{t("contact.form.type")}</label>
                   <select value={form.type} onChange={set("type")}
                     className="w-full h-9 px-3 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 bg-white">
-                    <option value="consulta">Consulta general</option>
-                    <option value="pedido">Sobre mi pedido</option>
-                    <option value="devolucion">Devolución / garantía</option>
-                    <option value="factura">Facturación</option>
-                    <option value="tecnico">Soporte técnico</option>
-                    <option value="otro">Otro</option>
+                    <option value="consulta">{t("contact.form.type.general")}</option>
+                    <option value="pedido">{t("contact.form.type.order")}</option>
+                    <option value="devolucion">{t("contact.form.type.return")}</option>
+                    <option value="factura">{t("contact.form.type.billing")}</option>
+                    <option value="tecnico">{t("contact.form.type.technical")}</option>
+                    <option value="otro">{t("contact.form.type.other")}</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">Asunto</label>
-                  <input value={form.subject} onChange={set("subject")} placeholder="Breve descripción del tema"
+                  <label className="block text-xs text-gray-400 mb-1.5">{t("contact.form.subject")}</label>
+                  <input value={form.subject} onChange={set("subject")} placeholder={t("contact.form.subjectPlaceholder")}
                     className="w-full h-9 px-3 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 placeholder-gray-300" />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">Mensaje *</label>
-                  <textarea value={form.message} onChange={set("message")} rows={5} placeholder="Cuéntanos en qué podemos ayudarte…"
+                  <label className="block text-xs text-gray-400 mb-1.5">{t("contact.form.message")}</label>
+                  <textarea value={form.message} onChange={set("message")} rows={5} placeholder={t("contact.form.messagePlaceholder")}
                     className="w-full px-3 py-2.5 text-xs text-gray-900 border border-gray-200 rounded-lg focus:outline-none focus:border-gray-400 placeholder-gray-300 resize-none" />
                 </div>
                 <button type="submit"
                   className="flex items-center gap-2 h-9 px-6 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">
-                  <Send className="w-3.5 h-3.5" /> Enviar mensaje
+                  <Send className="w-3.5 h-3.5" /> {t("contact.send")}
                 </button>
               </form>
             )}
@@ -119,13 +122,13 @@ export function ContactPage() {
           {/* Info */}
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg text-gray-900 tracking-tight mb-5">Información de contacto</h2>
+              <h2 className="text-lg text-gray-900 tracking-tight mb-5">{t("contact.info.title")}</h2>
               <div className="space-y-4">
                 {[
-                  { icon: MapPin, title: "Dirección", value: "Calle Principal 123, Madrid 28001, España" },
-                  { icon: Phone, title: "Teléfono", value: "+34 91 234 56 78" },
-                  { icon: Mail, title: "Email", value: "info@nx036.com" },
-                  { icon: Clock, title: "Horario", value: "Lun–Vie 9:00–18:00 CET · Sab 10:00–14:00" },
+                  { icon: MapPin, title: t("contact.info.address"), value: t("contact.info.addressValue") },
+                  { icon: Phone, title: t("contact.info.phone"), value: "+34 91 234 56 78" },
+                  { icon: Mail, title: t("contact.info.email"), value: "info@nx036.com" },
+                  { icon: Clock, title: t("contact.info.hours"), value: t("contact.info.hoursValue") },
                 ].map(i => (
                   <div key={i.title} className="flex items-start gap-3">
                     <div className="w-8 h-8 rounded-lg bg-gray-50 border border-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -144,13 +147,13 @@ export function ContactPage() {
             <div className="rounded-2xl bg-gray-100 border border-gray-100 h-44 flex items-center justify-center">
               <div className="text-center">
                 <MapPin className="w-6 h-6 text-gray-300 mx-auto mb-2" strokeWidth={1} />
-                <p className="text-xs text-gray-400">Mapa — Madrid, España</p>
+                <p className="text-xs text-gray-400">{t("contact.map.label")}</p>
               </div>
             </div>
 
             {/* Social */}
             <div>
-              <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">Síguenos</p>
+              <p className="text-xs text-gray-400 uppercase tracking-widest mb-3">{t("contact.followUs")}</p>
               <div className="flex gap-2">
                 {["Instagram", "Twitter/X", "LinkedIn", "YouTube"].map(s => (
                   <button key={s} className="h-8 px-3 text-xs text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">

@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, LayoutGrid } from "lucide-react";
 import { useNexaCategories } from "../hooks/useNexaCategories";
 import { useCategoryTopProducts } from "../hooks/useCategoryTopProducts";
+import { useLanguage } from "../context/LanguageContext";
 import { urls } from "../lib/urls";
 
 const MAX_TILES = 8;
@@ -29,6 +30,7 @@ export function CategoryShowcase() {
   const { categories, loading: catsLoading } = useNexaCategories();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
 
   /**
    * "Ver todo" = bring the user to the full product grid section of this
@@ -90,15 +92,16 @@ export function CategoryShowcase() {
     <section className="py-10 bg-gray-50 border-b border-gray-100">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex items-baseline justify-between mb-6">
-          <h2 className="text-xl sm:text-2xl text-gray-900 tracking-tight">
-            Explora nuestras categorías
+          <h2 className="text-xl sm:text-2xl text-gray-900 tracking-tight flex items-center gap-2">
+            <LayoutGrid className="w-5 h-5 text-gray-500" strokeWidth={1.5} />
+            {t("categories.title") || "Explora nuestras categorías"}
           </h2>
           <button
             type="button"
             onClick={handleViewAll}
             className="text-sm text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1"
           >
-            Ver todo
+            {t("categories.viewAll") || "Ver todo"}
             <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.5} />
           </button>
         </div>
@@ -120,7 +123,7 @@ export function CategoryShowcase() {
                     {tile.name}
                   </h3>
                   <span className="text-[11px] text-gray-400 flex-shrink-0 ml-2">
-                    {tile.products.length}+ items
+                    {tile.products.length}+ {t("categories.items") || "items"}
                   </span>
                 </div>
 
@@ -152,7 +155,7 @@ export function CategoryShowcase() {
                 </div>
 
                 <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 group-hover:text-gray-900 transition-colors mt-auto">
-                  Descubre {tile.name}
+                  {t("categories.discover") || "Descubre"} {tile.name}
                   <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" strokeWidth={1.5} />
                 </span>
               </Link>

@@ -6,12 +6,14 @@ import type { CheckoutState } from "../types";
 import { storeLocations, pickupPoints } from "../types";
 import type { PaymentMethod } from "../../../context/UserContext";
 import { extractAmount } from "../../../utils/extractAmount";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface OrderConfirmationProps {
     state: CheckoutState;
 }
 
 export function OrderConfirmation({ state }: OrderConfirmationProps) {
+    const { t } = useLanguage();
     const navigate = useNavigate();
     const { user } = useUser();
     const {
@@ -132,7 +134,7 @@ export function OrderConfirmation({ state }: OrderConfirmationProps) {
                         </div>
                         <div>
                             <p className="text-sm text-gray-900">¡Pedido confirmado!</p>
-                            <p className="text-xs text-gray-400 mt-0.5">Recibirás un correo de confirmación en breve · <span className="font-mono">{createdOrder?.orderNumber ?? orderId}</span></p>
+                            <p className="text-xs text-gray-400 mt-0.5">{t("checkout.confirmation.emailHint") || "Recibirás un correo de confirmación en breve"} · <span className="font-mono">{createdOrder?.orderNumber ?? orderId}</span></p>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">

@@ -16,6 +16,7 @@ import {
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
 import type { PaymentMethod } from "../context/UserContext";
 import {
   VisaLogo, MastercardLogo, PayPalLogo, USDTLogo, BTCLogo,
@@ -170,6 +171,7 @@ export function GiftCardPurchase() {
   const { isAuthenticated, login } = useAuth();
   const { user } = useUser();
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
 
   const [step, setStep] = useState<Step>(1);
   const [generatedCode, setGeneratedCode] = useState("");
@@ -369,7 +371,7 @@ export function GiftCardPurchase() {
                     min={5}
                     max={500}
                     className={`${inp} pl-7`}
-                    placeholder="Importe personalizado ($5–$500)"
+                    placeholder={t("giftcard.placeholder.customAmount")}
                     value={form.customAmount}
                     onChange={e => { set("customAmount", e.target.value); set("amount", 0); }}
                   />
@@ -432,7 +434,7 @@ export function GiftCardPurchase() {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                       <input
                         className={`${inp} pl-9`}
-                        placeholder="María García"
+                        placeholder={t("giftcard.placeholder.recipient")}
                         value={form.toName}
                         onChange={e => set("toName", e.target.value)}
                       />
@@ -445,7 +447,7 @@ export function GiftCardPurchase() {
                       <input
                         type="email"
                         className={`${inp} pl-9`}
-                        placeholder="maria@email.com"
+                        placeholder={t("giftcard.placeholder.recipient.email")}
                         value={form.toEmail}
                         onChange={e => set("toEmail", e.target.value)}
                       />
@@ -462,7 +464,7 @@ export function GiftCardPurchase() {
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                     <input
                       className={`${inp} pl-9`}
-                      placeholder="Tu nombre"
+                      placeholder={t("giftcard.placeholder.sender")}
                       value={form.fromName}
                       onChange={e => set("fromName", e.target.value)}
                     />
@@ -476,7 +478,7 @@ export function GiftCardPurchase() {
                       rows={3}
                       maxLength={200}
                       className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-500 transition-colors placeholder:text-gray-300 resize-none"
-                      placeholder="Escribe un mensaje para acompañar la tarjeta…"
+                      placeholder={t("giftcard.placeholder.message")}
                       value={form.message}
                       onChange={e => set("message", e.target.value)}
                     />
@@ -691,7 +693,7 @@ export function GiftCardPurchase() {
                             value={savedCardCvv}
                             onChange={(e) => setSavedCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
                             className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2 pr-9 focus:outline-none focus:border-gray-400 font-mono placeholder-gray-300"
-                            placeholder="•••"
+                            placeholder={t("giftcard.placeholder.cvv")}
                             maxLength={4}
                           />
                           <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
@@ -735,7 +737,7 @@ export function GiftCardPurchase() {
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                         <input
                           className={`${inp} pl-9 uppercase`}
-                          placeholder="NOMBRE APELLIDO"
+                          placeholder={t("giftcard.placeholder.cardHolder")}
                           value={form.cardHolder}
                           onChange={e => set("cardHolder", e.target.value.toUpperCase())}
                         />
@@ -748,7 +750,7 @@ export function GiftCardPurchase() {
                         <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                         <input
                           className={`${inp} pl-9 font-mono tracking-widest`}
-                          placeholder="1234 5678 9012 3456"
+                          placeholder={t("giftcard.placeholder.cardNumber")}
                           value={form.cardNumber}
                           onChange={e => set("cardNumber", formatCard(e.target.value))}
                           maxLength={19}
@@ -763,7 +765,7 @@ export function GiftCardPurchase() {
                           <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                           <input
                             className={`${inp} pl-9`}
-                            placeholder="MM/AA"
+                            placeholder={t("giftcard.placeholder.cardExpiry")}
                             value={form.cardExpiry}
                             onChange={e => set("cardExpiry", formatExpiry(e.target.value))}
                             maxLength={5}
@@ -777,7 +779,7 @@ export function GiftCardPurchase() {
                           <input
                             type="password"
                             className={`${inp} pl-9`}
-                            placeholder="•••"
+                            placeholder={t("giftcard.placeholder.cvv")}
                             value={form.cardCvv}
                             onChange={e => set("cardCvv", e.target.value.replace(/\D/g, "").slice(0, 3))}
                             maxLength={3}
