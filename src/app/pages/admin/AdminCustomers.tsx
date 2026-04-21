@@ -7,6 +7,7 @@ import {
 import { type Customer, customerRepository } from "../../repositories/CustomerRepository";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
+import { useLanguage } from "../../context/LanguageContext";
 
 function StatusBadge({ status }: { status: "ACTIVE" | "INACTIVE" }) {
   return (
@@ -117,6 +118,7 @@ function CustomerDrawer({
 
 /* ── Main page ───────────────────────────────────────── */
 export function AdminCustomers() {
+  const { t } = useLanguage();
   const [list, setList] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -181,17 +183,17 @@ export function AdminCustomers() {
 
       {/* Header */}
       <div>
-        <h1 className="text-xl text-gray-900 tracking-tight">Clientes</h1>
-        <p className="text-xs text-gray-400 mt-1">{list.length} clientes registrados</p>
+        <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.customers.title")}</h1>
+        <p className="text-xs text-gray-400 mt-1">{list.length} {t("admin.customers.subtitle").toLowerCase()}</p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: Users, label: "Total clientes", value: list.length },
-          { icon: UserCheck, label: "Activos", value: activeCount },
-          { icon: DollarSign, label: "Ingresos totales", value: `$${totalSpent.toLocaleString()}` },
-          { icon: TrendingUp, label: "Ticket promedio", value: `$${Math.round(totalSpent / (list.reduce((s, c) => s + c.orders, 0) || 1)).toLocaleString()}` },
+          { icon: Users, label: t("admin.customers.kpi.total"), value: list.length },
+          { icon: UserCheck, label: t("admin.customers.kpi.active"), value: activeCount },
+          { icon: DollarSign, label: t("admin.orders.kpi.revenue"), value: `$${totalSpent.toLocaleString()}` },
+          { icon: TrendingUp, label: t("admin.dash.avgTicket"), value: `$${Math.round(totalSpent / (list.reduce((s, c) => s + c.orders, 0) || 1)).toLocaleString()}` },
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -216,15 +218,15 @@ export function AdminCustomers() {
               className={`text-xs px-3 py-1.5 rounded-full border transition-all ${statusFilter === s ? "bg-gray-600 text-white border-gray-600" : "border-gray-200 text-gray-500 hover:border-gray-400"
                 }`}
             >
-              {s === "all" ? "Todos" : s === "ACTIVE" ? "Activos" : "Inactivos"}
+              {s === "all" ? t("admin.common.all") : s === "ACTIVE" ? t("admin.common.active") : t("admin.common.inactive")}
             </button>
           ))}
         </div>
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar por nombre o email..." className="w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-gray-400 placeholder-gray-300" />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("admin.customers.searchPlaceholder")} className="w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-gray-400 placeholder-gray-300" />
         </div>
-        <span className="ml-auto text-xs text-gray-400">{filtered.length} clientes</span>
+        <span className="ml-auto text-xs text-gray-400">{filtered.length} {t("admin.customers.title").toLowerCase()}</span>
       </div>
 
       {/* Table */}

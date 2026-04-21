@@ -33,7 +33,7 @@ import { ProductModal, type ProductForm, productToForm, makeEmptyForm } from "..
    ██  Main AdminProducts page
    ══════════════════════════════════════════════════════════════ */
 export function AdminProducts() {
-    const { locale } = useLanguage();
+    const { locale, t } = useLanguage();
     const apiLocale = locale === "pt" ? "pt-BR" : locale;
     const { formatPrice } = useCurrency();
 
@@ -544,7 +544,7 @@ export function AdminProducts() {
                         type="text"
                         value={searchInput}
                         onChange={e => handleSearchChange(e.target.value)}
-                        placeholder="Buscar por nombre de producto…"
+                        placeholder={t("admin.products.searchPlaceholder")}
                         className="w-full text-xs text-gray-900 border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300"
                     />
                     {searchInput && (
