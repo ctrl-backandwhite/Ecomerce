@@ -70,6 +70,7 @@ const menuGroups = [
       { title: "Márgenes", icon: Percent, path: "/admin/pricing" },
       { title: "Monedas", icon: Coins, path: "/admin/currency-rates" },
       { title: "Emails", icon: Mail, path: "/admin/emails" },
+      { title: "Notificaciones", icon: Send, path: "/admin/notifications" },
       { title: "Configuración", icon: Settings, path: "/admin/settings" },
     ],
   },

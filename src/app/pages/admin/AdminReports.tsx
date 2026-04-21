@@ -16,6 +16,7 @@ import { useNexaProducts } from "../../hooks/useNexaProducts";
 import { downloadCsv } from "../../utils/exportCsv";
 import { exportToPdf } from "../../utils/exportPdf";
 import { ExportMenu } from "../../components/admin/ExportMenu";
+import { useLanguage } from "../../context/LanguageContext";
 
 /* ═══════════════════════════════════════════════════════════════
    MOCK DATA
@@ -211,6 +212,14 @@ function CustomTooltip({ active, payload, label }: any) {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 export function AdminReports() {
+  const { t } = useLanguage();
+  const PERIOD_I18N: Record<Period, string> = {
+    today: t("admin.reports.period.today"),
+    week: t("admin.reports.period.week"),
+    month: t("admin.reports.period.month"),
+    year: t("admin.reports.period.year"),
+    custom: t("admin.reports.period.custom"),
+  };
   const [period, setPeriod] = useState<Period>("month");
   const [customFrom, setCustomFrom] = useState("2026-02-01");
   const [customTo, setCustomTo] = useState("2026-03-16");
@@ -344,8 +353,8 @@ export function AdminReports() {
       {/* ── Header ────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Balance Contable</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Histórico de ventas · NX036 Store</p>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.reports.title")}</h1>
+          <p className="text-xs text-gray-400 mt-0.5">{t("admin.reports.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -353,7 +362,7 @@ export function AdminReports() {
             className={`flex items-center gap-1.5 h-7 px-3 text-xs border rounded-lg transition-colors ${showFilters ? "bg-gray-600 text-white border-gray-600" : "text-gray-600 border-gray-200 hover:bg-gray-50"}`}
           >
             <Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Filtros
+            {t("admin.common.filter")}
           </button>
           <ExportMenu
             onCsv={handleCsvExport}
@@ -373,7 +382,7 @@ export function AdminReports() {
               }`}
           >
             {p === "custom" && <Calendar className="w-3 h-3" strokeWidth={1.5} />}
-            {PERIOD_LABELS[p]}
+            {PERIOD_I18N[p]}
           </button>
         ))}
 
@@ -459,7 +468,7 @@ export function AdminReports() {
         {/* Ingresos brutos */}
         <div className="lg:col-span-2 bg-gray-700 border border-gray-600 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Ingresos brutos</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.grossRevenue")}</span>
             <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
               <DollarSign className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
             </div>
@@ -472,7 +481,7 @@ export function AdminReports() {
         {/* Descuentos */}
         <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Descuentos</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.discounts")}</span>
             <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center">
               <TrendingDown className="w-3.5 h-3.5 text-amber-500" strokeWidth={1.5} />
             </div>
@@ -485,7 +494,7 @@ export function AdminReports() {
         {/* Devoluciones */}
         <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Devoluciones</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.returns")}</span>
             <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center">
               <RotateCcw className="w-3.5 h-3.5 text-orange-500" strokeWidth={1.5} />
             </div>
@@ -498,7 +507,7 @@ export function AdminReports() {
         {/* Cancelaciones */}
         <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Cancelaciones</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.cancellations")}</span>
             <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center">
               <XCircle className="w-3.5 h-3.5 text-red-500" strokeWidth={1.5} />
             </div>
@@ -511,14 +520,14 @@ export function AdminReports() {
         {/* Ingresos netos */}
         <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Ingresos netos</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.net")}</span>
             <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-3.5 h-3.5 text-green-600" strokeWidth={1.5} />
             </div>
           </div>
           <div>
             <p className="text-xl tracking-tight text-green-700 tabular-nums">{fmt(kpis.neto)}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">Margen {kpis.margen}%</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{t("admin.reports.kpi.margin")} {kpis.margen}%</p>
           </div>
         </div>
       </div>
@@ -527,7 +536,7 @@ export function AdminReports() {
       <div id="rpt-chart" className="bg-white border border-gray-100 rounded-xl p-5">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-sm text-gray-900">Histórico de {PERIOD_LABELS[period].toLowerCase()}</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.history")} · {PERIOD_I18N[period]}</p>
             <p className="text-[11px] text-gray-400 mt-0.5">
               Ingresos brutos {fmt(chartTotals.ingresos)} ·
               Devoluciones {fmt(chartTotals.devoluciones)} ·
@@ -559,7 +568,7 @@ export function AdminReports() {
         {/* Top products */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-900">Productos más vendidos</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.topProducts")}</p>
             <p className="text-xs text-gray-400">{PERIOD_LABELS[period]}</p>
           </div>
           {/* Header */}
@@ -577,7 +586,7 @@ export function AdminReports() {
                   <div className="min-w-0">
                     <p className="text-xs text-gray-900 truncate">{p.name}</p>
                     <div className="h-1 bg-gray-100 rounded-full overflow-hidden w-24 mt-1">
-                      <div className={`h-full rounded-full ${p.stock <= 3 ? "bg-red-400" : "bg-amber-400"}`}
+                      <div className={`h-full rounded-full ${p.sales < 50 ? "bg-red-400" : "bg-amber-400"}`}
                         style={{ width: `${(p.sales / 210) * 100}%` }} />
                     </div>
                   </div>
@@ -595,7 +604,7 @@ export function AdminReports() {
 
         {/* Category donut */}
         <div className="bg-white border border-gray-100 rounded-xl p-5">
-          <p className="text-sm text-gray-900 mb-4">Ventas por categoría</p>
+          <p className="text-sm text-gray-900 mb-4">{t("admin.reports.salesByCategory")}</p>
           <ResponsiveContainer width="100%" height={150}>
             <PieChart>
               <Pie key="rpt-pie" data={CATEGORY_DATA} cx="50%" cy="50%" innerRadius={42} outerRadius={65}
@@ -624,7 +633,7 @@ export function AdminReports() {
         {/* Ledger header */}
         <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
-            <p className="text-sm text-gray-900">Libro mayor de transacciones</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.ledger")}</p>
             <span className="text-[11px] text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full">
               {filteredTx.length} registros
             </span>
@@ -759,7 +768,7 @@ export function AdminReports() {
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" strokeWidth={1.5} />
-            <p className="text-sm text-gray-900">Stock bajo</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.lowStock")}</p>
             <span className="ml-auto text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{LOW_STOCK.length}</span>
           </div>
           {LOW_STOCK.length === 0
@@ -783,7 +792,7 @@ export function AdminReports() {
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
             <Package className="w-3.5 h-3.5 text-red-500" strokeWidth={1.5} />
-            <p className="text-sm text-gray-900">Sin stock</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.outOfStock")}</p>
             <span className="ml-auto text-[11px] text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{OUT_OF_STOCK.length}</span>
           </div>
           {OUT_OF_STOCK.length === 0
