@@ -41,26 +41,29 @@ const STATUS_META: Record<string, { labelKey: string; color: string; dot: string
 /* ═══════════════════════════════════════════════════════════════
    MOCK EXTRAS
 ═══════════════════════════════════════════════════════════════ */
+// Mock activity feed. `titleKey` resolves through i18n; `body` stays with the
+// literal transactional string (order numbers, customer names, amounts) since
+// those don't translate.
 const ACTIVITY_FEED = [
-  { time: "19:42", icon: ShoppingBag, color: "bg-gray-500 text-white", title: "Nueva orden", body: "#NX-001284 · Laura Gómez · $1,899" },
-  { time: "19:05", icon: CreditCard, color: "bg-green-100 text-green-700", title: "Pago confirmado", body: "#NX-001283 · $349 via tarjeta" },
-  { time: "18:20", icon: RotateCcw, color: "bg-orange-100 text-orange-600", title: "Devolución solicitada", body: "#NX-001270 · Isabel Herrera · $1,599" },
-  { time: "17:08", icon: Users, color: "bg-blue-100 text-blue-600", title: "Nuevo cliente", body: "Andrés Ruiz se registró" },
-  { time: "15:40", icon: AlertTriangle, color: "bg-amber-100 text-amber-600", title: "Stock bajo", body: "Sony WH-1000XM5 · 3 unidades restantes" },
-  { time: "14:22", icon: Truck, color: "bg-violet-100 text-violet-600", title: "Orden enviada", body: "#NX-001278 · Pablo Moreno" },
-  { time: "12:08", icon: Star, color: "bg-yellow-100 text-yellow-600", title: "Reseña 5★", body: "Canon EOS R10 · \"Excelente producto\"" },
-  { time: "10:55", icon: Tag, color: "bg-gray-100 text-gray-600", title: "Cupón activado", body: "VERANO20 · 14 usos hoy" },
+  { time: "19:42", icon: ShoppingBag, color: "bg-gray-500 text-white", titleKey: "admin.dash.activity.newOrder", body: "#NX-001284 · Laura Gómez · $1,899" },
+  { time: "19:05", icon: CreditCard, color: "bg-green-100 text-green-700", titleKey: "admin.dash.activity.paymentConfirmed", body: "#NX-001283 · $349 via tarjeta" },
+  { time: "18:20", icon: RotateCcw, color: "bg-orange-100 text-orange-600", titleKey: "admin.dash.activity.returnRequested", body: "#NX-001270 · Isabel Herrera · $1,599" },
+  { time: "17:08", icon: Users, color: "bg-blue-100 text-blue-600", titleKey: "admin.dash.activity.newCustomer", body: "Andrés Ruiz" },
+  { time: "15:40", icon: AlertTriangle, color: "bg-amber-100 text-amber-600", titleKey: "admin.dash.activity.lowStock", body: "Sony WH-1000XM5 · 3" },
+  { time: "14:22", icon: Truck, color: "bg-violet-100 text-violet-600", titleKey: "admin.dash.activity.orderShipped", body: "#NX-001278 · Pablo Moreno" },
+  { time: "12:08", icon: Star, color: "bg-yellow-100 text-yellow-600", titleKey: "admin.dash.activity.fiveStarReview", body: "Canon EOS R10" },
+  { time: "10:55", icon: Tag, color: "bg-gray-100 text-gray-600", titleKey: "admin.dash.activity.couponUsed", body: "VERANO20" },
 ];
 
 const INSIGHTS = [
-  { tag: "RÉCORD", tagColor: "bg-amber-50 text-amber-600", icon: Zap, iconBg: "bg-amber-100 text-amber-600", title: "Récord de ventas", body: "Viernes 14 Mar batió el máximo diario", value: "$11,200", delta: null, up: true },
-  { tag: "CRECIMIENTO", tagColor: "bg-green-50 text-green-600", icon: TrendingUp, iconBg: "bg-green-100 text-green-600", title: "Audio en alza", body: "Categoría con mayor crecimiento este mes", value: null, delta: "+24%", up: true },
-  { tag: "HITO", tagColor: "bg-violet-50 text-violet-600", icon: Star, iconBg: "bg-violet-100 text-violet-600", title: "100 reseñas ★★★★★", body: "Meta de satisfacción alcanzada", value: "100", delta: null, up: true },
-  { tag: "CLIENTES", tagColor: "bg-blue-50 text-blue-600", icon: Users, iconBg: "bg-blue-100 text-blue-600", title: "8 nuevos VIP", body: "Clientes alcanzaron nivel Premium esta semana", value: "+8", delta: null, up: true },
-  { tag: "META", tagColor: "bg-gray-100 text-gray-600", icon: Target, iconBg: "bg-gray-100 text-gray-600", title: "Meta mensual", body: "Progreso hacia objetivo de $45,000", value: "87%", delta: null, up: true },
-  { tag: "TICKET", tagColor: "bg-green-50 text-green-600", icon: ArrowUpRight, iconBg: "bg-green-100 text-green-600", title: "Ticket promedio", body: "Subió respecto a la semana anterior", value: null, delta: "+$120", up: true },
-  { tag: "ATENCIÓN", tagColor: "bg-red-50 text-red-600", icon: AlertTriangle, iconBg: "bg-red-100 text-red-600", title: "Devoluciones", body: "Tasa del 6.1% · umbral recomendado: 5%", value: "6.1%", delta: "+0.8%", up: false },
-  { tag: "TOP VENTAS", tagColor: "bg-gray-100 text-gray-600", icon: Headphones, iconBg: "bg-gray-500 text-white", title: "Sony WH-1000XM5", body: "Producto más vendido del mes · 203 uds.", value: "203 uds.", delta: null, up: true },
+  { tagKey: "admin.dash.insights.record.tag", tagColor: "bg-amber-50 text-amber-600", icon: Zap, iconBg: "bg-amber-100 text-amber-600", titleKey: "admin.dash.insights.record.title", bodyKey: "admin.dash.insights.record.body", value: "$11,200", delta: null, up: true },
+  { tagKey: "admin.dash.insights.growth.tag", tagColor: "bg-green-50 text-green-600", icon: TrendingUp, iconBg: "bg-green-100 text-green-600", titleKey: "admin.dash.insights.growth.title", bodyKey: "admin.dash.insights.growth.body", value: null, delta: "+24%", up: true },
+  { tagKey: "admin.dash.insights.milestone.tag", tagColor: "bg-violet-50 text-violet-600", icon: Star, iconBg: "bg-violet-100 text-violet-600", titleKey: "admin.dash.insights.milestone.title", bodyKey: "admin.dash.insights.milestone.body", value: "100", delta: null, up: true },
+  { tagKey: "admin.dash.insights.customers.tag", tagColor: "bg-blue-50 text-blue-600", icon: Users, iconBg: "bg-blue-100 text-blue-600", titleKey: "admin.dash.insights.customers.title", bodyKey: "admin.dash.insights.customers.body", value: "+8", delta: null, up: true },
+  { tagKey: "admin.dash.insights.goal.tag", tagColor: "bg-gray-100 text-gray-600", icon: Target, iconBg: "bg-gray-100 text-gray-600", titleKey: "admin.dash.insights.goal.title", bodyKey: "admin.dash.insights.goal.body", value: "87%", delta: null, up: true },
+  { tagKey: "admin.dash.insights.ticket.tag", tagColor: "bg-green-50 text-green-600", icon: ArrowUpRight, iconBg: "bg-green-100 text-green-600", titleKey: "admin.dash.insights.ticket.title", bodyKey: "admin.dash.insights.ticket.body", value: null, delta: "+$120", up: true },
+  { tagKey: "admin.dash.insights.attention.tag", tagColor: "bg-red-50 text-red-600", icon: AlertTriangle, iconBg: "bg-red-100 text-red-600", titleKey: "admin.dash.insights.attention.title", bodyKey: "admin.dash.insights.attention.body", value: "6.1%", delta: "+0.8%", up: false },
+  { tagKey: "admin.dash.insights.topseller.tag", tagColor: "bg-gray-100 text-gray-600", icon: Headphones, iconBg: "bg-gray-500 text-white", titleKey: "admin.dash.insights.topseller.title", bodyKey: "admin.dash.insights.topseller.body", value: "203", delta: null, up: true },
 ];
 
 const WEEKLY_ORDERS = [
@@ -105,8 +108,11 @@ function CustomTooltip({ active, payload, label }: any) {
 /* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
+const LOCALE_TO_BCP47: Record<string, string> = { es: "es-ES", en: "en-US", pt: "pt-BR" };
+
 export function Dashboard() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const intlLocale = LOCALE_TO_BCP47[locale] ?? "en-US";
   // ── Live products from store (same source as /home) ──────
   const { products } = useNexaProducts();
 
@@ -211,7 +217,7 @@ export function Dashboard() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.dash.title")}</h1>
-          <p className="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {t("admin.dash.subtitle")}</p>
+          <p className="text-xs text-gray-400 mt-0.5">{new Date().toLocaleDateString(intlLocale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })} · {t("admin.dash.subtitle")}</p>
         </div>
         <ExportMenu
           onCsv={handleCsvExport}
@@ -383,15 +389,15 @@ export function Dashboard() {
               >
                 <div className="flex items-center justify-between">
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-md tracking-wider ${ins.tagColor}`}>
-                    {ins.tag}
+                    {t(ins.tagKey)}
                   </span>
                   <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${ins.iconBg}`}>
                     <Icon className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </div>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-900">{ins.title}</p>
-                  <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">{ins.body}</p>
+                  <p className="text-xs text-gray-900">{t(ins.titleKey)}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5 leading-tight">{t(ins.bodyKey)}</p>
                 </div>
                 {(ins.value || ins.delta) && (
                   <div className={`flex items-center gap-1 text-xs tabular-nums ${ins.up ? "text-green-600" : "text-red-500"}`}>
@@ -555,7 +561,7 @@ export function Dashboard() {
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-900">{t("admin.dash.todayActivity")}</p>
-              <p className="text-[11px] text-gray-400 mt-0.5">{new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</p>
+              <p className="text-[11px] text-gray-400 mt-0.5">{new Date().toLocaleDateString(intlLocale, { weekday: "short", day: "numeric", month: "short", year: "numeric" })}</p>
             </div>
             <span className="flex items-center gap-1 text-[11px] text-green-600">
               <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
@@ -571,7 +577,7 @@ export function Dashboard() {
                     <Icon className="w-3 h-3" strokeWidth={1.5} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-800 truncate">{item.title}</p>
+                    <p className="text-xs text-gray-800 truncate">{t(item.titleKey)}</p>
                     <p className="text-[11px] text-gray-400 truncate">{item.body}</p>
                   </div>
                   <span className="text-[10px] text-gray-300 flex-shrink-0 tabular-nums pt-0.5">{item.time}</span>
