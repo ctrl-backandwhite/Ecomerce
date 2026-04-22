@@ -31,6 +31,8 @@ type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "in_tran
 
 interface OrderItem {
   id: string;
+  productId: string;
+  sku?: string;
   name: string;
   image: string;
   price: number;
@@ -99,6 +101,8 @@ function mapApiOrder(api: ApiOrder): Order {
     status: statusMap[api.status] ?? "pending",
     items: api.items.map((item) => ({
       id: item.id,
+      productId: item.productId,
+      sku: item.sku,
       name: item.productName,
       image: item.productImage ?? "",
       price: item.unitPrice,
@@ -385,8 +389,56 @@ function OrderModal({
   };
 
   const handleReorder = () => {
-    // TODO: implement reorder from real product catalog
-    toast.info("Función de re-pedido disponible próximamente");
+    if (!order.items.length) {
+      toast.error("Este pedido no tiene productos para re-añadir");
+      return;
+    }
+    let added = 0;
+    order.items.forEach((item) => {
+      if (!item.productId) return;
+      const minimalProduct = {
+        id: item.productId,
+        name: item.name,
+        sku: item.sku ?? "",
+        price: item.price,
+        image: item.image,
+        images: [],
+        attributes: [],
+        variants: [],
+        keywords: [],
+        rating: 0,
+        reviews: 0,
+        stock: 0,
+        stockStatus: "in_stock",
+        manageStock: false,
+        allowBackorder: false,
+        weight: 0,
+        dimensions: { length: 0, width: 0, height: 0 },
+        shippingClass: "",
+        slug: "",
+        brand: "",
+        description: "",
+        shortDescription: "",
+        taxClass: "",
+        category: "",
+        subcategory: "",
+        barcode: "",
+        metaTitle: "",
+        metaDescription: "",
+        status: "active",
+        visibility: "public",
+        featured: false,
+      } as unknown as Parameters<typeof addToCart>[0];
+      addToCart(minimalProduct, { quantity: item.quantity });
+      added += 1;
+    });
+    if (added === 0) {
+      toast.error("No se pudo identificar los productos del pedido");
+      return;
+    }
+    toast.success(`Se añadieron ${added} ${added === 1 ? "producto" : "productos"} al carrito`);
+    onClose();
+    navigate("/cart");
   };
 
   return (
@@ -582,25 +634,23 @@ function OrderModal({
         {/* Footer actions */}
         <div className="px-6 py-4 border-t border-gray-100 flex items-center gap-3 flex-shrink-0 bg-gray-50 flex-wrap">
           {order.status === "delivered" && (
-            <>
-              {/* Rate */}
-              <button
-                onClick={onRate}
-                className="inline-flex items-center gap-1.5 text-xs border border-amber-200 bg-amber-50 text-amber-700 rounded-xl px-4 py-2.5 hover:bg-amber-100 transition-colors"
-              >
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                Valorar productos
-              </button>
+            <button
+              onClick={onRate}
+              className="inline-flex items-center gap-1.5 text-xs border border-amber-200 bg-amber-50 text-amber-700 rounded-xl px-4 py-2.5 hover:bg-amber-100 transition-colors"
+            >
+              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+              Valorar productos
+            </button>
+          )}
 
-              {/* Reorder */}
-              <button
-                onClick={handleReorder}
-                className="inline-flex items-center gap-1.5 text-xs bg-gray-200 text-gray-700 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors"
-              >
-                <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
-                Volver a pedir
-              </button>
-            </>
+          {order.status !== "cancelled" && order.status !== "refunded" && (
+            <button
+              onClick={handleReorder}
+              className="inline-flex items-center gap-1.5 text-xs bg-gray-900 text-white rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors"
+            >
+              <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
+              Volver a comprar
+            </button>
           )}
 
           {(order.status === "shipped" || order.status === "in_transit") && (
