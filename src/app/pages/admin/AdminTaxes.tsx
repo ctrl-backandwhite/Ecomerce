@@ -4,6 +4,7 @@ import {
   X, AlertTriangle, Info, FileText, Tag,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { type TaxRate as ApiTaxRate, type TaxRatePayload, taxRepository } from "../../repositories/TaxRepository";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -514,6 +515,7 @@ function DeleteDialog({
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminTaxes() {
+    const { t } = useLanguage();
   const [rules, setRules] = useState<TaxRule[]>([]);
 
   const [modal, setModal] = useState<{
@@ -588,7 +590,7 @@ export function AdminTaxes() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Gestión de impuestos</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.taxes.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Configura las tasas de IVA y reglas fiscales por país</p>
         </div>
         <button

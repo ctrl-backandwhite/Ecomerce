@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { type Brand, brandRepository } from "../../repositories/BrandRepository";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { Pagination } from "../../components/admin/Pagination";
 import { slugify } from "../../lib/urls";
 
@@ -144,6 +145,7 @@ function BrandModal({
 
 /* ── Main ────────────────────────────────────────────────── */
 export function AdminBrands() {
+    const { t } = useLanguage();
   const [list, setList] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -198,7 +200,7 @@ export function AdminBrands() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl text-gray-900 tracking-tight">Marcas</h1>
+          <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.sidebar.brands")}</h1>
           <p className="text-xs text-gray-400 mt-1">{list.length} marcas registradas</p>
         </div>
         <button

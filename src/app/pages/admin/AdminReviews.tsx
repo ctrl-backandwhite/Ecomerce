@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { type Review, reviewRepository } from "../../repositories/ReviewRepository";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 
 /* ── Types ───────────────────────────────────────────────── */
 type ReviewStatus = "PENDING" | "APPROVED" | "REJECTED";
@@ -121,6 +122,7 @@ function ReviewDetail({
 
 /* ── Main ──────────────────────────────────────────────────── */
 export function AdminReviews() {
+    const { t } = useLanguage();
   const [allReviews, setAllReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -191,7 +193,7 @@ export function AdminReviews() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Reseñas</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.sidebar.reviews")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">{reviews.length} reseñas en total</p>
         </div>
         {stats.pending > 0 && (

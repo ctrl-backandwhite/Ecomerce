@@ -7,6 +7,7 @@ import {
   ToggleLeft, Star, Layers,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { useNexaProducts } from "../../hooks/useNexaProducts";
 import { useNexaCategories } from "../../hooks/useNexaCategories";
 import {
@@ -977,6 +978,7 @@ function CampaignCard({
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminCampaigns() {
+    const { t } = useLanguage();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [filterStatus, setFilterStatus] = useState<CampaignStatus | "all">("all");
   const [filterType, setFilterType] = useState<CampaignType | "all">("all");
@@ -1065,7 +1067,7 @@ export function AdminCampaigns() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Campañas promocionales</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.campaigns.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Crea descuentos, flash sales y ofertas especiales para tus productos</p>
         </div>
         <button

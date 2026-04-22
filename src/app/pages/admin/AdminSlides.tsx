@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { Plus, Image as ImageIcon, Trash2, Pencil, GripVertical, Eye, EyeOff, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 import { type Slide as ApiSlide, type SlidePayload, slideRepository } from "../../repositories/SlideRepository";
@@ -443,6 +444,7 @@ function DraggableSlideRow({
 }
 
 export function AdminSlides() {
+    const { t } = useLanguage();
   const [list, setList] = useState<Slide[]>([]);
   const [modal, setModal] = useState<{ slide?: Slide } | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -510,7 +512,7 @@ export function AdminSlides() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl text-gray-900 tracking-tight">Slides Home</h1>
+            <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.sidebar.slides")}</h1>
             <p className="text-xs text-gray-400 mt-1">{list.length} slides en rotación</p>
           </div>
           <button

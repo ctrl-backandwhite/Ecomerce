@@ -4,6 +4,7 @@ import {
   X, AlertTriangle, Package, Clock, DollarSign,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   type Carrier as ApiCarrier, type CarrierPayload,
   type ShippingRule as ApiShippingRule, type ShippingRulePayload,
@@ -479,6 +480,7 @@ function DeleteDialog({ name, onConfirm, onClose }: { name: string; onConfirm: (
 // Main page
 // ─────────────────────────────────────────────────────────────
 export function AdminShipping() {
+    const { t } = useLanguage();
   const { formatPrice } = useCurrency();
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [rules, setRules] = useState<ShippingRule[]>([]);
@@ -635,7 +637,7 @@ export function AdminShipping() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Envíos y transportistas</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.shipping.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Gestiona métodos de envío, tarifas y zonas de cobertura</p>
         </div>
         {tab === "carriers" && (

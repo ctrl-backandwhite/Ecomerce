@@ -9,6 +9,7 @@ import {
   Settings, Mail, Layers, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FlowType = "delivery" | "return" | "exchange" | "quality" | "custom";
@@ -930,6 +931,7 @@ function FlowCard({ flow, onEdit, onDelete, onToggle }: {
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminFlows() {
+    const { t } = useLanguage();
   const [flows, setFlows] = useState<DeliveryFlow[]>([]);
   const [filterType, setFilterType] = useState<FlowType | "all">("all");
   const [searchQ, setSearchQ] = useState("");
@@ -1013,7 +1015,7 @@ export function AdminFlows() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Flujos de trabajo</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.flows.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Define los procesos de entrega, devolución y logística para cada tipo de envío</p>
         </div>
         <button

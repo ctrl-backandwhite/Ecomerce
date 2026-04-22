@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Search, Pencil, Check, X, TrendingUp, Globe, Link2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { type SeoPage as ApiSeoPage, type SeoPagePayload, seoPageRepository } from "../../repositories/SeoPageRepository";
 
 interface SEOEntry {
@@ -58,6 +59,7 @@ function ScoreBar({ score }: { score: number }) {
 }
 
 export function AdminSEO() {
+    const { t } = useLanguage();
   const [entries, setEntries] = useState<SEOEntry[]>([]);
   const [editing, setEditing] = useState<string | null>(null);
   const [editData, setEditData] = useState<Partial<SEOEntry>>({});
@@ -107,7 +109,7 @@ export function AdminSEO() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">SEO & Meta datos</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.seo.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Gestiona títulos, descripciones y visibilidad en buscadores</p>
         </div>
         <button

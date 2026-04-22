@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Star, Gift, Pencil, Check, X, Award, Loader2, ShoppingCart, MessageSquare, UserPlus, UserCheck, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { logger } from "../../lib/logger";
 
 import {
@@ -242,6 +243,7 @@ function DeleteModal({ open, label, onClose, onConfirm }: {
 
 /* ════════════════════════════════════════════════════════════════ */
 export function AdminLoyalty() {
+    const { t } = useLanguage();
   const [tiers, setTiers] = useState<ApiLoyaltyTier[]>([]);
   const [rules, setRules] = useState<ApiLoyaltyRule[]>([]);
   const [loading, setLoading] = useState(true);
@@ -375,7 +377,7 @@ export function AdminLoyalty() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Programa de fidelidad</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.loyalty.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Gestiona niveles y reglas de puntos</p>
         </div>
       </div>

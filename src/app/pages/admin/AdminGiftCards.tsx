@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Gift, Copy, Ban, Eye, DollarSign, Check, X, User, Mail, Calendar, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { logger } from "../../lib/logger";
 
 import {
@@ -58,6 +59,7 @@ function mapApiToUi(c: ApiGiftCard): GiftCard {
 const AMOUNTS = [25, 50, 100, 150, 200, 500];
 
 export function AdminGiftCards() {
+    const { t } = useLanguage();
   const [cards, setCards] = useState<GiftCard[]>([]);
   const [designs, setDesigns] = useState<GiftCardDesign[]>([]);
   const [showCreate, setShowCreate] = useState(false);
@@ -129,7 +131,7 @@ export function AdminGiftCards() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Tarjetas regalo</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.sidebar.giftCards")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Crea y gestiona gift cards para tus clientes</p>
         </div>
         <button

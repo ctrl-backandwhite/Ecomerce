@@ -6,6 +6,7 @@ import {
   Gift, Star, Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   type EmailTemplate as ApiEmailTemplate, type EmailTemplatePayload,
   emailTemplateRepository,
@@ -704,6 +705,7 @@ function DeleteDialog({ name, onConfirm, onClose }: { name: string; onConfirm: (
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminEmails() {
+    const { t } = useLanguage();
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [showNew, setShowNew] = useState(false);
   const [editTarget, setEditTarget] = useState<{ t: EmailTemplate; mode: "edit" | "preview" } | null>(null);
@@ -768,7 +770,7 @@ export function AdminEmails() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Plantillas de email</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.emails.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Gestiona los emails transaccionales y de marketing</p>
         </div>
         <button

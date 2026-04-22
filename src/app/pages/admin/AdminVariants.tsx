@@ -6,6 +6,7 @@ import {
     Filter, ToggleLeft, ToggleRight,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import {
     nexaVariantAdminRepository,
     type VariantPayload,
@@ -606,6 +607,7 @@ function VariantModal({ variant, onSave, onCreate, onClose, mode = "edit", initi
 // ══════════════════════════════════════════════════════════════════════════════
 
 export function AdminVariants() {
+    const { t } = useLanguage();
     // ── State ──
     const [variants, setVariants] = useState<ProductVariant[]>([]);
     const [loading, setLoading] = useState(true);

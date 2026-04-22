@@ -5,6 +5,7 @@ import {
   ChevronRight, Truck, RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { Pagination } from "../../components/admin/Pagination";
 import {
   returnRepository,
@@ -194,6 +195,7 @@ function ReturnDrawer({
 
 /* ── Main ──────────────────────────────────────────────────── */
 export function AdminReturns() {
+    const { t } = useLanguage();
   const [returns, setReturns] = useState<ReturnRequest[]>([]);
   const [search, setSearch] = useState("");
   const [statusF, setStatusF] = useState<"all" | ReturnStatus>("all");
@@ -257,7 +259,7 @@ export function AdminReturns() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Devoluciones</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.sidebar.returns")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">{returns.length} solicitudes en total</p>
         </div>
         {stats.pending > 0 && (

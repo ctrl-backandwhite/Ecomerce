@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
 import { type Coupon as ApiCoupon, type CouponPayload, type CouponUsageRecord, couponRepository } from "../../repositories/CouponRepository";
+import { useLanguage } from "../../context/LanguageContext";
 
 /* ── Types ────────────────────────────────────────────────── */
 interface Coupon {
@@ -509,6 +510,7 @@ function DeleteConfirm({ code, onConfirm, onClose }: { code: string; onConfirm: 
 
 /* ── Main page ───────────────────────────────────────────── */
 export function AdminCoupons() {
+  const { t } = useLanguage();
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [_loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -608,7 +610,7 @@ export function AdminCoupons() {
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Cupones</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.sidebar.coupons")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">{coupons.length} cupones en total</p>
         </div>
         <button
