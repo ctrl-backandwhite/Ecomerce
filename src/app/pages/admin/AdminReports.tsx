@@ -475,7 +475,7 @@ export function AdminReports() {
           </div>
           <div>
             <p className="text-2xl tracking-tight text-white tabular-nums">{fmt(kpis.bruto)}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{kpis.numVentas} ventas registradas</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">{kpis.numVentas} {t("admin.reports.kpi.salesRecorded")}</p>
           </div>
         </div>
         {/* Descuentos */}
@@ -488,7 +488,7 @@ export function AdminReports() {
           </div>
           <div>
             <p className="text-xl tracking-tight text-amber-600 tabular-nums">-{fmt(kpis.descuentos)}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">Cupones aplicados</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{t("admin.reports.kpi.couponsApplied")}</p>
           </div>
         </div>
         {/* Devoluciones */}
@@ -501,7 +501,7 @@ export function AdminReports() {
           </div>
           <div>
             <p className="text-xl tracking-tight text-orange-600 tabular-nums">-{fmt(kpis.devolTotal)}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{kpis.numDev} devoluciones</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{kpis.numDev} {t("admin.reports.kpi.returnsCount")}</p>
           </div>
         </div>
         {/* Cancelaciones */}
@@ -514,7 +514,7 @@ export function AdminReports() {
           </div>
           <div>
             <p className="text-xl tracking-tight text-red-600 tabular-nums">{fmt(kpis.cancelTotal)}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{kpis.numCancel} canceladas</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{kpis.numCancel} {t("admin.reports.kpi.cancelledCount")}</p>
           </div>
         </div>
         {/* Ingresos netos */}
@@ -573,10 +573,10 @@ export function AdminReports() {
           </div>
           {/* Header */}
           <div className="grid grid-cols-[1fr_60px_80px_60px] gap-3 px-5 py-2 bg-gray-50/60">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Producto</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Uds.</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Ingresos</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Δ%</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t("admin.reports.col.product")}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">{t("admin.reports.col.units")}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">{t("admin.reports.col.revenue")}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">{t("admin.reports.col.growth")}</p>
           </div>
           <div className="divide-y divide-gray-50">
             {TOP_PRODUCTS.map((p, i) => (
