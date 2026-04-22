@@ -16,6 +16,7 @@ import {
 import { Link } from "react-router";
 import { orderRepository, type AdminOrder, type OrderStats } from "../../repositories/OrderRepository";
 import { customerRepository } from "../../repositories/CustomerRepository";
+import { reportsRepository, type RevenueByDay, type StatusCount } from "../../repositories/ReportsRepository";
 import { useNexaProducts } from "../../hooks/useNexaProducts";
 import { downloadCsv } from "../../utils/exportCsv";
 import { exportToPdf } from "../../utils/exportPdf";
@@ -120,17 +121,23 @@ export function Dashboard() {
   const [stats, setStats] = useState<OrderStats>({ totalOrders: 0, totalRevenue: 0, pendingOrders: 0, deliveredOrders: 0 });
   const [apiRecentOrders, setApiRecentOrders] = useState<AdminOrder[]>([]);
   const [totalCustomers, setTotalCustomers] = useState(0);
+  const [revenueSeries, setRevenueSeries] = useState<RevenueByDay[]>([]);
+  const [statusDist, setStatusDist] = useState<StatusCount[]>([]);
 
   const loadData = useCallback(async () => {
     try {
-      const [orderStats, ordersPage, customersPage] = await Promise.all([
+      const [orderStats, ordersPage, customersPage, revenue, status] = await Promise.all([
         orderRepository.getStats(),
         orderRepository.findAll({ size: 6, sortBy: "date", ascending: false }),
         customerRepository.findAll({ size: 1 }),
+        reportsRepository.findRevenueByDay().catch(() => [] as RevenueByDay[]),
+        reportsRepository.findStatusDistribution().catch(() => [] as StatusCount[]),
       ]);
       setStats(orderStats);
       setApiRecentOrders(ordersPage.content);
       setTotalCustomers(customersPage.totalElements);
+      setRevenueSeries(revenue);
+      setStatusDist(status);
     } catch (err) { logger.warn("Suppressed error", err); }
   }, []);
 
@@ -424,7 +431,13 @@ export function Dashboard() {
             <TrendingUp className="w-4 h-4 text-gray-300" strokeWidth={1.5} />
           </div>
           <ResponsiveContainer width="100%" height={190}>
-            <AreaChart data={[]} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+            <AreaChart
+              data={revenueSeries.map(r => ({
+                month: new Date(r.day).toLocaleDateString(intlLocale, { day: "2-digit", month: "short" }),
+                revenue: Number(r.revenue) || 0,
+              }))}
+              margin={{ top: 4, right: 4, bottom: 0, left: -20 }}
+            >
               <CartesianGrid key="dash-rev-grid" strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
               <XAxis key="dash-rev-xaxis" dataKey="month" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
               <YAxis key="dash-rev-yaxis" tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false}
@@ -483,8 +496,16 @@ export function Dashboard() {
           </div>
           <div className="space-y-2.5">
             {(Object.keys(STATUS_META) as Array<keyof typeof STATUS_META>).map(key => {
-              const count = apiRecentOrders.filter(o => o.status === key).length;
-              const pct = apiRecentOrders.length > 0 ? Math.round((count / apiRecentOrders.length) * 100) : 0;
+              // Prefer the dedicated status-distribution endpoint (counts every
+              // order in the last 30 days) and fall back to the recent-orders
+              // sample when the endpoint is unreachable or returns empty.
+              const backendCount = statusDist.find(s => s.status === key)?.count ?? 0;
+              const sampleCount = apiRecentOrders.filter(o => o.status === key).length;
+              const count = statusDist.length > 0 ? backendCount : sampleCount;
+              const total = statusDist.length > 0
+                ? statusDist.reduce((sum, s) => sum + s.count, 0)
+                : apiRecentOrders.length;
+              const pct = total > 0 ? Math.round((count / total) * 100) : 0;
               const meta = STATUS_META[key];
               const Icon = meta.icon;
               return (
