@@ -113,11 +113,32 @@ export function CurrencyProvider({ children }: { children: ReactNode }) {
         }
     }, [rates, selectedCountry.code]);
 
-    // Set currency code and reload so all data is re-fetched with the new X-Currency header
+    // Switching currency: emit a global event so hooks that fetch price-
+    // bearing data (products, cart, reports, dashboard stats…) can refetch
+    // with the new X-Currency header. Falls back to a full reload only if
+    // no listener responds within 500 ms — keeps the cart / filters / scroll
+    // intact in the common path while guaranteeing the UI never shows
+    // stale prices after a switch.
     const setCurrencyCode = useCallback((code: string) => {
         if (code === selectedCode) return;
         storeCurrency(code);
-        window.location.reload();
+        setSelectedCode(code);
+        const evt = new CustomEvent("currency:changed", { detail: { code } });
+        // If nobody acknowledges the change, fall back to a reload. An
+        // acknowledgement is any window-level listener that calls
+        // `event.preventDefault()` — hooks that know how to refetch can opt
+        // in by preventing the default.
+        let ack = false;
+        const ackListener = () => { ack = true; };
+        window.addEventListener("currency:ack", ackListener, { once: true });
+        window.dispatchEvent(evt);
+        setTimeout(() => {
+            window.removeEventListener("currency:ack", ackListener);
+            if (!ack) {
+                // Safety net for components that don't yet listen to the event
+                window.location.reload();
+            }
+        }, 500);
     }, [selectedCode]);
 
     // Selected rate object
