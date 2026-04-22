@@ -11,7 +11,7 @@ import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import { nexaProductRepository } from "../repositories/NexaProductRepository";
-import { mapNexaProductDetail } from "../mappers/NexaProductMapper";
+import { mapNexaProductDetail, mapNexaProduct } from "../mappers/NexaProductMapper";
 import { warrantyRepository, type Warranty } from "../repositories/WarrantyRepository";
 import DOMPurify from "dompurify";
 import {
@@ -589,6 +589,10 @@ export function ProductDetail() {
     setProduct(undefined);
 
     const controller = new AbortController();
+    // Primary attempt: /products/detail/{pid} (returns full CJ-rich payload,
+    // with variants + inventory + attributes). If the id in the URL is the
+    // DB UUID rather than a CJ pid the endpoint will 404, so we fall back to
+    // /products/{id} which always accepts the internal ID.
     nexaProductRepository
       .findDetailByPid(id, apiLocale, controller.signal)
       .then((raw) => {
@@ -596,10 +600,19 @@ export function ProductDetail() {
           setProduct(mapNexaProductDetail(raw));
         }
       })
-      .catch((err) => {
-        if (!controller.signal.aborted) {
-          console.error("[ProductDetail] Error fetching detail:", err);
-          setProduct(null);
+      .catch(async (err) => {
+        if (controller.signal.aborted) return;
+        console.warn("[ProductDetail] detail-by-pid failed, falling back to findById:", err);
+        try {
+          const raw = await nexaProductRepository.findById(id, apiLocale);
+          if (!controller.signal.aborted) {
+            setProduct(mapNexaProduct(raw));
+          }
+        } catch (fallbackErr) {
+          if (!controller.signal.aborted) {
+            console.error("[ProductDetail] Both detail and findById failed:", fallbackErr);
+            setProduct(null);
+          }
         }
       })
       .finally(() => {
@@ -800,13 +813,27 @@ export function ProductDetail() {
   if (!product) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
+        <div className="text-center max-w-sm px-6">
           <Package className="w-16 h-16 text-gray-200 mx-auto mb-4" strokeWidth={1.5} />
           <h2 className="text-xl text-gray-900 mb-2">Producto no encontrado</h2>
-          <p className="text-sm text-gray-400 mb-6">El producto que buscas no existe o fue eliminado.</p>
-          <button onClick={goBack} className="text-sm text-gray-700 bg-gray-200 px-6 py-2.5 rounded-xl hover:bg-gray-300 transition-colors">
-            Ver todos los productos
-          </button>
+          <p className="text-sm text-gray-500 mb-2">
+            No pudimos cargar este producto. Esto puede ocurrir si el identificador no existe, fue eliminado o hubo un problema al conectarse con el catálogo.
+          </p>
+          <p className="text-xs text-gray-400 mb-6 font-mono break-all">ID: {id || "—"}</p>
+          <div className="flex items-center gap-2 justify-center">
+            <button
+              onClick={() => window.location.reload()}
+              className="text-sm text-gray-700 bg-gray-200 px-5 py-2.5 rounded-xl hover:bg-gray-300 transition-colors"
+            >
+              Reintentar
+            </button>
+            <button
+              onClick={goBack}
+              className="text-sm text-white bg-gray-700 px-5 py-2.5 rounded-xl hover:bg-gray-800 transition-colors"
+            >
+              Ver todos los productos
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1276,6 +1303,9 @@ export function ProductDetail() {
           </section>
         )}
 
+        {/* Personalised suggestions — shown before reviews so users see related items first */}
+        <ProductSuggestions limit={12} />
+
         {/* Reviews */}
         <div id="reviews" />
         <ReviewsSection
@@ -1285,9 +1315,6 @@ export function ProductDetail() {
           productName={product.name}
           productCategory={product.category}
         />
-
-        {/* Personalised suggestions — compact horizontal rail */}
-        <ProductSuggestions limit={12} />
 
       </div>
 

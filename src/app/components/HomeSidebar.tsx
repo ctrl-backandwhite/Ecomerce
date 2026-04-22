@@ -29,10 +29,15 @@ interface HomeSidebarProps {
   total: number;
   variantValues?: Record<string, string>;
   selectedKeywords?: string[];
+  /** Max price (in selected currency) used by the slider. 0 = no filter. */
+  priceMax?: number;
+  /** Highest product price available (used as slider upper bound). */
+  priceMaxLimit?: number;
   onCategory: (cat: string, catId?: string) => void;
   onBrand: (brand: string) => void;
   onAttr: (attr: string) => void;
   onPrice: (idx: number) => void;
+  onPriceMax?: (max: number) => void;
   onRating: (r: number) => void;
   onSort: (s: string) => void;
   onReset: () => void;
@@ -104,10 +109,13 @@ export function HomeSidebar({
   total,
   variantValues = {},
   selectedKeywords = [],
+  priceMax = 0,
+  priceMaxLimit,
   onCategory,
   onBrand,
   onAttr,
   onPrice,
+  onPriceMax,
   onRating,
   onSort,
   onReset,
@@ -117,6 +125,18 @@ export function HomeSidebar({
   const { products } = useNexaProducts();
   const priceRanges = usePriceRanges();
   const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
+
+  // Compute max price limit from current product list if not supplied by parent.
+  // Rounded up to the nearest 50 for a cleaner slider upper bound.
+  const computedLimit = useMemo(() => {
+    if (priceMaxLimit && priceMaxLimit > 0) return priceMaxLimit;
+    if (!products.length) return 1000;
+    const topPrice = Math.max(...products.map((p) => p.price));
+    return Math.ceil(topPrice / 50) * 50 || 1000;
+  }, [priceMaxLimit, products]);
+
+  const effectivePriceMax = priceMax > 0 ? priceMax : computedLimit;
 
   /* ── Keyword facets mined from product names ──────────────────
    * When the listing doesn't expose variant attributes we still want
@@ -234,7 +254,7 @@ export function HomeSidebar({
           to="/gift-cards"
           className="group bg-gray-700 rounded-xl p-4 text-white hover:bg-gray-800 transition-colors block"
         >
-          <div className="flex items-center gap-2.5 mb-2.5">
+          <div className="flex flex-col items-center text-center gap-2.5 mb-2.5">
             <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
               <Gift className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
@@ -242,10 +262,10 @@ export function HomeSidebar({
               {t("sidebar.giftCards.eyebrow") || "Tarjetas regalo"}
             </p>
           </div>
-          <p className="text-sm leading-snug mb-3">
+          <p className="text-sm leading-snug mb-3 text-center">
             {t("sidebar.giftCards.desc") || "El regalo perfecto, entregado al instante."}
           </p>
-          <span className="inline-flex items-center gap-1 text-xs text-white/80 group-hover:text-white transition-colors">
+          <span className="flex items-center justify-center gap-1 text-xs text-white/80 group-hover:text-white transition-colors">
             {t("sidebar.giftCards.cta") || "Regalar ahora"}
             <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </span>
@@ -406,28 +426,44 @@ export function HomeSidebar({
             </div>
           )}
 
-          {/* ── Precio ── */}
+          {/* ── Precio (slider 0 — max) ── */}
           <div className="border-b border-gray-100">
             <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
               <DollarSign className="w-3 h-3" /> {t("sidebar.price") || "Precio"}
             </p>
-            {priceRanges.map((range, i) => (
-              <button
-                key={range.label}
-                onClick={() => onPrice(i)}
-                className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${selectedPriceIdx === i
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:bg-gray-50"
-                  }`}
-              >
-                <span className="flex items-center gap-2">
-                  {selectedPriceIdx === i
-                    ? <Check className="w-3 h-3 text-gray-700" strokeWidth={2} />
-                    : <span className="w-1 h-1 rounded-full bg-gray-300" />}
-                  {range.label}
+            <div className="px-4 pb-4 pt-1 space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-gray-500">
+                <span>{formatPrice(0)}</span>
+                <span className="text-gray-900 tabular-nums">
+                  {priceMax > 0
+                    ? `${t("filters.priceUpTo") || "Hasta"} ${formatPrice(effectivePriceMax)}`
+                    : (t("filters.priceAll") || "Todos")}
                 </span>
-              </button>
-            ))}
+                <span>{formatPrice(computedLimit)}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={computedLimit}
+                step={Math.max(1, Math.round(computedLimit / 200))}
+                value={effectivePriceMax}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  onPriceMax?.(v >= computedLimit ? 0 : v);
+                  if (selectedPriceIdx !== 0) onPrice(0);
+                }}
+                className="w-full h-1 accent-gray-700 cursor-pointer"
+                aria-label={t("sidebar.price") || "Precio"}
+              />
+              {priceMax > 0 && (
+                <button
+                  onClick={() => onPriceMax?.(0)}
+                  className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  {t("filters.reset") || "Quitar filtro"}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* ── Valoración ── */}
