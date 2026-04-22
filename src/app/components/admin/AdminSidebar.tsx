@@ -7,6 +7,7 @@ import {
   Truck, Percent, Search, Mail, Award, Gift, Send,
   Megaphone, Shield, GitBranch, Layers, Coins,
 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 const menuGroups = [
   {
@@ -85,6 +86,12 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: AdminSidebarProps) {
   const location = useLocation();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    if (!confirm("¿Cerrar sesión?")) return;
+    logout().catch(() => { /* logout handles redirect even on failure */ });
+  };
 
   const isActive = (path: string) =>
     path === "/admin" ? location.pathname === "/admin" : location.pathname.startsWith(path);
@@ -199,6 +206,8 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
             </span>
           </Link>
           <button
+            type="button"
+            onClick={handleLogout}
             title={isCollapsed ? "Cerrar Sesión" : undefined}
             className={`w-full flex items-center rounded-xl text-sm text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors ${isCollapsed ? "lg:justify-center lg:px-0 lg:py-2.5" : "gap-2.5 px-3 py-2.5"
               }`}

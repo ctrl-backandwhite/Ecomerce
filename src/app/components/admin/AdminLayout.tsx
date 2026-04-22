@@ -1,11 +1,12 @@
-import { useState, Suspense } from "react";
-import { Outlet, useLocation } from "react-router";
+import { useState, useEffect, useRef, Suspense } from "react";
+import { Outlet, useLocation, Link } from "react-router";
 import { AdminSidebar } from "./AdminSidebar";
 import { AdminTour } from "./AdminTour";
 import { TimezoneSidebar } from "../TimezoneSidebar";
 import { useTimezone } from "../../context/TimezoneContext";
 import { useCurrency } from "../../context/CurrencyContext";
-import { Menu, Clock } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { Menu, Clock, User, LogOut, ChevronDown } from "lucide-react";
 import {
   NotificationsPanel,
   DEFAULT_NOTIFICATIONS,
@@ -47,10 +48,41 @@ export function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>(DEFAULT_NOTIFICATIONS);
   const { selectedCountry, toggleSidebar } = useTimezone();
   const { currency } = useCurrency();
+  const { user, logout } = useAuth();
   const location = useLocation();
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // Close profile menu on outside click
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    function onDocClick(e: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [profileMenuOpen]);
+
+  const handleLogout = () => {
+    setProfileMenuOpen(false);
+    if (!confirm("¿Cerrar sesión?")) return;
+    logout().catch(() => { /* logout handles redirect even on failure */ });
+  };
+
+  const displayName = user?.firstName
+    ? `${user.firstName} ${user.lastName ?? ""}`.trim()
+    : "Admin NX036";
+  const displayRole = user?.roles?.includes("ROLE_ADMIN") || user?.roles?.includes("ADMIN")
+    ? "Administrador"
+    : "Usuario";
+  const initials = user?.firstName
+    ? `${user.firstName[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "AN"
+    : "AN";
 
   const pageTitle = pageTitles[location.pathname] ?? "Admin";
 
@@ -128,14 +160,55 @@ export function AdminLayout() {
 
             <span className="w-px h-5 bg-gray-200" />
 
-            <div className="flex items-center gap-2.5">
-              <div className="text-right hidden md:block">
-                <p className="text-[11px] text-gray-900 font-light">Admin NX036</p>
-                <p className="text-[9px] text-gray-400">Administrador</p>
-              </div>
-              <div className="w-7 h-7 bg-gray-500 rounded-full flex items-center justify-center text-white text-[10px] tracking-widest">
-                AN
-              </div>
+            {/* Profile dropdown */}
+            <div className="relative" ref={profileRef}>
+              <button
+                type="button"
+                onClick={() => setProfileMenuOpen((v) => !v)}
+                className="flex items-center gap-2.5 rounded-xl hover:bg-gray-50 transition-colors px-1.5 py-1"
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+              >
+                <div className="text-right hidden md:block">
+                  <p className="text-[11px] text-gray-900 font-light">{displayName}</p>
+                  <p className="text-[9px] text-gray-400">{displayRole}</p>
+                </div>
+                <div className="w-7 h-7 bg-gray-500 rounded-full flex items-center justify-center text-white text-[10px] tracking-widest">
+                  {initials}
+                </div>
+                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${profileMenuOpen ? "rotate-180" : ""}`} strokeWidth={1.5} />
+              </button>
+              {profileMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-30"
+                >
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-xs text-gray-900">{displayName}</p>
+                    {user?.email && (
+                      <p className="text-[11px] text-gray-400 truncate">{user.email}</p>
+                    )}
+                  </div>
+                  <Link
+                    to="/account"
+                    onClick={() => setProfileMenuOpen(false)}
+                    className="flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                    role="menuitem"
+                  >
+                    <User className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    Mi perfil
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors border-t border-gray-100"
+                    role="menuitem"
+                  >
+                    <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    Cerrar sesión
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
