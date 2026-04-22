@@ -8,71 +8,72 @@ import {
   Megaphone, Shield, GitBranch, Layers, Coins,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 const menuGroups = [
   {
-    label: "Panel",
+    labelKey: "admin.sidebar.group.panel",
     tourId: "tour-panel-group",
     items: [
-      { title: "Dashboard", icon: LayoutDashboard, path: "/admin" },
-      { title: "Reportes", icon: BarChart2, path: "/admin/reports" },
+      { titleKey: "admin.sidebar.dashboard", icon: LayoutDashboard, path: "/admin" },
+      { titleKey: "admin.sidebar.reports", icon: BarChart2, path: "/admin/reports" },
     ],
   },
   {
-    label: "Ventas",
+    labelKey: "admin.sidebar.group.sales",
     tourId: "tour-ventas-group",
     items: [
-      { title: "Órdenes", icon: ShoppingCart, path: "/admin/orders" },
-      { title: "Facturas", icon: FileText, path: "/admin/invoices" },
-      { title: "Devoluciones", icon: RotateCcw, path: "/admin/returns" },
+      { titleKey: "admin.sidebar.orders", icon: ShoppingCart, path: "/admin/orders" },
+      { titleKey: "admin.sidebar.invoices", icon: FileText, path: "/admin/invoices" },
+      { titleKey: "admin.sidebar.returns", icon: RotateCcw, path: "/admin/returns" },
     ],
   },
   {
-    label: "Clientes",
+    labelKey: "admin.sidebar.group.customers",
     tourId: "tour-clientes-group",
     items: [
-      { title: "Clientes", icon: Users, path: "/admin/customers" },
-      { title: "Reseñas", icon: Star, path: "/admin/reviews" },
-      { title: "Cupones", icon: Ticket, path: "/admin/coupons" },
-      { title: "Fidelidad", icon: Award, path: "/admin/loyalty" },
-      { title: "Tarjetas regalo", icon: Gift, path: "/admin/gift-cards" },
+      { titleKey: "admin.sidebar.customers", icon: Users, path: "/admin/customers" },
+      { titleKey: "admin.sidebar.reviews", icon: Star, path: "/admin/reviews" },
+      { titleKey: "admin.sidebar.coupons", icon: Ticket, path: "/admin/coupons" },
+      { titleKey: "admin.sidebar.loyalty", icon: Award, path: "/admin/loyalty" },
+      { titleKey: "admin.sidebar.giftCards", icon: Gift, path: "/admin/gift-cards" },
     ],
   },
   {
-    label: "Catálogo",
+    labelKey: "admin.sidebar.group.catalog",
     tourId: "tour-catalogo-group",
     items: [
-      { title: "Productos", icon: Package, path: "/admin/products" },
-      { title: "Variantes", icon: Layers, path: "/admin/variants" },
-      { title: "Categorías", icon: Tag, path: "/admin/categories" },
-      { title: "Marcas", icon: Bookmark, path: "/admin/brands" },
-      { title: "Atributos", icon: Sliders, path: "/admin/attributes" },
-      { title: "Medios", icon: Image, path: "/admin/media" },
-      { title: "Garantías", icon: Shield, path: "/admin/warranties" },
+      { titleKey: "admin.sidebar.products", icon: Package, path: "/admin/products" },
+      { titleKey: "admin.sidebar.variants", icon: Layers, path: "/admin/variants" },
+      { titleKey: "admin.sidebar.categories", icon: Tag, path: "/admin/categories" },
+      { titleKey: "admin.sidebar.brands", icon: Bookmark, path: "/admin/brands" },
+      { titleKey: "admin.sidebar.attributes", icon: Sliders, path: "/admin/attributes" },
+      { titleKey: "admin.sidebar.media", icon: Image, path: "/admin/media" },
+      { titleKey: "admin.sidebar.warranties", icon: Shield, path: "/admin/warranties" },
     ],
   },
   {
-    label: "Marketing",
+    labelKey: "admin.sidebar.group.marketing",
     tourId: "tour-marketing-group",
     items: [
-      { title: "Campañas", icon: Megaphone, path: "/admin/campaigns" },
-      { title: "Newsletter", icon: Send, path: "/admin/newsletter" },
-      { title: "SEO", icon: Search, path: "/admin/seo" },
-      { title: "Slides Home", icon: Presentation, path: "/admin/slides" },
+      { titleKey: "admin.sidebar.campaigns", icon: Megaphone, path: "/admin/campaigns" },
+      { titleKey: "admin.sidebar.newsletter", icon: Send, path: "/admin/newsletter" },
+      { titleKey: "admin.sidebar.seo", icon: Search, path: "/admin/seo" },
+      { titleKey: "admin.sidebar.slides", icon: Presentation, path: "/admin/slides" },
     ],
   },
   {
-    label: "Sistema",
+    labelKey: "admin.sidebar.group.system",
     tourId: "tour-sistema-group",
     items: [
-      { title: "Flujos", icon: GitBranch, path: "/admin/flows" },
-      { title: "Envíos", icon: Truck, path: "/admin/shipping" },
-      { title: "Impuestos", icon: Percent, path: "/admin/taxes" },
-      { title: "Márgenes", icon: Percent, path: "/admin/pricing" },
-      { title: "Monedas", icon: Coins, path: "/admin/currency-rates" },
-      { title: "Emails", icon: Mail, path: "/admin/emails" },
-      { title: "Notificaciones", icon: Send, path: "/admin/notifications" },
-      { title: "Configuración", icon: Settings, path: "/admin/settings" },
+      { titleKey: "admin.sidebar.flows", icon: GitBranch, path: "/admin/flows" },
+      { titleKey: "admin.sidebar.shipping", icon: Truck, path: "/admin/shipping" },
+      { titleKey: "admin.sidebar.taxes", icon: Percent, path: "/admin/taxes" },
+      { titleKey: "admin.sidebar.pricing", icon: Percent, path: "/admin/pricing" },
+      { titleKey: "admin.sidebar.currencies", icon: Coins, path: "/admin/currency-rates" },
+      { titleKey: "admin.sidebar.emails", icon: Mail, path: "/admin/emails" },
+      { titleKey: "admin.sidebar.notifications", icon: Send, path: "/admin/notifications" },
+      { titleKey: "admin.sidebar.settings", icon: Settings, path: "/admin/settings" },
     ],
   },
 ];
@@ -87,9 +88,10 @@ interface AdminSidebarProps {
 export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }: AdminSidebarProps) {
   const location = useLocation();
   const { logout } = useAuth();
+  const { t } = useLanguage();
 
   const handleLogout = () => {
-    if (!confirm("¿Cerrar sesión?")) return;
+    if (!confirm(t("admin.sidebar.confirmLogout"))) return;
     logout().catch(() => { /* logout handles redirect even on failure */ });
   };
 
@@ -127,7 +129,7 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
                 </div>
                 <div className="leading-tight">
                   <p className="text-[13px] text-gray-900 tracking-widest font-light whitespace-nowrap">NX036</p>
-                  <p className="text-[9px] text-gray-400 tracking-wider uppercase mt-0.5 whitespace-nowrap">Admin</p>
+                  <p className="text-[9px] text-gray-400 tracking-wider uppercase mt-0.5 whitespace-nowrap">{t("admin.sidebar.badgeAdmin")}</p>
                 </div>
               </Link>
               <button
@@ -151,16 +153,17 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
         {/* Navigation */}
         <nav className="flex-1 py-4 overflow-y-auto scrollbar-thin">
           {menuGroups.map((group) => (
-            <div key={group.label} id={group.tourId} className="mb-5">
+            <div key={group.labelKey} id={group.tourId} className="mb-5">
               {!isCollapsed && (
                 <p className="px-5 mb-1.5 text-[10px] text-gray-400 uppercase tracking-widest">
-                  {group.label}
+                  {t(group.labelKey)}
                 </p>
               )}
               {isCollapsed && <div className="h-px bg-gray-100 mx-2 mb-2" />}
 
-              {group.items.map(({ title, icon: Icon, path }) => {
+              {group.items.map(({ titleKey, icon: Icon, path }) => {
                 const active = isActive(path);
+                const title = t(titleKey);
                 return (
                   <Link
                     key={path}
@@ -195,27 +198,27 @@ export function AdminSidebar({ isOpen, onClose, isCollapsed, onToggleCollapse }:
           }`}>
           <Link
             to="/"
-            title={isCollapsed ? "Ver Tienda" : undefined}
+            title={isCollapsed ? t("admin.sidebar.viewStore") : undefined}
             className={`w-full flex items-center rounded-xl text-sm text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition-colors ${isCollapsed ? "lg:justify-center lg:px-0 lg:py-2.5" : "gap-2.5 px-3 py-2.5"
               }`}
           >
             <Store className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
             <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${isCollapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"
               }`}>
-              Ver Tienda
+              {t("admin.sidebar.viewStore")}
             </span>
           </Link>
           <button
             type="button"
             onClick={handleLogout}
-            title={isCollapsed ? "Cerrar Sesión" : undefined}
+            title={isCollapsed ? t("admin.sidebar.logout") : undefined}
             className={`w-full flex items-center rounded-xl text-sm text-gray-500 hover:bg-red-50 hover:text-red-500 transition-colors ${isCollapsed ? "lg:justify-center lg:px-0 lg:py-2.5" : "gap-2.5 px-3 py-2.5"
               }`}
           >
             <LogOut className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
             <span className={`overflow-hidden transition-all duration-300 whitespace-nowrap ${isCollapsed ? "lg:w-0 lg:opacity-0" : "w-auto opacity-100"
               }`}>
-              Cerrar Sesión
+              {t("admin.sidebar.logout")}
             </span>
           </button>
         </div>

@@ -6,6 +6,7 @@ import { TimezoneSidebar } from "../TimezoneSidebar";
 import { useTimezone } from "../../context/TimezoneContext";
 import { useCurrency } from "../../context/CurrencyContext";
 import { useAuth } from "../../context/AuthContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { Menu, Clock, User, LogOut, ChevronDown } from "lucide-react";
 import {
   NotificationsPanel,
@@ -14,34 +15,38 @@ import {
 } from "./NotificationsPanel";
 import { Bell } from "lucide-react";
 
-const pageTitles: Record<string, string> = {
-  "/admin": "Dashboard",
-  "/admin/products": "Productos",
-  "/admin/categories": "Categorías",
-  "/admin/brands": "Marcas",
-  "/admin/attributes": "Atributos",
-  "/admin/media": "Galería de Medios",
-  "/admin/slides": "Slides Home",
-  "/admin/orders": "Órdenes",
-  "/admin/invoices": "Facturas",
-  "/admin/returns": "Devoluciones",
-  "/admin/customers": "Clientes",
-  "/admin/reviews": "Reseñas",
-  "/admin/coupons": "Cupones",
-  "/admin/loyalty": "Programa de Fidelidad",
-  "/admin/gift-cards": "Tarjetas Regalo",
-  "/admin/campaigns": "Campañas",
-  "/admin/newsletter": "Newsletter",
-  "/admin/seo": "SEO & Meta datos",
-  "/admin/warranties": "Garantías",
-  "/admin/flows": "Flujos de trabajo",
-  "/admin/shipping": "Envíos",
-  "/admin/taxes": "Impuestos",
-  "/admin/emails": "Plantillas de Email",
-  "/admin/settings": "Configuración",
-  "/admin/reports": "Reportes",
-  "/admin/pricing": "Reglas de Precio",
-  "/admin/currency-rates": "Monedas",
+// Map pathname → sidebar i18n key. Kept in sync with the sidebar so the
+// breadcrumb-style title in the topbar matches the nav label and follows
+// the active locale.
+const pageTitleKeys: Record<string, string> = {
+  "/admin": "admin.sidebar.dashboard",
+  "/admin/products": "admin.sidebar.products",
+  "/admin/categories": "admin.sidebar.categories",
+  "/admin/brands": "admin.sidebar.brands",
+  "/admin/attributes": "admin.sidebar.attributes",
+  "/admin/media": "admin.sidebar.media",
+  "/admin/slides": "admin.sidebar.slides",
+  "/admin/orders": "admin.sidebar.orders",
+  "/admin/invoices": "admin.sidebar.invoices",
+  "/admin/returns": "admin.sidebar.returns",
+  "/admin/customers": "admin.sidebar.customers",
+  "/admin/reviews": "admin.sidebar.reviews",
+  "/admin/coupons": "admin.sidebar.coupons",
+  "/admin/loyalty": "admin.sidebar.loyalty",
+  "/admin/gift-cards": "admin.sidebar.giftCards",
+  "/admin/campaigns": "admin.sidebar.campaigns",
+  "/admin/newsletter": "admin.sidebar.newsletter",
+  "/admin/seo": "admin.sidebar.seo",
+  "/admin/warranties": "admin.sidebar.warranties",
+  "/admin/flows": "admin.sidebar.flows",
+  "/admin/shipping": "admin.sidebar.shipping",
+  "/admin/taxes": "admin.sidebar.taxes",
+  "/admin/emails": "admin.sidebar.emails",
+  "/admin/notifications": "admin.sidebar.notifications",
+  "/admin/settings": "admin.sidebar.settings",
+  "/admin/reports": "admin.sidebar.reports",
+  "/admin/pricing": "admin.sidebar.pricing",
+  "/admin/currency-rates": "admin.sidebar.currencies",
 };
 
 export function AdminLayout() {
@@ -53,6 +58,7 @@ export function AdminLayout() {
   const { selectedCountry, toggleSidebar } = useTimezone();
   const { currency } = useCurrency();
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const location = useLocation();
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -70,21 +76,22 @@ export function AdminLayout() {
 
   const handleLogout = () => {
     setProfileMenuOpen(false);
-    if (!confirm("¿Cerrar sesión?")) return;
+    if (!confirm(t("admin.sidebar.confirmLogout"))) return;
     logout().catch(() => { /* logout handles redirect even on failure */ });
   };
 
   const displayName = user?.firstName
     ? `${user.firstName} ${user.lastName ?? ""}`.trim()
-    : "Admin NX036";
+    : t("admin.header.defaultName");
   const displayRole = user?.roles?.includes("ROLE_ADMIN") || user?.roles?.includes("ADMIN")
-    ? "Administrador"
-    : "Usuario";
+    ? t("admin.role.admin")
+    : t("admin.role.user");
   const initials = user?.firstName
     ? `${user.firstName[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "AN"
     : "AN";
 
-  const pageTitle = pageTitles[location.pathname] ?? "Admin";
+  const pageTitleKey = pageTitleKeys[location.pathname];
+  const pageTitle = pageTitleKey ? t(pageTitleKey) : "Admin";
 
   const markRead = (id: string) => setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   const markAllRead = () => setNotifications(prev => prev.map(n => ({ ...n, read: true })));
@@ -196,7 +203,7 @@ export function AdminLayout() {
                     role="menuitem"
                   >
                     <User className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    Mi perfil
+                    {t("admin.header.myProfile")}
                   </Link>
                   <button
                     type="button"
@@ -205,7 +212,7 @@ export function AdminLayout() {
                     role="menuitem"
                   >
                     <LogOut className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    Cerrar sesión
+                    {t("admin.header.logout")}
                   </button>
                 </div>
               )}

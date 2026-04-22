@@ -444,10 +444,10 @@ export function AdminProducts() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <Package className="w-7 h-7 text-indigo-600" />
-                        Productos
+                        {t("admin.products.title")}
                     </h1>
                     <p className="text-xs text-gray-400 mt-1">
-                        {totalElements} producto{totalElements !== 1 ? "s" : ""} en catálogo
+                        {totalElements} {t("admin.products.inCatalog")}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -566,7 +566,7 @@ export function AdminProducts() {
                         }`}
                 >
                     <Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    Filtros
+                    {t("admin.common.filter")}
                     {activeFiltersCount > 0 && (
                         <span className="w-5 h-5 bg-gray-700 text-white text-[10px] rounded-full flex items-center justify-center">
                             {activeFiltersCount}
@@ -577,7 +577,7 @@ export function AdminProducts() {
                 {lowStock > 0 && (
                     <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl flex-shrink-0">
                         <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.5} />
-                        {lowStock} con stock bajo
+                        {lowStock} {t("admin.products.lowStockBanner")}
                     </div>
                 )}
             </div>
