@@ -388,6 +388,49 @@ function OrderModal({
     }
   };
 
+  const buildProductFromItem = (item: OrderItem) => ({
+    id: item.productId,
+    name: item.name,
+    sku: item.sku ?? "",
+    price: item.price,
+    image: item.image,
+    images: [],
+    attributes: [],
+    variants: [],
+    keywords: [],
+    rating: 0,
+    reviews: 0,
+    stock: 0,
+    stockStatus: "in_stock",
+    manageStock: false,
+    allowBackorder: false,
+    weight: 0,
+    dimensions: { length: 0, width: 0, height: 0 },
+    shippingClass: "",
+    slug: "",
+    brand: "",
+    description: "",
+    shortDescription: "",
+    taxClass: "",
+    category: "",
+    subcategory: "",
+    barcode: "",
+    metaTitle: "",
+    metaDescription: "",
+    status: "active",
+    visibility: "public",
+    featured: false,
+  }) as unknown as Parameters<typeof addToCart>[0];
+
+  const handleAddItemToCart = (item: OrderItem) => {
+    if (!item.productId) {
+      toast.error("Producto no identificado");
+      return;
+    }
+    addToCart(buildProductFromItem(item), { quantity: item.quantity });
+    toast.success(`“${item.name}” añadido al carrito`);
+  };
+
   const handleReorder = () => {
     if (!order.items.length) {
       toast.error("Este pedido no tiene productos para re-añadir");
@@ -396,40 +439,7 @@ function OrderModal({
     let added = 0;
     order.items.forEach((item) => {
       if (!item.productId) return;
-      const minimalProduct = {
-        id: item.productId,
-        name: item.name,
-        sku: item.sku ?? "",
-        price: item.price,
-        image: item.image,
-        images: [],
-        attributes: [],
-        variants: [],
-        keywords: [],
-        rating: 0,
-        reviews: 0,
-        stock: 0,
-        stockStatus: "in_stock",
-        manageStock: false,
-        allowBackorder: false,
-        weight: 0,
-        dimensions: { length: 0, width: 0, height: 0 },
-        shippingClass: "",
-        slug: "",
-        brand: "",
-        description: "",
-        shortDescription: "",
-        taxClass: "",
-        category: "",
-        subcategory: "",
-        barcode: "",
-        metaTitle: "",
-        metaDescription: "",
-        status: "active",
-        visibility: "public",
-        featured: false,
-      } as unknown as Parameters<typeof addToCart>[0];
-      addToCart(minimalProduct, { quantity: item.quantity });
+      addToCart(buildProductFromItem(item), { quantity: item.quantity });
       added += 1;
     });
     if (added === 0) {
@@ -590,6 +600,17 @@ function OrderModal({
                         <p className="text-xs text-gray-400">{item.category ? `${item.category} · ` : ""}x{item.quantity}</p>
                       </div>
                       <p className="text-sm text-gray-900 flex-shrink-0">{fmtPrice(item.price)}</p>
+                      {order.status !== "cancelled" && order.status !== "refunded" && (
+                        <button
+                          type="button"
+                          onClick={() => handleAddItemToCart(item)}
+                          title="Añadir al carrito"
+                          aria-label={`Añadir ${item.name} al carrito`}
+                          className="flex-shrink-0 w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-600 hover:text-white hover:bg-gray-900 hover:border-gray-900 transition-colors flex items-center justify-center"
+                        >
+                          <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -649,7 +670,7 @@ function OrderModal({
               className="inline-flex items-center gap-1.5 text-xs bg-gray-900 text-white rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors"
             >
               <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Volver a comprar
+              Comprar todo
             </button>
           )}
 
