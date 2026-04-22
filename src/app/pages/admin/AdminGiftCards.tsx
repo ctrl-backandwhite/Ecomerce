@@ -363,7 +363,7 @@ export function AdminGiftCards() {
                 <div>
                   <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-2">Transacciones</p>
                   {loadingDetail ? (
-                    <p className="text-xs text-gray-400">Cargando…</p>
+                    <p className="text-xs text-gray-400">{t("admin.common.loading")}</p>
                   ) : detail.txs.length === 0 ? (
                     <p className="text-xs text-gray-400">Sin transacciones</p>
                   ) : (

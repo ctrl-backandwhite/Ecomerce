@@ -319,8 +319,8 @@ export function AdminBrands() {
             <h3 className="text-sm text-gray-900 mb-2">¿Eliminar marca?</h3>
             <p className="text-xs text-gray-400 mb-6">Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 text-xs text-gray-500 border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition-colors">Cancelar</button>
-              <button onClick={() => handleDelete(deleteId)} className="flex-1 text-xs text-white bg-red-500 rounded-xl py-2.5 hover:bg-red-600 transition-colors">Eliminar</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 text-xs text-gray-500 border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition-colors">{t("admin.common.cancel")}</button>
+              <button onClick={() => handleDelete(deleteId)} className="flex-1 text-xs text-white bg-red-500 rounded-xl py-2.5 hover:bg-red-600 transition-colors">{t("admin.common.delete")}</button>
             </div>
           </div>
         </div>

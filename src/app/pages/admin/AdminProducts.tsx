@@ -767,7 +767,7 @@ export function AdminProducts() {
                 {loading && products.length > 0 && (
                     <div className="sticky top-0 z-10 flex items-center gap-2 px-3 py-1.5 bg-blue-50/90 border border-blue-100 rounded-xl backdrop-blur-sm">
                         <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" strokeWidth={1.5} />
-                        <span className="text-xs text-blue-600">Cargando…</span>
+                        <span className="text-xs text-blue-600">{t("admin.common.loading")}</span>
                     </div>
                 )}
 

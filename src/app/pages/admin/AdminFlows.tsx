@@ -1120,8 +1120,8 @@ export function AdminFlows() {
             <h3 className="text-sm text-gray-900 text-center mb-1">¿Eliminar "{deleteTarget.name}"?</h3>
             <p className="text-xs text-gray-400 text-center mb-5">Los pedidos en curso que usen este flujo no se verán afectados.</p>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 h-8 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
-              <button onClick={handleDeleteConfirm} className="flex-1 h-8 text-xs text-white bg-red-500 rounded-lg hover:bg-red-600">Eliminar</button>
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 h-8 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">{t("admin.common.cancel")}</button>
+              <button onClick={handleDeleteConfirm} className="flex-1 h-8 text-xs text-white bg-red-500 rounded-lg hover:bg-red-600">{t("admin.common.delete")}</button>
             </div>
           </div>
         </div>
