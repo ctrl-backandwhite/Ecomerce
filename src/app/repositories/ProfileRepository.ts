@@ -111,6 +111,7 @@ export interface PaymentMethod {
     expiryYear?: number;
     paypalEmail?: string;
     walletAddress?: string;
+    stripePaymentMethodId?: string; // pm_xxx from Stripe.js
     isDefault: boolean;
     createdAt?: string;
     updatedAt?: string;
@@ -125,6 +126,7 @@ export interface PaymentMethodPayload {
     expiryYear?: number;
     paypalEmail?: string;
     walletAddress?: string;
+    stripePaymentMethodId?: string; // pm_xxx from Stripe.js
     isDefault?: boolean;
 }
 

@@ -268,7 +268,7 @@ export function InvoiceDocument({
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">IVA (10%)</span>
+                <span className="text-gray-500">IVA{data.subtotal > 0 ? ` (${Math.round((data.tax / data.subtotal) * 100)}%)` : ""}</span>
                 <span className="text-gray-900">{formatPrice(data.tax)}</span>
               </div>
               {(data.discountAmount ?? 0) > 0 && (

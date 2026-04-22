@@ -12,6 +12,8 @@ import { MOCK_USDT_ADDRESS, MOCK_BTC_ADDRESS } from "../types";
 import type { CheckoutState, CheckoutAction } from "../types";
 import type { UserProfile, PaymentMethod } from "../../../context/UserContext";
 import { useLanguage } from "../../../context/LanguageContext";
+import { CardNumberElement, CardExpiryElement, CardCvcElement } from "@stripe/react-stripe-js";
+import type { StripeElementChangeEvent } from "@stripe/stripe-js";
 
 interface PaymentStepProps {
     state: CheckoutState;
@@ -252,17 +254,10 @@ export function PaymentStep({
 
                                                     <div>
                                                         <label className="block text-xs text-gray-400 mb-1.5">{t("checkout.payment.cardNumber") || "Número de tarjeta"}</label>
-                                                        <div className="relative">
-                                                            <input
-                                                                value={payment.cardNumber}
-                                                                onChange={(e) => {
-                                                                    const raw = e.target.value.replace(/\D/g, "").slice(0, 16);
-                                                                    const fmt = raw.match(/.{1,4}/g)?.join(" ") ?? raw;
-                                                                    dispatch({ type: "SET_PAYMENT", payload: { cardNumber: fmt } });
-                                                                }}
-                                                                className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-28 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono tracking-widest"
-                                                                placeholder="1234 5678 9012 3456"
-                                                                maxLength={19}
+                                                        <div className="relative w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-28 focus-within:border-gray-400 bg-white">
+                                                            <CardNumberElement
+                                                                onChange={(e: StripeElementChangeEvent) => dispatch({ type: "SET_STRIPE_COMPLETE", field: "number", complete: e.complete })}
+                                                                options={{ style: { base: { fontSize: "14px", color: "#111827", fontFamily: "ui-monospace, monospace", letterSpacing: "0.05em", "::placeholder": { color: "#d1d5db" } } } }}
                                                             />
                                                             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-50">
                                                                 <VisaLogo size={16} />
@@ -284,28 +279,19 @@ export function PaymentStep({
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
                                                             <label className="block text-xs text-gray-400 mb-1.5">{t("checkout.payment.expiry") || "Vencimiento"}</label>
-                                                            <input
-                                                                value={payment.expiry}
-                                                                onChange={(e) => {
-                                                                    let v = e.target.value.replace(/\D/g, "").slice(0, 4);
-                                                                    if (v.length > 2) v = v.slice(0, 2) + "/" + v.slice(2);
-                                                                    dispatch({ type: "SET_PAYMENT", payload: { expiry: v } });
-                                                                }}
-                                                                className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
-                                                                placeholder="MM/YY"
-                                                                maxLength={5}
-                                                            />
+                                                            <div className="w-full border border-gray-200 rounded-lg px-3 py-2.5 focus-within:border-gray-400 bg-white">
+                                                                <CardExpiryElement
+                                                                    onChange={(e: StripeElementChangeEvent) => dispatch({ type: "SET_STRIPE_COMPLETE", field: "expiry", complete: e.complete })}
+                                                                    options={{ style: { base: { fontSize: "14px", color: "#111827", fontFamily: "ui-monospace, monospace", "::placeholder": { color: "#d1d5db" } } } }}
+                                                                />
+                                                            </div>
                                                         </div>
                                                         <div>
                                                             <label className="block text-xs text-gray-400 mb-1.5">CVV</label>
-                                                            <div className="relative">
-                                                                <input
-                                                                    value={payment.cvv}
-                                                                    onChange={(e) => dispatch({ type: "SET_PAYMENT", payload: { cvv: e.target.value.replace(/\D/g, "").slice(0, 4) } })}
-                                                                    className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 pr-10 focus:outline-none focus:border-gray-400 placeholder-gray-300 font-mono"
-                                                                    placeholder="•••"
-                                                                    maxLength={4}
-                                                                    type="password"
+                                                            <div className="relative w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-10 focus-within:border-gray-400 bg-white">
+                                                                <CardCvcElement
+                                                                    onChange={(e: StripeElementChangeEvent) => dispatch({ type: "SET_STRIPE_COMPLETE", field: "cvc", complete: e.complete })}
+                                                                    options={{ style: { base: { fontSize: "14px", color: "#111827", fontFamily: "ui-monospace, monospace", "::placeholder": { color: "#d1d5db" } } } }}
                                                                 />
                                                                 <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" strokeWidth={1.5} />
                                                             </div>
@@ -316,8 +302,10 @@ export function PaymentStep({
                                                         <input
                                                             type="checkbox"
                                                             checked={state.saveNewPaymentMethod}
-                                                            onChange={(e) => dispatch({ type: "PATCH",
-                                                                payload: { saveNewPaymentMethod: e.target.checked } })}
+                                                            onChange={(e) => dispatch({
+                                                                type: "PATCH",
+                                                                payload: { saveNewPaymentMethod: e.target.checked }
+                                                            })}
                                                             className="w-3.5 h-3.5 accent-gray-700 cursor-pointer"
                                                         />
                                                         <span className="text-xs text-gray-600">
@@ -358,8 +346,10 @@ export function PaymentStep({
                                                         <input
                                                             type="checkbox"
                                                             checked={state.saveNewPaymentMethod}
-                                                            onChange={(e) => dispatch({ type: "PATCH",
-                                                                payload: { saveNewPaymentMethod: e.target.checked } })}
+                                                            onChange={(e) => dispatch({
+                                                                type: "PATCH",
+                                                                payload: { saveNewPaymentMethod: e.target.checked }
+                                                            })}
                                                             className="w-3.5 h-3.5 accent-gray-700 cursor-pointer"
                                                         />
                                                         <span className="text-xs text-gray-600">

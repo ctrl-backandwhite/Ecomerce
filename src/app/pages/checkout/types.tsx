@@ -83,6 +83,7 @@ export interface CheckoutState {
     selectedPmId: string;
     payMethod: PayMethod;
     payment: { cardNumber: string; cardName: string; expiry: string; cvv: string };
+    stripeElementsComplete: { number: boolean; expiry: boolean; cvc: boolean };
     paypalEmail: string;
     copiedAddr: boolean;
     savedCardCvv: string;
@@ -123,6 +124,7 @@ export type CheckoutAction =
     | { type: "SET_CONTACT"; payload: Partial<CheckoutState["contact"]> }
     | { type: "SET_MANUAL_ADDR"; payload: Partial<CheckoutState["manualAddr"]> }
     | { type: "SET_PAYMENT"; payload: Partial<CheckoutState["payment"]> }
+    | { type: "SET_STRIPE_COMPLETE"; field: "number" | "expiry" | "cvc"; complete: boolean }
     | { type: "SYNC_PROFILE"; payload: { email: string; phone: string; firstName: string; lastName: string; defaultAddrId?: string; defaultPmId?: string } }
     | { type: "RESET_COUPON" }
     | { type: "RESET_GIFT_CARD" }

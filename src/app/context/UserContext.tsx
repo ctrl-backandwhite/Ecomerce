@@ -43,6 +43,7 @@ export interface PaymentMethod {
   cardLast4?: string;
   cardName?: string;
   cardExpiry?: string;
+  stripePaymentMethodId?: string; // pm_xxx from Stripe.js
   /* PayPal */
   paypalEmail?: string;
   /* Crypto */
@@ -146,6 +147,7 @@ function mapApiPaymentMethod(pm: ApiPaymentMethod): PaymentMethod {
     cardExpiry: expiryStr,
     paypalEmail: pm.paypalEmail,
     cryptoAddress: pm.walletAddress,
+    stripePaymentMethodId: pm.stripePaymentMethodId,
   };
 }
 
@@ -185,6 +187,7 @@ function toPaymentMethodPayload(
     expiryYear,
     paypalEmail: pm.paypalEmail,
     walletAddress: pm.cryptoAddress,
+    stripePaymentMethodId: pm.stripePaymentMethodId,
     isDefault: pm.isDefault ?? false,
   };
 }

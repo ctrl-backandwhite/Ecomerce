@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useCart } from "../../../context/CartContext";
 import { useUser } from "../../../context/UserContext";
 import { useCurrency } from "../../../context/CurrencyContext";
+import { useStripe, useElements, CardNumberElement } from "@stripe/react-stripe-js";
 import { orderRepository } from "../../../repositories/OrderRepository";
 import { paymentRepository } from "../../../repositories/PaymentRepository";
 import { invoiceRepository } from "../../../repositories/InvoiceRepository";
@@ -23,6 +24,8 @@ export function useCheckoutSubmit(
     const { items } = useCart();
     const { user } = useUser();
     const { currency } = useCurrency();
+    const stripe = useStripe();
+    const elements = useElements();
 
     const handleSubmit = useCallback(async () => {
         const {
@@ -43,7 +46,9 @@ export function useCheckoutSubmit(
         const selectedShipping = state.shippingOptions.find((o) => o.id === state.selectedShippingId);
         const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
         const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
-        const tax = state.taxCalc?.taxAmount ?? 0;
+        // Mirror the order service default (10 %) when no tax data is available
+        // so the client charges the same total the backend will compute.
+        const tax = state.taxCalc?.taxAmount ?? +(subtotal * 0.10).toFixed(2);
         const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
         const loyaltyDiscount = loyaltyRate > 0 ? loyaltyPoints / loyaltyRate : 0;
 
@@ -71,12 +76,16 @@ export function useCheckoutSubmit(
             : selectedPmId !== "new"
                 ? selectedPm?.type === "card" ? !!savedCardCvv : true
                 : payMethod === "card"
-                    ? !!(state.payment.cardNumber && state.payment.cardName && state.payment.expiry && state.payment.cvv)
+                    ? !!(state.stripeElementsComplete.number && state.stripeElementsComplete.expiry && state.stripeElementsComplete.cvc && state.payment.cardName)
                     : payMethod === "paypal"
                         ? !!state.paypalEmail
                         : true;
 
-        if (!step1Valid || !step2Valid || !step3Valid) return;
+        if (!step1Valid || !step2Valid || !step3Valid) {
+            logger.warn("[Checkout] submit blocked", { step1Valid, step2Valid, step3Valid, payMethod, selectedPmId });
+            toast.error("Faltan datos por completar para procesar el pago");
+            return;
+        }
 
         dispatch({ type: "PATCH", payload: { isProcessing: true, orderError: null } });
         dispatch({ type: "PATCH", payload: { orderSnapshot: [...items] } });
@@ -196,7 +205,23 @@ export function useCheckoutSubmit(
                 currencyCode: userCurrency,
                 notes: undefined,
             });
-            dispatch({ type: "PATCH", payload: { createdOrder: order } });
+            // Use the backend's authoritative totals (tax/shipping/total) so the
+            // confirmation page, invoice and any UI showing amounts match what
+            // was actually charged. The local frontend snapshot may differ
+            // because the tax-quote endpoint can return 0 for some addresses
+            // while the order service applies the configured tax rate.
+            dispatch({
+                type: "PATCH",
+                payload: {
+                    createdOrder: order,
+                    totalsSnapshot: {
+                        subtotal: order.subtotal,
+                        shipping: order.shippingCost,
+                        tax: order.taxAmount,
+                        total: order.total,
+                    },
+                },
+            });
 
             /* 4 ─ Process payment (skip if total is fully covered by gift card / discounts) */
             if (total > 0) {
@@ -206,6 +231,49 @@ export function useCheckoutSubmit(
                 };
 
                 try {
+                    let stripePaymentMethodId: string | null = null;
+                    // Card metadata captured from Stripe so we can persist it to
+                    // the user's saved methods. Filled when tokenizing a new card.
+                    let stripeCardBrand: string | null = null;
+                    let stripeCardLast4: string | null = null;
+                    let stripeCardExpMonth: number | null = null;
+                    let stripeCardExpYear: number | null = null;
+
+                    // If paying with CARD, tokenize via Stripe.js first
+                    if (activeType === "card") {
+                        if (selectedPm && selectedPm.stripePaymentMethodId) {
+                            // Use existing saved card token
+                            logger.info("[Checkout] Saved card payment — using stored payment method ID", {
+                                paymentMethodId: selectedPm.stripePaymentMethodId,
+                            });
+                            stripePaymentMethodId = selectedPm.stripePaymentMethodId;
+                        } else if (selectedPm) {
+                            logger.warn("[Checkout] Saved card does not have payment method ID — using mock");
+                            // Old saved card without token → falls back to mock automatically
+                        } else if (stripe && elements) {
+                            logger.info("[Checkout] New card payment — tokenizing via Stripe Elements");
+                            const cardElement = elements.getElement(CardNumberElement);
+                            if (!cardElement) {
+                                throw new Error("Stripe card element not found. Please refresh and try again.");
+                            }
+                            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                                type: "card",
+                                card: cardElement,
+                                billing_details: { name: state.payment.cardName },
+                            });
+                            if (error || !paymentMethod) {
+                                logger.error("Stripe payment method creation failed", error);
+                                throw new Error(error?.message ?? "Failed to tokenize card with Stripe.js.");
+                            }
+                            stripePaymentMethodId = paymentMethod.id;
+                            stripeCardBrand = paymentMethod.card?.brand ?? null;
+                            stripeCardLast4 = paymentMethod.card?.last4 ?? null;
+                            stripeCardExpMonth = paymentMethod.card?.exp_month ?? null;
+                            stripeCardExpYear = paymentMethod.card?.exp_year ?? null;
+                            logger.info("[Checkout] Card tokenized successfully", { paymentMethodId: stripePaymentMethodId });
+                        }
+                    }
+
                     await paymentRepository.processPayment({
                         orderId: order.id,
                         userId: user.id,
@@ -213,6 +281,7 @@ export function useCheckoutSubmit(
                         amount: order.total,
                         currency: order.currencyCode ?? userCurrency,
                         paymentMethod: methodMap[activeType] ?? "CARD",
+                        stripePaymentMethodId: stripePaymentMethodId || undefined,
                     });
                 } catch (payErr) {
                     try { await orderRepository.cancelOrder(order.id); } catch (err) { logger.warn("Suppressed error", err); }
@@ -227,10 +296,9 @@ export function useCheckoutSubmit(
                  */
                 if (selectedPmId === "new" && state.saveNewPaymentMethod) {
                     try {
-                        if (payMethod === "card" && state.payment.cardNumber) {
-                            const digits = state.payment.cardNumber.replace(/\s/g, "");
-                            const last4 = digits.slice(-4);
-                            const brand = digits.startsWith("4") ? "visa" : "mastercard";
+                        if (payMethod === "card" && stripePaymentMethodId && stripeCardLast4) {
+                            const last4 = stripeCardLast4;
+                            const brand = (stripeCardBrand ?? "card").toLowerCase();
                             // Dedup: if the user already has a card with the
                             // same brand + last4, skip — we don't want
                             // duplicates in the saved-methods dropdown.
@@ -240,15 +308,16 @@ export function useCheckoutSubmit(
                                     && (pm.cardBrand ?? "").toLowerCase() === brand,
                             );
                             if (!alreadySaved) {
-                                const [mm, yy] = state.payment.expiry.split("/").map((s) => s.trim());
+                                const prettyBrand = brand.charAt(0).toUpperCase() + brand.slice(1);
                                 await profileRepository.createPaymentMethod({
                                     type: "CARD",
-                                    label: `${brand === "visa" ? "Visa" : "Mastercard"} ···· ${last4}`,
+                                    label: `${prettyBrand} ···· ${last4}`,
                                     last4,
                                     brand,
-                                    expiryMonth: parseInt(mm, 10) || undefined,
-                                    expiryYear: yy ? (2000 + parseInt(yy, 10)) : undefined,
+                                    expiryMonth: stripeCardExpMonth ?? undefined,
+                                    expiryYear: stripeCardExpYear ?? undefined,
                                     isDefault: user.paymentMethods.length === 0,
+                                    stripePaymentMethodId, // Save the token
                                 });
                             } else {
                                 logger.debug("[Checkout] card already saved — skipping createPaymentMethod");

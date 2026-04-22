@@ -12,6 +12,8 @@ function checkoutReducer(state: CheckoutState, action: CheckoutAction): Checkout
             return { ...state, contact: { ...state.contact, ...action.payload } };
         case "SET_MANUAL_ADDR":
             return { ...state, manualAddr: { ...state.manualAddr, ...action.payload } };
+        case "SET_STRIPE_COMPLETE":
+            return { ...state, stripeElementsComplete: { ...state.stripeElementsComplete, [action.field]: action.complete } };
         case "SET_PAYMENT":
             return { ...state, payment: { ...state.payment, ...action.payload } };
         case "SYNC_PROFILE": {
@@ -84,6 +86,7 @@ export function buildInitialState(user: UserProfile): CheckoutState {
             cardName: `${user.firstName} ${user.lastName}`.toUpperCase(),
             expiry: "", cvv: "",
         },
+        stripeElementsComplete: { number: false, expiry: false, cvc: false },
         paypalEmail: user.email,
         copiedAddr: false,
         savedCardCvv: "",

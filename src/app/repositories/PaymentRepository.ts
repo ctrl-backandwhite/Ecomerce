@@ -54,6 +54,8 @@ export interface ProcessPaymentPayload {
     currency?: string;
     paymentMethod: "CARD" | "PAYPAL" | "USDT" | "BTC";
     idempotencyKey?: string;
+    /** Stripe payment method ID (pm_xxxx) created by Stripe.js. Required for real CARD payments. */
+    stripePaymentMethodId?: string;
 }
 
 export interface Refund {
