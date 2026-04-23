@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Mail, Users, TrendingUp, Send, X, Download, Trash2, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { type NewsletterSubscriber as ApiSub, newsletterRepository } from "../../repositories/NewsletterRepository";
 
 interface Subscriber {
@@ -38,6 +39,7 @@ const SOURCE_LABELS: Record<string, string> = {
 };
 
 export function AdminNewsletter() {
+    const { t } = useLanguage();
   const [subs, setSubs] = useState<Subscriber[]>([]);
   const [statusF, setStatusF] = useState<"all" | Subscriber["status"]>("all");
   const [showCompose, setShowCompose] = useState(false);
@@ -71,7 +73,7 @@ export function AdminNewsletter() {
     <div className="p-6 space-y-5">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Newsletter</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.sidebar.newsletter")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Gestiona suscriptores y envía campañas</p>
         </div>
         <div className="flex items-center gap-2">

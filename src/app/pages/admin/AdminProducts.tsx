@@ -33,7 +33,7 @@ import { ProductModal, type ProductForm, productToForm, makeEmptyForm } from "..
    ██  Main AdminProducts page
    ══════════════════════════════════════════════════════════════ */
 export function AdminProducts() {
-    const { locale } = useLanguage();
+    const { locale, t } = useLanguage();
     const apiLocale = locale === "pt" ? "pt-BR" : locale;
     const { formatPrice } = useCurrency();
 
@@ -140,7 +140,19 @@ export function AdminProducts() {
         }
     }
 
-    const lowStock = products.filter(p => p.warehouseInventoryNum > 0 && p.warehouseInventoryNum < 10).length;
+    /**
+     * Effective stock shown in the admin list. The CJ sync currently pushes
+     * `listed_num` (active sellers) but leaves `warehouse_inventory_num` at 0,
+     * which otherwise painted every row as "0 stock". Same fallback used by
+     * `mapNexaProductDetail` on the storefront so both views stay aligned.
+     */
+    const effectiveStock = (p: AdminProduct) =>
+        p.warehouseInventoryNum > 0 ? p.warehouseInventoryNum : (p.listedNum || 0);
+
+    const lowStock = products.filter(p => {
+        const s = effectiveStock(p);
+        return s > 0 && s < 10;
+    }).length;
 
     function handleCloneProduct(p: AdminProduct) {
         const cloned = productToForm(p);
@@ -432,10 +444,10 @@ export function AdminProducts() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                         <Package className="w-7 h-7 text-indigo-600" />
-                        Productos
+                        {t("admin.products.title")}
                     </h1>
                     <p className="text-xs text-gray-400 mt-1">
-                        {totalElements} producto{totalElements !== 1 ? "s" : ""} en catálogo
+                        {totalElements} {t("admin.products.inCatalog")}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -532,7 +544,7 @@ export function AdminProducts() {
                         type="text"
                         value={searchInput}
                         onChange={e => handleSearchChange(e.target.value)}
-                        placeholder="Buscar por nombre de producto…"
+                        placeholder={t("admin.products.searchPlaceholder")}
                         className="w-full text-xs text-gray-900 border border-gray-200 rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:border-gray-400 placeholder-gray-300"
                     />
                     {searchInput && (
@@ -554,7 +566,7 @@ export function AdminProducts() {
                         }`}
                 >
                     <Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    Filtros
+                    {t("admin.common.filter")}
                     {activeFiltersCount > 0 && (
                         <span className="w-5 h-5 bg-gray-700 text-white text-[10px] rounded-full flex items-center justify-center">
                             {activeFiltersCount}
@@ -565,7 +577,7 @@ export function AdminProducts() {
                 {lowStock > 0 && (
                     <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 px-3 py-1.5 rounded-xl flex-shrink-0">
                         <AlertTriangle className="w-3.5 h-3.5" strokeWidth={1.5} />
-                        {lowStock} con stock bajo
+                        {lowStock} {t("admin.products.lowStockBanner")}
                     </div>
                 )}
             </div>
@@ -755,7 +767,7 @@ export function AdminProducts() {
                 {loading && products.length > 0 && (
                     <div className="sticky top-0 z-10 flex items-center gap-2 px-3 py-1.5 bg-blue-50/90 border border-blue-100 rounded-xl backdrop-blur-sm">
                         <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin" strokeWidth={1.5} />
-                        <span className="text-xs text-blue-600">Cargando…</span>
+                        <span className="text-xs text-blue-600">{t("admin.common.loading")}</span>
                     </div>
                 )}
 
@@ -804,8 +816,8 @@ export function AdminProducts() {
                                             </span>
                                         )}
                                         <Badge
-                                            label={`${p.warehouseInventoryNum}`}
-                                            variant={stockVariant(p.warehouseInventoryNum)}
+                                            label={`${effectiveStock(p)}`}
+                                            variant={stockVariant(effectiveStock(p))}
                                         />
                                         <StatusBadge
                                             status={p.status || "DRAFT"}
@@ -901,7 +913,7 @@ export function AdminProducts() {
                                         </div>
                                         <div className="flex flex-col items-center text-center">
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Stock</p>
-                                            <p className="text-xs text-gray-700">{p.warehouseInventoryNum}</p>
+                                            <p className="text-xs text-gray-700">{effectiveStock(p)}</p>
                                         </div>
                                         <div className="flex flex-col items-center text-center">
                                             <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Listados</p>

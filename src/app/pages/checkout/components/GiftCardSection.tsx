@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Gift, X, Check, CreditCard, ChevronDown } from "lucide-react";
 import { useCurrency } from "../../../context/CurrencyContext";
 import type { CheckoutAction, AppliedGiftCard, MyGiftCard } from "../types";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface GiftCardSectionProps {
     giftCardCode: string;
@@ -26,6 +27,7 @@ export function GiftCardSection({
     appliedAmounts, remainingTotal,
     dispatch, applyManualCard,
 }: GiftCardSectionProps) {
+    const { t } = useLanguage();
     const isApplied = (code: string) => appliedGiftCards.some(c => c.code === code);
     const { formatPrice, formatFromUsd } = useCurrency();
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -89,7 +91,7 @@ export function GiftCardSection({
         <div className="px-5 py-3 border-t border-gray-50">
             <div className="flex items-center gap-2 mb-2">
                 <Gift className="w-3.5 h-3.5 text-violet-400" strokeWidth={1.5} />
-                <span className="text-xs text-gray-600">Tarjetas regalo</span>
+                <span className="text-xs text-gray-600">{t("checkout.giftCards") || "Tarjetas regalo"}</span>
                 {giftCardDiscount > 0 && (
                     <span className="text-[10px] text-violet-600 bg-violet-50 px-1.5 py-0.5 rounded-full ml-auto">
                         −{formatPrice(giftCardDiscount)}
@@ -100,7 +102,7 @@ export function GiftCardSection({
             {/* ── User's active gift cards ── */}
             {myGiftCardsLoaded && myGiftCards.length > 0 && (
                 <div className="mb-2.5 space-y-1.5">
-                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">Mis tarjetas</p>
+                    <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t("checkout.giftCards.mine") || "Mis tarjetas"}</p>
 
                     {/* ── Inline mode (≤ 3 cards) ── */}
                     {!useDropdown && (

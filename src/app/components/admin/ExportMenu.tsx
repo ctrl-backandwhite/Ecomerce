@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Download, FileText, Table2, ChevronDown, Loader2 } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 interface ExportMenuProps {
   onCsv:   () => void;
@@ -9,6 +10,7 @@ interface ExportMenuProps {
 }
 
 export function ExportMenu({ onCsv, onPdf, disabled }: ExportMenuProps) {
+  const { t } = useLanguage();
   const [open, setOpen]           = useState(false);
   const [loading, setLoading]     = useState<"csv" | "pdf" | null>(null);
   const [progress, setProgress]   = useState("");
@@ -65,7 +67,7 @@ export function ExportMenu({ onCsv, onPdf, disabled }: ExportMenuProps) {
           <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
         )}
         <span className="max-w-[120px] truncate">
-          {loading ? progress : "Exportar"}
+          {loading ? progress : t("admin.dash.exportBtn")}
         </span>
         {!loading && (
           <ChevronDown
@@ -87,7 +89,7 @@ export function ExportMenu({ onCsv, onPdf, disabled }: ExportMenuProps) {
               <Table2 className="w-3.5 h-3.5 text-green-600" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-xs text-gray-800">Exportar CSV</p>
+              <p className="text-xs text-gray-800">{t("admin.dash.exportBtn")} CSV</p>
               <p className="text-[11px] text-gray-400">Datos tabulares · Excel compatible</p>
             </div>
           </button>
@@ -103,7 +105,7 @@ export function ExportMenu({ onCsv, onPdf, disabled }: ExportMenuProps) {
               <FileText className="w-3.5 h-3.5 text-red-500" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-xs text-gray-800">Exportar PDF</p>
+              <p className="text-xs text-gray-800">{t("admin.dash.exportBtn")} PDF</p>
               <p className="text-[11px] text-gray-400">Incluye gráficos · Listo para imprimir</p>
             </div>
           </button>

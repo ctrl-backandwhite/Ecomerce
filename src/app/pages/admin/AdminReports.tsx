@@ -16,6 +16,7 @@ import { useNexaProducts } from "../../hooks/useNexaProducts";
 import { downloadCsv } from "../../utils/exportCsv";
 import { exportToPdf } from "../../utils/exportPdf";
 import { ExportMenu } from "../../components/admin/ExportMenu";
+import { useLanguage } from "../../context/LanguageContext";
 
 /* ═══════════════════════════════════════════════════════════════
    MOCK DATA
@@ -161,19 +162,19 @@ const PERIOD_LABELS: Record<Period, string> = {
   custom: "Rango",
 };
 
-const STATUS_META: Record<TxStatus, { label: string; dot: string; bg: string; text: string }> = {
-  completada: { label: "Completada", dot: "bg-green-400", bg: "bg-green-50", text: "text-green-700" },
-  enviada: { label: "Enviada", dot: "bg-violet-400", bg: "bg-violet-50", text: "text-violet-700" },
-  procesando: { label: "Procesando", dot: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-700" },
-  pendiente: { label: "Pendiente", dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-700" },
-  cancelada: { label: "Cancelada", dot: "bg-red-400", bg: "bg-red-50", text: "text-red-700" },
-  reembolsada: { label: "Reembolsada", dot: "bg-orange-400", bg: "bg-orange-50", text: "text-orange-700" },
+const STATUS_META: Record<TxStatus, { label: string; labelKey: string; dot: string; bg: string; text: string }> = {
+  completada: { label: "Completada", labelKey: "admin.reports.txStatus.completed", dot: "bg-green-400", bg: "bg-green-50", text: "text-green-700" },
+  enviada: { label: "Enviada", labelKey: "admin.reports.txStatus.shipped", dot: "bg-violet-400", bg: "bg-violet-50", text: "text-violet-700" },
+  procesando: { label: "Procesando", labelKey: "admin.reports.txStatus.processing", dot: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-700" },
+  pendiente: { label: "Pendiente", labelKey: "admin.reports.txStatus.pending", dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-700" },
+  cancelada: { label: "Cancelada", labelKey: "admin.reports.txStatus.cancelled", dot: "bg-red-400", bg: "bg-red-50", text: "text-red-700" },
+  reembolsada: { label: "Reembolsada", labelKey: "admin.reports.txStatus.refunded", dot: "bg-orange-400", bg: "bg-orange-50", text: "text-orange-700" },
 };
 
-const TYPE_META: Record<TxType, { label: string; icon: React.ElementType; color: string }> = {
-  venta: { label: "Venta", icon: ShoppingBag, color: "text-gray-900" },
-  devolucion: { label: "Devolución", icon: RotateCcw, color: "text-orange-600" },
-  cancelacion: { label: "Cancelación", icon: XCircle, color: "text-red-500" },
+const TYPE_META: Record<TxType, { label: string; labelKey: string; icon: React.ElementType; color: string }> = {
+  venta: { label: "Venta", labelKey: "admin.reports.txType.sale", icon: ShoppingBag, color: "text-gray-900" },
+  devolucion: { label: "Devolución", labelKey: "admin.reports.txType.return", icon: RotateCcw, color: "text-orange-600" },
+  cancelacion: { label: "Cancelación", labelKey: "admin.reports.txType.cancellation", icon: XCircle, color: "text-red-500" },
 };
 
 const PAY_META: Record<PayMethod, { icon: React.ElementType }> = {
@@ -211,6 +212,14 @@ function CustomTooltip({ active, payload, label }: any) {
    MAIN COMPONENT
 ═══════════════════════════════════════════════════════════════ */
 export function AdminReports() {
+  const { t } = useLanguage();
+  const PERIOD_I18N: Record<Period, string> = {
+    today: t("admin.reports.period.today"),
+    week: t("admin.reports.period.week"),
+    month: t("admin.reports.period.month"),
+    year: t("admin.reports.period.year"),
+    custom: t("admin.reports.period.custom"),
+  };
   const [period, setPeriod] = useState<Period>("month");
   const [customFrom, setCustomFrom] = useState("2026-02-01");
   const [customTo, setCustomTo] = useState("2026-03-16");
@@ -344,8 +353,8 @@ export function AdminReports() {
       {/* ── Header ────────────────────────────────────────── */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Balance Contable</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Histórico de ventas · NX036 Store</p>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.reports.title")}</h1>
+          <p className="text-xs text-gray-400 mt-0.5">{t("admin.reports.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -353,7 +362,7 @@ export function AdminReports() {
             className={`flex items-center gap-1.5 h-7 px-3 text-xs border rounded-lg transition-colors ${showFilters ? "bg-gray-600 text-white border-gray-600" : "text-gray-600 border-gray-200 hover:bg-gray-50"}`}
           >
             <Filter className="w-3.5 h-3.5" strokeWidth={1.5} />
-            Filtros
+            {t("admin.common.filter")}
           </button>
           <ExportMenu
             onCsv={handleCsvExport}
@@ -373,7 +382,7 @@ export function AdminReports() {
               }`}
           >
             {p === "custom" && <Calendar className="w-3 h-3" strokeWidth={1.5} />}
-            {PERIOD_LABELS[p]}
+            {PERIOD_I18N[p]}
           </button>
         ))}
 
@@ -431,12 +440,12 @@ export function AdminReports() {
 
           {/* Type filter */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] text-gray-400 uppercase tracking-wider">Tipo</span>
+            <span className="text-[11px] text-gray-400 uppercase tracking-wider">{t("admin.reports.ledger.col.type")}</span>
             {([
-              { v: "todas", label: "Todos", icon: null },
-              { v: "venta", label: "Ventas", icon: ShoppingBag },
-              { v: "devolucion", label: "Devoluciones", icon: RotateCcw },
-              { v: "cancelacion", label: "Cancelaciones", icon: XCircle },
+              { v: "todas", label: t("admin.common.all"), icon: null },
+              { v: "venta", label: t("admin.reports.txType.sale"), icon: ShoppingBag },
+              { v: "devolucion", label: t("admin.reports.kpi.returns"), icon: RotateCcw },
+              { v: "cancelacion", label: t("admin.reports.kpi.cancellations"), icon: XCircle },
             ] as { v: TxType | "todas"; label: string; icon: any }[]).map(opt => (
               <button
                 key={opt.v}
@@ -459,66 +468,66 @@ export function AdminReports() {
         {/* Ingresos brutos */}
         <div className="lg:col-span-2 bg-gray-700 border border-gray-600 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Ingresos brutos</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.grossRevenue")}</span>
             <div className="w-7 h-7 bg-white/10 rounded-lg flex items-center justify-center">
               <DollarSign className="w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
             </div>
           </div>
           <div>
             <p className="text-2xl tracking-tight text-white tabular-nums">{fmt(kpis.bruto)}</p>
-            <p className="text-[11px] text-gray-500 mt-0.5">{kpis.numVentas} ventas registradas</p>
+            <p className="text-[11px] text-gray-500 mt-0.5">{kpis.numVentas} {t("admin.reports.kpi.salesRecorded")}</p>
           </div>
         </div>
         {/* Descuentos */}
         <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Descuentos</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.discounts")}</span>
             <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center">
               <TrendingDown className="w-3.5 h-3.5 text-amber-500" strokeWidth={1.5} />
             </div>
           </div>
           <div>
             <p className="text-xl tracking-tight text-amber-600 tabular-nums">-{fmt(kpis.descuentos)}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">Cupones aplicados</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{t("admin.reports.kpi.couponsApplied")}</p>
           </div>
         </div>
         {/* Devoluciones */}
         <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Devoluciones</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.returns")}</span>
             <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center">
               <RotateCcw className="w-3.5 h-3.5 text-orange-500" strokeWidth={1.5} />
             </div>
           </div>
           <div>
             <p className="text-xl tracking-tight text-orange-600 tabular-nums">-{fmt(kpis.devolTotal)}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{kpis.numDev} devoluciones</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{kpis.numDev} {t("admin.reports.kpi.returnsCount")}</p>
           </div>
         </div>
         {/* Cancelaciones */}
         <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Cancelaciones</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.cancellations")}</span>
             <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center">
               <XCircle className="w-3.5 h-3.5 text-red-500" strokeWidth={1.5} />
             </div>
           </div>
           <div>
             <p className="text-xl tracking-tight text-red-600 tabular-nums">{fmt(kpis.cancelTotal)}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">{kpis.numCancel} canceladas</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{kpis.numCancel} {t("admin.reports.kpi.cancelledCount")}</p>
           </div>
         </div>
         {/* Ingresos netos */}
         <div className="bg-white border border-gray-100 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] text-gray-400">Ingresos netos</span>
+            <span className="text-[11px] text-gray-400">{t("admin.reports.kpi.net")}</span>
             <div className="w-7 h-7 bg-gray-50 border border-gray-100 rounded-lg flex items-center justify-center">
               <TrendingUp className="w-3.5 h-3.5 text-green-600" strokeWidth={1.5} />
             </div>
           </div>
           <div>
             <p className="text-xl tracking-tight text-green-700 tabular-nums">{fmt(kpis.neto)}</p>
-            <p className="text-[11px] text-gray-400 mt-0.5">Margen {kpis.margen}%</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{t("admin.reports.kpi.margin")} {kpis.margen}%</p>
           </div>
         </div>
       </div>
@@ -527,17 +536,17 @@ export function AdminReports() {
       <div id="rpt-chart" className="bg-white border border-gray-100 rounded-xl p-5">
         <div className="flex items-center justify-between mb-5">
           <div>
-            <p className="text-sm text-gray-900">Histórico de {PERIOD_LABELS[period].toLowerCase()}</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.history")} · {PERIOD_I18N[period]}</p>
             <p className="text-[11px] text-gray-400 mt-0.5">
-              Ingresos brutos {fmt(chartTotals.ingresos)} ·
-              Devoluciones {fmt(chartTotals.devoluciones)} ·
-              Canceladas {fmt(chartTotals.canceladas)}
+              {t("admin.reports.kpi.grossRevenue")} {fmt(chartTotals.ingresos)} ·
+              {t("admin.reports.chart.returns")} {fmt(chartTotals.devoluciones)} ·
+              {t("admin.reports.chart.cancelled")} {fmt(chartTotals.canceladas)}
             </p>
           </div>
           <div className="flex items-center gap-3 text-[11px] text-gray-400">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-gray-600 rounded inline-block" />Ingresos</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-orange-400 rounded inline-block" />Devoluciones</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-red-400 rounded inline-block" />Canceladas</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-gray-600 rounded inline-block" />{t("admin.reports.col.revenue")}</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-orange-400 rounded inline-block" />{t("admin.reports.chart.returns")}</span>
+            <span className="flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-red-400 rounded inline-block" />{t("admin.reports.chart.cancelled")}</span>
           </div>
         </div>
         <ResponsiveContainer width="100%" height={220}>
@@ -559,15 +568,15 @@ export function AdminReports() {
         {/* Top products */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-sm text-gray-900">Productos más vendidos</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.topProducts")}</p>
             <p className="text-xs text-gray-400">{PERIOD_LABELS[period]}</p>
           </div>
           {/* Header */}
           <div className="grid grid-cols-[1fr_60px_80px_60px] gap-3 px-5 py-2 bg-gray-50/60">
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Producto</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Uds.</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Ingresos</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Δ%</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t("admin.reports.col.product")}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">{t("admin.reports.col.units")}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">{t("admin.reports.col.revenue")}</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">{t("admin.reports.col.growth")}</p>
           </div>
           <div className="divide-y divide-gray-50">
             {TOP_PRODUCTS.map((p, i) => (
@@ -577,7 +586,7 @@ export function AdminReports() {
                   <div className="min-w-0">
                     <p className="text-xs text-gray-900 truncate">{p.name}</p>
                     <div className="h-1 bg-gray-100 rounded-full overflow-hidden w-24 mt-1">
-                      <div className={`h-full rounded-full ${p.stock <= 3 ? "bg-red-400" : "bg-amber-400"}`}
+                      <div className={`h-full rounded-full ${p.sales < 50 ? "bg-red-400" : "bg-amber-400"}`}
                         style={{ width: `${(p.sales / 210) * 100}%` }} />
                     </div>
                   </div>
@@ -595,7 +604,7 @@ export function AdminReports() {
 
         {/* Category donut */}
         <div className="bg-white border border-gray-100 rounded-xl p-5">
-          <p className="text-sm text-gray-900 mb-4">Ventas por categoría</p>
+          <p className="text-sm text-gray-900 mb-4">{t("admin.reports.salesByCategory")}</p>
           <ResponsiveContainer width="100%" height={150}>
             <PieChart>
               <Pie key="rpt-pie" data={CATEGORY_DATA} cx="50%" cy="50%" innerRadius={42} outerRadius={65}
@@ -624,9 +633,9 @@ export function AdminReports() {
         {/* Ledger header */}
         <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2.5">
-            <p className="text-sm text-gray-900">Libro mayor de transacciones</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.ledger")}</p>
             <span className="text-[11px] text-gray-400 bg-gray-50 border border-gray-100 px-2 py-0.5 rounded-full">
-              {filteredTx.length} registros
+              {filteredTx.length} {t("admin.reports.ledger.records")}
             </span>
           </div>
           {/* Active filters hint */}
@@ -635,19 +644,19 @@ export function AdminReports() {
               {statusFilter !== "todas" && (
                 <span className={`text-[11px] px-2 py-0.5 rounded-full flex items-center gap-1 ${STATUS_META[statusFilter].bg} ${STATUS_META[statusFilter].text}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${STATUS_META[statusFilter].dot}`} />
-                  {STATUS_META[statusFilter].label}
+                  {t(STATUS_META[statusFilter].labelKey)}
                 </span>
               )}
               {typeFilter !== "todas" && (
                 <span className="text-[11px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
-                  {TYPE_META[typeFilter].label}
+                  {t(TYPE_META[typeFilter].labelKey)}
                 </span>
               )}
               <button
                 onClick={() => { handleStatusFilter("todas"); handleTypeFilter("todas"); }}
                 className="text-[11px] text-gray-400 hover:text-gray-700 underline transition-colors"
               >
-                Limpiar
+                {t("admin.reports.ledger.clearFilters")}
               </button>
             </div>
           )}
@@ -655,19 +664,19 @@ export function AdminReports() {
 
         {/* Table header */}
         <div className="grid grid-cols-[80px_110px_1fr_130px_90px_90px_100px] gap-3 px-5 py-2 bg-gray-50/60 border-b border-gray-100">
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider">Fecha</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider">Orden</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider">Cliente</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider">Tipo</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Importe</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">Descuento</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider text-center">Estado</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t("admin.reports.ledger.col.date")}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t("admin.reports.ledger.col.order")}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t("admin.reports.ledger.col.customer")}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider">{t("admin.reports.ledger.col.type")}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">{t("admin.reports.ledger.col.amount")}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider text-right">{t("admin.reports.ledger.col.discount")}</p>
+          <p className="text-[10px] text-gray-400 uppercase tracking-wider text-center">{t("admin.reports.ledger.col.status")}</p>
         </div>
 
         {/* Table rows */}
         {pageTx.length === 0 ? (
           <div className="py-12 text-center text-xs text-gray-400">
-            No hay transacciones con los filtros seleccionados
+            {t("admin.reports.ledger.noMatches")}
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
@@ -688,7 +697,7 @@ export function AdminReports() {
                   {/* Tipo + pago */}
                   <div className="flex items-center gap-1.5 min-w-0">
                     <tm.icon className={`w-3.5 h-3.5 flex-shrink-0 ${tm.color}`} strokeWidth={1.5} />
-                    <span className="text-[11px] text-gray-500 truncate">{tm.label}</span>
+                    <span className="text-[11px] text-gray-500 truncate">{t(tm.labelKey)}</span>
                     <PayIcon className="w-3 h-3 text-gray-300 flex-shrink-0 ml-auto" strokeWidth={1.5} />
                   </div>
                   {/* Importe */}
@@ -703,7 +712,7 @@ export function AdminReports() {
                   <div className="flex justify-center">
                     <span className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
                       <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${sm.dot}`} />
-                      {sm.label}
+                      {t(sm.labelKey)}
                     </span>
                   </div>
                 </div>
@@ -736,19 +745,19 @@ export function AdminReports() {
         {/* Accounting summary footer */}
         <div className="border-t border-gray-100 bg-gray-50/50 px-5 py-3.5 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Ingresos brutos</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{t("admin.reports.kpi.grossRevenue")}</p>
             <p className="text-sm text-gray-900 tabular-nums">{fmt(kpis.bruto)}</p>
           </div>
           <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Total descuentos</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{t("admin.reports.kpi.discounts")}</p>
             <p className="text-sm text-amber-600 tabular-nums">-{fmt(kpis.descuentos)}</p>
           </div>
           <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Total devoluciones</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{t("admin.reports.kpi.returns")}</p>
             <p className="text-sm text-orange-600 tabular-nums">-{fmt(kpis.devolTotal)}</p>
           </div>
           <div>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">Ingresos netos</p>
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-1">{t("admin.reports.kpi.net")}</p>
             <p className="text-sm text-green-700 tabular-nums">{fmt(kpis.neto)}</p>
           </div>
         </div>
@@ -759,7 +768,7 @@ export function AdminReports() {
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" strokeWidth={1.5} />
-            <p className="text-sm text-gray-900">Stock bajo</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.lowStock")}</p>
             <span className="ml-auto text-[11px] text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{LOW_STOCK.length}</span>
           </div>
           {LOW_STOCK.length === 0
@@ -783,11 +792,11 @@ export function AdminReports() {
         <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
           <div className="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
             <Package className="w-3.5 h-3.5 text-red-500" strokeWidth={1.5} />
-            <p className="text-sm text-gray-900">Sin stock</p>
+            <p className="text-sm text-gray-900">{t("admin.reports.outOfStock")}</p>
             <span className="ml-auto text-[11px] text-red-600 bg-red-50 px-2 py-0.5 rounded-full">{OUT_OF_STOCK.length}</span>
           </div>
           {OUT_OF_STOCK.length === 0
-            ? <div className="py-8 text-center text-xs text-gray-400">Todo con stock</div>
+            ? <div className="py-8 text-center text-xs text-gray-400">{t("admin.reports.stock.allInStock")}</div>
             : <div className="divide-y divide-gray-50">
               {OUT_OF_STOCK.map(p => (
                 <div key={p.id} className="flex items-center justify-between px-5 py-2.5">
@@ -795,7 +804,7 @@ export function AdminReports() {
                     <p className="text-xs text-gray-700 truncate">{p.name}</p>
                     <p className="text-[11px] text-gray-400">{p.brand} · {p.sku}</p>
                   </div>
-                  <span className="text-[10px] text-red-600 bg-red-50 px-2 py-0.5 rounded-full flex-shrink-0 ml-3">Sin stock</span>
+                  <span className="text-[10px] text-red-600 bg-red-50 px-2 py-0.5 rounded-full flex-shrink-0 ml-3">{t("admin.reports.stock.out")}</span>
                 </div>
               ))}
             </div>

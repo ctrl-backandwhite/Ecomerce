@@ -238,6 +238,23 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
         };
     }, [fetchPage]);
 
+    // ── Refetch when the user switches currency ───────────────────────────────
+    // CurrencyContext emits `currency:changed`; hooks that know how to refetch
+    // acknowledge with `currency:ack` so the context skips its 500ms reload
+    // fallback. Keeps scroll/filters/cart intact on a currency swap.
+    useEffect(() => {
+        function onCurrencyChanged() {
+            abortRef.current?.abort();
+            const controller = new AbortController();
+            abortRef.current = controller;
+            currentPage.current = 0;
+            fetchPage(0, false, controller.signal);
+            window.dispatchEvent(new Event("currency:ack"));
+        }
+        window.addEventListener("currency:changed", onCurrencyChanged);
+        return () => window.removeEventListener("currency:changed", onCurrencyChanged);
+    }, [fetchPage]);
+
     // ── Load next page (infinite scroll) ──────────────────────────────────────
     const loadMore = useCallback(async () => {
         if (!hasMore || loadingMore || loading) return;

@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { giftCardRepository } from "../repositories/GiftCardRepository";
+import { paymentRepository } from "../repositories/PaymentRepository";
+import { logger } from "../lib/logger";
 import {
   Gift, Mail, Check, ChevronRight, ChevronLeft, ChevronDown,
   User, MessageSquare, Calendar, CreditCard,
@@ -16,10 +18,18 @@ import {
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
 import type { PaymentMethod } from "../context/UserContext";
 import {
   VisaLogo, MastercardLogo, PayPalLogo, USDTLogo, BTCLogo,
 } from "../components/PaymentLogos";
+import {
+  Elements, CardNumberElement, CardExpiryElement, CardCvcElement,
+  useStripe, useElements,
+} from "@stripe/react-stripe-js";
+import { loadStripe, type StripeElementChangeEvent } from "@stripe/stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY ?? "");
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Step = 1 | 2 | 3 | 4;
@@ -167,9 +177,22 @@ const lbl = "block text-xs text-gray-500 mb-1.5";
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function GiftCardPurchase() {
+  return (
+    <Elements stripe={stripePromise}>
+      <GiftCardPurchaseInner />
+    </Elements>
+  );
+}
+
+function GiftCardPurchaseInner() {
   const { isAuthenticated, login } = useAuth();
   const { user } = useUser();
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
+  const stripe = useStripe();
+  const elements = useElements();
+  const [cardComplete, setCardComplete] = useState({ number: false, expiry: false, cvc: false });
+  const [isPaying, setIsPaying] = useState(false);
 
   const [step, setStep] = useState<Step>(1);
   const [generatedCode, setGeneratedCode] = useState("");
@@ -240,9 +263,7 @@ export function GiftCardPurchase() {
   const step3Valid = selectedPmId !== "new"
     ? selectedPm?.type === "card" ? savedCardCvv.length >= 3 : true
     : form.cardHolder.trim() !== "" &&
-    form.cardNumber.replace(/\s/g, "").length === 16 &&
-    form.cardExpiry.length === 5 &&
-    form.cardCvv.length === 3;
+    cardComplete.number && cardComplete.expiry && cardComplete.cvc;
 
   function formatCard(v: string) {
     return v.replace(/\D/g, "").slice(0, 16).replace(/(.{4})/g, "$1 ").trim();
@@ -255,7 +276,38 @@ export function GiftCardPurchase() {
 
   async function handlePay() {
     if (!step3Valid) { toast.error("Completa los datos de pago"); return; }
+    setIsPaying(true);
     try {
+      // 1) If using a NEW card, tokenize via Stripe.js BEFORE creating the gift
+      //    card so we can attach the token to the charge afterwards. If the user
+      //    picked a saved method we use its stored token (if any).
+      let stripePaymentMethodId: string | null = null;
+      if (selectedPmId === "new") {
+        if (!stripe || !elements) {
+          toast.error("Stripe no está listo todavía. Reintenta en unos segundos.");
+          return;
+        }
+        const cardElement = elements.getElement(CardNumberElement);
+        if (!cardElement) {
+          toast.error("No se pudo inicializar el formulario de tarjeta.");
+          return;
+        }
+        const { error, paymentMethod } = await stripe.createPaymentMethod({
+          type: "card",
+          card: cardElement,
+          billing_details: { name: form.cardHolder },
+        });
+        if (error || !paymentMethod) {
+          logger.error("Stripe tokenization failed", error);
+          toast.error(error?.message ?? "No se pudo validar la tarjeta");
+          return;
+        }
+        stripePaymentMethodId = paymentMethod.id;
+      } else if (selectedPm?.type === "card" && selectedPm.stripePaymentMethodId) {
+        stripePaymentMethodId = selectedPm.stripePaymentMethodId;
+      }
+
+      // 2) Create the gift card on the backend
       const result = await giftCardRepository.purchase({
         designId: form.design.id,
         amount: effectiveAmount,
@@ -266,11 +318,31 @@ export function GiftCardPurchase() {
           ? form.scheduledDate.slice(0, 10)
           : undefined,
       });
+
+      // 3) Charge the buyer via the payment service. Failures are logged but do
+      //    NOT roll back the gift card creation — the gift card is still issued
+      //    and visible in the user's profile.
+      try {
+        await paymentRepository.processPayment({
+          orderId: result.id,
+          userId: user.id,
+          email: user.email,
+          amount: effectiveAmount,
+          currency: "USD",
+          paymentMethod: "CARD",
+          stripePaymentMethodId: stripePaymentMethodId ?? undefined,
+        });
+      } catch (payErr) {
+        logger.warn("[GiftCard] payment processing failed (gift card still issued)", payErr);
+      }
+
       setGeneratedCode(result.code);
       setStep(4);
       toast.success("¡Pago completado! Tarjeta enviada correctamente");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Error al procesar el pago");
+    } finally {
+      setIsPaying(false);
     }
   }
 
@@ -369,7 +441,7 @@ export function GiftCardPurchase() {
                     min={5}
                     max={500}
                     className={`${inp} pl-7`}
-                    placeholder="Importe personalizado ($5–$500)"
+                    placeholder={t("giftcard.placeholder.customAmount")}
                     value={form.customAmount}
                     onChange={e => { set("customAmount", e.target.value); set("amount", 0); }}
                   />
@@ -432,7 +504,7 @@ export function GiftCardPurchase() {
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                       <input
                         className={`${inp} pl-9`}
-                        placeholder="María García"
+                        placeholder={t("giftcard.placeholder.recipient")}
                         value={form.toName}
                         onChange={e => set("toName", e.target.value)}
                       />
@@ -445,7 +517,7 @@ export function GiftCardPurchase() {
                       <input
                         type="email"
                         className={`${inp} pl-9`}
-                        placeholder="maria@email.com"
+                        placeholder={t("giftcard.placeholder.recipient.email")}
                         value={form.toEmail}
                         onChange={e => set("toEmail", e.target.value)}
                       />
@@ -462,7 +534,7 @@ export function GiftCardPurchase() {
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                     <input
                       className={`${inp} pl-9`}
-                      placeholder="Tu nombre"
+                      placeholder={t("giftcard.placeholder.sender")}
                       value={form.fromName}
                       onChange={e => set("fromName", e.target.value)}
                     />
@@ -476,7 +548,7 @@ export function GiftCardPurchase() {
                       rows={3}
                       maxLength={200}
                       className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-500 transition-colors placeholder:text-gray-300 resize-none"
-                      placeholder="Escribe un mensaje para acompañar la tarjeta…"
+                      placeholder={t("giftcard.placeholder.message")}
                       value={form.message}
                       onChange={e => set("message", e.target.value)}
                     />
@@ -691,7 +763,7 @@ export function GiftCardPurchase() {
                             value={savedCardCvv}
                             onChange={(e) => setSavedCardCvv(e.target.value.replace(/\D/g, "").slice(0, 4))}
                             className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2 pr-9 focus:outline-none focus:border-gray-400 font-mono placeholder-gray-300"
-                            placeholder="•••"
+                            placeholder={t("giftcard.placeholder.cvv")}
                             maxLength={4}
                           />
                           <Shield className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
@@ -735,7 +807,7 @@ export function GiftCardPurchase() {
                         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
                         <input
                           className={`${inp} pl-9 uppercase`}
-                          placeholder="NOMBRE APELLIDO"
+                          placeholder={t("giftcard.placeholder.cardHolder")}
                           value={form.cardHolder}
                           onChange={e => set("cardHolder", e.target.value.toUpperCase())}
                         />
@@ -744,14 +816,10 @@ export function GiftCardPurchase() {
 
                     <div>
                       <label className={lbl}>Número de tarjeta</label>
-                      <div className="relative">
-                        <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                        <input
-                          className={`${inp} pl-9 font-mono tracking-widest`}
-                          placeholder="1234 5678 9012 3456"
-                          value={form.cardNumber}
-                          onChange={e => set("cardNumber", formatCard(e.target.value))}
-                          maxLength={19}
+                      <div className="relative w-full border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus-within:border-gray-500">
+                        <CardNumberElement
+                          onChange={(e: StripeElementChangeEvent) => setCardComplete((s) => ({ ...s, number: e.complete }))}
+                          options={{ style: { base: { fontSize: "14px", color: "#111827", fontFamily: "ui-monospace, monospace", letterSpacing: "0.05em", "::placeholder": { color: "#d1d5db" } } } }}
                         />
                       </div>
                     </div>
@@ -759,28 +827,19 @@ export function GiftCardPurchase() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className={lbl}>Caducidad</label>
-                        <div className="relative">
-                          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                          <input
-                            className={`${inp} pl-9`}
-                            placeholder="MM/AA"
-                            value={form.cardExpiry}
-                            onChange={e => set("cardExpiry", formatExpiry(e.target.value))}
-                            maxLength={5}
+                        <div className="relative w-full border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus-within:border-gray-500">
+                          <CardExpiryElement
+                            onChange={(e: StripeElementChangeEvent) => setCardComplete((s) => ({ ...s, expiry: e.complete }))}
+                            options={{ style: { base: { fontSize: "14px", color: "#111827", fontFamily: "ui-monospace, monospace", "::placeholder": { color: "#d1d5db" } } } }}
                           />
                         </div>
                       </div>
                       <div>
                         <label className={lbl}>CVV</label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
-                          <input
-                            type="password"
-                            className={`${inp} pl-9`}
-                            placeholder="•••"
-                            value={form.cardCvv}
-                            onChange={e => set("cardCvv", e.target.value.replace(/\D/g, "").slice(0, 3))}
-                            maxLength={3}
+                        <div className="relative w-full border border-gray-200 rounded-xl px-3 py-2.5 bg-white focus-within:border-gray-500">
+                          <CardCvcElement
+                            onChange={(e: StripeElementChangeEvent) => setCardComplete((s) => ({ ...s, cvc: e.complete }))}
+                            options={{ style: { base: { fontSize: "14px", color: "#111827", fontFamily: "ui-monospace, monospace", "::placeholder": { color: "#d1d5db" } } } }}
                           />
                         </div>
                       </div>
@@ -803,12 +862,12 @@ export function GiftCardPurchase() {
                   Volver
                 </button>
                 <button
-                  disabled={!step3Valid}
+                  disabled={!step3Valid || isPaying}
                   onClick={handlePay}
                   className="flex-1 flex items-center justify-center gap-2 h-11 text-sm text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                 >
                   <Lock className="w-4 h-4" strokeWidth={1.5} />
-                  Pagar {formatPrice(effectiveAmount)}
+                  {isPaying ? "Procesando…" : `Pagar ${formatPrice(effectiveAmount)}`}
                 </button>
               </div>
             </div>

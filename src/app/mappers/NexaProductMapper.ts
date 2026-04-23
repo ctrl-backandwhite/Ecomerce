@@ -174,7 +174,10 @@ export function mapNexaProduct(
         priceMax,
         costPrice: cost || undefined,
         taxClass: "standard",
-        category: categoryName ?? raw.categoryId,
+        // Prefer explicit categoryName, then the raw payload's own category
+        // name when present (detail endpoints), and only fall back to an
+        // ellipsis placeholder — never leak the raw UUID to the UI.
+        category: categoryName ?? (raw as { categoryName?: string | null }).categoryName ?? "—",
         categoryId: raw.categoryId,
         subcategory: "",
         keywords: [],
@@ -203,6 +206,7 @@ export function mapNexaProduct(
         status: "active",
         visibility: "public",
         featured: false,
+        warrantyId: raw.warrantyId ?? undefined,
         currencyCode: raw.currencyCode,
         currencySymbol: raw.currencySymbol,
     };
@@ -383,6 +387,7 @@ export function mapNexaProductDetail(raw: NexaProductDetail): Product {
         status: "active",
         visibility: "public",
         featured: false,
+        warrantyId: raw.warrantyId ?? undefined,
         currencyCode: raw.currencyCode,
         currencySymbol: raw.currencySymbol,
     };

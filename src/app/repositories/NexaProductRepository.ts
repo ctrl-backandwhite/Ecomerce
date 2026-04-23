@@ -100,11 +100,14 @@ export interface NexaProduct {
     listedNum: number;
     warehouseInventoryNum: number;
     isVideo: boolean;
+    warrantyId?: string | null;
     createdAt: string;
     updatedAt: string | null;
     translations: NexaProductTranslation[];
     variants: NexaDetailVariant[];
 }
+
+/** NexaProductDetail also exposes warrantyId pulled from the sibling `products` row. */
 
 export interface NexaProductDetail {
     pid: string;
@@ -144,6 +147,7 @@ export interface NexaProductDetail {
     currencySymbol?: string;
     sellPriceRaw?: number;
     costPriceRaw?: number;
+    warrantyId?: string | null;
 }
 
 export interface NexaProductPage {

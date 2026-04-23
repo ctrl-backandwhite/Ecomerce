@@ -54,6 +54,7 @@ const AdminShipping = lazyPage(() => import("./pages/admin/AdminShipping"), "Adm
 const AdminTaxes = lazyPage(() => import("./pages/admin/AdminTaxes"), "AdminTaxes");
 const AdminSEO = lazyPage(() => import("./pages/admin/AdminSEO"), "AdminSEO");
 const AdminEmails = lazyPage(() => import("./pages/admin/AdminEmails"), "AdminEmails");
+const AdminNotifications = lazyPage(() => import("./pages/admin/AdminNotifications"), "AdminNotifications");
 const AdminLoyalty = lazyPage(() => import("./pages/admin/AdminLoyalty"), "AdminLoyalty");
 const AdminGiftCards = lazyPage(() => import("./pages/admin/AdminGiftCards"), "AdminGiftCards");
 const AdminNewsletter = lazyPage(() => import("./pages/admin/AdminNewsletter"), "AdminNewsletter");
@@ -151,6 +152,7 @@ export const router = createBrowserRouter([
               { path: "currency-rates", Component: AdminCurrencyRates },
               { path: "pricing", Component: AdminPricing },
               { path: "emails", Component: AdminEmails },
+              { path: "notifications", Component: AdminNotifications },
               { path: "settings", Component: AdminSettings },
             ],
           },

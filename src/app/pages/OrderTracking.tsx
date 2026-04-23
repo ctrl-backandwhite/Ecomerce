@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams, useParams } from "react-router";
 import { Search, Package, Truck, CheckCircle2, Clock, MapPin, AlertCircle, Loader2 } from "lucide-react";
 import { orderRepository } from "../repositories/OrderRepository";
 import { trackingRepository } from "../repositories/TrackingRepository";
 import type { TrackingEvent } from "../repositories/TrackingRepository";
 import type { Order } from "../repositories/OrderRepository";
+import { publicTrackingRepository } from "../repositories/PublicTrackingRepository";
 
 import { logger } from "../lib/logger";
 
@@ -95,6 +97,46 @@ export function OrderTracking() {
   const [result, setResult] = useState<TrackResult | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Public HMAC-signed link support: /tracking/:orderId?exp=…&sig=…
+  // Lets guests arriving from a confirmation email open the tracking page
+  // without logging in. Falls through to the manual search flow when any
+  // of the three pieces (orderId + exp + sig) is missing.
+  const { orderId: urlOrderId } = useParams<{ orderId?: string }>();
+  const [searchParams] = useSearchParams();
+  useEffect(() => {
+    const exp = searchParams.get("exp");
+    const sig = searchParams.get("sig");
+    if (!urlOrderId || !exp || !sig) return;
+    setLoading(true);
+    setError(false);
+    publicTrackingRepository.find(urlOrderId, exp, sig)
+      .then((p) => {
+        // Reshape public payload into the TrackResult UI model
+        const events: TrackingEvent[] = (p.events ?? []).map((e: any) => ({
+          id: e.id ?? "",
+          orderId: p.orderId,
+          status: e.status ?? p.orderStatus,
+          description: e.description ?? "",
+          location: e.location ?? "",
+          timestamp: e.timestamp ?? new Date().toISOString(),
+          carrier: e.carrier ?? "",
+        }));
+        const fakeOrder = {
+          id: p.orderId,
+          orderNumber: p.orderId,
+          status: p.orderStatus,
+          trackingCode: p.trackNumber,
+          carrier: "",
+          estimatedDelivery: "",
+          items: (p.snapshot ?? []).map((s: any) => ({ product: s.productName, quantity: s.quantity })),
+        } as unknown as Order;
+        setResult(buildResult(fakeOrder, events));
+      })
+      .catch((err) => { logger.warn("public tracking failed", err); setError(true); })
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlOrderId]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();

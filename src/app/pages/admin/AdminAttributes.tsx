@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { type Attribute, type AttributeValue, attributeRepository } from "../../repositories/AttributeRepository";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { Pagination } from "../../components/admin/Pagination";
 import { slugify } from "../../lib/urls";
 
@@ -187,6 +188,7 @@ function AttributeModal({
 
 /* ── Main ────────────────────────────────────────────────── */
 export function AdminAttributes() {
+    const { t } = useLanguage();
   const [list, setList] = useState<Attribute[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -241,7 +243,7 @@ export function AdminAttributes() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl text-gray-900 tracking-tight">Atributos</h1>
+          <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.sidebar.attributes")}</h1>
           <p className="text-xs text-gray-400 mt-1">{list.length} atributos · {list.reduce((s, a) => s + a.values.length, 0)} valores totales</p>
         </div>
         <button
@@ -374,8 +376,8 @@ export function AdminAttributes() {
             <h3 className="text-sm text-gray-900 mb-2">¿Eliminar atributo?</h3>
             <p className="text-xs text-gray-400 mb-6">Se eliminarán también todos sus valores. Esta acción no se puede deshacer.</p>
             <div className="flex gap-3">
-              <button onClick={() => setDeleteId(null)} className="flex-1 text-xs text-gray-500 border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition-colors">Cancelar</button>
-              <button onClick={() => handleDelete(deleteId)} className="flex-1 text-xs text-white bg-red-500 rounded-xl py-2.5 hover:bg-red-600 transition-colors">Eliminar</button>
+              <button onClick={() => setDeleteId(null)} className="flex-1 text-xs text-gray-500 border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition-colors">{t("admin.common.cancel")}</button>
+              <button onClick={() => handleDelete(deleteId)} className="flex-1 text-xs text-white bg-red-500 rounded-xl py-2.5 hover:bg-red-600 transition-colors">{t("admin.common.delete")}</button>
             </div>
           </div>
         </div>

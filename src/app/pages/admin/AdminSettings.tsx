@@ -7,6 +7,7 @@ import {
   Percent, DollarSign, Clock, Package,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 
 import { logger } from "../../lib/logger";
 
@@ -639,6 +640,7 @@ function SecurityTab() {
 
 /* ── Main page ───────────────────────────────────────── */
 export function AdminSettings() {
+    const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<SettingsTab>("general");
 
   const tabContent: Record<SettingsTab, React.ReactNode> = {
@@ -652,7 +654,7 @@ export function AdminSettings() {
   return (
     <div className="space-y-5 max-w-[1000px]">
       <div>
-        <h1 className="text-xl text-gray-900 tracking-tight">Configuración</h1>
+        <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.sidebar.settings")}</h1>
         <p className="text-xs text-gray-400 mt-1">Gestiona la configuración global de la plataforma NX036</p>
       </div>
 

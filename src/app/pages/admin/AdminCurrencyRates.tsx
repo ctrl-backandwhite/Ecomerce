@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import { RefreshCw, Search } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import * as CurrencyRateRepository from "../../repositories/CurrencyRateRepository";
 import type { CurrencyRate } from "../../types/currency";
 
 export function AdminCurrencyRates() {
+    const { t } = useLanguage();
   const [rates, setRates] = useState<CurrencyRate[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);

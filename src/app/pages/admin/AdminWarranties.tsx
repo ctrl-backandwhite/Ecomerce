@@ -6,6 +6,7 @@ import {
   ShieldCheck, ShieldAlert, ShieldOff, Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { warrantyRepository } from "../../repositories/WarrantyRepository";
 
 /* ── Types ── */
@@ -480,6 +481,7 @@ function WarrantyPanel({ initial, onSave, onClose }: WarrantyPanelProps) {
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminWarranties() {
+    const { t } = useLanguage();
   const [warranties, setWarranties] = useState<Warranty[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState("");
@@ -556,7 +558,7 @@ export function AdminWarranties() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Garantías de producto</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.warranties.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Define y gestiona las garantías disponibles para asociar a tus productos</p>
         </div>
         <button

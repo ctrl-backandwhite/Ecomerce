@@ -1,7 +1,10 @@
 import { Facebook, Instagram, Twitter, Youtube, Mail, Phone, MapPin, Gift } from "lucide-react";
 import { Link } from "react-router";
+import { useLanguage } from "../context/LanguageContext";
 
 export function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-gray-50 border-t border-gray-200 mt-auto hidden sm:block">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -11,7 +14,7 @@ export function Footer() {
           <div className="col-span-2 md:col-span-3 lg:col-span-1">
             <h3 className="text-lg mb-3">NX036</h3>
             <p className="text-sm text-gray-600 mb-5 leading-relaxed">
-              Tu marketplace premium con los mejores productos, precios y servicio al cliente.
+              {t("footer.brand.desc")}
             </p>
             <div className="flex gap-2">
               {[
@@ -30,18 +33,18 @@ export function Footer() {
 
           {/* Tienda */}
           <div>
-            <h3 className="text-sm mb-4">Tienda</h3>
+            <h3 className="text-sm mb-4">{t("footer.store")}</h3>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/" className="text-gray-500 hover:text-gray-900 transition-colors">Todos los productos</Link></li>
-              <li><Link to="/?ofertas=true" className="text-gray-500 hover:text-gray-900 transition-colors">Ofertas especiales</Link></li>
-              <li><Link to="/?category=Electrónica" className="text-gray-500 hover:text-gray-900 transition-colors">Electrónica</Link></li>
-              <li><Link to="/?category=Calzado" className="text-gray-500 hover:text-gray-900 transition-colors">Calzado</Link></li>
-              <li><Link to="/?category=Audio" className="text-gray-500 hover:text-gray-900 transition-colors">Audio</Link></li>
-              <li><Link to="/compare" className="text-gray-500 hover:text-gray-900 transition-colors">Comparar productos</Link></li>
+              <li><Link to="/" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.store.all")}</Link></li>
+              <li><Link to="/?ofertas=true" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.store.deals")}</Link></li>
+              <li><Link to="/?category=Electrónica" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.store.electronics")}</Link></li>
+              <li><Link to="/?category=Calzado" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.store.footwear")}</Link></li>
+              <li><Link to="/?category=Audio" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.store.audio")}</Link></li>
+              <li><Link to="/compare" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.store.compare")}</Link></li>
               <li>
                 <Link to="/gift-cards" className="inline-flex items-center gap-1.5 text-gray-500 hover:text-gray-900 transition-colors">
                   <Gift className="w-3 h-3" strokeWidth={1.5} />
-                  Tarjetas regalo
+                  {t("footer.store.giftcards")}
                 </Link>
               </li>
             </ul>
@@ -49,35 +52,35 @@ export function Footer() {
 
           {/* Mi cuenta */}
           <div>
-            <h3 className="text-sm mb-4">Mi cuenta</h3>
+            <h3 className="text-sm mb-4">{t("footer.account")}</h3>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/account" className="text-gray-500 hover:text-gray-900 transition-colors">Mi perfil</Link></li>
-              <li><Link to="/account?tab=orders" className="text-gray-500 hover:text-gray-900 transition-colors">Mis pedidos</Link></li>
-              <li><Link to="/account?tab=favorites" className="text-gray-500 hover:text-gray-900 transition-colors">Favoritos</Link></li>
-              <li><Link to="/account?tab=giftcards" className="text-gray-500 hover:text-gray-900 transition-colors">Tarjetas regalo</Link></li>
-              <li><Link to="/tracking" className="text-gray-500 hover:text-gray-900 transition-colors">Rastrear pedido</Link></li>
-              <li><Link to="/cart" className="text-gray-500 hover:text-gray-900 transition-colors">Mi carrito</Link></li>
+              <li><Link to="/account" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.account.profile")}</Link></li>
+              <li><Link to="/account?tab=orders" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.account.orders")}</Link></li>
+              <li><Link to="/account?tab=favorites" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.account.favorites")}</Link></li>
+              <li><Link to="/account?tab=giftcards" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.account.giftcards")}</Link></li>
+              <li><Link to="/tracking" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.account.tracking")}</Link></li>
+              <li><Link to="/cart" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.account.cart")}</Link></li>
             </ul>
           </div>
 
           {/* Ayuda */}
           <div>
-            <h3 className="text-sm mb-4">Ayuda</h3>
+            <h3 className="text-sm mb-4">{t("footer.help.section")}</h3>
             <ul className="space-y-2.5 text-sm">
-              <li><Link to="/faq" className="text-gray-500 hover:text-gray-900 transition-colors">Preguntas frecuentes</Link></li>
-              <li><Link to="/shipping" className="text-gray-500 hover:text-gray-900 transition-colors">Información de envíos</Link></li>
-              <li><Link to="/contact" className="text-gray-500 hover:text-gray-900 transition-colors">Contacto</Link></li>
-              <li><Link to="/about" className="text-gray-500 hover:text-gray-900 transition-colors">Sobre nosotros</Link></li>
+              <li><Link to="/faq" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.help.faqLink")}</Link></li>
+              <li><Link to="/shipping" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.help.shippingInfo")}</Link></li>
+              <li><Link to="/contact" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.help.contactLink")}</Link></li>
+              <li><Link to="/about" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.help.about")}</Link></li>
             </ul>
           </div>
 
           {/* Contacto */}
           <div>
-            <h3 className="text-sm mb-4">Contacto</h3>
+            <h3 className="text-sm mb-4">{t("footer.contact.title")}</h3>
             <ul className="space-y-3 text-sm text-gray-500">
               <li className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-                <span>Calle Principal 123, Madrid 28001</span>
+                <span>{t("footer.contact.address")}</span>
               </li>
               <li className="flex items-center gap-2">
                 <Phone className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} />
@@ -93,11 +96,11 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="border-t border-gray-200 mt-10 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-500">© 2026 NX036 Commerce S.L. Todos los derechos reservados.</p>
+          <p className="text-sm text-gray-500">{t("footer.bottom.copyright")}</p>
           <div className="flex flex-wrap gap-5 text-sm">
-            <Link to="/legal/privacidad" className="text-gray-500 hover:text-gray-900 transition-colors">Privacidad</Link>
-            <Link to="/legal/terminos" className="text-gray-500 hover:text-gray-900 transition-colors">Términos</Link>
-            <Link to="/legal/cookies" className="text-gray-500 hover:text-gray-900 transition-colors">Cookies</Link>
+            <Link to="/legal/privacidad" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.bottom.privacy")}</Link>
+            <Link to="/legal/terminos" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.bottom.terms")}</Link>
+            <Link to="/legal/cookies" className="text-gray-500 hover:text-gray-900 transition-colors">{t("footer.bottom.cookies")}</Link>
           </div>
         </div>
       </div>

@@ -2,10 +2,13 @@ import { useCallback } from "react";
 import { useCart } from "../../../context/CartContext";
 import { useUser } from "../../../context/UserContext";
 import { useCurrency } from "../../../context/CurrencyContext";
+import { useStripe, useElements, CardNumberElement } from "@stripe/react-stripe-js";
 import { orderRepository } from "../../../repositories/OrderRepository";
 import { paymentRepository } from "../../../repositories/PaymentRepository";
 import { invoiceRepository } from "../../../repositories/InvoiceRepository";
 import { loyaltyRepository } from "../../../repositories/LoyaltyRepository";
+import { cartRepository } from "../../../repositories/CartRepository";
+import { profileRepository } from "../../../repositories/ProfileRepository";
 import { adminGiftCardRepository as giftCardRepository } from "../../../repositories/AdminGiftCardRepository";
 import { logger } from "../../../lib/logger";
 import { toast } from "sonner";
@@ -21,6 +24,8 @@ export function useCheckoutSubmit(
     const { items } = useCart();
     const { user } = useUser();
     const { currency } = useCurrency();
+    const stripe = useStripe();
+    const elements = useElements();
 
     const handleSubmit = useCallback(async () => {
         const {
@@ -41,7 +46,9 @@ export function useCheckoutSubmit(
         const selectedShipping = state.shippingOptions.find((o) => o.id === state.selectedShippingId);
         const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
         const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
-        const tax = state.taxCalc?.taxAmount ?? 0;
+        // Mirror the order service default (10 %) when no tax data is available
+        // so the client charges the same total the backend will compute.
+        const tax = state.taxCalc?.taxAmount ?? +(subtotal * 0.10).toFixed(2);
         const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
         const loyaltyDiscount = loyaltyRate > 0 ? loyaltyPoints / loyaltyRate : 0;
 
@@ -69,12 +76,16 @@ export function useCheckoutSubmit(
             : selectedPmId !== "new"
                 ? selectedPm?.type === "card" ? !!savedCardCvv : true
                 : payMethod === "card"
-                    ? !!(state.payment.cardNumber && state.payment.cardName && state.payment.expiry && state.payment.cvv)
+                    ? !!(state.stripeElementsComplete.number && state.stripeElementsComplete.expiry && state.stripeElementsComplete.cvc && state.payment.cardName)
                     : payMethod === "paypal"
                         ? !!state.paypalEmail
                         : true;
 
-        if (!step1Valid || !step2Valid || !step3Valid) return;
+        if (!step1Valid || !step2Valid || !step3Valid) {
+            logger.warn("[Checkout] submit blocked", { step1Valid, step2Valid, step3Valid, payMethod, selectedPmId });
+            toast.error("Faltan datos por completar para procesar el pago");
+            return;
+        }
 
         dispatch({ type: "PATCH", payload: { isProcessing: true, orderError: null } });
         dispatch({ type: "PATCH", payload: { orderSnapshot: [...items] } });
@@ -138,6 +149,48 @@ export function useCheckoutSubmit(
                 ? (giftCardDiscount > 0 ? "GIFT_CARD" : "NONE")
                 : paymentMethodMap[activePmType] ?? "CARD";
 
+            /* 2b ─ Ensure the backend has the same cart we're showing.
+             *
+             * The cart lives locally in CartContext (localStorage + optimistic
+             * backend sync). If guest-merge was skipped at login time the
+             * backend cart may be empty, and `/api/v1/orders/from-cart`
+             * rejects with OR002 "No active cart found for this user/session".
+             *
+             * Strategy: fetch the backend cart. If it matches the local one
+             * (same line count), skip. Otherwise wipe + repopulate so the
+             * backend sees exactly what the user is paying for.
+             */
+            if (items.length > 0) {
+                try {
+                    let backendEmptyOrMismatch = true;
+                    try {
+                        const existing = await cartRepository.getActiveCart();
+                        backendEmptyOrMismatch = !existing?.items || existing.items.length !== items.length;
+                    } catch {
+                        // 404 / no active cart → treat as empty, will populate below
+                        backendEmptyOrMismatch = true;
+                    }
+
+                    if (backendEmptyOrMismatch) {
+                        try { await cartRepository.clearCart(); } catch (err) { logger.warn("Suppressed error", err); }
+                        for (const it of items) {
+                            await cartRepository.addItem({
+                                productId: it.productId ?? it.id,
+                                variantId: it.variantId,
+                                quantity: it.quantity,
+                                unitPrice: it.price,
+                                productName: it.name,
+                                productImage: it.image,
+                                selectedAttrs: it.selectedAttrs,
+                            });
+                        }
+                    }
+                } catch (syncErr) {
+                    logger.warn("[Checkout] cart sync failed before createOrder", syncErr);
+                    // Keep going; createOrder will surface the real error in the toast.
+                }
+            }
+
             /* 3 ─ Create order via backend (DRAFT status — no stock deducted yet) */
             const firstGcCode = gcAmounts.find(a => a.applied > 0)?.code;
             const userCurrency = currency?.currencyCode ?? "USD";
@@ -152,7 +205,23 @@ export function useCheckoutSubmit(
                 currencyCode: userCurrency,
                 notes: undefined,
             });
-            dispatch({ type: "PATCH", payload: { createdOrder: order } });
+            // Use the backend's authoritative totals (tax/shipping/total) so the
+            // confirmation page, invoice and any UI showing amounts match what
+            // was actually charged. The local frontend snapshot may differ
+            // because the tax-quote endpoint can return 0 for some addresses
+            // while the order service applies the configured tax rate.
+            dispatch({
+                type: "PATCH",
+                payload: {
+                    createdOrder: order,
+                    totalsSnapshot: {
+                        subtotal: order.subtotal,
+                        shipping: order.shippingCost,
+                        tax: order.taxAmount,
+                        total: order.total,
+                    },
+                },
+            });
 
             /* 4 ─ Process payment (skip if total is fully covered by gift card / discounts) */
             if (total > 0) {
@@ -162,6 +231,49 @@ export function useCheckoutSubmit(
                 };
 
                 try {
+                    let stripePaymentMethodId: string | null = null;
+                    // Card metadata captured from Stripe so we can persist it to
+                    // the user's saved methods. Filled when tokenizing a new card.
+                    let stripeCardBrand: string | null = null;
+                    let stripeCardLast4: string | null = null;
+                    let stripeCardExpMonth: number | null = null;
+                    let stripeCardExpYear: number | null = null;
+
+                    // If paying with CARD, tokenize via Stripe.js first
+                    if (activeType === "card") {
+                        if (selectedPm && selectedPm.stripePaymentMethodId) {
+                            // Use existing saved card token
+                            logger.info("[Checkout] Saved card payment — using stored payment method ID", {
+                                paymentMethodId: selectedPm.stripePaymentMethodId,
+                            });
+                            stripePaymentMethodId = selectedPm.stripePaymentMethodId;
+                        } else if (selectedPm) {
+                            logger.warn("[Checkout] Saved card does not have payment method ID — using mock");
+                            // Old saved card without token → falls back to mock automatically
+                        } else if (stripe && elements) {
+                            logger.info("[Checkout] New card payment — tokenizing via Stripe Elements");
+                            const cardElement = elements.getElement(CardNumberElement);
+                            if (!cardElement) {
+                                throw new Error("Stripe card element not found. Please refresh and try again.");
+                            }
+                            const { error, paymentMethod } = await stripe.createPaymentMethod({
+                                type: "card",
+                                card: cardElement,
+                                billing_details: { name: state.payment.cardName },
+                            });
+                            if (error || !paymentMethod) {
+                                logger.error("Stripe payment method creation failed", error);
+                                throw new Error(error?.message ?? "Failed to tokenize card with Stripe.js.");
+                            }
+                            stripePaymentMethodId = paymentMethod.id;
+                            stripeCardBrand = paymentMethod.card?.brand ?? null;
+                            stripeCardLast4 = paymentMethod.card?.last4 ?? null;
+                            stripeCardExpMonth = paymentMethod.card?.exp_month ?? null;
+                            stripeCardExpYear = paymentMethod.card?.exp_year ?? null;
+                            logger.info("[Checkout] Card tokenized successfully", { paymentMethodId: stripePaymentMethodId });
+                        }
+                    }
+
                     await paymentRepository.processPayment({
                         orderId: order.id,
                         userId: user.id,
@@ -169,10 +281,67 @@ export function useCheckoutSubmit(
                         amount: order.total,
                         currency: order.currencyCode ?? userCurrency,
                         paymentMethod: methodMap[activeType] ?? "CARD",
+                        stripePaymentMethodId: stripePaymentMethodId || undefined,
                     });
                 } catch (payErr) {
                     try { await orderRepository.cancelOrder(order.id); } catch (err) { logger.warn("Suppressed error", err); }
                     throw payErr;
+                }
+
+                /* 4b ─ Save the new payment method to the user's profile so the
+                 *      next checkout offers it in the saved-methods list.
+                 *      Runs only when the user just typed a new method AND
+                 *      ticked the "save for future" checkbox. Failures are
+                 *      non-fatal — the order is already paid.
+                 */
+                if (selectedPmId === "new" && state.saveNewPaymentMethod) {
+                    try {
+                        if (payMethod === "card" && stripePaymentMethodId && stripeCardLast4) {
+                            const last4 = stripeCardLast4;
+                            const brand = (stripeCardBrand ?? "card").toLowerCase();
+                            // Dedup: if the user already has a card with the
+                            // same brand + last4, skip — we don't want
+                            // duplicates in the saved-methods dropdown.
+                            const alreadySaved = user.paymentMethods.some(
+                                (pm) => pm.type === "card"
+                                    && pm.cardLast4 === last4
+                                    && (pm.cardBrand ?? "").toLowerCase() === brand,
+                            );
+                            if (!alreadySaved) {
+                                const prettyBrand = brand.charAt(0).toUpperCase() + brand.slice(1);
+                                await profileRepository.createPaymentMethod({
+                                    type: "CARD",
+                                    label: `${prettyBrand} ···· ${last4}`,
+                                    last4,
+                                    brand,
+                                    expiryMonth: stripeCardExpMonth ?? undefined,
+                                    expiryYear: stripeCardExpYear ?? undefined,
+                                    isDefault: user.paymentMethods.length === 0,
+                                    stripePaymentMethodId, // Save the token
+                                });
+                            } else {
+                                logger.debug("[Checkout] card already saved — skipping createPaymentMethod");
+                            }
+                        } else if (payMethod === "paypal" && state.paypalEmail) {
+                            const email = state.paypalEmail.trim().toLowerCase();
+                            const alreadySaved = user.paymentMethods.some(
+                                (pm) => pm.type === "paypal"
+                                    && (pm.paypalEmail ?? "").trim().toLowerCase() === email,
+                            );
+                            if (!alreadySaved) {
+                                await profileRepository.createPaymentMethod({
+                                    type: "PAYPAL",
+                                    label: `PayPal · ${state.paypalEmail}`,
+                                    paypalEmail: state.paypalEmail,
+                                    isDefault: user.paymentMethods.length === 0,
+                                });
+                            } else {
+                                logger.debug("[Checkout] PayPal already saved — skipping createPaymentMethod");
+                            }
+                        }
+                    } catch (saveErr) {
+                        logger.warn("[Checkout] could not persist payment method", saveErr);
+                    }
                 }
             }
 

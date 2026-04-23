@@ -6,6 +6,7 @@ import {
   ExternalLink, Maximize2, Info, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { type MediaFile, mediaRepository } from "../../repositories/MediaRepository";
 
 /* ── Types ──────────────────────────────────────────── */
@@ -601,6 +602,7 @@ function ImageDetailModal({
 
 /* ── Main Component ────────────────────────────────────── */
 export function AdminMedia() {
+    const { t } = useLanguage();
   const [mediaList, setMediaList] = useState<MediaItem[]>([]);
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -683,7 +685,7 @@ export function AdminMedia() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl text-gray-900 tracking-tight">Galería de Medios</h1>
+          <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.media.title")}</h1>
           <p className="text-xs text-gray-400 mt-1">
             {mediaList.length} imágenes · {formatFileSize(totalSize)} total
           </p>

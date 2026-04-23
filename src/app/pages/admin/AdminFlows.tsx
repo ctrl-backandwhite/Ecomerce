@@ -9,6 +9,7 @@ import {
   Settings, Mail, Layers, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type FlowType = "delivery" | "return" | "exchange" | "quality" | "custom";
@@ -930,6 +931,7 @@ function FlowCard({ flow, onEdit, onDelete, onToggle }: {
 // Main page
 // ─────────────────────────────────────────────────────────────────────────────
 export function AdminFlows() {
+    const { t } = useLanguage();
   const [flows, setFlows] = useState<DeliveryFlow[]>([]);
   const [filterType, setFilterType] = useState<FlowType | "all">("all");
   const [searchQ, setSearchQ] = useState("");
@@ -1013,7 +1015,7 @@ export function AdminFlows() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Flujos de trabajo</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.flows.title")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">Define los procesos de entrega, devolución y logística para cada tipo de envío</p>
         </div>
         <button
@@ -1118,8 +1120,8 @@ export function AdminFlows() {
             <h3 className="text-sm text-gray-900 text-center mb-1">¿Eliminar "{deleteTarget.name}"?</h3>
             <p className="text-xs text-gray-400 text-center mb-5">Los pedidos en curso que usen este flujo no se verán afectados.</p>
             <div className="flex gap-2">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 h-8 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">Cancelar</button>
-              <button onClick={handleDeleteConfirm} className="flex-1 h-8 text-xs text-white bg-red-500 rounded-lg hover:bg-red-600">Eliminar</button>
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 h-8 text-xs border border-gray-200 rounded-lg hover:bg-gray-50">{t("admin.common.cancel")}</button>
+              <button onClick={handleDeleteConfirm} className="flex-1 h-8 text-xs text-white bg-red-500 rounded-lg hover:bg-red-600">{t("admin.common.delete")}</button>
             </div>
           </div>
         </div>

@@ -16,6 +16,7 @@ import { usePriceRanges } from "../hooks/usePriceRanges";
 import { CATEGORY_ATTR_FILTERS, ATTR_MATCH } from "../config/filters";
 import { useNexaProducts } from "../hooks/useNexaProducts";
 import { useCurrency } from "../context/CurrencyContext";
+import { useLanguage } from "../context/LanguageContext";
 
 interface HomeSidebarProps {
   selectedCategory: string;
@@ -28,10 +29,15 @@ interface HomeSidebarProps {
   total: number;
   variantValues?: Record<string, string>;
   selectedKeywords?: string[];
+  /** Max price (in selected currency) used by the slider. 0 = no filter. */
+  priceMax?: number;
+  /** Highest product price available (used as slider upper bound). */
+  priceMaxLimit?: number;
   onCategory: (cat: string, catId?: string) => void;
   onBrand: (brand: string) => void;
   onAttr: (attr: string) => void;
   onPrice: (idx: number) => void;
+  onPriceMax?: (max: number) => void;
   onRating: (r: number) => void;
   onSort: (s: string) => void;
   onReset: () => void;
@@ -53,13 +59,14 @@ const KW_STOPWORDS = new Set([
 function TopRated() {
   const { products } = useNexaProducts();
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
   const top = [...products].sort((a, b) => b.rating - a.rating).slice(0, 3);
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 bg-gray-50">
         <TrendingUp className="w-3.5 h-3.5 text-gray-400" />
         <span className="text-[10px] tracking-widest uppercase text-gray-400">
-          Más valorados
+          {t("sidebar.topRated") || "Más valorados"}
         </span>
       </div>
       {top.map((p) => (
@@ -102,10 +109,13 @@ export function HomeSidebar({
   total,
   variantValues = {},
   selectedKeywords = [],
+  priceMax = 0,
+  priceMaxLimit,
   onCategory,
   onBrand,
   onAttr,
   onPrice,
+  onPriceMax,
   onRating,
   onSort,
   onReset,
@@ -114,6 +124,19 @@ export function HomeSidebar({
 }: HomeSidebarProps) {
   const { products } = useNexaProducts();
   const priceRanges = usePriceRanges();
+  const { t } = useLanguage();
+  const { formatPrice } = useCurrency();
+
+  // Compute max price limit from current product list if not supplied by parent.
+  // Rounded up to the nearest 50 for a cleaner slider upper bound.
+  const computedLimit = useMemo(() => {
+    if (priceMaxLimit && priceMaxLimit > 0) return priceMaxLimit;
+    if (!products.length) return 1000;
+    const topPrice = Math.max(...products.map((p) => p.price));
+    return Math.ceil(topPrice / 50) * 50 || 1000;
+  }, [priceMaxLimit, products]);
+
+  const effectivePriceMax = priceMax > 0 ? priceMax : computedLimit;
 
   /* ── Keyword facets mined from product names ──────────────────
    * When the listing doesn't expose variant attributes we still want
@@ -231,19 +254,19 @@ export function HomeSidebar({
           to="/gift-cards"
           className="group bg-gray-700 rounded-xl p-4 text-white hover:bg-gray-800 transition-colors block"
         >
-          <div className="flex items-center gap-2.5 mb-2.5">
+          <div className="flex flex-col items-center text-center gap-2.5 mb-2.5">
             <div className="w-8 h-8 rounded-lg bg-white/10 border border-white/15 flex items-center justify-center flex-shrink-0">
               <Gift className="w-4 h-4 text-white" strokeWidth={1.5} />
             </div>
             <p className="text-[10px] tracking-widest uppercase text-white/60 leading-tight">
-              Tarjetas Regalo
+              {t("sidebar.giftCards.eyebrow") || "Tarjetas regalo"}
             </p>
           </div>
-          <p className="text-sm leading-snug mb-3">
-            El regalo perfecto, entregado al instante.
+          <p className="text-sm leading-snug mb-3 text-center">
+            {t("sidebar.giftCards.desc") || "El regalo perfecto, entregado al instante."}
           </p>
-          <span className="inline-flex items-center gap-1 text-xs text-white/80 group-hover:text-white transition-colors">
-            Regalar ahora
+          <span className="flex items-center justify-center gap-1 text-xs text-white/80 group-hover:text-white transition-colors">
+            {t("sidebar.giftCards.cta") || "Regalar ahora"}
             <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
           </span>
         </Link>
@@ -256,7 +279,7 @@ export function HomeSidebar({
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
               <span className="text-[10px] tracking-widest uppercase text-gray-400">
-                Filtros
+                {t("sidebar.filters") || "Filtros"}
               </span>
             </div>
             {hasFilters && (
@@ -265,7 +288,7 @@ export function HomeSidebar({
                 className="flex items-center gap-1 text-[11px] text-gray-400 hover:text-gray-800 transition-colors"
               >
                 <X className="w-3 h-3" />
-                Limpiar
+                {t("sidebar.clear") || "Limpiar"}
               </button>
             )}
           </div>
@@ -273,7 +296,7 @@ export function HomeSidebar({
           {/* Result count */}
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50/50">
             <span className="text-[11px] text-gray-400">
-              <span className="text-gray-900">{total}</span> productos
+              <span className="text-gray-900">{total}</span> {t("sidebar.products") || "productos"}
             </span>
           </div>
 
@@ -281,7 +304,7 @@ export function HomeSidebar({
           {brandsInScope.length > 0 && (
             <div className="border-b border-gray-100">
               <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400">
-                Marcas
+                {t("sidebar.brands") || "Marcas"}
               </p>
               {brandsInScope.map(([brand, count]) => (
                 <button
@@ -309,7 +332,7 @@ export function HomeSidebar({
             <div className="border-b border-gray-100">
               <div className="pt-3 pb-2.5 px-4">
                 <p className="text-[10px] tracking-widest uppercase text-gray-400 mb-2 flex items-center gap-1">
-                  <Layers className="w-3 h-3" /> Características
+                  <Layers className="w-3 h-3" /> {t("sidebar.features") || "Características"}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {keywordFacets.map(({ kw, count }) => {
@@ -403,34 +426,50 @@ export function HomeSidebar({
             </div>
           )}
 
-          {/* ── Precio ── */}
+          {/* ── Precio (slider 0 — max) ── */}
           <div className="border-b border-gray-100">
             <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
-              <DollarSign className="w-3 h-3" /> Precio
+              <DollarSign className="w-3 h-3" /> {t("sidebar.price") || "Precio"}
             </p>
-            {priceRanges.map((range, i) => (
-              <button
-                key={range.label}
-                onClick={() => onPrice(i)}
-                className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${selectedPriceIdx === i
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-600 hover:bg-gray-50"
-                  }`}
-              >
-                <span className="flex items-center gap-2">
-                  {selectedPriceIdx === i
-                    ? <Check className="w-3 h-3 text-gray-700" strokeWidth={2} />
-                    : <span className="w-1 h-1 rounded-full bg-gray-300" />}
-                  {range.label}
+            <div className="px-4 pb-4 pt-1 space-y-2">
+              <div className="flex items-center justify-between text-[11px] text-gray-500">
+                <span>{formatPrice(0)}</span>
+                <span className="text-gray-900 tabular-nums">
+                  {priceMax > 0
+                    ? `${t("filters.priceUpTo") || "Hasta"} ${formatPrice(effectivePriceMax)}`
+                    : (t("filters.priceAll") || "Todos")}
                 </span>
-              </button>
-            ))}
+                <span>{formatPrice(computedLimit)}</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={computedLimit}
+                step={Math.max(1, Math.round(computedLimit / 200))}
+                value={effectivePriceMax}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  onPriceMax?.(v >= computedLimit ? 0 : v);
+                  if (selectedPriceIdx !== 0) onPrice(0);
+                }}
+                className="w-full h-1 accent-gray-700 cursor-pointer"
+                aria-label={t("sidebar.price") || "Precio"}
+              />
+              {priceMax > 0 && (
+                <button
+                  onClick={() => onPriceMax?.(0)}
+                  className="text-[11px] text-gray-400 hover:text-gray-700 transition-colors"
+                >
+                  {t("filters.reset") || "Quitar filtro"}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* ── Valoración ── */}
           <div className="border-b border-gray-100">
             <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
-              <Star className="w-3 h-3" /> Valoración
+              <Star className="w-3 h-3" /> {t("sidebar.rating") || "Valoración"}
             </p>
             {[5, 4, 3, 2].map((r) => (
               <button
@@ -453,7 +492,7 @@ export function HomeSidebar({
                     />
                   ))}
                 </div>
-                <span className="text-[11px] text-gray-500">y más</span>
+                <span className="text-[11px] text-gray-500">{t("sidebar.ratingAndUp") || "y más"}</span>
               </button>
             ))}
           </div>
@@ -461,13 +500,13 @@ export function HomeSidebar({
           {/* ── Ordenar ── */}
           <div>
             <p className="px-4 pt-3.5 pb-1.5 text-[10px] tracking-widest uppercase text-gray-400 flex items-center gap-2">
-              <ArrowUpDown className="w-3 h-3" /> Ordenar
+              <ArrowUpDown className="w-3 h-3" /> {t("sidebar.sort") || "Ordenar"}
             </p>
             {[
-              { val: "featured", label: "Destacados" },
-              { val: "price-low", label: "Precio: menor a mayor" },
-              { val: "price-high", label: "Precio: mayor a menor" },
-              { val: "name", label: "Nombre A–Z" },
+              { val: "featured", label: t("sidebar.sort.featured") || "Destacados" },
+              { val: "price-low", label: t("sidebar.sort.priceAsc") || "Precio: menor a mayor" },
+              { val: "price-high", label: t("sidebar.sort.priceDesc") || "Precio: mayor a menor" },
+              { val: "name", label: t("sidebar.sort.nameAz") || "Nombre A–Z" },
             ].map(({ val, label }) => (
               <button
                 key={val}

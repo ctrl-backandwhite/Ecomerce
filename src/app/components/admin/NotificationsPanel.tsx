@@ -84,24 +84,42 @@ export function NotificationsPanel({
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const filtered = useMemo(() => {
-    switch (tab) {
-      case "no_leidas": return notifications.filter(n => !n.read);
-      case "alerta": return notifications.filter(n => n.type === "alerta");
-      case "venta": return notifications.filter(n => n.type === "venta");
-      case "sistema": return notifications.filter(n => n.type === "sistema");
-      default: return notifications;
+  // Single source of truth for tab membership — used by both the filter and
+  // the counter, so they never drift apart. Previously the "sistema" tab
+  // counter included devolucion/reseña/cliente but the filter only showed
+  // type === "sistema", so clicking the tab produced inconsistent totals.
+  const matchesTab = (t: FilterTab, n: AppNotification): boolean => {
+    switch (t) {
+      case "todas": return true;
+      case "no_leidas": return !n.read;
+      case "alerta": return n.type === "alerta";
+      case "venta": return n.type === "venta";
+      case "sistema":
+        return n.type === "sistema" || n.type === "devolucion" || n.type === "reseña" || n.type === "cliente";
+      default: return false;
     }
-  }, [notifications, tab]);
-
-  const tabCount = (t: FilterTab) => {
-    if (t === "todas") return notifications.length;
-    if (t === "no_leidas") return notifications.filter(n => !n.read).length;
-    if (t === "alerta") return notifications.filter(n => n.type === "alerta").length;
-    if (t === "venta") return notifications.filter(n => n.type === "venta").length;
-    if (t === "sistema") return notifications.filter(n => n.type === "sistema" || n.type === "devolucion" || n.type === "reseña" || n.type === "cliente").length;
-    return 0;
   };
+
+  const filtered = useMemo(
+    () => notifications.filter(n => matchesTab(tab, n)),
+    [notifications, tab],
+  );
+
+  const counts = useMemo(() => {
+    const result: Record<FilterTab, number> = {
+      todas: 0, no_leidas: 0, alerta: 0, venta: 0, sistema: 0,
+    };
+    for (const n of notifications) {
+      if (matchesTab("todas", n)) result.todas++;
+      if (matchesTab("no_leidas", n)) result.no_leidas++;
+      if (matchesTab("alerta", n)) result.alerta++;
+      if (matchesTab("venta", n)) result.venta++;
+      if (matchesTab("sistema", n)) result.sistema++;
+    }
+    return result;
+  }, [notifications]);
+
+  const tabCount = (t: FilterTab) => counts[t] ?? 0;
 
   const selectedNotif = selected ? notifications.find(n => n.id === selected) : null;
 

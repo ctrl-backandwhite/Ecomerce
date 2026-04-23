@@ -14,6 +14,7 @@ import {
     nexaCategoryPagedRepository,
 } from "../../repositories/NexaCategoryPagedRepository";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { Pagination } from "../../components/admin/Pagination";
 
 const PAGE_SIZE = 15;
@@ -379,6 +380,7 @@ function PriceRuleModal({
 
 /* ── Main ────────────────────────────────────────────────── */
 export function AdminPricing() {
+    const { t } = useLanguage();
     const [list, setList] = useState<PriceRule[]>([]);
     const [categories, setCategories] = useState<PagedCategory[]>([]);
     const [loading, setLoading] = useState(true);
@@ -471,7 +473,7 @@ export function AdminPricing() {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-xl text-gray-900 tracking-tight">Reglas de precio</h1>
+                    <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.pricing.title")}</h1>
                     <p className="text-xs text-gray-400 mt-1">
                         {list.length} {list.length === 1 ? "regla configurada" : "reglas configuradas"} · Define márgenes de ganancia por producto, categoría o global
                     </p>

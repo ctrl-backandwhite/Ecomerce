@@ -86,17 +86,23 @@ export function ProfileFacturas() {
 
     useEffect(() => setPage(1), [search, statusFilter]);
 
-    /* ── Filtered ────────────────────────────────────────────── */
+    /* ── Filtered (ordenadas de la más reciente a la más antigua) ── */
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
-        return invoices.filter((inv) => {
-            if (statusFilter !== "all" && inv.status !== statusFilter) return false;
-            if (q &&
-                !inv.invoiceNumber.toLowerCase().includes(q) &&
-                !(inv.orderNumber ?? "").toLowerCase().includes(q)
-            ) return false;
-            return true;
-        });
+        return invoices
+            .filter((inv) => {
+                if (statusFilter !== "all" && inv.status !== statusFilter) return false;
+                if (q &&
+                    !inv.invoiceNumber.toLowerCase().includes(q) &&
+                    !(inv.orderNumber ?? "").toLowerCase().includes(q)
+                ) return false;
+                return true;
+            })
+            .sort((a, b) => {
+                const ta = new Date(a.date).getTime();
+                const tb = new Date(b.date).getTime();
+                return (isNaN(tb) ? 0 : tb) - (isNaN(ta) ? 0 : ta);
+            });
     }, [invoices, search, statusFilter]);
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);

@@ -7,11 +7,13 @@ import {
 import { type AdminOrder, type OrderStatus, orderRepository } from "../../repositories/OrderRepository";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
+import { useLanguage } from "../../context/LanguageContext";
 
 type Order = AdminOrder;
 type Status = OrderStatus;
 
 const STATUS_META: Record<Status, { label: string; dot: string; bg: string; text: string; icon: React.ElementType }> = {
+  DRAFT: { label: "Borrador", dot: "bg-gray-400", bg: "bg-gray-50", text: "text-gray-700", icon: Clock },
   PENDING: { label: "Pendiente", dot: "bg-amber-400", bg: "bg-amber-50", text: "text-amber-700", icon: Clock },
   CONFIRMED: { label: "Confirmado", dot: "bg-cyan-400", bg: "bg-cyan-50", text: "text-cyan-700", icon: ThumbsUp },
   PROCESSING: { label: "Procesando", dot: "bg-blue-400", bg: "bg-blue-50", text: "text-blue-700", icon: Package },
@@ -22,10 +24,15 @@ const STATUS_META: Record<Status, { label: string; dot: string; bg: string; text
   REFUNDED: { label: "Reembolsado", dot: "bg-orange-400", bg: "bg-orange-50", text: "text-orange-700", icon: RotateCcw },
 };
 
+const UNKNOWN_STATUS_META = {
+  label: "Desconocido", dot: "bg-gray-300", bg: "bg-gray-50", text: "text-gray-500", icon: Clock,
+} as const;
+
 const STATUS_FLOW: Status[] = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "IN_TRANSIT", "DELIVERED"];
 
 function StatusBadge({ status }: { status: Status }) {
-  const m = STATUS_META[status];
+  // Fallback for any status the backend introduces that the UI hasn't mapped yet.
+  const m = STATUS_META[status] ?? UNKNOWN_STATUS_META;
   return (
     <span className={`inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-full ${m.bg} ${m.text}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${m.dot}`} />
@@ -165,6 +172,7 @@ function OrderDrawer({
 
 /* ── Main page ───────────────────────────────────────── */
 export function AdminOrders() {
+  const { t } = useLanguage();
   const [list, setList] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -218,17 +226,17 @@ export function AdminOrders() {
 
       {/* Header */}
       <div>
-        <h1 className="text-xl text-gray-900 tracking-tight">Órdenes</h1>
-        <p className="text-xs text-gray-400 mt-1">{list.length} órdenes en total</p>
+        <h1 className="text-xl text-gray-900 tracking-tight">{t("admin.orders.title")}</h1>
+        <p className="text-xs text-gray-400 mt-1">{list.length} {t("admin.orders.inTotal")}</p>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: ShoppingCart, label: "Total órdenes", value: list.length.toString() },
-          { icon: DollarSign, label: "Ingresos", value: `$${list.reduce((s, o) => s + o.total, 0).toLocaleString()}` },
-          { icon: Clock, label: "Pendientes", value: list.filter((o) => o.status === "PENDING").length.toString() },
-          { icon: Truck, label: "En camino", value: list.filter((o) => o.status === "SHIPPED").length.toString() },
+          { icon: ShoppingCart, label: t("admin.orders.kpi.total"), value: list.length.toString() },
+          { icon: DollarSign, label: t("admin.orders.kpi.revenue"), value: `$${list.reduce((s, o) => s + o.total, 0).toLocaleString()}` },
+          { icon: Clock, label: t("admin.orders.kpi.pending"), value: list.filter((o) => o.status === "PENDING").length.toString() },
+          { icon: Truck, label: t("admin.orders.kpi.shipped"), value: list.filter((o) => o.status === "SHIPPED").length.toString() },
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <div className="w-8 h-8 bg-gray-50 border border-gray-100 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -258,7 +266,7 @@ export function AdminOrders() {
                   }`}
               >
                 {m && <span className={`w-1.5 h-1.5 rounded-full ${active ? "bg-white" : m.dot}`} />}
-                {s === "all" ? "Todas" : m!.label}
+                {s === "all" ? t("admin.common.all") : m!.label}
                 <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${active ? "bg-white/20" : "bg-gray-100"}`}>{count}</span>
               </button>
             );
@@ -272,7 +280,7 @@ export function AdminOrders() {
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por nº orden o cliente..."
+              placeholder={t("admin.orders.searchPlaceholder")}
               className="w-full text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl pl-8 pr-3 py-2 focus:outline-none focus:border-gray-400 placeholder-gray-300"
             />
           </div>
@@ -281,7 +289,7 @@ export function AdminOrders() {
             className="flex items-center gap-1.5 text-xs text-gray-500 border border-gray-200 rounded-xl px-3 py-2 hover:border-gray-400 transition-colors"
           >
             <Calendar className="w-3.5 h-3.5" strokeWidth={1.5} />
-            {sortDir === "desc" ? "Más reciente" : "Más antiguo"}
+            {sortDir === "desc" ? t("admin.orders.sortRecent") : t("admin.orders.sortOldest")}
             <ArrowUpDown className="w-3 h-3" strokeWidth={1.5} />
           </button>
         </div>

@@ -1,6 +1,7 @@
 import { Tag } from "lucide-react";
 import { useCurrency } from "../../../context/CurrencyContext";
 import type { CheckoutAction, CheckoutState } from "../types";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface CouponInputProps {
     couponCode: string;
@@ -14,6 +15,7 @@ interface CouponInputProps {
 export function CouponInput({
     couponCode, couponLoading, couponResult, couponDiscount, dispatch, applyCoupon,
 }: CouponInputProps) {
+    const { t } = useLanguage();
     const { formatPrice } = useCurrency();
     return (
         <div className="px-5 py-3 border-t border-gray-50">
@@ -23,7 +25,7 @@ export function CouponInput({
                     <input
                         value={couponCode}
                         onChange={(e) => { dispatch({ type: "PATCH", payload: { couponCode: e.target.value } }); dispatch({ type: "RESET_COUPON" }); }}
-                        placeholder="Código de descuento"
+                        placeholder={t("checkout.coupon.placeholder") || "Código de descuento"}
                         className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg pl-8 pr-3 py-2 focus:outline-none focus:border-gray-400 placeholder-gray-300"
                     />
                 </div>

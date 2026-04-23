@@ -5,6 +5,10 @@ import { useNavigate } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { logger } from "../../lib/logger";
 import { useCurrency } from "../../context/CurrencyContext";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY ?? "");
 
 import { storeLocations, pickupPoints } from "./types";
 import type { PaymentMethod } from "../../context/UserContext";
@@ -26,6 +30,14 @@ import { OrderSummary } from "./components/OrderSummary";
 import { OrderConfirmation } from "./components/OrderConfirmation";
 
 export function Checkout() {
+    return (
+        <Elements stripe={stripePromise}>
+            <CheckoutInner />
+        </Elements>
+    );
+}
+
+function CheckoutInner() {
     const { items, getTotalPrice, clearCart } = useCart();
     const { user } = useUser();
     const { convertFromUsd } = useCurrency();
@@ -63,7 +75,9 @@ export function Checkout() {
     const selectedShipping = state.shippingOptions.find((o) => o.id === state.selectedShippingId);
     const shippingUsd = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
     const shipping = convertFromUsd(shippingUsd);
-    const tax = state.taxCalc?.taxAmount ?? 0;
+    // Tax: prefer backend value, otherwise fall back to the server-side default
+    // (10 % of subtotal) so the UI matches what the order service will charge.
+    const tax = state.taxCalc?.taxAmount ?? +(subtotal * 0.10).toFixed(2);
 
     /* Coupon: PERCENTAGE discount was computed against the display-currency subtotal,
        FIXED discount is a raw USD amount that needs conversion. */
@@ -105,19 +119,22 @@ export function Checkout() {
 
     /* ── Step validation ── */
     const step1Valid = !!(state.contact.email && state.contact.phone);
-    const step2Valid = state.selectedAddrId !== "new"
+    const addressProvided = state.selectedAddrId !== "new"
         ? !!selectedAddr
         : state.newMode === "home"
             ? !!(state.manualAddr.name && state.manualAddr.street && state.manualAddr.city)
             : state.newMode === "store"
                 ? !!state.selectedStoreId
                 : !!state.selectedPickupId;
+    // Block step 2 when CJ replied that the country is not on the allowlist —
+    // paying would create a customer charge we cannot fulfil.
+    const step2Valid = addressProvided && !state.cjCountryBlocked;
     const step3Valid = total === 0
         ? true
         : state.selectedPmId !== "new"
             ? selectedPm?.type === "card" ? !!state.savedCardCvv : true
             : state.payMethod === "card"
-                ? !!(state.payment.cardNumber && state.payment.cardName && state.payment.expiry && state.payment.cvv)
+                ? !!(state.stripeElementsComplete.number && state.stripeElementsComplete.expiry && state.stripeElementsComplete.cvc && state.payment.cardName)
                 : state.payMethod === "paypal"
                     ? !!state.paypalEmail
                     : true;
@@ -212,5 +229,6 @@ export function Checkout() {
                 </div>
             </div>
         </div>
+
     );
 }

@@ -7,6 +7,7 @@ import {
 import { type Invoice, type InvoiceStatus, invoiceRepository } from "../../repositories/InvoiceRepository";
 import { InvoiceDocument } from "../../components/InvoiceDocument";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 import { Pagination } from "../../components/admin/Pagination";
 import { extractAmount } from "../../utils/extractAmount";
 
@@ -40,6 +41,7 @@ function VoidConfirm({ invoice, onConfirm, onCancel }: { invoice: Invoice; onCon
 
 /* ── Main ──────────────────────────────────────────────────── */
 export function AdminInvoices() {
+    const { t } = useLanguage();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -145,7 +147,7 @@ export function AdminInvoices() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl tracking-tight text-gray-900">Facturas</h1>
+          <h1 className="text-xl tracking-tight text-gray-900">{t("admin.sidebar.invoices")}</h1>
           <p className="text-xs text-gray-400 mt-0.5">{invoices.length} facturas en total</p>
         </div>
       </div>

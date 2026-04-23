@@ -1,6 +1,7 @@
 import { Star } from "lucide-react";
 import { useCurrency } from "../../../context/CurrencyContext";
 import type { CheckoutAction } from "../types";
+import { useLanguage } from "../../../context/LanguageContext";
 
 interface LoyaltySectionProps {
     loyaltyBalance: number;
@@ -15,6 +16,7 @@ export function LoyaltySection({
     loyaltyBalance, loyaltyPoints, loyaltyRate, loyaltyDiscount,
     maxRedeemable, dispatch,
 }: LoyaltySectionProps) {
+    const { t } = useLanguage();
     if (loyaltyBalance <= 0) return null;
     const { formatPrice } = useCurrency();
 
@@ -22,7 +24,7 @@ export function LoyaltySection({
         <div className="px-5 py-3 border-t border-gray-50">
             <div className="flex items-center gap-2 mb-2">
                 <Star className="w-3.5 h-3.5 text-amber-400" strokeWidth={1.5} />
-                <span className="text-xs text-gray-600">Puntos de fidelidad</span>
+                <span className="text-xs text-gray-600">{t("checkout.loyalty") || "Puntos de fidelidad"}</span>
                 <span className="ml-auto text-xs text-amber-600 tabular-nums">
                     {loyaltyBalance.toLocaleString()} pts
                 </span>

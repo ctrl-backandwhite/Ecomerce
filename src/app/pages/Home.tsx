@@ -163,6 +163,7 @@ export function Home() {
   } = useProductSearch(searchQuery);
 
   const [selectedPriceIdx, setSelectedPriceIdx] = useState(0);
+  const [priceMaxFilter, setPriceMaxFilter] = useState(0); // 0 = no limit
   const [selectedRating, setSelectedRating] = useState(0);
   const [sortBy, setSortBy] = useState("featured");
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -262,9 +263,13 @@ export function Home() {
       });
     }
 
-    const pr = priceRanges[selectedPriceIdx];
-    if (selectedPriceIdx !== 0)
-      list = list.filter((p) => p.price >= pr.min && p.price <= pr.max);
+    if (priceMaxFilter > 0) {
+      list = list.filter((p) => p.price <= priceMaxFilter);
+    } else {
+      const pr = priceRanges[selectedPriceIdx];
+      if (selectedPriceIdx !== 0)
+        list = list.filter((p) => p.price >= pr.min && p.price <= pr.max);
+    }
 
     if (selectedRating > 0)
       list = list.filter((p) => p.rating >= selectedRating);
@@ -305,7 +310,7 @@ export function Home() {
     }
     return list;
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, products,
+    selectedPriceIdx, priceMaxFilter, selectedRating, sortBy, searchQuery, soloOfertas, products,
     campaignDealIds, campaignDeals, variantValues, selectedKeywords, selectedSubcategoryId,
     recentlyViewed]);
 
@@ -313,7 +318,7 @@ export function Home() {
   useEffect(() => {
     setFilterKey((k) => k + 1);
   }, [selectedCategory, selectedSubcat, selectedBrand, selectedAttr,
-    selectedPriceIdx, selectedRating, sortBy, searchQuery, soloOfertas, variantValues, selectedKeywords]);
+    selectedPriceIdx, priceMaxFilter, selectedRating, sortBy, searchQuery, soloOfertas, variantValues, selectedKeywords]);
 
   /* ── Scroll to products when category/subcategory/search changes from URL ── */
   const isFirstRender = useRef(true);
@@ -558,6 +563,7 @@ export function Home() {
                 selectedBrand={selectedBrand}
                 selectedAttr={selectedAttr}
                 selectedPriceIdx={selectedPriceIdx}
+                priceMax={priceMaxFilter}
                 selectedRating={selectedRating}
                 sortBy={sortBy}
                 total={filtered.length}
@@ -567,6 +573,7 @@ export function Home() {
                 onBrand={handleBrand}
                 onAttr={handleAttr}
                 onPrice={setSelectedPriceIdx}
+                onPriceMax={setPriceMaxFilter}
                 onRating={setSelectedRating}
                 onSort={setSortBy}
                 onReset={handleReset}

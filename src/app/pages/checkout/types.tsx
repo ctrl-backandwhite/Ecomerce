@@ -83,13 +83,23 @@ export interface CheckoutState {
     selectedPmId: string;
     payMethod: PayMethod;
     payment: { cardNumber: string; cardName: string; expiry: string; cvv: string };
+    stripeElementsComplete: { number: boolean; expiry: boolean; cvc: boolean };
     paypalEmail: string;
     copiedAddr: boolean;
     savedCardCvv: string;
     pmDropdownOpen: boolean;
+    /** When true, the new payment method entered at checkout will be persisted
+     *  to the user's profile after a successful order. */
+    saveNewPaymentMethod: boolean;
     shippingOptions: ShippingOption[];
     selectedShippingId: string | null;
     shippingLoading: boolean;
+    /** Set when CJ responds 422 — destination country is not in the allowlist. */
+    cjCountryBlocked: boolean;
+    /** ISO code that came back blocked, for UI messaging. */
+    cjBlockedCountry: string | null;
+    /** Set when the CJ quote endpoint fails for any other reason (network, 5xx). */
+    cjQuoteError: string | null;
     taxCalc: TaxCalculation | null;
     taxLoading: boolean;
     couponCode: string;
@@ -114,6 +124,7 @@ export type CheckoutAction =
     | { type: "SET_CONTACT"; payload: Partial<CheckoutState["contact"]> }
     | { type: "SET_MANUAL_ADDR"; payload: Partial<CheckoutState["manualAddr"]> }
     | { type: "SET_PAYMENT"; payload: Partial<CheckoutState["payment"]> }
+    | { type: "SET_STRIPE_COMPLETE"; field: "number" | "expiry" | "cvc"; complete: boolean }
     | { type: "SYNC_PROFILE"; payload: { email: string; phone: string; firstName: string; lastName: string; defaultAddrId?: string; defaultPmId?: string } }
     | { type: "RESET_COUPON" }
     | { type: "RESET_GIFT_CARD" }
