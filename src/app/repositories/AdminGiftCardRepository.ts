@@ -28,6 +28,8 @@ export interface GiftCard {
     message: string | null;
     status: "PENDING" | "ACTIVE" | "USED" | "EXPIRED" | "VOID";
     sendDate: string | null;
+    /** Precise delivery instant. ISO-8601; drives the scheduler. */
+    sendAt: string | null;
     expiryDate: string | null;
     activatedAt: string | null;
     /**

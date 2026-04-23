@@ -48,7 +48,10 @@ export interface SentGiftCard {
     toEmail: string;
     message: string;
     sentDate: string;
+    /** Localised day-level label (for display). */
     scheduledDate?: string;
+    /** ISO-8601 instant so a live countdown can tick toward the exact moment. */
+    scheduledAt?: string;
     designId: string;
     status: "delivered" | "scheduled" | "pending" | "redeemed";
 }

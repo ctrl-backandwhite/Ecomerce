@@ -27,6 +27,31 @@ function getDesign(id: string) {
   return GIFT_CARD_DESIGNS.find(d => d.id === id) ?? GIFT_CARD_DESIGNS[0];
 }
 
+/**
+ * Small live-ticking countdown for scheduled sends. Uses second-precision only
+ * when the moment is less than an hour away so the list stays cheap to render.
+ */
+function ScheduledCountdown({ at }: { at: string }) {
+  const [, force] = useState(0);
+  useEffect(() => {
+    const remainingMs = new Date(at).getTime() - Date.now();
+    const interval = remainingMs < 3_600_000 ? 1_000 : 60_000;
+    const id = setInterval(() => force(x => x + 1), interval);
+    return () => clearInterval(id);
+  }, [at]);
+  const diffMs = new Date(at).getTime() - Date.now();
+  if (diffMs <= 0) return <>enviando ahora…</>;
+  const totalSec = Math.floor(diffMs / 1000);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (d > 0) return <>en {d}d {h}h {m}m</>;
+  if (h > 0) return <>en {h}h {m}m</>;
+  if (m > 0) return <>en {m}m {s}s</>;
+  return <>en {s}s</>;
+}
+
 function durationFromNow(dateStr: string, t: (k: string) => string) {
   const [d, m, y] = dateStr.split("/").map(Number);
   const expiry = new Date(y, m - 1, d);
@@ -313,9 +338,12 @@ function SentCard({ card, onCopy }: { card: SentGiftCard; onCopy: (code: string)
             <span className="text-xs text-gray-900">{formatPrice(card.amount)}</span>
             <span className="text-[10px] text-gray-400">{t("profile.giftcards.received.sent.label")} {card.sentDate}</span>
           </div>
-          {card.status === "scheduled" && card.scheduledDate && (
-            <p className="text-[11px] text-indigo-600 mt-1">
-              Se enviará el {card.scheduledDate}
+          {card.status === "scheduled" && (card.scheduledAt || card.scheduledDate) && (
+            <p className="text-[11px] text-indigo-600 mt-1 flex items-center gap-1.5">
+              <Clock className="w-3 h-3" strokeWidth={1.5} />
+              {card.scheduledAt
+                ? (<>Se enviará <ScheduledCountdown at={card.scheduledAt} /></>)
+                : (<>Se enviará el {card.scheduledDate}</>)}
             </p>
           )}
           {card.message && (
