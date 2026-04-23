@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { ChevronRight, TrendingUp, Truck, RefreshCw } from "lucide-react";
 import { urls } from "../lib/urls";
+import { useLanguage } from "../context/LanguageContext";
 
 interface CategoryPageHeaderProps {
   category: string;
@@ -32,6 +33,7 @@ function colorFromName(name: string): string {
 }
 
 export function CategoryPageHeader({ category, subcategory, total }: CategoryPageHeaderProps) {
+  const { t } = useLanguage();
   const title = subcategory || category;
   const gradient = colorFromName(title);
 
@@ -42,7 +44,7 @@ export function CategoryPageHeader({ category, subcategory, total }: CategoryPag
         {/* Breadcrumb */}
         <nav className="flex items-center gap-1.5 text-xs text-gray-500 mb-3 flex-wrap">
           <Link to="/" className="hover:text-blue-700 transition-colors">
-            Inicio
+            {t("nav.home")}
           </Link>
           <ChevronRight className="w-3 h-3 text-gray-300" strokeWidth={1.5} />
           <Link to={urls.category(category)} className="hover:text-blue-700 transition-colors">
@@ -65,7 +67,7 @@ export function CategoryPageHeader({ category, subcategory, total }: CategoryPag
               <span className="inline-flex items-center gap-1.5">
                 <TrendingUp className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
                 <span className="text-gray-900 font-medium">{total}</span>
-                productos disponibles
+                {t("category.productsAvailable")}
               </span>
               {subcategory && (
                 <>
@@ -83,8 +85,8 @@ export function CategoryPageHeader({ category, subcategory, total }: CategoryPag
                 <Truck className="w-3.5 h-3.5 text-gray-600" strokeWidth={1.5} />
               </div>
               <div className="leading-tight">
-                <p className="text-gray-900">Envío rápido</p>
-                <p className="text-[10px] text-gray-500">En pedidos +$100</p>
+                <p className="text-gray-900">{t("category.trust.shipping.title")}</p>
+                <p className="text-[10px] text-gray-500">{t("category.trust.shipping.subtitle")}</p>
               </div>
             </div>
             <div className="flex items-center gap-2 text-xs text-gray-700">
@@ -92,8 +94,8 @@ export function CategoryPageHeader({ category, subcategory, total }: CategoryPag
                 <RefreshCw className="w-3.5 h-3.5 text-gray-600" strokeWidth={1.5} />
               </div>
               <div className="leading-tight">
-                <p className="text-gray-900">Devolución fácil</p>
-                <p className="text-[10px] text-gray-500">30 días sin coste</p>
+                <p className="text-gray-900">{t("category.trust.returns.title")}</p>
+                <p className="text-[10px] text-gray-500">{t("category.trust.returns.subtitle")}</p>
               </div>
             </div>
           </div>
