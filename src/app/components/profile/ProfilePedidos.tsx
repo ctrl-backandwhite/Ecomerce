@@ -24,6 +24,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 
 /* ── Local types (mapped from API) ────────────────────────── */
 
@@ -52,15 +53,15 @@ interface Order {
   trackingCode?: string;
 }
 
-const statusConfig: Record<OrderStatus, { label: string; color: string; bg: string; dot: string }> = {
-  pending: { label: "Pendiente", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500" },
-  confirmed: { label: "Confirmado", color: "text-cyan-600", bg: "bg-cyan-50", dot: "bg-cyan-500" },
-  processing: { label: "En preparación", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-600" },
-  shipped: { label: "Enviado", color: "text-violet-600", bg: "bg-violet-50", dot: "bg-violet-500" },
-  in_transit: { label: "En tránsito", color: "text-indigo-600", bg: "bg-indigo-50", dot: "bg-indigo-500" },
-  delivered: { label: "Entregado", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-500" },
-  cancelled: { label: "Cancelado", color: "text-red-500", bg: "bg-red-50", dot: "bg-red-500" },
-  refunded: { label: "Reembolsado", color: "text-orange-500", bg: "bg-orange-50", dot: "bg-orange-500" },
+const statusConfig: Record<OrderStatus, { labelKey: string; color: string; bg: string; dot: string }> = {
+  pending: { labelKey: "profile.pedidos.status.pending", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500" },
+  confirmed: { labelKey: "profile.pedidos.status.confirmed", color: "text-cyan-600", bg: "bg-cyan-50", dot: "bg-cyan-500" },
+  processing: { labelKey: "profile.pedidos.status.processing", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-600" },
+  shipped: { labelKey: "profile.pedidos.status.shipped", color: "text-violet-600", bg: "bg-violet-50", dot: "bg-violet-500" },
+  in_transit: { labelKey: "profile.pedidos.status.in_transit", color: "text-indigo-600", bg: "bg-indigo-50", dot: "bg-indigo-500" },
+  delivered: { labelKey: "profile.pedidos.status.delivered", color: "text-green-600", bg: "bg-green-50", dot: "bg-green-500" },
+  cancelled: { labelKey: "profile.pedidos.status.cancelled", color: "text-red-500", bg: "bg-red-50", dot: "bg-red-500" },
+  refunded: { labelKey: "profile.pedidos.status.refunded", color: "text-orange-500", bg: "bg-orange-50", dot: "bg-orange-500" },
 };
 
 const fmtPrice = (n: number) =>
@@ -120,40 +121,40 @@ function mapApiOrder(api: ApiOrder): Order {
 /* ── Tracking steps ──────────────────────────────────────── */
 interface TrackStep {
   key: string;
-  label: string;
-  sublabel: string;
+  labelKey: string;
+  sublabelKey: string;
   icon: React.ReactNode;
 }
 
 const allSteps: TrackStep[] = [
   {
     key: "confirmed",
-    label: "Pedido confirmado",
-    sublabel: "Tu pedido fue recibido",
+    labelKey: "profile.pedidos.step.confirmed",
+    sublabelKey: "profile.pedidos.step.confirmed.sub",
     icon: <ClipboardList className="w-4 h-4" strokeWidth={1.5} />,
   },
   {
     key: "preparing",
-    label: "En preparación",
-    sublabel: "Estamos armando tu pedido",
+    labelKey: "profile.pedidos.step.preparing",
+    sublabelKey: "profile.pedidos.step.preparing.sub",
     icon: <ShoppingBag className="w-4 h-4" strokeWidth={1.5} />,
   },
   {
     key: "picked",
-    label: "Recogido por courier",
-    sublabel: "El repartidor tiene tu paquete",
+    labelKey: "profile.pedidos.step.picked",
+    sublabelKey: "profile.pedidos.step.picked.sub",
     icon: <Package className="w-4 h-4" strokeWidth={1.5} />,
   },
   {
     key: "transit",
-    label: "En tránsito",
-    sublabel: "Tu pedido va en camino",
+    labelKey: "profile.pedidos.step.transit",
+    sublabelKey: "profile.pedidos.step.transit.sub",
     icon: <Truck className="w-4 h-4" strokeWidth={1.5} />,
   },
   {
     key: "delivered",
-    label: "Entregado",
-    sublabel: "¡Tu pedido llegó!",
+    labelKey: "profile.pedidos.step.delivered",
+    sublabelKey: "profile.pedidos.step.delivered.sub",
     icon: <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />,
   },
 ];
@@ -200,6 +201,7 @@ function StarInput({ value, onChange }: { value: number; onChange: (v: number) =
 
 /* ── Rating Modal ────────────────────────────────────────── */
 function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) {
+  const { t } = useLanguage();
   const [ratings, setRatings] = useState<Record<string, number>>(
     Object.fromEntries(order.items.map((i) => [i.id, 0]))
   );
@@ -212,7 +214,7 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
 
   const handleSubmit = () => {
     if (!allRated) {
-      toast.error("Por favor califica todos los productos antes de enviar");
+      toast.error(t("profile.pedidos.rating.error"));
       return;
     }
     setSubmitted(true);
@@ -232,7 +234,7 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
               <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
             </div>
             <div>
-              <p className="text-sm text-gray-900">Valorar productos</p>
+              <p className="text-sm text-gray-900">{t("profile.pedidos.rating.title")}</p>
               <p className="text-xs text-gray-400">{order.id}</p>
             </div>
           </div>
@@ -252,9 +254,9 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
               <div className="w-16 h-16 rounded-full bg-green-50 flex items-center justify-center mb-4">
                 <CheckCircle2 className="w-8 h-8 text-green-500" strokeWidth={1.5} />
               </div>
-              <h3 className="text-base text-gray-900 mb-2">¡Gracias por tu valoración!</h3>
+              <h3 className="text-base text-gray-900 mb-2">{t("profile.pedidos.rating.success")}</h3>
               <p className="text-xs text-gray-400 max-w-xs">
-                Tu opinión nos ayuda a mejorar y a otros compradores a tomar mejores decisiones.
+                {t("profile.pedidos.rating.success.desc")}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
                 {order.items.map((item) => (
@@ -276,14 +278,14 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
                 onClick={onClose}
                 className="mt-6 text-sm text-gray-700 bg-gray-200 rounded-xl px-6 py-2.5 hover:bg-gray-300 transition-colors"
               >
-                Cerrar
+                {t("profile.pedidos.action.close")}
               </button>
             </div>
           ) : (
             /* ── Rating form ── */
             <div className="space-y-5">
               <p className="text-xs text-gray-400">
-                Califica cada producto de tu pedido del 1 al 5 y deja un comentario opcional.
+                {t("profile.pedidos.rating.instruction")}
               </p>
 
               {order.items.map((item) => (
@@ -305,7 +307,7 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
                   {/* Rating */}
                   <div className="p-4 space-y-3">
                     <div>
-                      <p className="text-xs text-gray-500 mb-2">Tu calificación</p>
+                      <p className="text-xs text-gray-500 mb-2">{t("profile.pedidos.rating.ratinglabel")}</p>
                       <StarInput
                         value={ratings[item.id]}
                         onChange={(v) => setRatings((r) => ({ ...r, [item.id]: v }))}
@@ -315,13 +317,13 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
                     <div>
                       <div className="flex items-center gap-1.5 mb-1.5">
                         <MessageSquare className="w-3 h-3 text-gray-300" strokeWidth={1.5} />
-                        <p className="text-xs text-gray-400">Comentario (opcional)</p>
+                        <p className="text-xs text-gray-400">{t("profile.pedidos.rating.comment")}</p>
                       </div>
                       <textarea
                         rows={2}
                         value={comments[item.id]}
                         onChange={(e) => setComments((c) => ({ ...c, [item.id]: e.target.value }))}
-                        placeholder="¿Qué te pareció el producto?"
+                        placeholder={t("profile.pedidos.rating.placeholder")}
                         className="w-full text-xs text-gray-700 border border-gray-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent placeholder-gray-300"
                       />
                     </div>
@@ -339,7 +341,7 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
               onClick={onClose}
               className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
             >
-              Cancelar
+              {t("profile.pedidos.rating.cancel")}
             </button>
             <button
               onClick={handleSubmit}
@@ -350,7 +352,7 @@ function RatingModal({ order, onClose }: { order: Order; onClose: () => void }) 
                 }`}
             >
               <Send className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Enviar valoración
+              {t("profile.pedidos.rating.submit")}
             </button>
           </div>
         )}
@@ -369,6 +371,7 @@ function OrderModal({
   onClose: () => void;
   onRate: () => void;
 }) {
+  const { t, locale } = useLanguage();
   const { addToCart, updateQuantity, items: cartItems } = useCart();
   const navigate = useNavigate();
 
@@ -377,14 +380,15 @@ function OrderModal({
   const completedStep = statusStepMap[order.status];
   const truckPercent = isCancelled ? 0 : (completedStep / (allSteps.length - 1)) * 100;
 
-  const orderDate = new Date(order.date).toLocaleDateString("es-CL", {
+  const dateLocale = locale === "en" ? "en-US" : locale === "pt" ? "pt-BR" : "es-CL";
+  const orderDate = new Date(order.date).toLocaleDateString(dateLocale, {
     weekday: "long", day: "numeric", month: "long", year: "numeric",
   });
 
   const handleCopyTracking = () => {
     if (order.trackingCode) {
       navigator.clipboard.writeText(order.trackingCode);
-      toast.success("Código copiado al portapapeles");
+      toast.success(t("profile.pedidos.tracking.copied"));
     }
   };
 
@@ -424,16 +428,16 @@ function OrderModal({
 
   const handleAddItemToCart = (item: OrderItem) => {
     if (!item.productId) {
-      toast.error("Producto no identificado");
+      toast.error(t("profile.pedidos.toast.product_unidentified"));
       return;
     }
     addToCart(buildProductFromItem(item), { quantity: item.quantity });
-    toast.success(`“${item.name}” añadido al carrito`);
+    toast.success(t("profile.pedidos.toast.product_added").replace("{name}", item.name));
   };
 
   const handleReorder = () => {
     if (!order.items.length) {
-      toast.error("Este pedido no tiene productos para re-añadir");
+      toast.error(t("profile.pedidos.toast.no_items"));
       return;
     }
     let added = 0;
@@ -443,10 +447,14 @@ function OrderModal({
       added += 1;
     });
     if (added === 0) {
-      toast.error("No se pudo identificar los productos del pedido");
+      toast.error(t("profile.pedidos.toast.no_identified"));
       return;
     }
-    toast.success(`Se añadieron ${added} ${added === 1 ? "producto" : "productos"} al carrito`);
+    toast.success(
+      added === 1
+        ? t("profile.pedidos.toast.added_to_cart.one")
+        : t("profile.pedidos.toast.added_to_cart.other").replace("{n}", String(added))
+    );
     onClose();
     navigate("/cart");
   };
@@ -472,7 +480,7 @@ function OrderModal({
           <div className="flex items-center gap-3">
             <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full ${cfg.bg} ${cfg.color}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-              {cfg.label}
+              {t(cfg.labelKey)}
             </span>
             <button
               onClick={onClose}
@@ -492,8 +500,8 @@ function OrderModal({
                 <Ban className="w-5 h-5 text-red-400" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-sm text-red-700">Pedido cancelado</p>
-                <p className="text-xs text-red-400 mt-0.5">Este pedido fue cancelado. Si tienes dudas, contáctanos.</p>
+                <p className="text-sm text-red-700">{t("profile.pedidos.cancelled.title")}</p>
+                <p className="text-xs text-red-400 mt-0.5">{t("profile.pedidos.cancelled.desc")}</p>
               </div>
             </div>
           ) : (
@@ -502,19 +510,19 @@ function OrderModal({
 
               {/* Tracking */}
               <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-xs text-gray-400 mb-4 uppercase tracking-wider">Seguimiento del pedido</p>
+                <p className="text-xs text-gray-400 mb-4 uppercase tracking-wider">{t("profile.pedidos.tracking.title")}</p>
 
                 {order.trackingCode && (
                   <div className="flex items-center gap-2 mb-5">
                     <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
-                    <span className="text-xs text-gray-400">Código:</span>
+                    <span className="text-xs text-gray-400">{t("profile.pedidos.tracking.code")}</span>
                     <span className="text-xs font-mono text-gray-900 bg-white border border-gray-200 px-2 py-0.5 rounded">
                       {order.trackingCode}
                     </span>
                     <button
                       onClick={handleCopyTracking}
                       className="w-6 h-6 rounded flex items-center justify-center text-gray-300 hover:text-gray-600 hover:bg-white transition-colors"
-                      title="Copiar código"
+                      title={t("profile.pedidos.tracking.copy")}
                     >
                       <Copy className="w-3 h-3" />
                     </button>
@@ -572,15 +580,15 @@ function OrderModal({
                         </div>
                         <div className="pb-1.5 pt-0.5 min-w-0">
                           <p className={`text-xs ${done ? "text-gray-900" : "text-gray-300"}`}>
-                            {step.label}
+                            {t(step.labelKey)}
                             {active && (
                               <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] text-amber-600 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded-full">
                                 <Clock className="w-2.5 h-2.5" />
-                                En curso
+                                {t("profile.pedidos.step.current")}
                               </span>
                             )}
                           </p>
-                          <p className={`text-[11px] mt-0.5 ${done ? "text-gray-400" : "text-gray-200"}`}>{step.sublabel}</p>
+                          <p className={`text-[11px] mt-0.5 ${done ? "text-gray-400" : "text-gray-200"}`}>{t(step.sublabelKey)}</p>
                         </div>
                       </div>
                     );
@@ -590,7 +598,7 @@ function OrderModal({
 
               {/* Products (right column) */}
               <div>
-                <p className="text-xs text-gray-400 mb-3 uppercase tracking-wider">Productos</p>
+                <p className="text-xs text-gray-400 mb-3 uppercase tracking-wider">{t("profile.pedidos.products.title")}</p>
                 <div className="space-y-2">
                   {order.items.map((item) => (
                     <div key={item.id} className="flex items-center gap-3 border border-gray-100 rounded-xl p-3 hover:bg-gray-50 transition-colors">
@@ -604,8 +612,8 @@ function OrderModal({
                         <button
                           type="button"
                           onClick={() => handleAddItemToCart(item)}
-                          title="Añadir al carrito"
-                          aria-label={`Añadir ${item.name} al carrito`}
+                          title={t("profile.pedidos.products.item.add_to_cart")}
+                          aria-label={t("profile.pedidos.products.item.add_to_cart.aria").replace("{name}", item.name)}
                           className="flex-shrink-0 w-8 h-8 rounded-lg border border-gray-200 bg-white text-gray-600 hover:text-white hover:bg-gray-900 hover:border-gray-900 transition-colors flex items-center justify-center"
                         >
                           <ShoppingCart className="w-4 h-4" strokeWidth={1.5} />
@@ -623,30 +631,30 @@ function OrderModal({
             {/* Totals */}
             <div className="border border-gray-100 rounded-xl overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-50 bg-gray-50">
-                <p className="text-xs text-gray-400 uppercase tracking-wider">Resumen</p>
+                <p className="text-xs text-gray-400 uppercase tracking-wider">{t("profile.pedidos.summary.title")}</p>
               </div>
               <div className="px-4 py-3 space-y-2">
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>Subtotal</span><span>{fmtPrice(order.subtotal)}</span>
+                  <span>{t("profile.pedidos.summary.subtotal")}</span><span>{fmtPrice(order.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-xs text-gray-500">
-                  <span>Envío</span>
+                  <span>{t("profile.pedidos.summary.shipping")}</span>
                   <span className={order.shipping === 0 ? "text-green-600" : ""}>
-                    {order.shipping === 0 ? "Gratis" : fmtPrice(order.shipping)}
+                    {order.shipping === 0 ? t("profile.pedidos.summary.shipping.free") : fmtPrice(order.shipping)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-900 pt-2 border-t border-gray-100">
-                  <span>Total</span><span>{fmtPrice(order.total)}</span>
+                  <span>{t("profile.pedidos.summary.total")}</span><span>{fmtPrice(order.total)}</span>
                 </div>
               </div>
             </div>
 
             {/* Address */}
             <div className="border border-gray-100 rounded-xl p-4">
-              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">Dirección de envío</p>
+              <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider">{t("profile.pedidos.address.title")}</p>
               <div className="flex items-start gap-2">
                 <MapPin className="w-3.5 h-3.5 text-gray-400 mt-0.5 flex-shrink-0" strokeWidth={1.5} />
-                <p className="text-xs text-gray-500">{order.address || "Sin dirección"}</p>
+                <p className="text-xs text-gray-500">{order.address || t("profile.pedidos.address.empty")}</p>
               </div>
             </div>
           </div>
@@ -660,7 +668,7 @@ function OrderModal({
               className="inline-flex items-center gap-1.5 text-xs border border-amber-200 bg-amber-50 text-amber-700 rounded-xl px-4 py-2.5 hover:bg-amber-100 transition-colors"
             >
               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-              Valorar productos
+              {t("profile.pedidos.action.rate")}
             </button>
           )}
 
@@ -670,22 +678,22 @@ function OrderModal({
               className="inline-flex items-center gap-1.5 text-xs bg-gray-900 text-white rounded-xl px-4 py-2.5 hover:bg-gray-800 transition-colors"
             >
               <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Comprar todo
+              {t("profile.pedidos.action.reorder")}
             </button>
           )}
 
           {(order.status === "shipped" || order.status === "in_transit") && (
             <button
-              onClick={() => toast.success("Redirigiendo al sitio de rastreo...")}
+              onClick={() => toast.success(t("profile.pedidos.toast.tracking_redirect"))}
               className="inline-flex items-center gap-1.5 text-xs bg-gray-200 text-gray-700 rounded-xl px-4 py-2.5 hover:bg-gray-300 transition-colors"
             >
               <Truck className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Rastrear en tiempo real
+              {t("profile.pedidos.action.track")}
             </button>
           )}
 
           <button onClick={onClose} className="ml-auto text-xs text-gray-400 hover:text-gray-600 transition-colors">
-            Cerrar
+            {t("profile.pedidos.action.close")}
           </button>
         </div>
       </div>
@@ -694,20 +702,20 @@ function OrderModal({
 }
 
 /* ── Filter tabs ─────────────────────────────────────────── */
-const filterTabs: { id: "all" | OrderStatus; label: string }[] = [
-  { id: "all", label: "Todos" },
-  { id: "pending", label: "Pendientes" },
-  { id: "confirmed", label: "Confirmados" },
-  { id: "processing", label: "En preparación" },
-  { id: "shipped", label: "Enviados" },
-  { id: "in_transit", label: "En tránsito" },
-  { id: "delivered", label: "Entregados" },
-  { id: "cancelled", label: "Cancelados" },
+const filterTabs: { id: "all" | OrderStatus; labelKey: string }[] = [
+  { id: "all", labelKey: "profile.pedidos.filter.all" },
+  { id: "pending", labelKey: "profile.pedidos.filter.pending" },
+  { id: "confirmed", labelKey: "profile.pedidos.filter.confirmed" },
+  { id: "processing", labelKey: "profile.pedidos.filter.processing" },
+  { id: "shipped", labelKey: "profile.pedidos.filter.shipped" },
+  { id: "in_transit", labelKey: "profile.pedidos.filter.in_transit" },
+  { id: "delivered", labelKey: "profile.pedidos.filter.delivered" },
+  { id: "cancelled", labelKey: "profile.pedidos.filter.cancelled" },
 ];
 
 /* ── Main component ──────────────────────────────────────── */
 export function ProfilePedidos() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const { t, locale } = useLanguage(); const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoading] = useState(true);
   const [filter, setFilter] = useState<"all" | OrderStatus>("all");
   const [selected, setSelected] = useState<Order | null>(null);
@@ -752,13 +760,17 @@ export function ProfilePedidos() {
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         {/* Header */}
         <div className="px-6 py-5 border-b border-gray-100">
-          <h2 className="text-base text-gray-900">Mis Pedidos</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{orders.length} pedidos en total</p>
+          <h2 className="text-base text-gray-900">{t("profile.pedidos.title")}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">
+            {orders.length === 1
+              ? t("profile.pedidos.subtitle.one")
+              : `${orders.length} ${t("profile.pedidos.subtitle.other")}`}
+          </p>
         </div>
 
         {/* Filter tabs */}
         <div className="px-6 py-3 border-b border-gray-100 flex gap-2 overflow-x-auto scrollbar-hide">
-          {filterTabs.map(({ id, label }) => (
+          {filterTabs.map(({ id, labelKey }) => (
             <button
               key={id}
               onClick={() => setFilter(id)}
@@ -767,7 +779,7 @@ export function ProfilePedidos() {
                 : "text-gray-500 border-gray-200 hover:border-gray-400 hover:text-gray-700"
                 }`}
             >
-              {label}
+              {t(labelKey)}
             </button>
           ))}
         </div>
@@ -779,12 +791,13 @@ export function ProfilePedidos() {
               <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
                 <Package className="w-5 h-5 text-gray-300" strokeWidth={1.5} />
               </div>
-              <p className="text-sm text-gray-500">No hay pedidos en esta categoría</p>
+              <p className="text-sm text-gray-500">{t("profile.pedidos.empty")}</p>
             </div>
           ) : (
             filtered.map((order) => {
               const cfg = statusConfig[order.status];
-              const orderDate = new Date(order.date).toLocaleDateString("es-CL", {
+              const dateLocale = locale === "en" ? "en-US" : locale === "pt" ? "pt-BR" : "es-CL";
+              const orderDate = new Date(order.date).toLocaleDateString(dateLocale, {
                 day: "numeric", month: "short", year: "numeric",
               });
               const completedStep = statusStepMap[order.status];
@@ -815,11 +828,11 @@ export function ProfilePedidos() {
                       <span className="text-sm text-gray-900">{order.id}</span>
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
-                        {cfg.label}
+                        {t(cfg.labelKey)}
                       </span>
                     </div>
                     <p className="text-xs text-gray-400 mb-2">
-                      {orderDate} · {order.items.length} {order.items.length === 1 ? "producto" : "productos"}
+                      {orderDate} · {order.items.length} {order.items.length === 1 ? t("profile.pedidos.products.item.products.one") : t("profile.pedidos.products.item.products.other")}
                     </p>
                     {order.status !== "cancelled" && (
                       <div className="flex items-center gap-2">
@@ -830,7 +843,7 @@ export function ProfilePedidos() {
                           />
                         </div>
                         <Truck className="w-3 h-3 text-gray-400" strokeWidth={1.5} />
-                        <span className="text-[10px] text-gray-400">{allSteps[completedStep]?.label}</span>
+                        <span className="text-[10px] text-gray-400">{allSteps[completedStep] ? t(allSteps[completedStep].labelKey) : ""}</span>
                       </div>
                     )}
                   </div>
@@ -839,7 +852,7 @@ export function ProfilePedidos() {
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="text-right">
                       <p className="text-sm text-gray-900">{fmtPrice(order.total)}</p>
-                      <p className="text-[10px] text-gray-400">{order.items.length} ítem{order.items.length !== 1 ? "s" : ""}</p>
+                      <p className="text-[10px] text-gray-400">{order.items.length} {order.items.length === 1 ? t("profile.pedidos.products.item.units.one") : t("profile.pedidos.products.item.units.other")}</p>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                   </div>

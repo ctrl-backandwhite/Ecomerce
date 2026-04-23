@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useCart } from "../../../context/CartContext";
 import { useUser } from "../../../context/UserContext";
 import { useCurrency } from "../../../context/CurrencyContext";
+import { useLanguage } from "../../../context/LanguageContext";
 import { useStripe, useElements, CardNumberElement } from "@stripe/react-stripe-js";
 import { orderRepository } from "../../../repositories/OrderRepository";
 import { paymentRepository } from "../../../repositories/PaymentRepository";
@@ -24,6 +25,7 @@ export function useCheckoutSubmit(
     const { items } = useCart();
     const { user } = useUser();
     const { currency } = useCurrency();
+    const { locale } = useLanguage();
     const stripe = useStripe();
     const elements = useElements();
 
@@ -48,7 +50,9 @@ export function useCheckoutSubmit(
         const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
         // Mirror the order service default (10 %) when no tax data is available
         // so the client charges the same total the backend will compute.
-        const tax = state.taxCalc?.taxAmount ?? +(subtotal * 0.10).toFixed(2);
+        // Treat 0 (no tax rules configured) as "missing" and apply the fallback.
+        const backendTax = state.taxCalc?.taxAmount ?? 0;
+        const tax = backendTax > 0 ? backendTax : +(subtotal * 0.10).toFixed(2);
         const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
         const loyaltyDiscount = loyaltyRate > 0 ? loyaltyPoints / loyaltyRate : 0;
 
@@ -203,6 +207,7 @@ export function useCheckoutSubmit(
                 loyaltyPointsUsed: loyaltyPoints > 0 ? loyaltyPoints : undefined,
                 loyaltyDiscount: loyaltyDiscount > 0 ? loyaltyDiscount : undefined,
                 currencyCode: userCurrency,
+                customerLocale: locale,
                 notes: undefined,
             });
             // Use the backend's authoritative totals (tax/shipping/total) so the

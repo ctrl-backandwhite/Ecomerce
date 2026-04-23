@@ -16,6 +16,7 @@ import {
 import { Link } from "react-router";
 import { useCurrency } from "../../context/CurrencyContext";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 
 import { logger } from "../../lib/logger";
 
@@ -23,8 +24,8 @@ type Product = NexaProduct;
 
 /* helper: extract a localised name */
 function pName(p: NexaProduct): string {
-  const t = p.translations?.find((tr) => tr.locale === "es") ?? p.translations?.[0];
-  return t?.name ?? p.name ?? "Producto";
+  const tr = p.translations?.find((x) => x.locale === "es") ?? p.translations?.[0];
+  return tr?.name ?? p.name ?? "Producto";
 }
 
 /* helper: parse sell-price range → lowest numeric value */
@@ -47,6 +48,7 @@ function ProductModal({
   const name = pName(product);
   const price = pPrice(product);
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
   return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
@@ -56,7 +58,7 @@ function ProductModal({
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-          <span className="text-xs text-gray-400">{product.productType === "0" ? "Producto" : product.productType}</span>
+          <span className="text-xs text-gray-400">{product.productType === "0" ? t("profile.favoritos.product.fallback") : product.productType}</span>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
@@ -98,10 +100,10 @@ function ProductModal({
               <Package className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
               <span className="text-xs text-gray-400">
                 {product.listedNum > 10
-                  ? "En stock"
+                  ? t("profile.favoritos.stock.in")
                   : product.listedNum > 0
-                    ? `Solo ${product.listedNum} disponibles`
-                    : "Sin stock"}
+                    ? t("profile.favoritos.stock.few").replace("{n}", String(product.listedNum))
+                    : t("profile.favoritos.stock.out")}
               </span>
               <span className={`w-1.5 h-1.5 rounded-full ${product.listedNum > 10 ? "bg-green-400" : product.listedNum > 0 ? "bg-amber-400" : "bg-red-400"}`} />
             </div>
@@ -113,13 +115,13 @@ function ProductModal({
                 className="flex-1 flex items-center justify-center gap-2 border border-red-200 text-red-500 text-sm rounded-xl py-2.5 hover:bg-red-50 transition-colors"
               >
                 <Trash2 className="w-4 h-4" strokeWidth={1.5} />
-                Eliminar de favoritos
+                {t("profile.favoritos.modal.remove")}
               </button>
               <Link
                 to={`/product/${product.id}`}
                 onClick={onClose}
                 className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl text-gray-400 hover:bg-gray-50 transition-colors"
-                title="Ver página del producto"
+                title={t("profile.favoritos.modal.seeproduct")}
               >
                 <ExternalLink className="w-4 h-4" strokeWidth={1.5} />
               </Link>
@@ -137,6 +139,7 @@ export function ProfileFavoritos() {
   const { user, toggleFavorite } = useUser();
   const { addToCart } = useCart();
   const { formatPrice } = useCurrency();
+  const { t } = useLanguage();
   const [selected, setSelected] = useState<Product | null>(null);
   const [favorites, setFavorites] = useState<NexaProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,7 +151,7 @@ export function ProfileFavoritos() {
       addToCart(mapped, { quantity: 1 });
       await toggleFavorite(product.id);
       setFavorites((prev) => prev.filter((p) => p.id !== product.id));
-      toast.success(`"${pName(product)}" movido al carrito`);
+      toast.success(`"${pName(product)}" ${t("profile.favoritos.toast.tocart")}`);
     },
     [addToCart, toggleFavorite]
   );
@@ -176,10 +179,10 @@ export function ProfileFavoritos() {
     try {
       await toggleFavorite(id);
       setFavorites((prev) => prev.filter((p) => p.id !== id));
-      toast.success(`"${name}" eliminado de favoritos`);
+      toast.success(`"${name}" ${t("profile.favoritos.toast.removed")}`);
       if (selected?.id === id) setSelected(null);
     } catch {
-      toast.error("No se pudo eliminar de favoritos");
+      toast.error(t("profile.favoritos.toast.error"));
     }
   };
 
@@ -197,13 +200,13 @@ export function ProfileFavoritos() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
           <div>
-            <h2 className="text-base text-gray-900">Favoritos</h2>
-            <p className="text-xs text-gray-400 mt-0.5">{favorites.length} producto{favorites.length !== 1 ? "s" : ""} guardado{favorites.length !== 1 ? "s" : ""}</p>
+            <h2 className="text-base text-gray-900">{t("profile.favoritos.title")}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{favorites.length === 1 ? t("profile.favoritos.subtitle.one") : `${favorites.length} ${t("profile.favoritos.subtitle.other")}`}</p>
           </div>
           <Link
             to="/cart"
             className="w-8 h-8 rounded-full border border-gray-200 hover:border-gray-300 bg-white flex items-center justify-center transition-all text-gray-400 hover:text-gray-600"
-            title="Ir al carrito"
+            title={t("profile.favoritos.cart.link")}
           >
             <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
           </Link>
@@ -220,15 +223,15 @@ export function ProfileFavoritos() {
             <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mb-4">
               <Heart className="w-6 h-6 text-gray-300" strokeWidth={1.5} />
             </div>
-            <h3 className="text-base text-gray-900 mb-2">Sin favoritos aún</h3>
+            <h3 className="text-base text-gray-900 mb-2">{t("profile.favoritos.empty.title")}</h3>
             <p className="text-xs text-gray-400 max-w-xs">
-              Guarda los productos que te gusten para encontrarlos fácilmente más adelante.
+              {t("profile.favoritos.empty.desc")}
             </p>
             <Link
               to="/"
               className="mt-6 inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors"
             >
-              Explorar productos
+              {t("profile.favoritos.empty.explore")}
             </Link>
           </div>
         ) : (
@@ -267,7 +270,7 @@ export function ProfileFavoritos() {
                   <button
                     onClick={(e) => { e.stopPropagation(); handleAddToCart(product); }}
                     className="w-8 h-8 rounded-full border border-gray-200 hover:border-gray-300 bg-white text-gray-400 hover:text-gray-600 flex items-center justify-center transition-all flex-shrink-0"
-                    title="Mover al carrito"
+                    title={t("profile.favoritos.button.tocart")}
                   >
                     <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
                   </button>
@@ -276,7 +279,7 @@ export function ProfileFavoritos() {
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRemove(product.id, name); }}
                     className="w-8 h-8 rounded-full border border-gray-200 hover:border-red-300 bg-white hover:bg-red-50 flex items-center justify-center transition-all flex-shrink-0"
-                    title="Eliminar de favoritos"
+                    title={t("profile.favoritos.button.remove")}
                   >
                     <Trash2 className="w-3.5 h-3.5 text-gray-400" strokeWidth={1.5} />
                   </button>

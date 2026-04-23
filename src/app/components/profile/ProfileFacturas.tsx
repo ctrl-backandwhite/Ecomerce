@@ -10,22 +10,31 @@ import { InvoiceDocument } from "../InvoiceDocument";
 import type { InvoiceStatus as DocStatus } from "../../types/invoice";
 import { toast } from "sonner";
 import { useCurrency } from "../../context/CurrencyContext";
+import { useLanguage } from "../../context/LanguageContext";
 import { extractAmount } from "../../utils/extractAmount";
 
 /* ── Status helpers ────────────────────────────────────────── */
-const STATUS_META: Record<InvoiceStatus, { label: string; bg: string; text: string; dot: string; icon: typeof CheckCircle2 }> = {
-    PAID: { label: "Pagada", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400", icon: CheckCircle2 },
-    PENDING: { label: "Pendiente", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400", icon: Clock },
-    OVERDUE: { label: "Vencida", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-400", icon: AlertTriangle },
-    VOID: { label: "Anulada", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300", icon: Ban },
+const STATUS_META: Record<InvoiceStatus, { labelKey: string; bg: string; text: string; dot: string; icon: typeof CheckCircle2 }> = {
+    PAID: { labelKey: "profile.facturas.status.paid", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400", icon: CheckCircle2 },
+    PENDING: { labelKey: "profile.facturas.status.pending", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400", icon: Clock },
+    OVERDUE: { labelKey: "profile.facturas.status.overdue", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-400", icon: AlertTriangle },
+    VOID: { labelKey: "profile.facturas.status.void", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300", icon: Ban },
+};
+
+const STATUS_FILTER_KEYS: Record<"all" | InvoiceStatus, string> = {
+    all: "profile.facturas.filter.all",
+    PAID: "profile.facturas.filter.paid",
+    PENDING: "profile.facturas.filter.pending",
+    OVERDUE: "profile.facturas.filter.overdue",
+    VOID: "profile.facturas.filter.void",
 };
 
 function fmtPrice(n: number) {
     return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function fmtDate(s: string) {
-    return new Date(s).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" });
+function fmtDate(s: string, locale: string) {
+    return new Date(s).toLocaleDateString(locale, { day: "2-digit", month: "short", year: "numeric" });
 }
 
 /** Map backend Invoice → InvoiceDocument data shape */
@@ -67,6 +76,7 @@ const PAGE_SIZE = 8;
 export function ProfileFacturas() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const { formatPrice } = useCurrency();
+    const { t, locale } = useLanguage();
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<"all" | InvoiceStatus>("all");
@@ -79,7 +89,7 @@ export function ProfileFacturas() {
         invoiceRepository
             .getMyInvoices()
             .then((data) => { if (!cancelled) setInvoices(Array.isArray(data) ? data : (data as any).content ?? []); })
-            .catch(() => { if (!cancelled) toast.error("Error al cargar las facturas"); })
+            .catch(() => { if (!cancelled) toast.error(t("profile.facturas.toast.error")); })
             .finally(() => { if (!cancelled) setLoading(false); });
         return () => { cancelled = true; };
     }, []);
@@ -134,8 +144,8 @@ export function ProfileFacturas() {
                 <div className="w-14 h-14 bg-gray-100 rounded-2xl flex items-center justify-center mb-4">
                     <FileText className="w-6 h-6 text-gray-400" strokeWidth={1.5} />
                 </div>
-                <p className="text-sm text-gray-900 mb-1">Sin facturas todavía</p>
-                <p className="text-xs text-gray-400">Las facturas se generan automáticamente al realizar un pedido.</p>
+                <p className="text-sm text-gray-900 mb-1">{t("profile.facturas.empty.title")}</p>
+                <p className="text-xs text-gray-400">{t("profile.facturas.empty.desc")}</p>
             </div>
         );
     }
@@ -145,9 +155,9 @@ export function ProfileFacturas() {
             {/* ── Header ──────────────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
                 <div>
-                    <h2 className="text-base text-gray-900">Mis Facturas</h2>
+                    <h2 className="text-base text-gray-900">{t("profile.facturas.title")}</h2>
                     <p className="text-xs text-gray-400 mt-0.5">
-                        {stats.total} factura{stats.total !== 1 ? "s" : ""} · {formatPrice(stats.totalAmount)} facturado
+                        {stats.total} {stats.total === 1 ? t("profile.facturas.subtitle.one") : t("profile.facturas.subtitle.other")} · {formatPrice(stats.totalAmount)} {t("profile.facturas.subtitle.invoiced")}
                     </p>
                 </div>
             </div>
@@ -155,10 +165,10 @@ export function ProfileFacturas() {
             {/* ── Stats cards ─────────────────────────────────────── */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
                 {[
-                    { label: "Total", value: stats.total, color: "text-gray-900" },
-                    { label: "Pagadas", value: stats.paid, color: "text-green-600" },
-                    { label: "Pendientes", value: stats.pending, color: "text-amber-600" },
-                    { label: "Facturado", value: formatPrice(stats.totalAmount), color: "text-gray-900" },
+                    { label: t("profile.facturas.stats.total"), value: stats.total, color: "text-gray-900" },
+                    { label: t("profile.facturas.stats.paid"), value: stats.paid, color: "text-green-600" },
+                    { label: t("profile.facturas.stats.pending"), value: stats.pending, color: "text-amber-600" },
+                    { label: t("profile.facturas.stats.invoiced"), value: formatPrice(stats.totalAmount), color: "text-gray-900" },
                 ].map(({ label, value, color }) => (
                     <div key={label} className="bg-white border border-gray-100 rounded-xl p-3 text-center">
                         <p className={`text-lg font-light ${color}`}>{value}</p>
@@ -175,7 +185,7 @@ export function ProfileFacturas() {
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Buscar por número de factura u orden…"
+                        placeholder={t("profile.facturas.search.placeholder")}
                         className="w-full h-9 pl-9 pr-3 text-xs border border-gray-200 rounded-lg bg-white focus:outline-none focus:border-gray-400 transition-colors"
                     />
                     {search && (
@@ -188,7 +198,7 @@ export function ProfileFacturas() {
                 <div className="flex gap-1.5">
                     {(["all", "PAID", "PENDING", "OVERDUE", "VOID"] as const).map((s) => {
                         const active = statusFilter === s;
-                        const label = s === "all" ? "Todas" : STATUS_META[s].label;
+                        const label = t(STATUS_FILTER_KEYS[s]);
                         return (
                             <button
                                 key={s}
@@ -226,13 +236,13 @@ export function ProfileFacturas() {
                                     <p className="text-xs text-gray-900 font-mono truncate">{inv.invoiceNumber}</p>
                                     <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
                                         <SmIcon className="w-2.5 h-2.5" />
-                                        {sm.label}
+                                        {t(sm.labelKey)}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3 text-[11px] text-gray-400">
-                                    <span>Orden: {inv.orderNumber ?? "—"}</span>
+                                    <span>{t("profile.facturas.list.order")} {inv.orderNumber ?? "—"}</span>
                                     <span>·</span>
-                                    <span>{fmtDate(inv.issueDate)}</span>
+                                    <span>{fmtDate(inv.issueDate, locale)}</span>
                                 </div>
                             </div>
 
@@ -243,7 +253,7 @@ export function ProfileFacturas() {
                             <div className="flex items-center gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                     onClick={() => setPreview(inv)}
-                                    title="Ver factura"
+                                    title={t("profile.facturas.action.preview")}
                                     className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
                                 >
                                     <Eye className="w-3.5 h-3.5 text-gray-500" strokeWidth={1.5} />

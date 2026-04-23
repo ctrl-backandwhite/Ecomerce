@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { X, Upload, Check } from "lucide-react";
 import { DEFAULT_AVATARS, resolveAvatar } from "../../lib/avatars";
+import { useLanguage } from "../../context/LanguageContext";
 
 /* ── Props ─────────────────────────────────────────────────────────── */
 interface AvatarPickerProps {
@@ -11,6 +12,7 @@ interface AvatarPickerProps {
 }
 
 export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerProps) {
+    const { t } = useLanguage();
     const [selected, setSelected] = useState(currentAvatar);
     const [uploading, setUploading] = useState(false);
     const fileRef = useRef<HTMLInputElement>(null);
@@ -23,7 +25,7 @@ export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerP
         if (!file) return;
         if (!file.type.startsWith("image/")) return;
         if (file.size > 2 * 1024 * 1024) {
-            alert("La imagen no puede pesar más de 2 MB");
+            alert(t("profile.avatar.error.filesizelimit"));
             return;
         }
         setUploading(true);
@@ -45,7 +47,7 @@ export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerP
             <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                    <h3 className="text-sm font-medium text-gray-900">Cambiar foto de perfil</h3>
+                    <h3 className="text-sm font-medium text-gray-900">{t("profile.avatar.modal.title")}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
@@ -64,7 +66,7 @@ export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerP
 
                 {/* Default avatars */}
                 <div className="px-6">
-                    <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">Elige un avatar</p>
+                    <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">{t("profile.avatar.label.choosedefault")}</p>
                     <div className="grid grid-cols-5 gap-3">
                         {DEFAULT_AVATARS.map((dataUri, i) => {
                             const id = `default:${i + 1}`;
@@ -91,7 +93,7 @@ export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerP
 
                 {/* Upload custom */}
                 <div className="px-6 mt-4">
-                    <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">O sube tu propia foto</p>
+                    <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">{t("profile.avatar.label.uploadcustom")}</p>
                     <input
                         ref={fileRef}
                         type="file"
@@ -105,7 +107,7 @@ export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerP
                         className="w-full flex items-center justify-center gap-2 text-xs text-gray-700 border border-dashed border-gray-300 rounded-xl py-3 hover:border-gray-400 hover:bg-gray-50 transition-all disabled:opacity-50"
                     >
                         <Upload className="w-4 h-4" />
-                        {uploading ? "Procesando…" : "Subir imagen (máx. 2 MB)"}
+                        {uploading ? t("profile.avatar.button.uploading") : t("profile.avatar.button.upload")}
                     </button>
                 </div>
 
@@ -115,14 +117,14 @@ export function AvatarPicker({ currentAvatar, onSelect, onClose }: AvatarPickerP
                         onClick={onClose}
                         className="text-xs text-gray-500 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors"
                     >
-                        Cancelar
+                        {t("profile.avatar.button.cancel")}
                     </button>
                     <button
                         onClick={() => { onSelect(selected); onClose(); }}
                         disabled={!selected}
                         className="text-xs text-white bg-gray-900 rounded-lg px-4 py-2 hover:bg-gray-800 transition-colors disabled:opacity-50"
                     >
-                        Guardar
+                        {t("profile.avatar.button.save")}
                     </button>
                 </div>
             </div>

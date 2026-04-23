@@ -66,7 +66,10 @@ export function Cart() {
     return () => clearTimeout(taxTimer.current);
   }, [subtotal, taxCountry, taxState]);
 
-  const estimatedTax = taxEstimate?.taxAmount ?? 0;
+  // Prefer backend value; if backend has no rules configured (taxAmount === 0 / null)
+  // fall back to 10 % of subtotal so the UI matches what the order service will charge.
+  const backendTax = taxEstimate?.taxAmount ?? 0;
+  const estimatedTax = backendTax > 0 ? backendTax : +(subtotal * 0.10).toFixed(2);
 
   // ── Free-shipping threshold from real shipping rules ─────────────────
   const [minFreeAbove, setMinFreeAbove] = useState<number | null>(null);
@@ -270,11 +273,11 @@ export function Cart() {
               {subtotal > 0 && minFreeAbove != null && (() => {
                 const freeAboveLocal = convertFromUsd(minFreeAbove);
                 return displaySubtotal < freeAboveLocal ? (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
-                  <p>
-                    {t("cart.addMoreFreeShipping").replace("{amount}", formatPrice(freeAboveLocal - displaySubtotal))}
-                  </p>
-                </div>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-600">
+                    <p>
+                      {t("cart.addMoreFreeShipping").replace("{amount}", formatPrice(freeAboveLocal - displaySubtotal))}
+                    </p>
+                  </div>
                 ) : null;
               })()}
 

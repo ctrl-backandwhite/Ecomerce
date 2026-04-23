@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
+import { useLanguage } from "../context/LanguageContext";
 import { ProfileOverview } from "../components/profile/ProfileOverview";
 import { ProfileDatos } from "../components/profile/ProfileDatos";
 import { ProfilePedidos } from "../components/profile/ProfilePedidos";
@@ -24,20 +25,22 @@ import { toast } from "sonner";
 
 type Tab = "overview" | "details" | "orders" | "invoices" | "favorites" | "addresses" | "payments" | "giftcards" | "shop" | "security";
 
-const tabs: { id: Tab; label: string; icon: typeof User; sellerOnly?: boolean }[] = [
-  { id: "overview", label: "Resumen", icon: LayoutDashboard },
-  { id: "details", label: "Mis Datos", icon: User },
-  { id: "orders", label: "Mis Pedidos", icon: ShoppingBag },
-  { id: "invoices", label: "Mis Facturas", icon: FileText },
-  { id: "favorites", label: "Favoritos", icon: Heart },
-  { id: "addresses", label: "Direcciones", icon: MapPin },
-  { id: "payments", label: "Métodos de Pago", icon: CreditCard },
-  { id: "giftcards", label: "Tarjetas Regalo", icon: Gift },
-  { id: "shop", label: "Mi Tienda", icon: Store, sellerOnly: true },
-  { id: "security", label: "Seguridad", icon: Shield },
+const tabsConfig: { id: Tab; labelKey: string; icon: typeof User; sellerOnly?: boolean }[] = [
+  { id: "overview", labelKey: "profile.nav.tab.overview", icon: LayoutDashboard },
+  { id: "details", labelKey: "profile.nav.tab.details", icon: User },
+  { id: "orders", labelKey: "profile.nav.tab.orders", icon: ShoppingBag },
+  { id: "invoices", labelKey: "profile.nav.tab.invoices", icon: FileText },
+  { id: "favorites", labelKey: "profile.nav.tab.favorites", icon: Heart },
+  { id: "addresses", labelKey: "profile.nav.tab.addresses", icon: MapPin },
+  { id: "payments", labelKey: "profile.nav.tab.payments", icon: CreditCard },
+  { id: "giftcards", labelKey: "profile.nav.tab.giftcards", icon: Gift },
+  { id: "shop", labelKey: "profile.nav.tab.shop", icon: Store, sellerOnly: true },
+  { id: "security", labelKey: "profile.nav.tab.security", icon: Shield },
 ];
 
 export function UserProfile() {
+  const { t, locale } = useLanguage();
+  const tabs = tabsConfig.map(({ id, labelKey, icon, sellerOnly }) => ({ id, label: t(labelKey), icon, sellerOnly }));
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = (searchParams.get("tab") as Tab) || "overview";
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
@@ -71,16 +74,16 @@ export function UserProfile() {
       <div className="bg-white border-b border-gray-200 flex-shrink-0">
         <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2 text-xs text-gray-400">
-            <span>Inicio</span>
+            <span>{t("profile.breadcrumb.home")}</span>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-gray-900">Mi Cuenta</span>
+            <span className="text-gray-900">{t("profile.breadcrumb.myaccount")}</span>
           </div>
           <Link
             to="/"
             className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Volver a la tienda
+            {t("profile.breadcrumb.backtoshop")}
           </Link>
         </div>
       </div>
@@ -113,12 +116,12 @@ export function UserProfile() {
                 <p className="text-xs text-gray-400 mt-1">{displayEmail}</p>
                 <div className="mt-3 inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-full px-3 py-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                  Miembro NX036
+                  {t("profile.sidebar.member.status")}
                 </div>
                 {user.memberSince && (
                   <p className="text-xs text-gray-400 mt-2">
-                    Miembro desde{" "}
-                    {new Date(user.memberSince).toLocaleDateString("es-CL", {
+                    {t("profile.sidebar.member.since")}{" "}
+                    {new Date(user.memberSince).toLocaleDateString(locale, {
                       day: "numeric", month: "long", year: "numeric",
                     })}
                   </p>
@@ -128,8 +131,8 @@ export function UserProfile() {
               {/* Stats strip */}
               <div className="grid grid-cols-2 gap-2 pt-4 border-t border-gray-100">
                 {[
-                  { value: user.totalOrders, label: "Pedidos" },
-                  { value: user.loyaltyPoints, label: "Puntos" },
+                  { value: user.totalOrders, label: t("profile.sidebar.stats.orders") },
+                  { value: user.loyaltyPoints, label: t("profile.sidebar.stats.points") },
                 ].map(({ value, label }) => (
                   <div key={label} className="text-center">
                     <p className="text-sm text-gray-900">{value}</p>
@@ -146,9 +149,9 @@ export function UserProfile() {
                   try {
                     await profileRepository.updateAvatarUrl(url);
                     updateProfile({ avatar: url });
-                    toast.success("Foto de perfil actualizada");
+                    toast.success(t("profile.toast.avatar.success"));
                   } catch {
-                    toast.error("Error al actualizar la foto");
+                    toast.error(t("profile.toast.avatar.error"));
                   }
                 }}
                 onClose={() => setShowAvatarPicker(false)}
@@ -190,7 +193,7 @@ export function UserProfile() {
                     className="w-full flex items-center gap-3 px-5 py-3.5 text-sm text-left text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors border-l-2 border-transparent"
                   >
                     <LogOut className="w-4 h-4 flex-shrink-0" strokeWidth={1.5} />
-                    Cerrar Sesión
+                    {t("profile.nav.logout")}
                   </button>
                 </div>
               </nav>
