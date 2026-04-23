@@ -147,6 +147,17 @@ export interface DiscoverProgress {
     updated: number;
 }
 
+/** Progress info emitted after every successful sync page */
+export interface SyncProgress {
+    /** Page that just finished (1-based). */
+    page: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    /** Whether the backend says there's another page to fetch. */
+    hasMore: boolean;
+}
+
 /** Persisted discover state so it survives page refreshes */
 export interface DiscoverState {
     running: boolean;
@@ -491,6 +502,7 @@ class NexaProductAdminRepository {
         accCreated = 0,
         accUpdated = 0,
         accSkipped = 0,
+        onProgress?: (progress: SyncProgress) => void,
     ): Promise<{ created: number; updated: number; skipped: number; total: number }> {
         // If already syncing, cancel first
         if (this.syncAbortController) {
@@ -575,6 +587,15 @@ class NexaProductAdminRepository {
                     `(acumulado: ${totalCreated} creados, ${totalUpdated} actualizados, ${totalSkipped} sin cambios)`,
                     "color: #16a34a",
                 );
+
+                // Emit live progress so the admin toast updates after every page.
+                onProgress?.({
+                    page,
+                    created: totalCreated,
+                    updated: totalUpdated,
+                    skipped: totalSkipped,
+                    hasMore: result.hasMore,
+                });
 
                 if (!result.hasMore) {
                     logger.debug(

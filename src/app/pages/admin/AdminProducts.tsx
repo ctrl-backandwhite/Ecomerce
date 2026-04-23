@@ -20,6 +20,7 @@ import {
     type ProductPayload,
     type AdminProductQuery,
     type DiscoverProgress,
+    type SyncProgress,
 } from "../../repositories/NexaProductAdminRepository";
 import {
     nexaCategoryPagedRepository,
@@ -190,17 +191,36 @@ export function AdminProducts() {
         accSkipped = 0,
     ) {
         setSyncing(true);
+        const catMsg = categoryIds.length > 0 ? ` (categorías: ${categoryIds.join(", ")})` : "";
+        toast.loading(
+            `Sincronizando productos${catMsg}…  ${accCreated} creados, ${accUpdated} actualizados.`,
+            { id: "sync-progress", duration: Infinity },
+        );
         try {
             const result = await nexaProductAdminRepository.syncProducts(
                 forceOverwrite, categoryIds, startPage, accCreated, accUpdated, accSkipped,
+                (progress: SyncProgress) => {
+                    // The backend doesn't tell us the total pages in advance, but
+                    // every page of 100 products is a clear milestone — show the
+                    // running counters so the admin sees something is happening.
+                    const processed = progress.created + progress.updated + progress.skipped;
+                    toast.loading(
+                        `Sincronizando productos${catMsg} — página ${progress.page}`
+                        + `  •  ${progress.created} creados, ${progress.updated} actualizados`
+                        + (progress.skipped > 0 ? `, ${progress.skipped} sin cambios` : "")
+                        + `  (${processed} procesados)`,
+                        { id: "sync-progress", duration: Infinity },
+                    );
+                },
             );
+            toast.dismiss("sync-progress");
             const skippedMsg = result.skipped > 0 ? `, ${result.skipped} sin cambios` : "";
-            const catMsg = categoryIds.length > 0 ? ` (categorías: ${categoryIds.join(", ")})` : "";
             toast.success(
                 `Sincronización completada${catMsg}: ${result.created} creados, ${result.updated} actualizados${skippedMsg} (${result.total} total)`
             );
             refetch();
         } catch (err) {
+            toast.dismiss("sync-progress");
             toast.error(err instanceof Error ? err.message : "Error al sincronizar productos");
         } finally {
             setSyncing(false);
