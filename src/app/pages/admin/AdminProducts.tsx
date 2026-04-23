@@ -14,6 +14,8 @@ import { useCurrency } from "../../context/CurrencyContext";
 import {
     nexaProductAdminRepository,
     loadDiscoverState,
+    loadSyncState,
+    clearSyncState,
     type AdminProduct,
     type ProductPayload,
     type AdminProductQuery,
@@ -179,6 +181,32 @@ export function AdminProducts() {
         }
     }
 
+    async function runSync(
+        forceOverwrite: boolean,
+        categoryIds: string[],
+        startPage = 1,
+        accCreated = 0,
+        accUpdated = 0,
+        accSkipped = 0,
+    ) {
+        setSyncing(true);
+        try {
+            const result = await nexaProductAdminRepository.syncProducts(
+                forceOverwrite, categoryIds, startPage, accCreated, accUpdated, accSkipped,
+            );
+            const skippedMsg = result.skipped > 0 ? `, ${result.skipped} sin cambios` : "";
+            const catMsg = categoryIds.length > 0 ? ` (categorías: ${categoryIds.join(", ")})` : "";
+            toast.success(
+                `Sincronización completada${catMsg}: ${result.created} creados, ${result.updated} actualizados${skippedMsg} (${result.total} total)`
+            );
+            refetch();
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : "Error al sincronizar productos");
+        } finally {
+            setSyncing(false);
+        }
+    }
+
     async function handleSync() {
         // If already syncing → stop it
         if (syncing) {
@@ -211,21 +239,38 @@ export function AdminProducts() {
             "• Cancelar → Solo actualiza los campos que hayan cambiado (más rápido)"
         );
 
-        setSyncing(true);
-        try {
-            const result = await nexaProductAdminRepository.syncProducts(forceOverwrite, categoryIds);
-            const skippedMsg = result.skipped > 0 ? `, ${result.skipped} sin cambios` : "";
-            const catMsg = categoryIds.length > 0 ? ` (categorías: ${categoryIds.join(", ")})` : "";
-            toast.success(
-                `Sincronización completada${catMsg}: ${result.created} creados, ${result.updated} actualizados${skippedMsg} (${result.total} total)`
-            );
-            refetch();
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Error al sincronizar productos");
-        } finally {
-            setSyncing(false);
-        }
+        await runSync(forceOverwrite, categoryIds);
     }
+
+    // ── Auto-resume product sync after a reload / re-auth ──────────────
+    // A JWT expiry mid-sync sends the user through OAuth again; after
+    // returning they land here. Pick up from the next unfinished page so
+    // the admin doesn't have to press Sync again and reprocess categories
+    // that already completed.
+    useEffect(() => {
+        const saved = loadSyncState();
+        if (!saved) return;
+
+        if (saved.running) {
+            const catMsg = saved.categoryIds.length > 0
+                ? ` (categorías: ${saved.categoryIds.join(", ")})`
+                : "";
+            toast.info(
+                `Reanudando sincronización${catMsg} desde página ${saved.nextPage} — ${saved.totalCreated} creados, ${saved.totalUpdated} actualizados hasta ahora.`,
+                { duration: 6000 },
+            );
+            runSync(
+                saved.forceOverwrite, saved.categoryIds,
+                saved.nextPage, saved.totalCreated, saved.totalUpdated, saved.totalSkipped,
+            );
+        } else {
+            toast.info(
+                `Sincronización interrumpida en página ${saved.nextPage} — ${saved.totalCreated} creados, ${saved.totalUpdated} actualizados. Pulsa Sync para reanudar.`,
+                { duration: 8000, action: { label: "Descartar", onClick: () => clearSyncState() } },
+            );
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // ── Auto-resume discover after page refresh ──────────────
     useEffect(() => {

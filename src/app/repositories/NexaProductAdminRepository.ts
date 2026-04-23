@@ -179,6 +179,43 @@ export function loadDiscoverState(): DiscoverState | null {
     } catch { return null; }
 }
 
+/**
+ * Persisted sync state so a product sync can resume exactly where it left off
+ * when the browser reloads, the JWT expires and the user re-authenticates, or
+ * the user accidentally navigates away. Mirrors the DiscoverState pattern.
+ */
+export interface SyncState {
+    running: boolean;
+    nextPage: number;
+    categoryIds: string[];
+    forceOverwrite: boolean;
+    totalCreated: number;
+    totalUpdated: number;
+    totalSkipped: number;
+    startedAt: number;
+}
+
+const SYNC_STATE_KEY = "nx036_sync_state";
+
+function saveSyncState(state: SyncState): void {
+    try { localStorage.setItem(SYNC_STATE_KEY, JSON.stringify(state)); } catch { /* quota */ }
+}
+export function clearSyncState(): void {
+    try { localStorage.removeItem(SYNC_STATE_KEY); } catch { /* noop */ }
+}
+export function loadSyncState(): SyncState | null {
+    try {
+        const raw = localStorage.getItem(SYNC_STATE_KEY);
+        if (!raw) return null;
+        const state = JSON.parse(raw) as SyncState;
+        if (Date.now() - state.startedAt > 24 * 60 * 60 * 1000) {
+            clearSyncState();
+            return null;
+        }
+        return state;
+    } catch { return null; }
+}
+
 // ── Repository ───────────────────────────────────────────────────────────────
 
 class NexaProductAdminRepository {
@@ -447,7 +484,14 @@ class NexaProductAdminRepository {
      * Waits 10 seconds between each page call and logs progress to the console.
      * Can be cancelled at any time by calling cancelSync().
      */
-    async syncProducts(forceOverwrite = true, categoryIds: string[] = []): Promise<{ created: number; updated: number; skipped: number; total: number }> {
+    async syncProducts(
+        forceOverwrite = true,
+        categoryIds: string[] = [],
+        startPage = 1,
+        accCreated = 0,
+        accUpdated = 0,
+        accSkipped = 0,
+    ): Promise<{ created: number; updated: number; skipped: number; total: number }> {
         // If already syncing, cancel first
         if (this.syncAbortController) {
             this.cancelSync();
@@ -460,11 +504,18 @@ class NexaProductAdminRepository {
         const PAGE_SIZE = 100;
         const DELAY_MS = 10_000;
 
-        let totalCreated = 0;
-        let totalUpdated = 0;
-        let totalSkipped = 0;
-        let page = 1;
+        let totalCreated = accCreated;
+        let totalUpdated = accUpdated;
+        let totalSkipped = accSkipped;
+        let page = startPage;
         let cancelled = false;
+        const startedAt = Date.now();
+        // Seed the resume row so a reload or session expiry mid-page still
+        // restores the right context (page number + accumulated counters).
+        saveSyncState({
+            running: true, nextPage: page, categoryIds, forceOverwrite,
+            totalCreated, totalUpdated, totalSkipped, startedAt,
+        });
 
         logger.debug(
             "%c[CJ Sync] Iniciando sincronización de productos (páginas de %d)…",
@@ -535,6 +586,14 @@ class NexaProductAdminRepository {
                     break;
                 }
 
+                // Persist progress after every successful page so a reload,
+                // JWT refresh or accidental navigation can resume from the
+                // next page without repeating work.
+                saveSyncState({
+                    running: true, nextPage: page + 1, categoryIds, forceOverwrite,
+                    totalCreated, totalUpdated, totalSkipped, startedAt,
+                });
+
                 // Wait 10 seconds before next page — also abortable
                 logger.debug(
                     `%c[CJ Sync] Esperando ${DELAY_MS / 1000}s antes de la siguiente página…`,
@@ -547,6 +606,11 @@ class NexaProductAdminRepository {
                 page++;
             }
         } catch (err) {
+            // Checkpoint the current page so a re-auth / reload can resume here.
+            saveSyncState({
+                running: true, nextPage: page, categoryIds, forceOverwrite,
+                totalCreated, totalUpdated, totalSkipped, startedAt,
+            });
             if (err instanceof DOMException && err.name === "AbortError") {
                 cancelled = true;
             } else {
@@ -573,6 +637,13 @@ class NexaProductAdminRepository {
                 `(${totalCreated + totalUpdated} procesados hasta página ${page})`,
                 "color: #f59e0b; font-weight: bold",
             );
+            saveSyncState({
+                running: false, nextPage: page, categoryIds, forceOverwrite,
+                totalCreated, totalUpdated, totalSkipped, startedAt,
+            });
+        } else {
+            // Successful completion — wipe the resume row.
+            clearSyncState();
         }
 
         return { created: totalCreated, updated: totalUpdated, skipped: totalSkipped, total: totalCreated + totalUpdated };
