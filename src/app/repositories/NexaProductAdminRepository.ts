@@ -607,8 +607,13 @@ class NexaProductAdminRepository {
             }
         } catch (err) {
             // Checkpoint the current page so a re-auth / reload can resume here.
+            // When the failure is a 401 we treat it as "pending re-auth" and keep
+            // running=true so the auto-resume on /admin/products picks up without
+            // the admin having to click Sync again — the OAuth callback restores
+            // valid tokens mid-session.
+            const isAuthBounce = err instanceof ApiError && err.statusCode === 401;
             saveSyncState({
-                running: true, nextPage: page, categoryIds, forceOverwrite,
+                running: isAuthBounce, nextPage: page, categoryIds, forceOverwrite,
                 totalCreated, totalUpdated, totalSkipped, startedAt,
             });
             if (err instanceof DOMException && err.name === "AbortError") {
@@ -780,9 +785,13 @@ class NexaProductAdminRepository {
             if (err instanceof DOMException && err.name === "AbortError") {
                 cancelled = true;
             } else {
-                // Save state so user can resume from the failed offset
+                // A 401 is the auth-expiry bounce, not a real failure; keep
+                // running=true so the admin panel auto-resumes after the
+                // OAuth round-trip restores valid tokens. Any other error is
+                // a genuine stop and still surfaces the "press ▶" toast.
+                const isAuthBounce = err instanceof ApiError && err.statusCode === 401;
                 saveDiscoverState({
-                    running: false, offset, totalCategories,
+                    running: isAuthBounce, offset, totalCategories,
                     created: totalCreated, updated: totalUpdated,
                     startedAt: Date.now(),
                 });
