@@ -307,7 +307,27 @@ function GiftCardPurchaseInner() {
         stripePaymentMethodId = selectedPm.stripePaymentMethodId;
       }
 
-      // 2) Create the gift card on the backend
+      // 2) Charge the buyer via the payment service FIRST so we never issue a
+      //    gift card that wasn't paid for. On failure we surface a clear error
+      //    and stay on the payment step so the user can retry.
+      const payment = await paymentRepository.processPayment({
+        orderId: `gc-${Date.now()}`,
+        userId: user.id,
+        email: user.email || form.toEmail,
+        amount: effectiveAmount,
+        currency: "USD",
+        paymentMethod: "CARD",
+        stripePaymentMethodId: stripePaymentMethodId ?? undefined,
+      });
+
+      if (payment.status !== "COMPLETED") {
+        const reason = payment.errorMessage || "El pago fue rechazado por la pasarela";
+        toast.error(reason);
+        return;
+      }
+
+      // 3) Payment succeeded — now create the gift card. The Kafka event that
+      //    fires will also trigger the fiscal invoice and delivery email.
       const result = await giftCardRepository.purchase({
         designId: form.design.id,
         amount: effectiveAmount,
@@ -319,27 +339,13 @@ function GiftCardPurchaseInner() {
           : undefined,
       });
 
-      // 3) Charge the buyer via the payment service. Failures are logged but do
-      //    NOT roll back the gift card creation — the gift card is still issued
-      //    and visible in the user's profile.
-      try {
-        await paymentRepository.processPayment({
-          orderId: result.id,
-          userId: user.id,
-          email: user.email,
-          amount: effectiveAmount,
-          currency: "USD",
-          paymentMethod: "CARD",
-          stripePaymentMethodId: stripePaymentMethodId ?? undefined,
-        });
-      } catch (payErr) {
-        logger.warn("[GiftCard] payment processing failed (gift card still issued)", payErr);
-      }
-
       setGeneratedCode(result.code);
       setStep(4);
-      toast.success("¡Pago completado! Tarjeta enviada correctamente");
+      toast.success(form.sendNow
+          ? "¡Pago completado! Tarjeta enviada correctamente"
+          : "¡Pago completado! La tarjeta se enviará en la fecha seleccionada");
     } catch (err) {
+      logger.error("[GiftCard] purchase failed", err);
       toast.error(err instanceof Error ? err.message : "Error al procesar el pago");
     } finally {
       setIsPaying(false);
