@@ -30,6 +30,12 @@ export interface GiftCard {
     sendDate: string | null;
     expiryDate: string | null;
     activatedAt: string | null;
+    /**
+     * False while a card is scheduled and waiting for its sendDate. Flips to
+     * true once the scheduler publishes the purchase event and the recipient
+     * email + fiscal invoice have gone out.
+     */
+    emailSent: boolean;
     createdAt: string;
     updatedAt: string;
 }

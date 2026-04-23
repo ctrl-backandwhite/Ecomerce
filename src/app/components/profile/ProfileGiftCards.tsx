@@ -41,6 +41,7 @@ function durationFromNow(dateStr: string, t: (k: string) => string) {
 
 const STATUS_SENT: Record<string, { labelKey: string; dot: string; text: string }> = {
   delivered: { labelKey: "profile.giftcards.sent.status.delivered", dot: "bg-blue-400", text: "text-blue-600" },
+  scheduled: { labelKey: "profile.giftcards.sent.status.scheduled", dot: "bg-indigo-400", text: "text-indigo-600" },
   pending: { labelKey: "profile.giftcards.sent.status.pending", dot: "bg-amber-400", text: "text-amber-600" },
   redeemed: { labelKey: "profile.giftcards.sent.status.redeemed", dot: "bg-green-400", text: "text-green-600" },
 };
@@ -312,6 +313,11 @@ function SentCard({ card, onCopy }: { card: SentGiftCard; onCopy: (code: string)
             <span className="text-xs text-gray-900">{formatPrice(card.amount)}</span>
             <span className="text-[10px] text-gray-400">{t("profile.giftcards.received.sent.label")} {card.sentDate}</span>
           </div>
+          {card.status === "scheduled" && card.scheduledDate && (
+            <p className="text-[11px] text-indigo-600 mt-1">
+              Se enviará el {card.scheduledDate}
+            </p>
+          )}
           {card.message && (
             <p className="text-[10px] text-gray-400 mt-1 italic truncate">"{card.message}"</p>
           )}

@@ -50,5 +50,5 @@ export interface SentGiftCard {
     sentDate: string;
     scheduledDate?: string;
     designId: string;
-    status: "delivered" | "pending" | "redeemed";
+    status: "delivered" | "scheduled" | "pending" | "redeemed";
 }

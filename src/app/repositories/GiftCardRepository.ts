@@ -32,6 +32,8 @@ export interface GiftCardApiDto {
     sendDate: string | null;      // "YYYY-MM-DD"
     expiryDate: string | null;    // "YYYY-MM-DD"
     activatedAt: string | null;
+    /** False while a scheduled card is waiting for its sendDate. */
+    emailSent: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -136,9 +138,14 @@ function statusToFrontend(s: GCApiStatus): "pending" | "active" | "used" | "expi
     return "expired";
 }
 
-function sentStatus(s: GCApiStatus, activatedAt: string | null): "delivered" | "pending" | "redeemed" {
+function sentStatus(s: GCApiStatus, activatedAt: string | null, emailSent: boolean,
+    sendDate: string | null): "delivered" | "scheduled" | "pending" | "redeemed" {
     if (s === "USED") return "redeemed";
     if (activatedAt) return "delivered";
+    if (!emailSent && sendDate) {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        if (new Date(sendDate) >= today) return "scheduled";
+    }
     return "pending";
 }
 
@@ -172,6 +179,6 @@ export function toSentGiftCard(dto: GiftCardApiDto): SentGiftCard {
         sentDate: instantToSlash(dto.createdAt),
         scheduledDate: dto.sendDate ? isoToSlash(dto.sendDate) : undefined,
         designId: dto.designId ?? "classic",
-        status: sentStatus(dto.status, dto.activatedAt),
+        status: sentStatus(dto.status, dto.activatedAt, dto.emailSent, dto.sendDate),
     };
 }
