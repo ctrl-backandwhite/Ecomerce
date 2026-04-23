@@ -186,7 +186,7 @@ export function GiftCardPurchase() {
 
 function GiftCardPurchaseInner() {
   const { isAuthenticated, login } = useAuth();
-  const { user } = useUser();
+  const { user, removePaymentMethod } = useUser();
   const { formatPrice } = useCurrency();
   const { t } = useLanguage();
   const stripe = useStripe();
@@ -346,6 +346,15 @@ function GiftCardPurchaseInner() {
           : "¡Pago completado! La tarjeta se enviará en la fecha seleccionada");
     } catch (err) {
       logger.error("[GiftCard] purchase failed", err);
+      // The saved card is permanently unusable for Stripe. Drop it from the
+      // profile, switch the UI to the "new card" flow, and tell the user.
+      const backendCode = (err as { backendCode?: string })?.backendCode;
+      if (backendCode === "PA009" && selectedPm?.id) {
+        try { await removePaymentMethod(selectedPm.id); } catch (rmErr) { logger.warn("Could not drop PM", rmErr); }
+        setSelectedPmId("new");
+        toast.error("La tarjeta guardada ya no es válida. Ingresa una nueva.");
+        return;
+      }
       toast.error(err instanceof Error ? err.message : "Error al procesar el pago");
     } finally {
       setIsPaying(false);

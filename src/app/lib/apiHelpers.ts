@@ -19,8 +19,13 @@ import { logger } from "./logger";
 export async function handleRes<R>(res: Response): Promise<R> {
     if (!res.ok) {
         let msg = `HTTP ${res.status}`;
-        try { const e: ApiErrorBody = await res.json(); msg = e.message || msg; } catch (err) { logger.warn("Suppressed error", err); }
-        throw new ApiError(res.status, msg);
+        let code: string | undefined;
+        try {
+            const e: ApiErrorBody = await res.json();
+            msg = e.message || msg;
+            code = e.code;
+        } catch (err) { logger.warn("Suppressed error", err); }
+        throw new ApiError(res.status, msg, undefined, code);
     }
     const text = await res.text();
     return text ? JSON.parse(text) : (undefined as R);
