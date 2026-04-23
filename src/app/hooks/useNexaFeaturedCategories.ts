@@ -31,8 +31,17 @@ export function useNexaFeaturedCategories(): UseNexaFeaturedCategoriesResult {
         setError(null);
         try {
             const apiLocale = locale === "pt" ? "pt-BR" : locale;
-            const data = await nexaCategoryRepository.findFeatured(apiLocale);
-            setCategories(data);
+            const featured = await nexaCategoryRepository.findFeatured(apiLocale);
+            if (featured.length > 0) {
+                setCategories(featured);
+                return;
+            }
+            // No category is explicitly flagged as featured yet — fall back to all
+            // top-level categories so the category bar + per-category sections on
+            // the home still render. Once admins mark some as featured this branch
+            // is simply skipped.
+            const all = await nexaCategoryRepository.findAll(apiLocale);
+            setCategories(all.filter((c) => c.level === 1 || c.parentId == null));
         } catch (err) {
             const msg =
                 err instanceof Error ? err.message : "Error al cargar categorías destacadas";
