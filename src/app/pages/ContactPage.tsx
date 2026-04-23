@@ -126,7 +126,7 @@ export function ContactPage() {
               <div className="space-y-4">
                 {[
                   { icon: MapPin, title: t("contact.info.address"), value: t("contact.info.addressValue") },
-                  { icon: Phone, title: t("contact.info.phone"), value: "+34 91 234 56 78" },
+                  { icon: Phone, title: t("contact.info.phone"), value: "+1 (212) 555-0199" },
                   { icon: Mail, title: t("contact.info.email"), value: "info@nx036.com" },
                   { icon: Clock, title: t("contact.info.hours"), value: t("contact.info.hoursValue") },
                 ].map(i => (

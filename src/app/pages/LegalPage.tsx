@@ -4,7 +4,7 @@ const PAGES: Record<string, { title: string; sections: { heading: string; body: 
   privacidad: {
     title: "Política de Privacidad",
     sections: [
-      { heading: "1. Responsable del tratamiento", body: "NX036 Commerce S.L., con CIF B-12345678, con domicilio en Calle Principal 123, 28001 Madrid. Email de contacto: privacidad@nx036.com." },
+      { heading: "1. Responsable del tratamiento", body: "NX036 Commerce Inc., con domicilio en 500 5th Avenue, New York, NY 10110, USA. Email de contacto: privacidad@nx036.com." },
       { heading: "2. Datos que recopilamos", body: "Nombre y apellidos, dirección de correo electrónico, dirección postal, número de teléfono, datos de pago (procesados por Stripe — no los almacenamos), historial de compras y preferencias de navegación." },
       { heading: "3. Finalidad del tratamiento", body: "Gestión de pedidos y envíos, facturación, atención al cliente, comunicaciones transaccionales, personalización de la experiencia de compra y, con tu consentimiento, envío de newsletters y ofertas." },
       { heading: "4. Base jurídica", body: "Ejecución de contrato para la gestión de pedidos; interés legítimo para prevención de fraude; consentimiento para comunicaciones de marketing." },

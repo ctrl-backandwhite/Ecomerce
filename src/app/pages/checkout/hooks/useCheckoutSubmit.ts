@@ -82,7 +82,11 @@ export function useCheckoutSubmit(
                 : payMethod === "card"
                     ? !!(state.stripeElementsComplete.number && state.stripeElementsComplete.expiry && state.stripeElementsComplete.cvc && state.payment.cardName)
                     : payMethod === "paypal"
-                        ? !!state.paypalEmail
+                        // PayPal email is optional — the buyer logs in at
+                        // sandbox.paypal.com during approve. Typing it is only
+                        // useful if they tick "save for future" to get the
+                        // method listed in their saved methods dropdown.
+                        ? true
                         : true;
 
         if (!step1Valid || !step2Valid || !step3Valid) {
@@ -277,6 +281,36 @@ export function useCheckoutSubmit(
                             stripeCardExpYear = paymentMethod.card?.exp_year ?? null;
                             logger.info("[Checkout] Card tokenized successfully", { paymentMethodId: stripePaymentMethodId });
                         }
+                    }
+
+                    // PayPal requires buyer approval on sandbox.paypal.com, so
+                    // branch off here: stash the checkout context in sessionStorage
+                    // and redirect to PayPal's approve URL. The PayPalReturnPage
+                    // finishes the capture + confirm flow when the buyer comes back.
+                    if (activeType === "paypal") {
+                        const init = await paymentRepository.initiatePayPal({
+                            orderId: order.id,
+                            userId: user.id,
+                            email: contact.email || user.email,
+                            amount: order.total,
+                            currency: order.currencyCode ?? userCurrency,
+                            paymentMethod: "PAYPAL",
+                        });
+                        sessionStorage.setItem("nx036_paypal_pending", JSON.stringify({
+                            paymentId: init.paymentId,
+                            paypalOrderId: init.paypalOrderId,
+                            orderId: order.id,
+                            loyaltyPoints,
+                            gcAmounts,
+                            saveNewPaymentMethod: state.saveNewPaymentMethod,
+                            paypalEmail: state.paypalEmail,
+                            selectedPmId,
+                        }));
+                        if (init.approveUrl) {
+                            window.location.href = init.approveUrl;
+                            return;
+                        }
+                        throw new Error("PayPal no devolvió una URL de aprobación");
                     }
 
                     await paymentRepository.processPayment({

@@ -173,7 +173,7 @@ const DISCOVER_STATE_KEY = "nx036_discover_state";
 function saveDiscoverState(state: DiscoverState): void {
     try { localStorage.setItem(DISCOVER_STATE_KEY, JSON.stringify(state)); } catch { /* quota */ }
 }
-function clearDiscoverState(): void {
+export function clearDiscoverState(): void {
     try { localStorage.removeItem(DISCOVER_STATE_KEY); } catch { /* noop */ }
 }
 export function loadDiscoverState(): DiscoverState | null {
@@ -244,6 +244,9 @@ class NexaProductAdminRepository {
             if (query.size !== undefined) params.set("size", String(query.size));
             if (query.sortBy) params.set("sortBy", query.sortBy);
             if (query.ascending !== undefined) params.set("ascending", String(query.ascending));
+            // Admin panel must see products in every status. The backend
+            // defaults to Elasticsearch (PUBLISHED only) when this flag is off.
+            params.set("includeDrafts", "true");
             const url = `${BASE_URL}?${params.toString()}`;
             const res = await authFetch(url);
             if (!res.ok) {
@@ -450,6 +453,31 @@ class NexaProductAdminRepository {
         }
     }
 
+    /**
+     * Publishes every product currently in DRAFT. Returns the number affected.
+     */
+    async publishAllDrafts(): Promise<number> {
+        try {
+            const res = await authFetch(`${BASE_URL}/publish-all-drafts`, { method: "PATCH" });
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody: ApiErrorBody = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch (err) { logger.warn("Suppressed error", err); }
+                throw new ApiError(res.status, errorMsg);
+            }
+            const data = (await res.json()) as { published: number };
+            return data.published ?? 0;
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo publicar los borradores",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
+
     /** Active AbortController for the current sync – null when idle */
     private syncAbortController: AbortController | null = null;
 
@@ -466,7 +494,9 @@ class NexaProductAdminRepository {
         return this.discoverAbortController !== null;
     }
 
-    /** Cancels the running sync (if any). Safe to call when idle. */
+    /** Cancels the running sync (if any). Safe to call when idle.
+     *  Also clears persisted state so a remount doesn't prompt to resume
+     *  what the user just explicitly stopped. */
     cancelSync(): void {
         if (this.syncAbortController) {
             this.syncAbortController.abort();
@@ -476,9 +506,12 @@ class NexaProductAdminRepository {
                 "color: #f59e0b; font-weight: bold",
             );
         }
+        clearSyncState();
     }
 
-    /** Cancels the running discover (if any). Safe to call when idle. */
+    /** Cancels the running discover (if any). Safe to call when idle.
+     *  Also clears persisted state so a remount doesn't prompt to resume
+     *  what the user just explicitly stopped. */
     cancelDiscover(): void {
         if (this.discoverAbortController) {
             this.discoverAbortController.abort();
@@ -488,6 +521,7 @@ class NexaProductAdminRepository {
                 "color: #f59e0b; font-weight: bold",
             );
         }
+        clearDiscoverState();
     }
 
     /**
@@ -627,19 +661,20 @@ class NexaProductAdminRepository {
                 page++;
             }
         } catch (err) {
-            // Checkpoint the current page so a re-auth / reload can resume here.
-            // When the failure is a 401 we treat it as "pending re-auth" and keep
-            // running=true so the auto-resume on /admin/products picks up without
-            // the admin having to click Sync again — the OAuth callback restores
-            // valid tokens mid-session.
-            const isAuthBounce = err instanceof ApiError && err.statusCode === 401;
-            saveSyncState({
-                running: isAuthBounce, nextPage: page, categoryIds, forceOverwrite,
-                totalCreated, totalUpdated, totalSkipped, startedAt,
-            });
             if (err instanceof DOMException && err.name === "AbortError") {
                 cancelled = true;
             } else {
+                // Checkpoint only on real failures. When the failure is a 401 we
+                // treat it as "pending re-auth" and keep running=true so the
+                // auto-resume on /admin/products picks up without the admin
+                // having to click Sync again — the OAuth callback restores valid
+                // tokens mid-session. Explicit user cancel skips this and clears
+                // below, so the next visit starts clean.
+                const isAuthBounce = err instanceof ApiError && err.statusCode === 401;
+                saveSyncState({
+                    running: isAuthBounce, nextPage: page, categoryIds, forceOverwrite,
+                    totalCreated, totalUpdated, totalSkipped, startedAt,
+                });
                 console.error(
                     `%c[CJ Sync] ✗ Error en página ${page}:`,
                     "color: #dc2626; font-weight: bold",
@@ -658,17 +693,14 @@ class NexaProductAdminRepository {
 
         if (cancelled) {
             logger.debug(
-                "%c[CJ Sync] ⏹ Detenida. " +
+                "%c[CJ Sync] ⏹ Detenida por el usuario. " +
                 `Parcial: ${totalCreated} creados, ${totalUpdated} actualizados, ${totalSkipped} sin cambios ` +
-                `(${totalCreated + totalUpdated} procesados hasta página ${page})`,
+                `(${totalCreated + totalUpdated} procesados hasta página ${page}). ` +
+                `Estado de reanudación limpiado.`,
                 "color: #f59e0b; font-weight: bold",
             );
-            saveSyncState({
-                running: false, nextPage: page, categoryIds, forceOverwrite,
-                totalCreated, totalUpdated, totalSkipped, startedAt,
-            });
+            clearSyncState();
         } else {
-            // Successful completion — wipe the resume row.
             clearSyncState();
         }
 
@@ -833,16 +865,12 @@ class NexaProductAdminRepository {
         }
 
         if (cancelled) {
-            // Save interrupted state so user can resume after refresh
-            saveDiscoverState({
-                running: false, offset: offset + 1, totalCategories,
-                created: totalCreated, updated: totalUpdated,
-                startedAt: Date.now(),
-            });
+            clearDiscoverState();
             logger.debug(
-                "%c[CJ Discover] ⏹ Detenido. " +
+                "%c[CJ Discover] ⏹ Detenido por el usuario. " +
                 `Parcial: ${totalCreated} nuevos, ${totalUpdated} actualizados ` +
-                `(hasta categoría ${offset + 1}/${totalCategories})`,
+                `(hasta categoría ${offset + 1}/${totalCategories}). ` +
+                `Estado de reanudación limpiado.`,
                 "color: #f59e0b; font-weight: bold",
             );
         }

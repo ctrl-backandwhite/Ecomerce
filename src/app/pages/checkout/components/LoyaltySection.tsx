@@ -17,8 +17,8 @@ export function LoyaltySection({
     maxRedeemable, dispatch,
 }: LoyaltySectionProps) {
     const { t } = useLanguage();
-    if (loyaltyBalance <= 0) return null;
     const { formatPrice } = useCurrency();
+    if (loyaltyBalance <= 0) return null;
 
     return (
         <div className="px-5 py-3 border-t border-gray-50">

@@ -138,7 +138,10 @@ function CheckoutInner() {
             : state.payMethod === "card"
                 ? !!(state.stripeElementsComplete.number && state.stripeElementsComplete.expiry && state.stripeElementsComplete.cvc && state.payment.cardName)
                 : state.payMethod === "paypal"
-                    ? !!state.paypalEmail
+                    // PayPal email is optional — the buyer logs in at
+                    // sandbox.paypal.com during approve. The input only
+                    // matters when the user ticks "save for future".
+                    ? true
                     : true;
 
     /* ── Delivery / Payment summary helpers ── */
