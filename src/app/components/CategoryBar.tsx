@@ -89,6 +89,7 @@ export function CategoryBar() {
   const [openCategory, setOpenCategory] = useState<string | null>(null);
   const [mobileOpen, setMobileOpen] = useState<string | null>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const openTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
   const { catSlug } = useParams<{ catSlug?: string }>();
   const activeCategory = catSlug ?? null;
@@ -130,6 +131,28 @@ export function CategoryBar() {
   };
   const cancelClose = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+  };
+
+  /*
+   * With a wrapped category bar, travelling from a row-1 chip to the mega
+   * menu crosses row-2 chips. If each hover swapped the open panel
+   * instantly the user's target panel would close before the mouse
+   * reached it. Defer the swap with a small intent delay; real hover
+   * targets still feel snappy (<150 ms), but passes-through no longer
+   * trip the handler.
+   */
+  const scheduleOpen = (name: string) => {
+    if (openTimerRef.current) clearTimeout(openTimerRef.current);
+    if (openCategory === name) return;
+    // If nothing is open yet, snap immediately — no panel is being defended.
+    if (openCategory == null) {
+      setOpenCategory(name);
+      return;
+    }
+    openTimerRef.current = setTimeout(() => setOpenCategory(name), 140);
+  };
+  const cancelOpen = () => {
+    if (openTimerRef.current) clearTimeout(openTimerRef.current);
   };
 
   /* ── Navigation helpers ──────────────────────────────────────── */
@@ -182,8 +205,18 @@ export function CategoryBar() {
                 <div
                   key={cat.name}
                   /* desktop hover */
-                  onMouseEnter={() => { if (window.innerWidth >= 640) { cancelClose(); setOpenCategory(cat.name); } }}
-                  onMouseLeave={() => { if (window.innerWidth >= 640) scheduleClose(); }}
+                  onMouseEnter={() => {
+                    if (window.innerWidth >= 640) {
+                      cancelClose();
+                      scheduleOpen(cat.name);
+                    }
+                  }}
+                  onMouseLeave={() => {
+                    if (window.innerWidth >= 640) {
+                      cancelOpen();
+                      scheduleClose();
+                    }
+                  }}
                   /* flex-auto lets each pill size itself to content and wrap to
                      the next row when the current row overflows — keeps all
                      chips visible on wide catalogs without a horizontal
@@ -231,7 +264,7 @@ export function CategoryBar() {
         {/* ── Desktop megamenu ─────────────────────────────────── */}
         {openCat && (
           <div
-            onMouseEnter={cancelClose}
+            onMouseEnter={() => { cancelClose(); cancelOpen(); }}
             onMouseLeave={scheduleClose}
             className="hidden sm:block absolute left-0 right-0 bg-white border-b border-gray-100 shadow-xl z-40"
           >
