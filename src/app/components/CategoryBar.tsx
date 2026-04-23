@@ -170,7 +170,7 @@ export function CategoryBar() {
     <>
       <nav className="relative z-30 bg-white border-b border-gray-100">
         <div className="max-w-[1400px] mx-auto px-0 sm:px-6 lg:px-8">
-          <div className="flex items-stretch w-full">
+          <div className="flex flex-wrap items-stretch w-full">
 
             {dynamicTree.map((cat) => {
               const Icon = getCategoryIcon(cat.name);
@@ -184,7 +184,11 @@ export function CategoryBar() {
                   /* desktop hover */
                   onMouseEnter={() => { if (window.innerWidth >= 640) { cancelClose(); setOpenCategory(cat.name); } }}
                   onMouseLeave={() => { if (window.innerWidth >= 640) scheduleClose(); }}
-                  className="relative flex-1"
+                  /* flex-auto lets each pill size itself to content and wrap to
+                     the next row when the current row overflows — keeps all
+                     chips visible on wide catalogs without a horizontal
+                     scrollbar. */
+                  className="relative flex-auto"
                 >
                   <button
                     /* mobile tap vs desktop click */
