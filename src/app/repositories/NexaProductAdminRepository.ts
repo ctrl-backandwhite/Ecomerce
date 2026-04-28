@@ -84,6 +84,7 @@ export interface AdminProduct {
     updatedAt: string | null;
     translations: ProductTranslation[];
     variants: ProductVariant[];
+    availableLocales?: string[];
 }
 
 export interface AdminProductPage {

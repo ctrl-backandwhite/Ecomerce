@@ -1,6 +1,10 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, type ReactNode } from "react";
 import type { Product } from "../types/product";
 import { useAuth } from "./AuthContext";
+import { nexaProductRepository } from "../repositories/NexaProductRepository";
+import { mapNexaProduct } from "../mappers/NexaProductMapper";
+import { useLanguage } from "./LanguageContext";
+import { logger } from "../lib/logger";
 
 const BASE_KEY = "nexa_recently_viewed";
 const MAX = 8;
@@ -36,6 +40,8 @@ function readFromStorage(key: string): Product[] {
 export function RecentlyViewedProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const userId = user?.id ? String(user.id) : null;
+  const { locale } = useLanguage();
+  const apiLocale = locale === "pt" ? "pt-BR" : locale;
 
   const [viewed, setViewed] = useState<Product[]>(() => readFromStorage(storageKey(userId)));
 
@@ -62,6 +68,49 @@ export function RecentlyViewedProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     localStorage.setItem(storageKey(userId), JSON.stringify(viewed));
   }, [viewed, userId]);
+
+  // Mirror current viewed in a ref so the currency-change listener can read
+  // the latest list without re-binding (and re-firing) on every track.
+  const viewedRef = useRef<Product[]>(viewed);
+  useEffect(() => { viewedRef.current = viewed; }, [viewed]);
+
+  // Re-hydrate prices when the user switches currency. The viewed list is
+  // persisted with the price baked in, so a stored entry from a previous
+  // COP session keeps showing COP-shape numbers under a USD label until we
+  // refetch from the catalog (which converts via X-Currency).
+  useEffect(() => {
+    function refreshPrices() {
+      const ids = viewedRef.current.map((p) => p.id).filter(Boolean);
+      if (ids.length === 0) {
+        window.dispatchEvent(new Event("currency:ack"));
+        return;
+      }
+      Promise.all(
+        ids.map((id) =>
+          nexaProductRepository
+            .findById(id, apiLocale)
+            .then((raw) => mapNexaProduct(raw))
+            .catch((err) => {
+              logger.warn(`[RecentlyViewed] refresh failed for ${id}`, err);
+              return null;
+            }),
+        ),
+      ).then((fresh) => {
+        const byId = new Map<string, Product>();
+        fresh.forEach((p) => { if (p) byId.set(p.id, p); });
+        setViewed((prev) =>
+          prev.map((p) => {
+            const updated = byId.get(p.id);
+            // Preserve the originalPrice-stripping policy from `track`.
+            return updated ? { ...updated, originalPrice: undefined } : p;
+          }),
+        );
+        window.dispatchEvent(new Event("currency:ack"));
+      });
+    }
+    window.addEventListener("currency:changed", refreshPrices);
+    return () => window.removeEventListener("currency:changed", refreshPrices);
+  }, [apiLocale]);
 
   const track = (p: Product) => {
     // Strip volatile pricing so a stale originalPrice captured during a past

@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate, useLocation, Link } from "react-router";
 import { type Review } from "../types/review";
 import { reviewRepository } from "../repositories/ReviewRepository";
@@ -553,6 +553,21 @@ function resolveColor(name: string): string {
   return `hsl(${Math.abs(hash) % 360}, 55%, 55%)`;
 }
 
+/**
+ * Whether the variant's attribute value maps to a recognised color in
+ * COLOR_MAP (exact or fuzzy substring match). Used by the picker to drop
+ * opaque CJ codes like "P10", "P11", "LC854472-P603" that would otherwise
+ * render as random HSL hash swatches with no meaning to the buyer.
+ */
+function isRecognisedColor(name: string): boolean {
+  if (!name) return false;
+  if (COLOR_MAP[name]) return true;
+  const lower = name.toLowerCase();
+  return Object.keys(COLOR_MAP).some(
+    (k) => lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower),
+  );
+}
+
 // ── Main component ────────────────────────────────────────────
 export function ProductDetail() {
   const { id } = useParams<{ id: string }>();
@@ -686,22 +701,38 @@ export function ProductDetail() {
   }, [product, variantAttrNames, selectedAttrs]);
 
   /**
-   * Keep the active image in sync with the selected variant: when the user
-   * picks a colour/size combination that has its own variant image, switch
-   * the gallery to that image automatically.
+   * Variant that represents the buyer's *partial* selection — used to drive
+   * the gallery image and price preview before every attribute is picked.
+   * Falls back to {@link selectedVariant} when the selection is complete.
+   * For example: pick a colour without a size yet → returns the first
+   * in-stock variant of that colour so the image swaps right away.
    */
-  useEffect(() => {
-    if (!selectedVariant?.image || !product) return;
-    const baseImages = product.images?.length ? product.images : [];
-    const idx = baseImages.findIndex((img) => img.url === selectedVariant.image);
-    if (idx >= 0) setActiveImage(idx);
-  }, [selectedVariant, product]);
+  const previewVariant = useMemo(() => {
+    if (!product || !variantAttrNames.length) return null;
+    if (selectedVariant) return selectedVariant;
+    const partialKeys = variantAttrNames.filter((k) => selectedAttrs[k]);
+    if (partialKeys.length === 0) return null;
+    const matches = product.variants.filter((v) =>
+      partialKeys.every((k) => v.attributes[k] === selectedAttrs[k]),
+    );
+    if (matches.length === 0) return null;
+    // Prefer an in-stock match so the price/image reflects something the
+    // buyer can still buy; fall back to the first match otherwise.
+    return matches.find((v) => v.stock_quantity > 0) ?? matches[0];
+  }, [product, variantAttrNames, selectedAttrs, selectedVariant]);
 
   const variantOptions = useMemo(() => {
     if (!product) return {} as Record<string, string[]>;
     const map: Record<string, string[]> = {};
     variantAttrNames.forEach((key) => {
-      map[key] = [...new Set(product.variants.map((v) => v.attributes[key]).filter(Boolean))];
+      const values = [...new Set(product.variants.map((v) => v.attributes[key]).filter(Boolean))];
+      // For the color attribute, hide unrecognised codes (P10, P11, LC… etc.)
+      // so the swatch row only shows real colours the buyer can identify.
+      if (key.toLowerCase() === "color") {
+        map[key] = values.filter(isRecognisedColor);
+      } else {
+        map[key] = values;
+      }
     });
     return map;
   }, [product, variantAttrNames]);
@@ -725,37 +756,116 @@ export function ProductDetail() {
     return null;
   }, [product, selectedVariant]);
 
-  // Extract images from description HTML, merge with product images (deduplicated),
-  // and produce a cleaned description without <img> tags.
+  // Build the gallery from sources whose colours we can vouch for, so the
+  // image rail and the swatch picker show the same set of variants. Sources:
+  //   • product.image (cover photo, always shown)
+  //   • variant.image where the variant's colour is recognised by COLOR_MAP
+  //     — drops opaque CJ codes (P10, P11, P603, …) for which the swatch was
+  //     already filtered out of `variantOptions`
+  //   • <img> URLs embedded in the description HTML (specs, measurements)
+  // We deliberately skip `product.images` as a whole because that array
+  // already includes the catalog's `productImageSet` — a flat dump of every
+  // colour the supplier ever shot, including the ones whose swatches are
+  // hidden, which would re-introduce the mismatch.
   const { images, cleanDescription } = useMemo(() => {
-    const baseImages = product?.images?.length
-      ? [...product.images]
-      : product ? [{ url: product.image, alt: product.name, position: 1 }] : [];
+    if (!product) return { images: [], cleanDescription: "" };
 
-    if (!product?.description) {
-      return { images: baseImages, cleanDescription: product?.description ?? "" };
+    const colorAttrKey = variantAttrNames.find((k) => k.toLowerCase() === "color");
+    const baseImages: { url: string; alt: string; position: number }[] = [];
+    const seen = new Set<string>();
+
+    if (product.image) {
+      baseImages.push({ url: product.image, alt: product.name, position: 1 });
+      seen.add(product.image);
     }
 
-    // Parse description to extract <img> src URLs
+    // Variant images filtered to recognised colours only (so they match the
+    // visible swatches one-to-one).
+    const variantImages: { url: string; alt: string; position: number }[] = [];
+    product.variants.forEach((v) => {
+      if (!v.image || seen.has(v.image)) return;
+      const colorVal = colorAttrKey ? v.attributes[colorAttrKey] : undefined;
+      // If the product has a Color attribute we trust the swatch filter as
+      // the source of truth; without one, we keep all variant images.
+      if (colorAttrKey && colorVal && !isRecognisedColor(colorVal)) return;
+      seen.add(v.image);
+      variantImages.push({
+        url: v.image,
+        alt: product.name,
+        position: baseImages.length + variantImages.length + 1,
+      });
+    });
+
+    if (!product.description) {
+      return {
+        images: [...baseImages, ...variantImages],
+        cleanDescription: "",
+      };
+    }
+
+    // Parse description to extract <img> src URLs and strip them from the
+    // body so the description text doesn't render duplicate inline images.
     const parser = new DOMParser();
     const doc = parser.parseFromString(product.description, "text/html");
     const imgElements = doc.querySelectorAll("img");
-    const seen = new Set(baseImages.map(img => img.url));
     const descImages: { url: string; alt: string; position: number }[] = [];
 
     imgElements.forEach((el) => {
       const src = el.getAttribute("src");
       if (src && !seen.has(src)) {
         seen.add(src);
-        descImages.push({ url: src, alt: el.getAttribute("alt") || product.name, position: baseImages.length + descImages.length });
+        descImages.push({
+          url: src,
+          alt: el.getAttribute("alt") || product.name,
+          position: baseImages.length + variantImages.length + descImages.length,
+        });
       }
-      // Remove the <img> from the DOM tree
       el.remove();
     });
 
-    const cleaned = doc.body.innerHTML;
-    return { images: [...baseImages, ...descImages], cleanDescription: cleaned };
-  }, [product]);
+    return {
+      images: [...baseImages, ...variantImages, ...descImages],
+      cleanDescription: doc.body.innerHTML,
+    };
+  }, [product, variantAttrNames]);
+
+  /**
+   * Keep the active image in sync with the buyer's selection. We use
+   * `previewVariant` instead of `selectedVariant` so the image swaps as soon
+   * as a single attribute (typically the colour) is picked — without forcing
+   * the buyer to also pick a size first. Variant images are appended to the
+   * merged `images` list so this lookup is guaranteed to find a match when
+   * the variant carries an image of its own.
+   */
+  useEffect(() => {
+    if (!previewVariant?.image) return;
+    const idx = images.findIndex((img) => img.url === previewVariant.image);
+    if (idx >= 0) setActiveImage(idx);
+  }, [previewVariant, images]);
+
+  /**
+   * Reverse-sync the swatch when the buyer clicks a thumbnail or arrow:
+   * find the variant whose image matches the new active picture and pick
+   * its colour. The image-sync effect above is idempotent (it would just
+   * re-set the same activeImage), so there's no ping-pong.
+   */
+  const selectImage = useCallback((indexOrFn: number | ((prev: number) => number)) => {
+    setActiveImage((prev) => {
+      const next = typeof indexOrFn === "function" ? indexOrFn(prev) : indexOrFn;
+      const url = images[next]?.url;
+      if (!url || !product) return next;
+      const colorAttrKey = variantAttrNames.find((k) => k.toLowerCase() === "color");
+      if (!colorAttrKey) return next;
+      const matchingVariant = product.variants.find((v) => v.image === url);
+      const colorVal = matchingVariant?.attributes[colorAttrKey];
+      // Only auto-pick recognised colours so we don't silently set a value
+      // that the swatch row would refuse to render.
+      if (colorVal && isRecognisedColor(colorVal)) {
+        setSelectedAttrs((cur) => (cur[colorAttrKey] === colorVal ? cur : { ...cur, [colorAttrKey]: colorVal }));
+      }
+      return next;
+    });
+  }, [images, product, variantAttrNames]);
 
   const discount = product?.originalPrice
     ? Math.round(((product.originalPrice - displayPrice) / product.originalPrice) * 100)
@@ -878,8 +988,8 @@ export function ProductDetail() {
                   {images.slice(0, MAX_VISIBLE_THUMBS).map((img, i) => (
                     <button
                       key={i}
-                      onMouseEnter={() => setActiveImage(i)}
-                      onClick={() => setActiveImage(i)}
+                      onMouseEnter={() => selectImage(i)}
+                      onClick={() => selectImage(i)}
                       className={`w-14 h-14 rounded-lg overflow-hidden border transition-all bg-white ${activeImage === i
                         ? "border-blue-500 ring-2 ring-blue-500/30"
                         : "border-gray-200 hover:border-gray-400"}`}
@@ -933,13 +1043,13 @@ export function ProductDetail() {
                 {images.length > 1 && (
                   <>
                     <button
-                      onClick={() => setActiveImage(i => (i - 1 + images.length) % images.length)}
+                      onClick={() => selectImage(i => (i - 1 + images.length) % images.length)}
                       className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border border-gray-200 shadow-sm hover:bg-white transition-all flex items-center justify-center"
                     >
                       <ChevronRight className="w-4 h-4 text-gray-700 rotate-180" strokeWidth={1.5} />
                     </button>
                     <button
-                      onClick={() => setActiveImage(i => (i + 1) % images.length)}
+                      onClick={() => selectImage(i => (i + 1) % images.length)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white/90 border border-gray-200 shadow-sm hover:bg-white transition-all flex items-center justify-center"
                     >
                       <ChevronRight className="w-4 h-4 text-gray-700" strokeWidth={1.5} />
@@ -955,7 +1065,7 @@ export function ProductDetail() {
                 {images.slice(0, MAX_VISIBLE_THUMBS).map((img, i) => (
                   <button
                     key={i}
-                    onClick={() => setActiveImage(i)}
+                    onClick={() => selectImage(i)}
                     className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border transition-all bg-white ${activeImage === i ? "border-blue-500 ring-2 ring-blue-500/30" : "border-gray-200"}`}
                   >
                     <img src={img.url} alt={img.alt} className="w-full h-full object-contain p-0.5" />

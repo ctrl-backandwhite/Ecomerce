@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 240" fill="none">
+  <title>NX036</title>
+  <circle cx="120" cy="120" r="108" fill="#1c2b3a"/>
+  <text x="120" y="152" text-anchor="middle"
+        font-family="Helvetica, Arial, sans-serif" font-weight="800"
+        font-size="96" fill="#ffffff" letter-spacing="-4">NX</text>
+  <text x="260" y="172"
+        font-family="Helvetica, Arial, sans-serif" font-weight="800"
+        font-size="180" fill="#1c2b3a" letter-spacing="-6">NX036</text>
+</svg>

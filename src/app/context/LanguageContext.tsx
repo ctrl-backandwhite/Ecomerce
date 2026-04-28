@@ -81,6 +81,12 @@ const translations: Record<Locale, Record<string, string>> = {
         "banner.freeShipping.amount": "$100",
         "banner.secureBuy": "Compra 100% segura",
         "banner.multiPayment": "Múltiples métodos de pago",
+        "banner.support": "Atención al cliente 24/7",
+        "banner.easyReturns": "Devoluciones fáciles en 30 días",
+        "banner.bestPrice": "Mejor precio garantizado",
+        "banner.worldwide": "Envíos en casi todo el mundo",
+        "banner.encrypted": "Pago cifrado SSL",
+        "banner.qualityGuarantee": "Calidad garantizada",
         // ── Gift card ──
         "gift.title": "Tarjetas de regalo NX036",
         "gift.subtitle": "El regalo perfecto — envíalo directo al email de quien quieras",
@@ -505,6 +511,7 @@ const translations: Record<Locale, Record<string, string>> = {
         "admin.dash.col.amount": "Importe",
         "admin.dash.col.status": "Estado",
         // Order statuses
+        "order.status.draft": "Borrador",
         "order.status.pending": "Pendiente",
         "order.status.confirmed": "Confirmado",
         "order.status.processing": "Procesando",
@@ -1332,6 +1339,12 @@ const translations: Record<Locale, Record<string, string>> = {
         "banner.freeShipping.amount": "$100",
         "banner.secureBuy": "100% secure purchase",
         "banner.multiPayment": "Multiple payment methods",
+        "banner.support": "24/7 customer support",
+        "banner.easyReturns": "Easy 30-day returns",
+        "banner.bestPrice": "Best price guaranteed",
+        "banner.worldwide": "Shipping to almost the entire world",
+        "banner.encrypted": "SSL encrypted checkout",
+        "banner.qualityGuarantee": "Quality guaranteed",
         // ── Gift card ──
         "gift.title": "NX036 Gift Cards",
         "gift.subtitle": "The perfect gift — send it directly to anyone's email",
@@ -1756,6 +1769,7 @@ const translations: Record<Locale, Record<string, string>> = {
         "admin.dash.col.amount": "Amount",
         "admin.dash.col.status": "Status",
         // Order statuses
+        "order.status.draft": "Draft",
         "order.status.pending": "Pending",
         "order.status.confirmed": "Confirmed",
         "order.status.processing": "Processing",
@@ -2583,6 +2597,12 @@ const translations: Record<Locale, Record<string, string>> = {
         "banner.freeShipping.amount": "$100",
         "banner.secureBuy": "Compra 100% segura",
         "banner.multiPayment": "Múltiplos métodos de pagamento",
+        "banner.support": "Atendimento 24 horas",
+        "banner.easyReturns": "Devoluções fáceis em 30 dias",
+        "banner.bestPrice": "Melhor preço garantido",
+        "banner.worldwide": "Enviamos para quase todo o mundo",
+        "banner.encrypted": "Pagamento criptografado SSL",
+        "banner.qualityGuarantee": "Qualidade garantida",
         // ── Gift card ──
         "gift.title": "Cartões presente NX036",
         "gift.subtitle": "O presente perfeito — envie direto para o email de quem quiser",
@@ -3007,6 +3027,7 @@ const translations: Record<Locale, Record<string, string>> = {
         "admin.dash.col.amount": "Valor",
         "admin.dash.col.status": "Status",
         // Order statuses
+        "order.status.draft": "Rascunho",
         "order.status.pending": "Pendente",
         "order.status.confirmed": "Confirmado",
         "order.status.processing": "Processando",

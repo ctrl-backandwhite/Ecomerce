@@ -928,6 +928,26 @@ export function AdminProducts() {
                                             onClick={() => handleTogglePublish(p.id)}
                                             loading={togglingId === p.id}
                                         />
+                                        {p.availableLocales && p.availableLocales.length > 0 && (
+                                            <span className="inline-flex items-center gap-1">
+                                                {p.availableLocales.map(loc => {
+                                                    const isCurrent = loc === apiLocale;
+                                                    return (
+                                                        <span
+                                                            key={loc}
+                                                            title={isCurrent ? `Idioma actual (${loc})` : `Traducción disponible: ${loc}`}
+                                                            className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${
+                                                                isCurrent
+                                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                                    : "bg-gray-50 text-gray-500 border-gray-200"
+                                                            }`}
+                                                        >
+                                                            {loc}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="text-[11px] text-gray-400 mt-0.5 truncate flex items-center gap-1">
                                         {p.sku && <><span className="font-mono">{p.sku}</span> · </>}
