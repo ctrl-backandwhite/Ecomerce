@@ -35,6 +35,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useCurrency } from "../../context/CurrencyContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 /* ── Face verification modal ──────────────────────────────── */
 type FaceStep = "idle" | "camera" | "scanning" | "done";
@@ -46,6 +47,7 @@ function FaceVerificationModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useLanguage();
   const [step, setStep] = useState<FaceStep>("idle");
   const [progress, setProgress] = useState(0);
   const [dots, setDots] = useState(0);
@@ -81,8 +83,8 @@ function FaceVerificationModal({
               <ScanFace className="w-5 h-5 text-white" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-sm text-gray-900">Verificación facial</p>
-              <p className="text-xs text-gray-400">Vendedor NX036</p>
+              <p className="text-sm text-gray-900">{t("profile.tienda.modal.header.title")}</p>
+              <p className="text-xs text-gray-400">{t("profile.tienda.modal.header.subtitle")}</p>
             </div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors text-lg leading-none">✕</button>
@@ -94,12 +96,12 @@ function FaceVerificationModal({
               <div className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-200 flex items-center justify-center mx-auto mb-6">
                 <ScanFace className="w-10 h-10 text-gray-300" strokeWidth={1} />
               </div>
-              <p className="text-sm text-gray-900 mb-2">Verifica tu identidad</p>
+              <p className="text-sm text-gray-900 mb-2">{t("profile.tienda.modal.idle.title")}</p>
               <p className="text-xs text-gray-400 mb-6 max-w-xs mx-auto leading-relaxed">
-                El reconocimiento facial confirma que eres el titular de la cuenta y habilita funciones exclusivas de vendedor.
+                {t("profile.tienda.modal.idle.desc")}
               </p>
               <div className="text-left bg-gray-50 rounded-xl p-4 mb-6 space-y-2.5">
-                {["Coloca tu rostro centrado en el encuadre", "Asegúrate de tener buena iluminación", "Retira lentes de sol o cubrebocas"].map((tip, i) => (
+                {[t("profile.tienda.modal.idle.tip1"), t("profile.tienda.modal.idle.tip2"), t("profile.tienda.modal.idle.tip3")].map((tip, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0 mt-0.5">
                       <span className="text-[10px] text-gray-500">{i + 1}</span>
@@ -110,7 +112,7 @@ function FaceVerificationModal({
               </div>
               <button onClick={startCamera} className="w-full flex items-center justify-center gap-2 bg-gray-200 text-gray-700 text-sm rounded-xl py-3 hover:bg-gray-300 transition-colors">
                 <Camera className="w-4 h-4" strokeWidth={1.5} />
-                Iniciar cámara
+                {t("profile.tienda.modal.idle.button")}
               </button>
             </div>
           )}
@@ -129,8 +131,8 @@ function FaceVerificationModal({
                 <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-gray-900 rounded-br-sm" />
                 <div className="absolute inset-0 rounded-full border-2 border-gray-400 animate-ping opacity-30" />
               </div>
-              <p className="text-sm text-gray-900">Centrando rostro{".".repeat(dots + 1)}</p>
-              <p className="text-xs text-gray-400 mt-1">Mantén el dispositivo estable</p>
+              <p className="text-sm text-gray-900">{t("profile.tienda.modal.camera.title")}{".".repeat(dots + 1)}</p>
+              <p className="text-xs text-gray-400 mt-1">{t("profile.tienda.modal.camera.subtitle")}</p>
             </div>
           )}
 
@@ -148,7 +150,7 @@ function FaceVerificationModal({
                 <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-gray-900 rounded-bl-sm" />
                 <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-gray-900 rounded-br-sm" />
               </div>
-              <p className="text-sm text-gray-900 mb-3">Analizando biometría{".".repeat(dots + 1)}</p>
+              <p className="text-sm text-gray-900 mb-3">{t("profile.tienda.modal.scanning.title")}{".".repeat(dots + 1)}</p>
               <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                 <div className="h-full bg-gray-600 rounded-full transition-all duration-200" style={{ width: `${progress}%` }} />
               </div>
@@ -161,12 +163,12 @@ function FaceVerificationModal({
               <div className="w-24 h-24 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-6">
                 <CheckCircle className="w-12 h-12 text-green-500" strokeWidth={1} />
               </div>
-              <p className="text-sm text-gray-900 mb-1">Verificación exitosa</p>
+              <p className="text-sm text-gray-900 mb-1">{t("profile.tienda.modal.done.title")}</p>
               <p className="text-xs text-gray-400 mb-6 max-w-xs mx-auto leading-relaxed">
-                Tu identidad ha sido confirmada. Ahora tienes acceso completo a las funciones de vendedor NX036.
+                {t("profile.tienda.modal.done.desc")}
               </p>
               <div className="bg-green-50 border border-green-100 rounded-xl p-4 mb-6 text-left">
-                {["Publicar productos en el marketplace", "Recibir pagos y gestionar ingresos", "Acceso al panel de vendedor"].map((item, i) => (
+                {[t("profile.tienda.modal.done.feature1"), t("profile.tienda.modal.done.feature2"), t("profile.tienda.modal.done.feature3")].map((item, i) => (
                   <div key={i} className="flex items-center gap-2 mb-1.5 last:mb-0">
                     <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" strokeWidth={2} />
                     <p className="text-xs text-green-700">{item}</p>
@@ -174,7 +176,7 @@ function FaceVerificationModal({
                 ))}
               </div>
               <button onClick={handleSuccess} className="w-full bg-gray-200 text-gray-700 text-sm rounded-xl py-3 hover:bg-gray-300 transition-colors">
-                Continuar
+                {t("profile.tienda.modal.done.button")}
               </button>
             </div>
           )}
@@ -187,10 +189,10 @@ function FaceVerificationModal({
 
 /* ── Face status map ──────────────────────────────────────── */
 const faceStatusMap = {
-  unverified: { label: "Sin verificar", icon: ShieldX, color: "text-gray-400", bg: "bg-gray-50", border: "border-gray-200", dot: "bg-gray-300" },
-  pending: { label: "En revisión", icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", dot: "bg-amber-400" },
-  verified: { label: "Verificado", icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50", border: "border-green-100", dot: "bg-green-500" },
-  rejected: { label: "Rechazado", icon: XCircle, color: "text-red-500", bg: "bg-red-50", border: "border-red-100", dot: "bg-red-400" },
+  unverified: { labelKey: "profile.tienda.face.status.unverified", icon: ShieldX, color: "text-gray-400", bg: "bg-gray-50", border: "border-gray-200", dot: "bg-gray-300" },
+  pending: { labelKey: "profile.tienda.face.status.pending", icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", dot: "bg-amber-400" },
+  verified: { labelKey: "profile.tienda.face.status.verified", icon: ShieldCheck, color: "text-green-600", bg: "bg-green-50", border: "border-green-100", dot: "bg-green-500" },
+  rejected: { labelKey: "profile.tienda.face.status.rejected", icon: XCircle, color: "text-red-500", bg: "bg-red-50", border: "border-red-100", dot: "bg-red-400" },
 };
 
 /* ── Helpers ──────────────────────────────────────────────── */
@@ -201,10 +203,10 @@ const storeCategories = [
 ];
 
 const statusConfig = {
-  draft: { label: "Borrador", icon: FileText, color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200", dot: "bg-gray-400" },
-  pending: { label: "En revisión", icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", dot: "bg-amber-400" },
-  active: { label: "Activa", icon: CheckCircle, color: "text-green-600", bg: "bg-green-50", border: "border-green-100", dot: "bg-green-500" },
-  suspended: { label: "Suspendida", icon: XCircle, color: "text-red-500", bg: "bg-red-50", border: "border-red-100", dot: "bg-red-400" },
+  draft: { labelKey: "profile.tienda.storeinfo.status.draft", icon: FileText, color: "text-gray-500", bg: "bg-gray-50", border: "border-gray-200", dot: "bg-gray-400" },
+  pending: { labelKey: "profile.tienda.storeinfo.status.pending", icon: Clock, color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-100", dot: "bg-amber-400" },
+  active: { labelKey: "profile.tienda.storeinfo.status.active", icon: CheckCircle, color: "text-green-600", bg: "bg-green-50", border: "border-green-100", dot: "bg-green-500" },
+  suspended: { labelKey: "profile.tienda.storeinfo.status.suspended", icon: XCircle, color: "text-red-500", bg: "bg-red-50", border: "border-red-100", dot: "bg-red-400" },
 };
 
 /* ── Shared small input ───────────────────────────────────── */
@@ -259,8 +261,7 @@ function SField({
 /* ── Main component ───────────────────────────────────────── */
 export function ProfileTienda() {
   const { user, updateProfile } = useUser();
-  const { formatPrice } = useCurrency();
-  const [editing, setEditing] = useState(false);
+  const { formatPrice } = useCurrency(); const { t } = useLanguage(); const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...user.store });
   const [showFaceModal, setShowFaceModal] = useState(false);
 
@@ -271,7 +272,7 @@ export function ProfileTienda() {
   const handleSave = () => {
     updateProfile({ store: { ...user.store, ...form } });
     setEditing(false);
-    toast.success("Tienda actualizada correctamente");
+    toast.success(t("profile.tienda.toast.updated"));
   };
 
   const handleCancel = () => {
@@ -281,7 +282,7 @@ export function ProfileTienda() {
 
   const handleFaceSuccess = () => {
     updateProfile({ faceVerified: true, faceVerificationStatus: "verified" });
-    toast.success("Identidad verificada correctamente");
+    toast.success(t("profile.tienda.toast.face_verified"));
   };
 
   const faceStatus = faceStatusMap[user.faceVerificationStatus];
@@ -296,13 +297,13 @@ export function ProfileTienda() {
         <div className="w-16 h-16 rounded-full bg-gray-50 border border-gray-100 flex items-center justify-center mb-4">
           <Store className="w-8 h-8 text-gray-300" strokeWidth={1} />
         </div>
-        <p className="text-base text-gray-900 mb-2">Aún no eres vendedor</p>
+        <p className="text-base text-gray-900 mb-2">{t("profile.tienda.notseller.title")}</p>
         <p className="text-xs text-gray-400 max-w-xs leading-relaxed mb-6">
-          Activa tu cuenta de vendedor para crear tu tienda, publicar productos y empezar a generar ingresos en NX036.
+          {t("profile.tienda.notseller.desc")}
         </p>
         <button className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
           <Store className="w-4 h-4" strokeWidth={1.5} />
-          Convertirme en vendedor
+          {t("profile.tienda.notseller.button")}
         </button>
       </div>
     );
@@ -322,14 +323,14 @@ export function ProfileTienda() {
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
-              <h2 className="text-base text-gray-900">Verificación de identidad</h2>
-              <span className="text-[10px] bg-gray-600 text-white px-2 py-0.5 rounded-full tracking-wide">VENDEDOR</span>
+              <h2 className="text-base text-gray-900">{t("profile.tienda.face.title")}</h2>
+              <span className="text-[10px] bg-gray-600 text-white px-2 py-0.5 rounded-full tracking-wide">{t("profile.tienda.face.badge")}</span>
             </div>
-            <p className="text-xs text-gray-400">Reconocimiento facial para cuenta de vendedor</p>
+            <p className="text-xs text-gray-400">{t("profile.tienda.face.subtitle")}</p>
           </div>
           <div className={`inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border ${faceStatus.bg} ${faceStatus.color} ${faceStatus.border}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${faceStatus.dot}`} />
-            {faceStatus.label}
+            {t(faceStatus.labelKey)}
           </div>
         </div>
 
@@ -341,12 +342,12 @@ export function ProfileTienda() {
                 <ShieldCheck className="w-6 h-6 text-green-500" strokeWidth={1.5} />
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-900 mb-1">Identidad confirmada</p>
+                <p className="text-sm text-gray-900 mb-1">{t("profile.tienda.face.verified.title")}</p>
                 <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                  Tu reconocimiento facial fue completado exitosamente. Tienes acceso a todas las funciones de vendedor NX036.
+                  {t("profile.tienda.face.verified.desc")}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                  {["Publicar productos", "Recibir pagos", "Panel vendedor"].map((label) => (
+                  {[t("profile.tienda.face.verified.feature1"), t("profile.tienda.face.verified.feature2"), t("profile.tienda.face.verified.feature3")].map((label) => (
                     <div key={label} className="flex items-center gap-2 text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">
                       <CheckCircle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={2} />
                       {label}
@@ -355,7 +356,7 @@ export function ProfileTienda() {
                 </div>
                 <button onClick={() => setShowFaceModal(true)} className="inline-flex items-center gap-2 text-xs text-gray-500 border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
                   <RefreshCw className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  Volver a verificar
+                  {t("profile.tienda.face.verified.reverify")}
                 </button>
               </div>
             </div>
@@ -368,9 +369,9 @@ export function ProfileTienda() {
                 <Clock className="w-6 h-6 text-amber-500" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-sm text-gray-900 mb-1">Verificación en revisión</p>
+                <p className="text-sm text-gray-900 mb-1">{t("profile.tienda.face.pending.title")}</p>
                 <p className="text-xs text-gray-400 leading-relaxed">
-                  Estamos analizando tu información biométrica. El proceso puede tardar hasta 24 horas. Te notificaremos por correo.
+                  {t("profile.tienda.face.pending.desc")}
                 </p>
               </div>
             </div>
@@ -383,13 +384,13 @@ export function ProfileTienda() {
                 <XCircle className="w-6 h-6 text-red-400" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-sm text-gray-900 mb-1">Verificación rechazada</p>
+                <p className="text-sm text-gray-900 mb-1">{t("profile.tienda.face.rejected.title")}</p>
                 <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                  No pudimos confirmar tu identidad. Asegúrate de tener buena iluminación y que tu rostro esté completamente visible.
+                  {t("profile.tienda.face.rejected.desc")}
                 </p>
                 <button onClick={() => setShowFaceModal(true)} className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors">
                   <ScanFace className="w-4 h-4" strokeWidth={1.5} />
-                  Intentar de nuevo
+                  {t("profile.tienda.face.rejected.retry")}
                 </button>
               </div>
             </div>
@@ -410,12 +411,12 @@ export function ProfileTienda() {
                 </div>
               </div>
               <div className="flex-1">
-                <p className="text-sm text-gray-900 mb-2">Habilita tu cuenta de vendedor</p>
+                <p className="text-sm text-gray-900 mb-2">{t("profile.tienda.face.unverified.title")}</p>
                 <p className="text-xs text-gray-400 mb-4 leading-relaxed">
-                  Para vender en NX036 necesitas verificar tu identidad mediante reconocimiento facial. Es rápido, seguro y solo toma unos segundos.
+                  {t("profile.tienda.face.unverified.desc")}
                 </p>
                 <div className="space-y-2 mb-4">
-                  {["Publicar hasta 500 productos", "Recibir pagos directamente", "Panel de analytics de ventas", "Insignia de Vendedor Verificado"].map((text) => (
+                  {[t("profile.tienda.face.unverified.feature1"), t("profile.tienda.face.unverified.feature2"), t("profile.tienda.face.unverified.feature3"), t("profile.tienda.face.unverified.feature4")].map((text) => (
                     <div key={text} className="flex items-center gap-2">
                       <CheckCircle className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" strokeWidth={2} />
                       <p className="text-xs text-gray-500">{text}</p>
@@ -425,12 +426,12 @@ export function ProfileTienda() {
                 <div className="flex items-start gap-2 bg-gray-50 border border-gray-100 rounded-lg p-3 mb-4">
                   <Info className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
                   <p className="text-xs text-gray-400 leading-relaxed">
-                    Los datos biométricos se procesan localmente y no se almacenan en nuestros servidores. Cumple con la Ley 19.628.
+                    {t("profile.tienda.face.unverified.info")}
                   </p>
                 </div>
                 <button onClick={() => setShowFaceModal(true)} className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-xl px-5 py-2.5 hover:bg-gray-300 transition-colors">
                   <ScanFace className="w-4 h-4" strokeWidth={1.5} />
-                  Verificar identidad
+                  {t("profile.tienda.face.button.verify")}
                 </button>
               </div>
             </div>
@@ -441,10 +442,10 @@ export function ProfileTienda() {
       {/* ── Stats row ─────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { icon: ShoppingBag, label: "Ventas totales", value: user.store.totalSales.toString() },
-          { icon: TrendingUp, label: "Ingresos", value: formatPrice(user.store.totalRevenue) },
-          { icon: Star, label: "Calificación", value: `${user.store.rating} / 5` },
-          { icon: Package, label: "Reseñas", value: user.store.reviewCount.toString() },
+          { icon: ShoppingBag, label: t("profile.tienda.stats.sales"), value: user.store.totalSales.toString() },
+          { icon: TrendingUp, label: t("profile.tienda.stats.revenue"), value: formatPrice(user.store.totalRevenue) },
+          { icon: Star, label: t("profile.tienda.stats.rating"), value: `${user.store.rating} / 5` },
+          { icon: Package, label: t("profile.tienda.stats.reviews"), value: user.store.reviewCount.toString() },
         ].map(({ icon: Icon, label, value }) => (
           <div key={label} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center flex-shrink-0">
@@ -467,8 +468,8 @@ export function ProfileTienda() {
               <Store className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
             </div>
             <div>
-              <h2 className="text-base text-gray-900">Mi Tienda</h2>
-              <p className="text-xs text-gray-400">Información pública de tu tienda</p>
+              <h2 className="text-base text-gray-900">{t("profile.tienda.storeinfo.title")}</h2>
+              <p className="text-xs text-gray-400">{t("profile.tienda.storeinfo.subtitle")}</p>
             </div>
           </div>
 
@@ -476,7 +477,7 @@ export function ProfileTienda() {
             {/* Status badge */}
             <div className={`hidden sm:inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border ${status.bg} ${status.color} ${status.border}`}>
               <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
-              {status.label}
+              {t(status.labelKey)}
             </div>
 
             {/* Edit / Save */}
@@ -486,7 +487,7 @@ export function ProfileTienda() {
                 className="inline-flex items-center gap-2 text-sm text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all"
               >
                 <Pencil className="w-4 h-4" strokeWidth={1.5} />
-                Editar
+                {t("profile.tienda.storeinfo.button.edit")}
               </button>
             ) : (
               <div className="flex items-center gap-2">
@@ -498,7 +499,7 @@ export function ProfileTienda() {
                   className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors"
                 >
                   <Save className="w-4 h-4" strokeWidth={1.5} />
-                  Guardar
+                  {t("profile.tienda.button.save")}
                 </button>
               </div>
             )}
@@ -510,7 +511,7 @@ export function ProfileTienda() {
           {editing && (
             <button className="absolute inset-0 flex items-center justify-center gap-2 text-xs text-gray-500 hover:bg-black/10 transition-colors">
               <ImagePlus className="w-4 h-4" strokeWidth={1.5} />
-              Cambiar banner
+              {t("profile.tienda.storeinfo.form.banner")}
             </button>
           )}
           {/* Logo */}
@@ -533,10 +534,10 @@ export function ProfileTienda() {
 
           {/* Nombre + Slug + Categoría */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <SField label="Nombre de la tienda" icon={Store} name="name" value={form.name} placeholder="Mi tienda NX036" editing={editing} onChange={handleChange as any} />
-            <SField label="URL de la tienda" icon={Link} name="slug" value={form.slug} placeholder="mi-tienda" editing={editing} onChange={handleChange as any} />
+            <SField label={t("profile.tienda.storeinfo.form.name")} icon={Store} name="name" value={form.name} placeholder={t("profile.tienda.storeinfo.form.name.placeholder")} editing={editing} onChange={handleChange as any} />
+            <SField label={t("profile.tienda.storeinfo.form.slug")} icon={Link} name="slug" value={form.slug} placeholder={t("profile.tienda.storeinfo.form.slug.placeholder")} editing={editing} onChange={handleChange as any} />
             <div>
-              <label className="block text-xs text-gray-400 mb-1 tracking-wide">Categoría principal</label>
+              <label className="block text-xs text-gray-400 mb-1 tracking-wide">{t("profile.tienda.storeinfo.form.category")}</label>
               {editing ? (
                 <div className="relative">
                   <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-300" strokeWidth={1.5} />
@@ -562,14 +563,14 @@ export function ProfileTienda() {
 
           {/* Descripción */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1 tracking-wide">Descripción de la tienda</label>
+            <label className="block text-xs text-gray-400 mb-1 tracking-wide">{t("profile.tienda.storeinfo.form.desc")}</label>
             {editing ? (
               <textarea
                 name="description"
                 value={form.description}
                 onChange={handleChange}
                 rows={3}
-                placeholder="Cuéntale a tus clientes sobre tu tienda..."
+                placeholder={t("profile.tienda.storeinfo.form.desc.placeholder")}
                 className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 bg-white transition-colors resize-none"
               />
             ) : (
@@ -581,21 +582,21 @@ export function ProfileTienda() {
 
           {/* Contacto */}
           <div>
-            <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">Contacto de la tienda</p>
+            <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">{t("profile.tienda.storeinfo.form.contact")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <SField label="Teléfono" icon={Phone} name="phone" value={form.phone} placeholder="+56 9 0000 0000" editing={editing} onChange={handleChange as any} />
-              <SField label="Email de la tienda" icon={Mail} name="email" type="email" value={form.email} placeholder="ventas@mitienda.com" editing={editing} onChange={handleChange as any} />
-              <SField label="Sitio web" icon={Globe} name="website" value={form.website} placeholder="https://mitienda.com" editing={editing} onChange={handleChange as any} />
+              <SField label={t("profile.tienda.storeinfo.form.phone")} icon={Phone} name="phone" value={form.phone} placeholder={t("profile.tienda.storeinfo.form.phone.placeholder")} editing={editing} onChange={handleChange as any} />
+              <SField label={t("profile.tienda.storeinfo.form.email")} icon={Mail} name="email" type="email" value={form.email} placeholder={t("profile.tienda.storeinfo.form.email.placeholder")} editing={editing} onChange={handleChange as any} />
+              <SField label={t("profile.tienda.storeinfo.form.website")} icon={Globe} name="website" value={form.website} placeholder={t("profile.tienda.storeinfo.form.website.placeholder")} editing={editing} onChange={handleChange as any} />
             </div>
           </div>
 
           {/* Redes sociales */}
           <div>
-            <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">Redes sociales</p>
+            <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">{t("profile.tienda.storeinfo.form.social")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <SField label="Instagram" icon={Instagram} name="instagram" value={form.instagram} placeholder="@mitienda" editing={editing} onChange={handleChange as any} />
-              <SField label="Facebook" icon={Facebook} name="facebook" value={form.facebook} placeholder="mitienda" editing={editing} onChange={handleChange as any} />
-              <SField label="TikTok" icon={ExternalLink} name="tiktok" value={form.tiktok} placeholder="@mitienda" editing={editing} onChange={handleChange as any} />
+              <SField label={t("profile.tienda.storeinfo.form.instagram")} icon={Instagram} name="instagram" value={form.instagram} placeholder={t("profile.tienda.storeinfo.form.instagram.placeholder")} editing={editing} onChange={handleChange as any} />
+              <SField label={t("profile.tienda.storeinfo.form.facebook")} icon={Facebook} name="facebook" value={form.facebook} placeholder={t("profile.tienda.storeinfo.form.facebook.placeholder")} editing={editing} onChange={handleChange as any} />
+              <SField label={t("profile.tienda.storeinfo.form.tiktok")} icon={ExternalLink} name="tiktok" value={form.tiktok} placeholder={t("profile.tienda.storeinfo.form.tiktok.placeholder")} editing={editing} onChange={handleChange as any} />
             </div>
           </div>
         </div>
@@ -605,8 +606,8 @@ export function ProfileTienda() {
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
           <div>
-            <h2 className="text-base text-gray-900">Políticas de la tienda</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Visibles para los compradores en tu página de tienda</p>
+            <h2 className="text-base text-gray-900">{t("profile.tienda.policies.title")}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{t("profile.tienda.policies.subtitle")}</p>
           </div>
           {!editing && (
             <button
@@ -614,7 +615,7 @@ export function ProfileTienda() {
               className="inline-flex items-center gap-2 text-sm text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all"
             >
               <Pencil className="w-4 h-4" strokeWidth={1.5} />
-              Editar
+              {t("profile.tienda.storeinfo.button.edit")}
             </button>
           )}
         </div>
@@ -623,7 +624,7 @@ export function ProfileTienda() {
           <div>
             <label className="flex items-center gap-2 text-xs text-gray-400 mb-1 tracking-wide">
               <Truck className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Política de envíos
+              {t("profile.tienda.policies.shipping")}
             </label>
             {editing ? (
               <textarea
@@ -644,7 +645,7 @@ export function ProfileTienda() {
           <div>
             <label className="flex items-center gap-2 text-xs text-gray-400 mb-1 tracking-wide">
               <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Política de devoluciones
+              {t("profile.tienda.policies.returns")}
             </label>
             {editing ? (
               <textarea
@@ -666,45 +667,45 @@ export function ProfileTienda() {
       {/* ── Card: Estado de la tienda ──────────────────────────── */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100">
-          <h2 className="text-base text-gray-900">Estado de la tienda</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Visibilidad actual en el marketplace NX036</p>
+          <h2 className="text-base text-gray-900">{t("profile.tienda.storeinfo.status")}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{t("profile.tienda.status.subtitle")}</p>
         </div>
         <div className="px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
           <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm ${status.bg} ${status.color} ${status.border}`}>
             <StatusIcon className="w-4 h-4" strokeWidth={1.5} />
-            {status.label}
+            {t(status.labelKey)}
           </div>
           <div className="flex-1">
             {user.store.status === "active" && (
               <p className="text-xs text-gray-500 leading-relaxed">
-                Tu tienda está activa y visible para todos los compradores. Los productos publicados aparecen en el catálogo.
+                {t("profile.tienda.status.active.desc")}
               </p>
             )}
             {user.store.status === "pending" && (
               <p className="text-xs text-gray-500 leading-relaxed">
-                Tu solicitud está siendo revisada por el equipo de NX036. Recibirás una notificación en 24–48 horas hábiles.
+                {t("profile.tienda.status.pending.desc")}
               </p>
             )}
             {user.store.status === "draft" && (
               <p className="text-xs text-gray-500 leading-relaxed">
-                Tu tienda está en borrador. Completa la información y envíala a revisión para comenzar a vender.
+                {t("profile.tienda.status.draft.inactive")}
               </p>
             )}
             {user.store.status === "suspended" && (
               <div className="flex items-start gap-2">
                 <AlertCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
                 <p className="text-xs text-red-500 leading-relaxed">
-                  Tu tienda fue suspendida. Contacta a soporte NX036 para conocer los motivos y resolver la situación.
+                  {t("profile.tienda.status.suspended.error")}
                 </p>
               </div>
             )}
           </div>
           {user.store.status === "draft" && (
             <button
-              onClick={() => { updateProfile({ store: { ...user.store, status: "pending" } }); toast.success("Tienda enviada a revisión"); }}
+              onClick={() => { updateProfile({ store: { ...user.store, status: "pending" } }); toast.success(t("profile.tienda.toast.submitted")); }}
               className="text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors flex-shrink-0"
             >
-              Enviar a revisión
+              {t("profile.tienda.status.button.submit")}
             </button>
           )}
         </div>

@@ -3,7 +3,7 @@ import {
     Search, Plus, Trash2, Eye, X, Check, Pencil,
     Package, ChevronDown, Filter, ArrowUpDown,
     AlertTriangle, Loader2,
-    RefreshCw, Copy, Upload, Compass, Database,
+    RefreshCw, Copy, Upload, Compass, Database, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Pagination } from "../../components/admin/Pagination";
@@ -14,10 +14,14 @@ import { useCurrency } from "../../context/CurrencyContext";
 import {
     nexaProductAdminRepository,
     loadDiscoverState,
+    clearDiscoverState,
+    loadSyncState,
+    clearSyncState,
     type AdminProduct,
     type ProductPayload,
     type AdminProductQuery,
     type DiscoverProgress,
+    type SyncProgress,
 } from "../../repositories/NexaProductAdminRepository";
 import {
     nexaCategoryPagedRepository,
@@ -179,6 +183,51 @@ export function AdminProducts() {
         }
     }
 
+    async function runSync(
+        forceOverwrite: boolean,
+        categoryIds: string[],
+        startPage = 1,
+        accCreated = 0,
+        accUpdated = 0,
+        accSkipped = 0,
+    ) {
+        setSyncing(true);
+        const catMsg = categoryIds.length > 0 ? ` (categorías: ${categoryIds.join(", ")})` : "";
+        toast.loading(
+            `Sincronizando productos${catMsg}…  ${accCreated} creados, ${accUpdated} actualizados.`,
+            { id: "sync-progress", duration: Infinity },
+        );
+        try {
+            const result = await nexaProductAdminRepository.syncProducts(
+                forceOverwrite, categoryIds, startPage, accCreated, accUpdated, accSkipped,
+                (progress: SyncProgress) => {
+                    // The backend doesn't tell us the total pages in advance, but
+                    // every page of 100 products is a clear milestone — show the
+                    // running counters so the admin sees something is happening.
+                    const processed = progress.created + progress.updated + progress.skipped;
+                    toast.loading(
+                        `Sincronizando productos${catMsg} — página ${progress.page}`
+                        + `  •  ${progress.created} creados, ${progress.updated} actualizados`
+                        + (progress.skipped > 0 ? `, ${progress.skipped} sin cambios` : "")
+                        + `  (${processed} procesados)`,
+                        { id: "sync-progress", duration: Infinity },
+                    );
+                },
+            );
+            toast.dismiss("sync-progress");
+            const skippedMsg = result.skipped > 0 ? `, ${result.skipped} sin cambios` : "";
+            toast.success(
+                `Sincronización completada${catMsg}: ${result.created} creados, ${result.updated} actualizados${skippedMsg} (${result.total} total)`
+            );
+            refetch();
+        } catch (err) {
+            toast.dismiss("sync-progress");
+            toast.error(err instanceof Error ? err.message : "Error al sincronizar productos");
+        } finally {
+            setSyncing(false);
+        }
+    }
+
     async function handleSync() {
         // If already syncing → stop it
         if (syncing) {
@@ -211,21 +260,38 @@ export function AdminProducts() {
             "• Cancelar → Solo actualiza los campos que hayan cambiado (más rápido)"
         );
 
-        setSyncing(true);
-        try {
-            const result = await nexaProductAdminRepository.syncProducts(forceOverwrite, categoryIds);
-            const skippedMsg = result.skipped > 0 ? `, ${result.skipped} sin cambios` : "";
-            const catMsg = categoryIds.length > 0 ? ` (categorías: ${categoryIds.join(", ")})` : "";
-            toast.success(
-                `Sincronización completada${catMsg}: ${result.created} creados, ${result.updated} actualizados${skippedMsg} (${result.total} total)`
-            );
-            refetch();
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : "Error al sincronizar productos");
-        } finally {
-            setSyncing(false);
-        }
+        await runSync(forceOverwrite, categoryIds);
     }
+
+    // ── Auto-resume product sync after a reload / re-auth ──────────────
+    // A JWT expiry mid-sync sends the user through OAuth again; after
+    // returning they land here. Pick up from the next unfinished page so
+    // the admin doesn't have to press Sync again and reprocess categories
+    // that already completed.
+    useEffect(() => {
+        const saved = loadSyncState();
+        if (!saved) return;
+
+        if (saved.running) {
+            const catMsg = saved.categoryIds.length > 0
+                ? ` (categorías: ${saved.categoryIds.join(", ")})`
+                : "";
+            toast.info(
+                `Reanudando sincronización${catMsg} desde página ${saved.nextPage} — ${saved.totalCreated} creados, ${saved.totalUpdated} actualizados hasta ahora.`,
+                { duration: 6000 },
+            );
+            runSync(
+                saved.forceOverwrite, saved.categoryIds,
+                saved.nextPage, saved.totalCreated, saved.totalUpdated, saved.totalSkipped,
+            );
+        } else {
+            toast.info(
+                `Sincronización interrumpida en página ${saved.nextPage} — ${saved.totalCreated} creados, ${saved.totalUpdated} actualizados. Pulsa Sync para reanudar.`,
+                { duration: 8000, action: { label: "Descartar", onClick: () => clearSyncState() } },
+            );
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // ── Auto-resume discover after page refresh ──────────────
     useEffect(() => {
@@ -243,10 +309,11 @@ export function AdminProducts() {
             setDiscovering(true);
             runDiscover(saved.offset, saved.created, saved.updated);
         } else {
-            // Cancelled or errored — show info about partial progress
+            // Errored (explicit cancel wipes state in the repo) — offer resume
+            // or a one-click discard so the toast doesn't linger on remount.
             toast.info(
                 `Descubrimiento interrumpido: categoría ${saved.offset}/${saved.totalCategories} — ${saved.created} nuevos, ${saved.updated} actualizados. Pulsa ▶ para reanudar.`,
-                { duration: 8000 },
+                { duration: 8000, action: { label: "Descartar", onClick: () => clearDiscoverState() } },
             );
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -338,6 +405,33 @@ export function AdminProducts() {
             toast.error(err instanceof Error ? err.message : `Error al reindexar (${label})`);
         } finally {
             setReindexing(false);
+        }
+    }
+
+    const [publishingDrafts, setPublishingDrafts] = useState(false);
+
+    async function handlePublishAllDrafts() {
+        if (publishingDrafts) return;
+        const ok = window.confirm(
+            "¿Publicar todos los productos en estado BORRADOR?\n\n" +
+            "La acción se aplica al catálogo completo. Los productos pasarán a PUBLISHED y quedarán visibles en la tienda.",
+        );
+        if (!ok) return;
+        setPublishingDrafts(true);
+        const toastId = "publish-all-drafts";
+        toast.loading("Publicando borradores…", { id: toastId, duration: Infinity });
+        try {
+            const count = await nexaProductAdminRepository.publishAllDrafts();
+            toast.dismiss(toastId);
+            toast.success(
+                count > 0 ? `${count} productos publicados` : "No hay productos en borrador",
+            );
+            refetch();
+        } catch (err) {
+            toast.dismiss(toastId);
+            toast.error(err instanceof Error ? err.message : "Error al publicar borradores");
+        } finally {
+            setPublishingDrafts(false);
         }
     }
 
@@ -518,6 +612,16 @@ export function AdminProducts() {
                             </div>
                         )}
                     </div>
+                    <button
+                        onClick={handlePublishAllDrafts}
+                        disabled={publishingDrafts}
+                        className="w-9 h-9 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-emerald-50 hover:text-emerald-600 hover:border-emerald-200 transition-all flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Publicar todos los borradores"
+                    >
+                        {publishingDrafts
+                            ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                            : <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />}
+                    </button>
                     <button
                         onClick={() => setShowBulk(true)}
                         className="w-9 h-9 bg-white border border-gray-200 text-gray-500 rounded-full hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 transition-all flex items-center justify-center"
@@ -824,6 +928,26 @@ export function AdminProducts() {
                                             onClick={() => handleTogglePublish(p.id)}
                                             loading={togglingId === p.id}
                                         />
+                                        {p.availableLocales && p.availableLocales.length > 0 && (
+                                            <span className="inline-flex items-center gap-1">
+                                                {p.availableLocales.map(loc => {
+                                                    const isCurrent = loc === apiLocale;
+                                                    return (
+                                                        <span
+                                                            key={loc}
+                                                            title={isCurrent ? `Idioma actual (${loc})` : `Traducción disponible: ${loc}`}
+                                                            className={`text-[9px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-full border ${
+                                                                isCurrent
+                                                                    ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                                                    : "bg-gray-50 text-gray-500 border-gray-200"
+                                                            }`}
+                                                        >
+                                                            {loc}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="text-[11px] text-gray-400 mt-0.5 truncate flex items-center gap-1">
                                         {p.sku && <><span className="font-mono">{p.sku}</span> · </>}

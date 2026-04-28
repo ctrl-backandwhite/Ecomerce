@@ -175,6 +175,44 @@ function StepBar({ step }: { step: Step }) {
 const inp = "w-full h-9 px-3 text-sm border border-gray-200 rounded-xl bg-white focus:outline-none focus:border-gray-500 transition-colors placeholder:text-gray-300";
 const lbl = "block text-xs text-gray-500 mb-1.5";
 
+// ── Scheduled countdown ───────────────────────────────────────────────────────
+/**
+ * Returns a short human-readable remaining time, or null when the instant has
+ * already passed. Drops zero-valued leading units so "3d 4h", "2h 15m", "30s"
+ * all read naturally.
+ */
+function formatCountdown(target: Date, now: Date = new Date()): string | null {
+  const diffMs = target.getTime() - now.getTime();
+  if (diffMs <= 0) return null;
+  const totalSec = Math.floor(diffMs / 1000);
+  const d = Math.floor(totalSec / 86400);
+  const h = Math.floor((totalSec % 86400) / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  if (d > 0) return `${d}d ${h}h ${m}m`;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+/**
+ * Live ticking countdown. Updates every second while under an hour out and
+ * every minute after that to stay light on re-renders.
+ */
+function Countdown({ target }: { target: string | Date }) {
+  const [, forceRender] = useState(0);
+  const targetDate = target instanceof Date ? target : new Date(target);
+  useEffect(() => {
+    const remainingMs = targetDate.getTime() - Date.now();
+    const interval = remainingMs < 3_600_000 ? 1_000 : 60_000;
+    const id = setInterval(() => forceRender(x => x + 1), interval);
+    return () => clearInterval(id);
+  }, [targetDate]);
+  const text = formatCountdown(targetDate);
+  if (!text) return <span>enviando ahora…</span>;
+  return <span>en {text}</span>;
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function GiftCardPurchase() {
   return (
@@ -186,7 +224,7 @@ export function GiftCardPurchase() {
 
 function GiftCardPurchaseInner() {
   const { isAuthenticated, login } = useAuth();
-  const { user } = useUser();
+  const { user, removePaymentMethod } = useUser();
   const { formatPrice } = useCurrency();
   const { t } = useLanguage();
   const stripe = useStripe();
@@ -307,39 +345,56 @@ function GiftCardPurchaseInner() {
         stripePaymentMethodId = selectedPm.stripePaymentMethodId;
       }
 
-      // 2) Create the gift card on the backend
+      // 2) Charge the buyer via the payment service FIRST so we never issue a
+      //    gift card that wasn't paid for. On failure we surface a clear error
+      //    and stay on the payment step so the user can retry.
+      const payment = await paymentRepository.processPayment({
+        orderId: `gc-${Date.now()}`,
+        userId: user.id,
+        email: user.email || form.toEmail,
+        amount: effectiveAmount,
+        currency: "USD",
+        paymentMethod: "CARD",
+        stripePaymentMethodId: stripePaymentMethodId ?? undefined,
+      });
+
+      if (payment.status !== "COMPLETED") {
+        const reason = payment.errorMessage || "El pago fue rechazado por la pasarela";
+        toast.error(reason);
+        return;
+      }
+
+      // 3) Payment succeeded — now create the gift card. The Kafka event that
+      //    fires will also trigger the fiscal invoice and delivery email.
+      const scheduled = !form.sendNow && form.scheduledDate
+        ? new Date(form.scheduledDate)
+        : null;
       const result = await giftCardRepository.purchase({
         designId: form.design.id,
         amount: effectiveAmount,
         recipientName: form.toName,
         recipientEmail: form.toEmail,
         message: form.message || undefined,
-        sendDate: !form.sendNow && form.scheduledDate
-          ? form.scheduledDate.slice(0, 10)
-          : undefined,
+        sendDate: scheduled ? form.scheduledDate.slice(0, 10) : undefined,
+        sendAt: scheduled ? scheduled.toISOString() : undefined,
       });
-
-      // 3) Charge the buyer via the payment service. Failures are logged but do
-      //    NOT roll back the gift card creation — the gift card is still issued
-      //    and visible in the user's profile.
-      try {
-        await paymentRepository.processPayment({
-          orderId: result.id,
-          userId: user.id,
-          email: user.email,
-          amount: effectiveAmount,
-          currency: "USD",
-          paymentMethod: "CARD",
-          stripePaymentMethodId: stripePaymentMethodId ?? undefined,
-        });
-      } catch (payErr) {
-        logger.warn("[GiftCard] payment processing failed (gift card still issued)", payErr);
-      }
 
       setGeneratedCode(result.code);
       setStep(4);
-      toast.success("¡Pago completado! Tarjeta enviada correctamente");
+      toast.success(form.sendNow
+          ? "¡Pago completado! Tarjeta enviada correctamente"
+          : "¡Pago completado! La tarjeta se enviará en la fecha seleccionada");
     } catch (err) {
+      logger.error("[GiftCard] purchase failed", err);
+      // The saved card is permanently unusable for Stripe. Drop it from the
+      // profile, switch the UI to the "new card" flow, and tell the user.
+      const backendCode = (err as { backendCode?: string })?.backendCode;
+      if (backendCode === "PA009" && selectedPm?.id) {
+        try { await removePaymentMethod(selectedPm.id); } catch (rmErr) { logger.warn("Could not drop PM", rmErr); }
+        setSelectedPmId("new");
+        toast.error("La tarjeta guardada ya no es válida. Ingresa una nueva.");
+        return;
+      }
       toast.error(err instanceof Error ? err.message : "Error al procesar el pago");
     } finally {
       setIsPaying(false);
@@ -588,6 +643,12 @@ function GiftCardPurchaseInner() {
                       value={form.scheduledDate}
                       onChange={e => set("scheduledDate", e.target.value)}
                     />
+                    {form.scheduledDate && (
+                      <p className="mt-2 text-[11px] text-indigo-600 flex items-center gap-1.5">
+                        <Clock className="w-3 h-3" strokeWidth={1.5} />
+                        Se enviará <Countdown target={new Date(form.scheduledDate)} />
+                      </p>
+                    )}
                   </div>
                 )}
               </div>

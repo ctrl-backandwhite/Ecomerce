@@ -2,6 +2,7 @@ import { ShoppingCart, Menu, X, Heart, User, LogOut, LogIn, LayoutDashboard, Gif
 import { Link, useNavigate, useLocation } from "react-router";
 import { urls } from "../lib/urls";
 import { useCart } from "../context/CartContext";
+import { useUser } from "../context/UserContext";
 import { useAuth } from "../context/AuthContext";
 import { useLanguage } from "../context/LanguageContext";
 import { useTimezone } from "../context/TimezoneContext";
@@ -11,6 +12,8 @@ import { SearchAutocomplete } from "./SearchAutocomplete";
 
 export function Header() {
   const { getTotalItems } = useCart();
+  const { user } = useUser();
+  const favoritesCount = user?.favoriteIds.length ?? 0;
   const { isAuthenticated, login, logout, user: authUser, roles } = useAuth();
   const isAdmin = roles.includes("ROLE_ADMIN");
   const { t } = useLanguage();
@@ -70,11 +73,13 @@ export function Header() {
         {/* Main header bar */}
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gray-500 rounded hidden sm:flex items-center justify-center">
-              <ShoppingCart className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl tracking-tight">NX036</span>
+          <Link to="/" className="flex items-center" aria-label="NX036">
+            <img
+              src="/nx036-logo.svg"
+              alt="NX036"
+              className="h-10 w-auto flex-shrink-0"
+              loading="eager"
+            />
           </Link>
 
           {/* Desktop Search */}
@@ -88,8 +93,13 @@ export function Header() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/account?tab=favorites" className="p-2 text-gray-700 hover:text-gray-900 transition-colors" title={t("nav.favorites")}>
+            <Link to="/account?tab=favorites" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors" title={t("nav.favorites")}>
               <Heart className="w-5 h-5" />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                  {favoritesCount}
+                </span>
+              )}
             </Link>
 
             <Link to="/cart" className="relative p-2 text-gray-700 hover:text-gray-900 transition-colors">

@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { useCart } from "../../../context/CartContext";
 import { useUser } from "../../../context/UserContext";
 import { useCurrency } from "../../../context/CurrencyContext";
+import { useLanguage } from "../../../context/LanguageContext";
 import { useStripe, useElements, CardNumberElement } from "@stripe/react-stripe-js";
 import { orderRepository } from "../../../repositories/OrderRepository";
 import { paymentRepository } from "../../../repositories/PaymentRepository";
@@ -24,6 +25,7 @@ export function useCheckoutSubmit(
     const { items } = useCart();
     const { user } = useUser();
     const { currency } = useCurrency();
+    const { locale } = useLanguage();
     const stripe = useStripe();
     const elements = useElements();
 
@@ -48,7 +50,9 @@ export function useCheckoutSubmit(
         const shipping = selectedShipping?.price ?? (state.shippingOptions[0]?.price ?? 0);
         // Mirror the order service default (10 %) when no tax data is available
         // so the client charges the same total the backend will compute.
-        const tax = state.taxCalc?.taxAmount ?? +(subtotal * 0.10).toFixed(2);
+        // Treat 0 (no tax rules configured) as "missing" and apply the fallback.
+        const backendTax = state.taxCalc?.taxAmount ?? 0;
+        const tax = backendTax > 0 ? backendTax : +(subtotal * 0.10).toFixed(2);
         const couponDiscount = couponResult?.valid ? (couponResult.discount ?? 0) : 0;
         const loyaltyDiscount = loyaltyRate > 0 ? loyaltyPoints / loyaltyRate : 0;
 
@@ -78,7 +82,11 @@ export function useCheckoutSubmit(
                 : payMethod === "card"
                     ? !!(state.stripeElementsComplete.number && state.stripeElementsComplete.expiry && state.stripeElementsComplete.cvc && state.payment.cardName)
                     : payMethod === "paypal"
-                        ? !!state.paypalEmail
+                        // PayPal email is optional — the buyer logs in at
+                        // sandbox.paypal.com during approve. Typing it is only
+                        // useful if they tick "save for future" to get the
+                        // method listed in their saved methods dropdown.
+                        ? true
                         : true;
 
         if (!step1Valid || !step2Valid || !step3Valid) {
@@ -203,6 +211,7 @@ export function useCheckoutSubmit(
                 loyaltyPointsUsed: loyaltyPoints > 0 ? loyaltyPoints : undefined,
                 loyaltyDiscount: loyaltyDiscount > 0 ? loyaltyDiscount : undefined,
                 currencyCode: userCurrency,
+                customerLocale: locale,
                 notes: undefined,
             });
             // Use the backend's authoritative totals (tax/shipping/total) so the
@@ -272,6 +281,36 @@ export function useCheckoutSubmit(
                             stripeCardExpYear = paymentMethod.card?.exp_year ?? null;
                             logger.info("[Checkout] Card tokenized successfully", { paymentMethodId: stripePaymentMethodId });
                         }
+                    }
+
+                    // PayPal requires buyer approval on sandbox.paypal.com, so
+                    // branch off here: stash the checkout context in sessionStorage
+                    // and redirect to PayPal's approve URL. The PayPalReturnPage
+                    // finishes the capture + confirm flow when the buyer comes back.
+                    if (activeType === "paypal") {
+                        const init = await paymentRepository.initiatePayPal({
+                            orderId: order.id,
+                            userId: user.id,
+                            email: contact.email || user.email,
+                            amount: order.total,
+                            currency: order.currencyCode ?? userCurrency,
+                            paymentMethod: "PAYPAL",
+                        });
+                        sessionStorage.setItem("nx036_paypal_pending", JSON.stringify({
+                            paymentId: init.paymentId,
+                            paypalOrderId: init.paypalOrderId,
+                            orderId: order.id,
+                            loyaltyPoints,
+                            gcAmounts,
+                            saveNewPaymentMethod: state.saveNewPaymentMethod,
+                            paypalEmail: state.paypalEmail,
+                            selectedPmId,
+                        }));
+                        if (init.approveUrl) {
+                            window.location.href = init.approveUrl;
+                            return;
+                        }
+                        throw new Error("PayPal no devolvió una URL de aprobación");
                     }
 
                     await paymentRepository.processPayment({

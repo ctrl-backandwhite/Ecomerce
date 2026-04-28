@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { profileRepository } from "../../repositories/ProfileRepository";
 import type { UserSessionInfo } from "../../repositories/ProfileRepository";
 import { ApiError } from "../../lib/AppError";
+import { useLanguage } from "../../context/LanguageContext";
 
 import { logger } from "../../lib/logger";
 
@@ -51,27 +52,32 @@ function PwField({
 
 const PW_CHANGED_KEY = "nexa-pw-changed-at";
 
-function getPwChangedLabel(): string {
+function getPwChangedLabel(t: (k: string) => string): string {
   const raw = localStorage.getItem(PW_CHANGED_KEY);
   if (!raw) return "";
   const ms = Date.now() - new Date(raw).getTime();
   const mins = Math.floor(ms / 60000);
-  if (mins < 1) return "Ahora mismo";
-  if (mins < 60) return `Hace ${mins} min`;
+  if (mins < 1) return t("profile.seguridad.password.lastupdate.now");
+  if (mins < 60) return t("profile.seguridad.time.minutes_ago").replace("{n}", String(mins));
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `Hace ${hours}h`;
+  if (hours < 24) return t("profile.seguridad.time.hours_ago").replace("{n}", String(hours));
   const days = Math.floor(hours / 24);
-  if (days < 30) return `Hace ${days} día${days > 1 ? "s" : ""}`;
+  if (days < 30) return days === 1
+    ? t("profile.seguridad.time.days_ago.one")
+    : t("profile.seguridad.time.days_ago.other").replace("{n}", String(days));
   const months = Math.floor(days / 30);
-  return `Hace ${months} mes${months > 1 ? "es" : ""}`;
+  return months === 1
+    ? t("profile.seguridad.time.months_ago.one")
+    : t("profile.seguridad.time.months_ago.other").replace("{n}", String(months));
 }
 
 export function ProfileSeguridad() {
+  const { t } = useLanguage();
   const { user, saveNotificationPrefs } = useUser();
   const { user: authUser } = useAuth();
   const [notif, setNotif] = useState(user.notifications);
   const [savingNotif, setSavingNotif] = useState(false);
-  const [pwChangedLabel, setPwChangedLabel] = useState(getPwChangedLabel);
+  const [pwChangedLabel, setPwChangedLabel] = useState(() => getPwChangedLabel(t));
 
   // Sync local toggle state when user data loads from API
   useEffect(() => {
@@ -165,9 +171,9 @@ export function ProfileSeguridad() {
 
   // Step 1: Request password change
   const handlePwRequest = async () => {
-    if (pwForm.next.length < 8) { setPwError("La contraseña debe tener al menos 8 caracteres"); return; }
-    if (pwForm.next !== pwForm.confirm) { setPwError("Las contraseñas no coinciden"); return; }
-    if (!pwForm.current) { setPwError("Ingresa tu contraseña actual"); return; }
+    if (pwForm.next.length < 8) { setPwError(t("profile.seguridad.password.validation.min")); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwError(t("profile.seguridad.password.validation.match")); return; }
+    if (!pwForm.current) { setPwError(t("profile.seguridad.password.validation.current")); return; }
     setPwError("");
     setPwLoading(true);
 
@@ -179,9 +185,9 @@ export function ProfileSeguridad() {
       });
       setPwStep("code");
       startCountdown();
-      toast.info("Se envió un código de verificación a tu correo");
+      toast.info(t("profile.seguridad.password.info"));
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Error al solicitar el cambio";
+      const msg = err instanceof ApiError ? err.message : t("profile.seguridad.password.error.request");
       setPwError(msg);
     } finally {
       setPwLoading(false);
@@ -191,16 +197,16 @@ export function ProfileSeguridad() {
   // Step 2: Confirm with code
   const handleCodeConfirm = async () => {
     const code = codeDigits.join("");
-    if (code.length !== 6) { setPwError("Ingresa los 6 dígitos del código"); return; }
+    if (code.length !== 6) { setPwError(t("profile.seguridad.password.validation.code")); return; }
     setPwError("");
     setPwLoading(true);
 
     try {
       await profileRepository.confirmPasswordChange({ code });
       localStorage.setItem(PW_CHANGED_KEY, new Date().toISOString());
-      setPwChangedLabel(getPwChangedLabel());
+      setPwChangedLabel(getPwChangedLabel(t));
       setPwStep("success");
-      toast.success("Contraseña actualizada correctamente");
+      toast.success(t("profile.seguridad.password.success"));
       // Reset everything after short delay
       setTimeout(() => {
         setPwStep("form");
@@ -209,7 +215,7 @@ export function ProfileSeguridad() {
         setSecondsLeft(0);
       }, 2000);
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Código inválido o expirado";
+      const msg = err instanceof ApiError ? err.message : t("profile.seguridad.password.error");
       setPwError(msg);
     } finally {
       setPwLoading(false);
@@ -262,9 +268,9 @@ export function ProfileSeguridad() {
       await profileRepository.requestSessionRevoke({ sessionId });
       setSessionStep("code");
       startSessionCountdown();
-      toast.info("Se envió un código de verificación a tu correo");
+      toast.info(t("profile.seguridad.password.info"));
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Error al solicitar el cierre de sesión";
+      const msg = err instanceof ApiError ? err.message : t("profile.seguridad.sessions.error.request");
       setSessionError(msg);
     } finally {
       setSessionLoading(false);
@@ -273,13 +279,13 @@ export function ProfileSeguridad() {
 
   const handleSessionCodeConfirm = async () => {
     const code = sessionCodeDigits.join("");
-    if (code.length !== 6) { setSessionError("Ingresa los 6 dígitos del código"); return; }
+    if (code.length !== 6) { setSessionError(t("profile.seguridad.password.validation.code")); return; }
     setSessionError("");
     setSessionLoading(true);
     try {
       await profileRepository.confirmSessionRevoke({ code });
       setSessionStep("success");
-      toast.success("Sesión cerrada correctamente");
+      toast.success(t("profile.seguridad.sessions.toast.success"));
       // Refresh sessions list and reset after delay
       setTimeout(() => {
         setSessionStep("list");
@@ -289,7 +295,7 @@ export function ProfileSeguridad() {
         fetchSessions();
       }, 2000);
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Código inválido o expirado";
+      const msg = err instanceof ApiError ? err.message : t("profile.seguridad.password.error");
       setSessionError(msg);
     } finally {
       setSessionLoading(false);
@@ -335,23 +341,27 @@ export function ProfileSeguridad() {
     const date = new Date(dateStr).getTime();
     const diff = now - date;
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "Ahora mismo";
-    if (mins < 60) return `Hace ${mins} min`;
+    if (mins < 1) return t("profile.seguridad.password.lastupdate.now");
+    if (mins < 60) return t("profile.seguridad.time.minutes_ago").replace("{n}", String(mins));
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `Hace ${hours}h`;
+    if (hours < 24) return t("profile.seguridad.time.hours_ago").replace("{n}", String(hours));
     const days = Math.floor(hours / 24);
-    if (days < 30) return `Hace ${days} día${days > 1 ? "s" : ""}`;
+    if (days < 30) return days === 1
+      ? t("profile.seguridad.time.days_ago.one")
+      : t("profile.seguridad.time.days_ago.other").replace("{n}", String(days));
     const months = Math.floor(days / 30);
-    return `Hace ${months} mes${months > 1 ? "es" : ""}`;
+    return months === 1
+      ? t("profile.seguridad.time.months_ago.one")
+      : t("profile.seguridad.time.months_ago.other").replace("{n}", String(months));
   };
 
   const handleNotifSave = async () => {
     setSavingNotif(true);
     try {
       await saveNotificationPrefs(notif);
-      toast.success("Preferencias de notificación guardadas");
+      toast.success(t("profile.seguridad.notifications.toast.success"));
     } catch {
-      toast.error("No se pudieron guardar las preferencias");
+      toast.error(t("profile.seguridad.notifications.toast.error"));
     } finally {
       setSavingNotif(false);
     }
@@ -372,10 +382,10 @@ export function ProfileSeguridad() {
   );
 
   const notifItems = [
-    { key: "email" as const, icon: Mail, label: "Correo electrónico", sub: "Recibe actualizaciones por email" },
-    { key: "sms" as const, icon: MessageSquare, label: "SMS", sub: "Notificaciones vía mensaje de texto" },
-    { key: "orderUpdates" as const, icon: ShoppingBag, label: "Estado de pedidos", sub: "Cambios en el estado de tus envíos" },
-    { key: "promotions" as const, icon: Tag, label: "Ofertas y promociones", sub: "Descuentos exclusivos para miembros" },
+    { key: "email" as const, icon: Mail, label: t("profile.seguridad.notifications.email.label"), sub: t("profile.seguridad.notifications.email.sub") },
+    { key: "sms" as const, icon: MessageSquare, label: t("profile.seguridad.notifications.sms.label"), sub: t("profile.seguridad.notifications.sms.sub") },
+    { key: "orderUpdates" as const, icon: ShoppingBag, label: t("profile.seguridad.notifications.orders.label"), sub: t("profile.seguridad.notifications.orders.sub") },
+    { key: "promotions" as const, icon: Tag, label: t("profile.seguridad.notifications.promotions.label"), sub: t("profile.seguridad.notifications.promotions.sub") },
   ];
 
   return (
@@ -389,18 +399,18 @@ export function ProfileSeguridad() {
             <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
               <Shield className="w-4.5 h-4.5 text-gray-600" strokeWidth={1.5} />
             </div>
-            <h2 className="text-base text-gray-900">Cambiar Contraseña</h2>
+            <h2 className="text-base text-gray-900">{t("profile.seguridad.password.title")}</h2>
             {pwChangedLabel && (
-              <p className="text-xs text-gray-400">Última actualización: {pwChangedLabel}</p>
+              <p className="text-xs text-gray-400">{t("profile.seguridad.password.lastupdate")} {pwChangedLabel}</p>
             )}
           </div>
 
           <div className="px-6 py-6 flex justify-center">
             {pwStep === "form" && (
               <div className="max-w-md w-full space-y-4">
-                <PwField label="Contraseña actual" field="current" value={pwForm.current} show={showPw.current} onChange={(v) => setPwForm((f) => ({ ...f, current: v }))} onToggle={() => togglePwVis("current")} />
-                <PwField label="Nueva contraseña" field="next" value={pwForm.next} show={showPw.next} onChange={(v) => setPwForm((f) => ({ ...f, next: v }))} onToggle={() => togglePwVis("next")} />
-                <PwField label="Confirmar contraseña" field="confirm" value={pwForm.confirm} show={showPw.confirm} onChange={(v) => setPwForm((f) => ({ ...f, confirm: v }))} onToggle={() => togglePwVis("confirm")} />
+                <PwField label={t("profile.seguridad.password.field.current")} field="current" value={pwForm.current} show={showPw.current} onChange={(v) => setPwForm((f) => ({ ...f, current: v }))} onToggle={() => togglePwVis("current")} />
+                <PwField label={t("profile.seguridad.password.field.new")} field="next" value={pwForm.next} show={showPw.next} onChange={(v) => setPwForm((f) => ({ ...f, next: v }))} onToggle={() => togglePwVis("next")} />
+                <PwField label={t("profile.seguridad.password.field.confirm")} field="confirm" value={pwForm.confirm} show={showPw.confirm} onChange={(v) => setPwForm((f) => ({ ...f, confirm: v }))} onToggle={() => togglePwVis("confirm")} />
 
                 {pwError && (
                   <p className="text-xs text-red-500 flex items-center gap-1.5">
@@ -430,7 +440,7 @@ export function ProfileSeguridad() {
                       })}
                     </div>
                     <p className="text-xs text-gray-400">
-                      {pwForm.next.length < 6 ? "Muy débil" : pwForm.next.length < 9 ? "Débil" : pwForm.next.length < 12 ? "Moderada" : "Fuerte"}
+                      {pwForm.next.length < 6 ? t("profile.seguridad.password.strength.veryweak") : pwForm.next.length < 9 ? t("profile.seguridad.password.strength.weak") : pwForm.next.length < 12 ? t("profile.seguridad.password.strength.moderate") : t("profile.seguridad.password.strength.strong")}
                     </p>
                   </div>
                 )}
@@ -444,7 +454,7 @@ export function ProfileSeguridad() {
                     ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
                     : <Save className="w-4 h-4" strokeWidth={1.5} />
                   }
-                  {pwLoading ? "Enviando código..." : "Cambiar contraseña"}
+                  {pwLoading ? t("profile.seguridad.password.button.sending") : t("profile.seguridad.password.button")}
                 </button>
               </div>
             )}
@@ -453,10 +463,10 @@ export function ProfileSeguridad() {
               <div className="max-w-md w-full space-y-5 text-center">
                 <div>
                   <p className="text-sm text-gray-600 mb-1">
-                    Ingresa el código de 6 dígitos enviado a tu correo electrónico.
+                    {t("profile.seguridad.password.code.desc")}
                   </p>
                   <p className="text-xs text-gray-400">
-                    El código expira en{" "}
+                    {t("profile.seguridad.password.code.expiry")}{" "}
                     <span className={`font-medium ${secondsLeft <= 30 ? "text-red-500" : "text-gray-600"}`}>
                       {Math.floor(secondsLeft / 60)}:{String(secondsLeft % 60).padStart(2, "0")}
                     </span>
@@ -497,19 +507,19 @@ export function ProfileSeguridad() {
                       ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
                       : <Check className="w-4 h-4" strokeWidth={1.5} />
                     }
-                    {pwLoading ? "Verificando..." : "Confirmar"}
+                    {pwLoading ? t("profile.seguridad.password.code.button.checking") : t("profile.seguridad.password.code.button")}
                   </button>
                   <button
                     onClick={handleBackToForm}
                     className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                   >
-                    Cancelar
+                    {t("profile.seguridad.button.cancel")}
                   </button>
                 </div>
 
                 {secondsLeft === 0 && (
                   <p className="text-xs text-red-500">
-                    El código ha expirado. Vuelve a intentarlo.
+                    {t("profile.seguridad.password.code.expired")}
                   </p>
                 )}
               </div>
@@ -521,8 +531,8 @@ export function ProfileSeguridad() {
                   <Check className="w-5 h-5 text-green-600" strokeWidth={2} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-900 font-medium">Contraseña actualizada</p>
-                  <p className="text-xs text-gray-400">Tu contraseña ha sido cambiada correctamente.</p>
+                  <p className="text-sm text-gray-900 font-medium">{t("profile.seguridad.password.success.title")}</p>
+                  <p className="text-xs text-gray-400">{t("profile.seguridad.password.success.desc")}</p>
                 </div>
               </div>
             )}
@@ -535,7 +545,7 @@ export function ProfileSeguridad() {
             <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center">
               <Bell className="w-4.5 h-4.5 text-gray-600" strokeWidth={1.5} />
             </div>
-            <h2 className="text-base text-gray-900">Notificaciones</h2>
+            <h2 className="text-base text-gray-900">{t("profile.seguridad.notifications.title")}</h2>
           </div>
 
           <div className="px-6 py-6">
@@ -564,7 +574,7 @@ export function ProfileSeguridad() {
               className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-5 py-2.5 hover:bg-gray-300 transition-colors"
             >
               <Save className="w-4 h-4" strokeWidth={1.5} />
-              Guardar preferencias
+              {t("profile.seguridad.notifications.button")}
             </button>
           </div>
         </div>
@@ -574,15 +584,15 @@ export function ProfileSeguridad() {
       {/* ── Sessions ─────────────────────────────────────────────── */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="relative flex flex-col items-center px-6 py-5 border-b border-gray-100">
-          <h2 className="text-base text-gray-900">Sesiones activas</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Dispositivos con sesión iniciada</p>
+          <h2 className="text-base text-gray-900">{t("profile.seguridad.sessions.title")}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{t("profile.seguridad.sessions.subtitle")}</p>
           {sessionStep !== "list" && (
             <button
               onClick={handleSessionBackToList}
               className="absolute right-6 top-1/2 -translate-y-1/2 text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1 transition-colors"
             >
               <X className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Cancelar
+              {t("profile.seguridad.button.cancel")}
             </button>
           )}
         </div>
@@ -596,7 +606,7 @@ export function ProfileSeguridad() {
             ) : sessions.length === 0 ? (
               <div className="px-6 py-8 text-center">
                 <Monitor className="w-8 h-8 text-gray-300 mx-auto mb-2" strokeWidth={1.5} />
-                <p className="text-sm text-gray-400">No hay sesiones activas</p>
+                <p className="text-sm text-gray-400">{t("profile.seguridad.sessions.empty")}</p>
               </div>
             ) : (
               sessions.map((s) => {
@@ -605,15 +615,15 @@ export function ProfileSeguridad() {
                   <div key={s.sessionId} className="flex items-center justify-between px-6 py-4">
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="text-sm text-gray-900">{s.deviceInfo || "Dispositivo desconocido"}</p>
+                        <p className="text-sm text-gray-900">{s.deviceInfo || t("profile.seguridad.sessions.device.unknown")}</p>
                         {isCurrent && (
                           <span className="text-xs text-green-600 bg-green-50 border border-green-100 px-2 py-0.5 rounded-full">
-                            Actual
+                            {t("profile.seguridad.sessions.current")}
                           </span>
                         )}
                       </div>
                       <p className="text-xs text-gray-400">
-                        {s.ipAddress || "IP desconocida"} · {formatRelativeTime(s.createdAt)}
+                        {s.ipAddress || t("profile.seguridad.sessions.ip.unknown")} · {formatRelativeTime(s.createdAt)}
                       </p>
                     </div>
                     {!isCurrent && (
@@ -624,7 +634,7 @@ export function ProfileSeguridad() {
                       >
                         {sessionLoading && sessionToRevoke === s.sessionId
                           ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
-                          : "Cerrar"
+                          : t("profile.seguridad.sessions.revokebutton")
                         }
                       </button>
                     )}
@@ -640,10 +650,10 @@ export function ProfileSeguridad() {
             <div className="max-w-md space-y-5 text-center">
               <div>
                 <p className="text-sm text-gray-600 mb-1">
-                  Ingresa el código de 6 dígitos enviado a tu correo electrónico para cerrar esta sesión.
+                  {t("profile.seguridad.sessions.revoke.desc")}
                 </p>
                 <p className="text-xs text-gray-400">
-                  El código expira en{" "}
+                  {t("profile.seguridad.sessions.revoke.expiry")}{" "}
                   <span className={`font-medium ${sessionSecondsLeft <= 30 ? "text-red-500" : "text-gray-600"}`}>
                     {Math.floor(sessionSecondsLeft / 60)}:{String(sessionSecondsLeft % 60).padStart(2, "0")}
                   </span>
@@ -683,19 +693,19 @@ export function ProfileSeguridad() {
                     ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
                     : <Check className="w-4 h-4" strokeWidth={1.5} />
                   }
-                  {sessionLoading ? "Verificando..." : "Confirmar cierre"}
+                  {sessionLoading ? t("profile.seguridad.sessions.revoke.button.checking") : t("profile.seguridad.sessions.revoke.button")}
                 </button>
                 <button
                   onClick={handleSessionBackToList}
                   className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  Cancelar
+                  {t("profile.seguridad.button.cancel")}
                 </button>
               </div>
 
               {sessionSecondsLeft === 0 && (
                 <p className="text-xs text-red-500">
-                  El código ha expirado. Vuelve a intentarlo.
+                  {t("profile.seguridad.sessions.revoke.expired")}
                 </p>
               )}
             </div>
@@ -709,8 +719,8 @@ export function ProfileSeguridad() {
                 <Check className="w-5 h-5 text-green-600" strokeWidth={2} />
               </div>
               <div>
-                <p className="text-sm text-gray-900 font-medium">Sesión cerrada</p>
-                <p className="text-xs text-gray-400">La sesión ha sido cerrada correctamente.</p>
+                <p className="text-sm text-gray-900 font-medium">{t("profile.seguridad.sessions.success.title")}</p>
+                <p className="text-xs text-gray-400">{t("profile.seguridad.sessions.success.desc")}</p>
               </div>
             </div>
           </div>

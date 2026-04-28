@@ -30,8 +30,12 @@ export interface GiftCardApiDto {
     recipientEmail: string | null;
     message: string | null;
     sendDate: string | null;      // "YYYY-MM-DD"
+    /** Precise delivery instant. ISO-8601; drives the scheduler. */
+    sendAt: string | null;
     expiryDate: string | null;    // "YYYY-MM-DD"
     activatedAt: string | null;
+    /** False while a scheduled card is waiting for its sendDate. */
+    emailSent: boolean;
     createdAt: string;
     updatedAt: string;
 }
@@ -51,6 +55,8 @@ export interface GiftCardPurchasePayload {
     recipientEmail: string;
     message?: string;
     sendDate?: string;     // "YYYY-MM-DD"
+    /** ISO-8601 instant; overrides sendDate when set. Drives the scheduler. */
+    sendAt?: string;
     expiryDate?: string;   // "YYYY-MM-DD"
 }
 
@@ -136,9 +142,19 @@ function statusToFrontend(s: GCApiStatus): "pending" | "active" | "used" | "expi
     return "expired";
 }
 
-function sentStatus(s: GCApiStatus, activatedAt: string | null): "delivered" | "pending" | "redeemed" {
+function sentStatus(s: GCApiStatus, activatedAt: string | null, emailSent: boolean,
+    sendAt: string | null, sendDate: string | null): "delivered" | "scheduled" | "pending" | "redeemed" {
     if (s === "USED") return "redeemed";
     if (activatedAt) return "delivered";
+    // Prefer the precise Instant; fall back to the day-level column for legacy
+    // rows. Still scheduled if the moment is in the future.
+    if (!emailSent) {
+        if (sendAt && new Date(sendAt).getTime() > Date.now()) return "scheduled";
+        if (sendDate) {
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            if (new Date(sendDate) >= today) return "scheduled";
+        }
+    }
     return "pending";
 }
 
@@ -171,7 +187,8 @@ export function toSentGiftCard(dto: GiftCardApiDto): SentGiftCard {
         message: dto.message ?? "",
         sentDate: instantToSlash(dto.createdAt),
         scheduledDate: dto.sendDate ? isoToSlash(dto.sendDate) : undefined,
+        scheduledAt: dto.sendAt ?? undefined,
         designId: dto.designId ?? "classic",
-        status: sentStatus(dto.status, dto.activatedAt),
+        status: sentStatus(dto.status, dto.activatedAt, dto.emailSent, dto.sendAt, dto.sendDate),
     };
 }

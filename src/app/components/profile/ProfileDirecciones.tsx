@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useUser, Address } from "../../context/UserContext";
+import { useLanguage } from "../../context/LanguageContext";
 import {
   MapPin, Plus, Pencil, Trash2, Check, Home, Briefcase,
   Truck, Store, Package2, ChevronRight, Clock, Phone,
@@ -205,6 +206,7 @@ function AddressForm({
   onSave: (data: FormState) => void;
   onCancel: () => void;
 }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState<FormState>(initial);
   const [storeSearch, setStoreSearch] = useState("");
   const [expandedOperator, setExpandedOperator] = useState<string | null>("chilexpress");
@@ -247,7 +249,7 @@ function AddressForm({
       {/* Step 1 – Tipo de entrega */}
       <div className="p-5 border-b border-gray-200">
         <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">
-          1. Tipo de entrega
+          {t("profile.direcciones.form.step1")}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {deliveryTypes.map((dt) => (
@@ -266,9 +268,9 @@ function AddressForm({
               </div>
               <div>
                 <p className={`text-xs mb-0.5 ${form.deliveryType === dt.id ? dt.color : "text-gray-700"}`}>
-                  {dt.label}
+                  {t(dt.labelKey)}
                 </p>
-                <p className="text-[11px] text-gray-400 leading-tight">{dt.sublabel}</p>
+                <p className="text-[11px] text-gray-400 leading-tight">{t(dt.sublabelKey)}</p>
               </div>
             </button>
           ))}
@@ -278,27 +280,27 @@ function AddressForm({
       {/* Step 2 – Etiqueta + nombre */}
       <div className="p-5 border-b border-gray-200">
         <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">
-          2. Identificación
+          {t("profile.direcciones.form.step2")}
         </p>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Etiqueta</label>
+            <label className="block text-xs text-gray-400 mb-1.5">{t("profile.direcciones.field.label")}</label>
             <input
               name="label"
               value={form.label}
               onChange={change}
-              placeholder="Ej: Casa, Trabajo…"
+              placeholder={t("profile.direcciones.field.label.placeholder")}
               className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 bg-white placeholder-gray-300"
             />
           </div>
           {form.deliveryType === "home" && (
             <div>
-              <label className="block text-xs text-gray-400 mb-1.5">Nombre del destinatario</label>
+              <label className="block text-xs text-gray-400 mb-1.5">{t("profile.direcciones.field.recipient")}</label>
               <input
                 name="name"
                 value={form.name}
                 onChange={change}
-                placeholder="Nombre completo"
+                placeholder={t("profile.direcciones.field.recipient.placeholder")}
                 className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 bg-white placeholder-gray-300"
               />
             </div>
@@ -309,7 +311,7 @@ function AddressForm({
       {/* Step 3 – Dirección / Tienda / Punto */}
       <div className="p-5 border-b border-gray-200">
         <p className="text-xs text-gray-400 uppercase tracking-wider mb-3">
-          3. {form.deliveryType === "home" ? "Dirección de envío" : form.deliveryType === "store" ? "Selecciona una tienda NX036" : "Selecciona un punto de entrega"}
+          {form.deliveryType === "home" ? t("profile.direcciones.form.step3") : form.deliveryType === "store" ? t("profile.direcciones.form.step3.store") : t("profile.direcciones.form.step3.pickup")}
         </p>
 
         {/* ── HOME: address fields ── */}
@@ -343,7 +345,7 @@ function AddressForm({
             <div className="flex items-start gap-2 bg-violet-50 border border-violet-100 rounded-lg p-3">
               <Info className="w-3.5 h-3.5 text-violet-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
               <p className="text-xs text-violet-600">
-                Recogida gratuita. Tu pedido estará listo para retirar en un plazo de 24–48 h hábiles tras la confirmación.
+                {t("profile.direcciones.store.info")}
               </p>
             </div>
             {/* Search */}
@@ -352,7 +354,7 @@ function AddressForm({
               <input
                 value={storeSearch}
                 onChange={(e) => setStoreSearch(e.target.value)}
-                placeholder="Buscar tienda o ciudad…"
+                placeholder={t("profile.direcciones.store.search")}
                 className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg pl-9 pr-4 py-2 focus:outline-none focus:border-gray-400 bg-white placeholder-gray-300"
               />
               {storeSearch && (
@@ -364,7 +366,7 @@ function AddressForm({
             {/* Store list */}
             <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
               {filteredStores.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-6">No se encontraron tiendas</p>
+                <p className="text-xs text-gray-400 text-center py-6">{t("profile.direcciones.store.noResults")}</p>
               ) : (
                 filteredStores.map((store) => (
                   <LocationCard
@@ -386,7 +388,7 @@ function AddressForm({
             <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-100 rounded-lg p-3">
               <Info className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
               <p className="text-xs text-emerald-700">
-                Puntos de entrega oficiales asociados a NX036. Recoge con tu RUT y código de pedido.
+                {t("profile.direcciones.pickup.info")}
               </p>
             </div>
 
@@ -440,7 +442,7 @@ function AddressForm({
             onChange={(e) => setForm((f) => ({ ...f, isDefault: e.target.checked }))}
             className="rounded border-gray-300"
           />
-          Establecer como predeterminada
+          {t("profile.direcciones.field.default")}
         </label>
 
         <div className="flex gap-2">
@@ -449,7 +451,7 @@ function AddressForm({
             onClick={onCancel}
             className="text-sm text-gray-500 border border-gray-200 rounded-lg px-4 py-2 hover:bg-white transition-colors"
           >
-            Cancelar
+            {t("profile.direcciones.button.cancel")}
           </button>
           <button
             type="button"
@@ -461,7 +463,7 @@ function AddressForm({
               }`}
           >
             <Check className="w-4 h-4" strokeWidth={1.5} />
-            Guardar
+            {t("profile.direcciones.button.save")}
           </button>
         </div>
       </div>
@@ -481,6 +483,7 @@ function AddressCard({
   onRemove: () => void;
   onSetDefault: () => void;
 }) {
+  const { t } = useLanguage();
   const labelIcon = (label: string) => {
     if (label.toLowerCase() === "casa") return <Home className="w-4 h-4" strokeWidth={1.5} />;
     if (label.toLowerCase() === "trabajo") return <Briefcase className="w-4 h-4" strokeWidth={1.5} />;
@@ -494,10 +497,10 @@ function AddressCard({
       {/* Delivery type badge bar */}
       <div className={`flex items-center gap-2 px-4 py-2 border-b ${addr.isDefault ? "border-gray-200 bg-gray-100" : `border-gray-100 ${dt.bg}`}`}>
         <span className={`${addr.isDefault ? "text-gray-700" : dt.color}`}>{dt.icon}</span>
-        <span className={`text-xs ${addr.isDefault ? "text-gray-700" : dt.color}`}>{dt.label}</span>
+        <span className={`text-xs ${addr.isDefault ? "text-gray-700" : dt.color}`}>{t(dt.labelKey)}</span>
         {addr.isDefault && (
           <span className="ml-auto text-[10px] text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-full">
-            Predeterminada
+            {t("profile.direcciones.badge.default")}
           </span>
         )}
       </div>
@@ -533,7 +536,7 @@ function AddressCard({
             <button
               onClick={onEdit}
               className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              title="Editar"
+              title={t("profile.datos.personal.button.edit")}
             >
               <Pencil className="w-3.5 h-3.5" strokeWidth={1.5} />
             </button>
@@ -541,7 +544,7 @@ function AddressCard({
               <button
                 onClick={onRemove}
                 className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-colors"
-                title="Eliminar"
+                title={t("profile.favoritos.button.remove")}
               >
                 <Trash2 className="w-3.5 h-3.5" strokeWidth={1.5} />
               </button>
@@ -554,7 +557,7 @@ function AddressCard({
             onClick={onSetDefault}
             className="mt-3 text-xs text-gray-400 hover:text-gray-700 transition-colors"
           >
-            Establecer como predeterminada
+            {t("profile.direcciones.field.default")}
           </button>
         )}
       </div>
@@ -565,6 +568,7 @@ function AddressCard({
 /* ── Main component ──────────────────────────────────────── */
 export function ProfileDirecciones() {
   const { user, addAddress, updateAddress, removeAddress, setDefaultAddress } = useUser();
+  const { t } = useLanguage();
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -572,9 +576,9 @@ export function ProfileDirecciones() {
     try {
       await addAddress(form);
       setShowAdd(false);
-      toast.success("Dirección añadida correctamente");
+      toast.success(t("profile.direcciones.toast.added"));
     } catch {
-      toast.error("No se pudo guardar la dirección");
+      toast.error(t("profile.direcciones.toast.add.error"));
     }
   };
 
@@ -582,18 +586,18 @@ export function ProfileDirecciones() {
     try {
       await updateAddress(id, form);
       setEditingId(null);
-      toast.success("Dirección actualizada correctamente");
+      toast.success(t("profile.direcciones.toast.updated"));
     } catch {
-      toast.error("No se pudo actualizar la dirección");
+      toast.error(t("profile.direcciones.toast.update.error"));
     }
   };
 
   const handleRemove = async (id: string) => {
     try {
       await removeAddress(id);
-      toast.success("Dirección eliminada");
+      toast.success(t("profile.direcciones.toast.deleted"));
     } catch {
-      toast.error("No se pudo eliminar la dirección");
+      toast.error(t("profile.direcciones.toast.delete.error"));
     }
   };
 
@@ -602,8 +606,8 @@ export function ProfileDirecciones() {
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
         <div>
-          <h2 className="text-base text-gray-900">Mis Direcciones</h2>
-          <p className="text-xs text-gray-400 mt-0.5">{user.addresses.length} dirección{user.addresses.length !== 1 ? "es" : ""} guardada{user.addresses.length !== 1 ? "s" : ""}</p>
+          <h2 className="text-base text-gray-900">{t("profile.direcciones.title")}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{user.addresses.length === 1 ? t("profile.direcciones.subtitle.one") : `${user.addresses.length} ${t("profile.direcciones.subtitle.other")}`}</p>
         </div>
         {!showAdd && (
           <button
@@ -611,7 +615,7 @@ export function ProfileDirecciones() {
             className="inline-flex items-center gap-2 text-sm text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all"
           >
             <Plus className="w-4 h-4" strokeWidth={1.5} />
-            Nueva dirección
+            {t("profile.direcciones.button.new")}
           </button>
         )}
       </div>
@@ -653,7 +657,7 @@ export function ProfileDirecciones() {
               addr={addr}
               onEdit={() => { setEditingId(addr.id); setShowAdd(false); }}
               onRemove={() => handleRemove(addr.id)}
-              onSetDefault={() => setDefaultAddress(addr.id).then(() => toast.success("Dirección predeterminada actualizada")).catch(() => toast.error("No se pudo actualizar"))}
+              onSetDefault={() => setDefaultAddress(addr.id).then(() => toast.success(t("profile.direcciones.toast.makedefault"))).catch(() => toast.error(t("profile.direcciones.toast.makedefault.error")))}
             />
           )
         )}
@@ -664,13 +668,13 @@ export function ProfileDirecciones() {
             <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
               <MapPin className="w-5 h-5 text-gray-300" strokeWidth={1.5} />
             </div>
-            <p className="text-sm text-gray-500">No tienes direcciones guardadas</p>
+            <p className="text-sm text-gray-500">{t("profile.direcciones.empty.title")}</p>
             <button
               onClick={() => setShowAdd(true)}
               className="mt-4 inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors"
             >
               <Plus className="w-4 h-4" strokeWidth={1.5} />
-              Añadir primera dirección
+              {t("profile.direcciones.empty.button")}
             </button>
           </div>
         )}

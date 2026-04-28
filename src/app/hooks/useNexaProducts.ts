@@ -104,6 +104,13 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
     const categoryMapRef = useRef<Record<string, string>>(cacheValid ? cached.categoryMap : {});
     /** Mirror of `products` state kept synchronously for cache writes. */
     const productsRef = useRef<Product[]>(cacheValid ? cached.products : []);
+    /** Random sort is only honoured on the very first fetch of this mount
+     *  (i.e. a real page reload). Any subsequent fetch — loadMore, currency
+     *  swap, category change — uses a deterministic createdAt order so the
+     *  buyer doesn't lose the shelf they were already browsing. A full page
+     *  reload (F5) remounts the hook and flips this back to false, so each
+     *  fresh visit still sees a new shuffled slice. */
+    const randomInitialDoneRef = useRef(cacheValid);
 
     // ── Fetch a specific page ──────────────────────────────────────────────────
     const fetchPage = useCallback(
@@ -118,13 +125,14 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
 
             try {
                 logger.debug('[useNexaProducts] fetchPage:', { page, append, categoryId, apiLocale });
-                // sortBy=random gives a fresh shuffled slice on page 0.  For
-                // subsequent pages (loadMore) switch to a deterministic sort
-                // (createdAt desc) so pagination returns consistent batches;
-                // the backend still reports the real total so hasMore works.
-                const isRandomInitial = sortBy === "random" && !append;
-                const effectiveSortBy = append && sortBy === "random" ? "createdAt" : sortBy;
-                const requestedSize = isRandomInitial ? PAGE_SIZE * 2 : PAGE_SIZE;
+                // Random only applies to the very first fetch of this mount
+                // (real page reload). Any subsequent fetch — loadMore, currency
+                // swap, category change — is deterministic createdAt so the
+                // buyer keeps their position on the shelf and the scroll batch
+                // follows PAGE_SIZE (25) instead of the 2x random sample.
+                const wantsRandom = sortBy === "random";
+                const isRandomInitial = wantsRandom && !append && !randomInitialDoneRef.current;
+                const effectiveSortBy = (wantsRandom && !isRandomInitial) ? "createdAt" : sortBy;
                 const result = await nexaProductRepository.findMany(
                     {
                         locale: apiLocale,
@@ -132,8 +140,8 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                         name: name || undefined,
                         sortBy: effectiveSortBy || undefined,
                         ascending,
-                        page: isRandomInitial ? 0 : page,
-                        size: requestedSize,
+                        page,
+                        size: PAGE_SIZE,
                     },
                     signal,
                 );
@@ -173,9 +181,22 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
                 setHasMore(nextHasMore);
                 currentPage.current = page;
                 setDataSource("api");
+                // First fetch of this mount is done — freeze random so any
+                // later non-appending fetch (currency swap, re-render) stays
+                // on createdAt until a full page reload remounts the hook.
+                randomInitialDoneRef.current = true;
 
                 // ── Update module-level cache ───────────────────────
-                _cache.set(cacheKey(categoryId, apiLocale, currencyCode), {
+                // Read currency from the same source `authFetch` used (localStorage)
+                // instead of the closure: a `currency:changed` event can fire its
+                // listener inside the same React batch where `currencyCode` (from
+                // useState) is still the previous value. Closure-based key writes
+                // would tag fresh-currency data under the previous-currency key —
+                // poisoning future cache reads on the other currency.
+                const writeCurrency = (typeof window !== "undefined"
+                    ? localStorage.getItem("nexa-currency")
+                    : null) || currencyCode;
+                _cache.set(cacheKey(categoryId, apiLocale, writeCurrency), {
                     products: updatedProducts,
                     totalElements: result.totalElements,
                     currentPage: page,
@@ -205,27 +226,19 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
     );
 
     // ── Initial fetch + re-fetch on locale/category change ────────────────────
-    // Track which cache key was used to initialise state, so we only skip the
-    // very first fetch when the cache genuinely matches the current request.
-    const initialisedFromCacheKey = useRef(cacheValid ? ck : "");
+    // We only refetch from page 0 when the cache key actually changes (locale,
+    // category or currency). Re-renders that leave those invariant — re-running
+    // an identity-shifted useCallback included — must NOT wipe the accumulated
+    // loadMore pages, otherwise the buyer loses their scroll position and the
+    // shelf reshuffles mid-browsing.
+    const lastFetchedKeyRef = useRef(cacheValid ? ck : "");
     useEffect(() => {
-        // If we initialised state from cache on mount, check whether the cached
-        // data still corresponds to the current categoryId + locale.  When the
-        // component mounts with categoryId=undefined (categories not yet loaded)
-        // the cache key is "ALL|<locale>".  Once categories resolve and
-        // categoryId changes, the cache key no longer matches → we must fetch.
-        if (initialisedFromCacheKey.current) {
-            const currentCk = `${categoryId ?? "ALL"}|${apiLocale ?? "en"}|${currencyCode}`;
-            if (initialisedFromCacheKey.current === currentCk) {
-                // Cache matches what we currently need — safe to skip
-                initialisedFromCacheKey.current = "";
-                return;
-            }
-            // Cache was for a different request — fall through to fetch
-            initialisedFromCacheKey.current = "";
+        const currentCk = `${categoryId ?? "ALL"}|${apiLocale ?? "en"}|${currencyCode}`;
+        if (lastFetchedKeyRef.current === currentCk) {
+            return;
         }
+        lastFetchedKeyRef.current = currentCk;
 
-        // Cancel any in-flight request before starting a new one
         abortRef.current?.abort();
         const controller = new AbortController();
         abortRef.current = controller;
@@ -236,7 +249,7 @@ export function useNexaProducts(optsOrCategoryId?: string | UseNexaProductsOptio
         return () => {
             controller.abort();
         };
-    }, [fetchPage]);
+    }, [fetchPage, categoryId, apiLocale, currencyCode]);
 
     // ── Refetch when the user switches currency ───────────────────────────────
     // CurrencyContext emits `currency:changed`; hooks that know how to refetch

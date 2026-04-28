@@ -84,6 +84,7 @@ export interface AdminProduct {
     updatedAt: string | null;
     translations: ProductTranslation[];
     variants: ProductVariant[];
+    availableLocales?: string[];
 }
 
 export interface AdminProductPage {
@@ -147,6 +148,17 @@ export interface DiscoverProgress {
     updated: number;
 }
 
+/** Progress info emitted after every successful sync page */
+export interface SyncProgress {
+    /** Page that just finished (1-based). */
+    page: number;
+    created: number;
+    updated: number;
+    skipped: number;
+    /** Whether the backend says there's another page to fetch. */
+    hasMore: boolean;
+}
+
 /** Persisted discover state so it survives page refreshes */
 export interface DiscoverState {
     running: boolean;
@@ -162,7 +174,7 @@ const DISCOVER_STATE_KEY = "nx036_discover_state";
 function saveDiscoverState(state: DiscoverState): void {
     try { localStorage.setItem(DISCOVER_STATE_KEY, JSON.stringify(state)); } catch { /* quota */ }
 }
-function clearDiscoverState(): void {
+export function clearDiscoverState(): void {
     try { localStorage.removeItem(DISCOVER_STATE_KEY); } catch { /* noop */ }
 }
 export function loadDiscoverState(): DiscoverState | null {
@@ -173,6 +185,43 @@ export function loadDiscoverState(): DiscoverState | null {
         // Expire after 24 hours to avoid stale state
         if (Date.now() - state.startedAt > 24 * 60 * 60 * 1000) {
             clearDiscoverState();
+            return null;
+        }
+        return state;
+    } catch { return null; }
+}
+
+/**
+ * Persisted sync state so a product sync can resume exactly where it left off
+ * when the browser reloads, the JWT expires and the user re-authenticates, or
+ * the user accidentally navigates away. Mirrors the DiscoverState pattern.
+ */
+export interface SyncState {
+    running: boolean;
+    nextPage: number;
+    categoryIds: string[];
+    forceOverwrite: boolean;
+    totalCreated: number;
+    totalUpdated: number;
+    totalSkipped: number;
+    startedAt: number;
+}
+
+const SYNC_STATE_KEY = "nx036_sync_state";
+
+function saveSyncState(state: SyncState): void {
+    try { localStorage.setItem(SYNC_STATE_KEY, JSON.stringify(state)); } catch { /* quota */ }
+}
+export function clearSyncState(): void {
+    try { localStorage.removeItem(SYNC_STATE_KEY); } catch { /* noop */ }
+}
+export function loadSyncState(): SyncState | null {
+    try {
+        const raw = localStorage.getItem(SYNC_STATE_KEY);
+        if (!raw) return null;
+        const state = JSON.parse(raw) as SyncState;
+        if (Date.now() - state.startedAt > 24 * 60 * 60 * 1000) {
+            clearSyncState();
             return null;
         }
         return state;
@@ -196,6 +245,9 @@ class NexaProductAdminRepository {
             if (query.size !== undefined) params.set("size", String(query.size));
             if (query.sortBy) params.set("sortBy", query.sortBy);
             if (query.ascending !== undefined) params.set("ascending", String(query.ascending));
+            // Admin panel must see products in every status. The backend
+            // defaults to Elasticsearch (PUBLISHED only) when this flag is off.
+            params.set("includeDrafts", "true");
             const url = `${BASE_URL}?${params.toString()}`;
             const res = await authFetch(url);
             if (!res.ok) {
@@ -402,6 +454,31 @@ class NexaProductAdminRepository {
         }
     }
 
+    /**
+     * Publishes every product currently in DRAFT. Returns the number affected.
+     */
+    async publishAllDrafts(): Promise<number> {
+        try {
+            const res = await authFetch(`${BASE_URL}/publish-all-drafts`, { method: "PATCH" });
+            if (!res.ok) {
+                let errorMsg = `HTTP ${res.status}`;
+                try {
+                    const errBody: ApiErrorBody = await res.json();
+                    errorMsg = errBody.message || errorMsg;
+                } catch (err) { logger.warn("Suppressed error", err); }
+                throw new ApiError(res.status, errorMsg);
+            }
+            const data = (await res.json()) as { published: number };
+            return data.published ?? 0;
+        } catch (err) {
+            if (err instanceof ApiError) throw err;
+            throw new NetworkError(
+                "No se pudo publicar los borradores",
+                err instanceof Error ? err : undefined,
+            );
+        }
+    }
+
     /** Active AbortController for the current sync – null when idle */
     private syncAbortController: AbortController | null = null;
 
@@ -418,7 +495,9 @@ class NexaProductAdminRepository {
         return this.discoverAbortController !== null;
     }
 
-    /** Cancels the running sync (if any). Safe to call when idle. */
+    /** Cancels the running sync (if any). Safe to call when idle.
+     *  Also clears persisted state so a remount doesn't prompt to resume
+     *  what the user just explicitly stopped. */
     cancelSync(): void {
         if (this.syncAbortController) {
             this.syncAbortController.abort();
@@ -428,9 +507,12 @@ class NexaProductAdminRepository {
                 "color: #f59e0b; font-weight: bold",
             );
         }
+        clearSyncState();
     }
 
-    /** Cancels the running discover (if any). Safe to call when idle. */
+    /** Cancels the running discover (if any). Safe to call when idle.
+     *  Also clears persisted state so a remount doesn't prompt to resume
+     *  what the user just explicitly stopped. */
     cancelDiscover(): void {
         if (this.discoverAbortController) {
             this.discoverAbortController.abort();
@@ -440,6 +522,7 @@ class NexaProductAdminRepository {
                 "color: #f59e0b; font-weight: bold",
             );
         }
+        clearDiscoverState();
     }
 
     /**
@@ -447,7 +530,15 @@ class NexaProductAdminRepository {
      * Waits 10 seconds between each page call and logs progress to the console.
      * Can be cancelled at any time by calling cancelSync().
      */
-    async syncProducts(forceOverwrite = true, categoryIds: string[] = []): Promise<{ created: number; updated: number; skipped: number; total: number }> {
+    async syncProducts(
+        forceOverwrite = true,
+        categoryIds: string[] = [],
+        startPage = 1,
+        accCreated = 0,
+        accUpdated = 0,
+        accSkipped = 0,
+        onProgress?: (progress: SyncProgress) => void,
+    ): Promise<{ created: number; updated: number; skipped: number; total: number }> {
         // If already syncing, cancel first
         if (this.syncAbortController) {
             this.cancelSync();
@@ -460,11 +551,18 @@ class NexaProductAdminRepository {
         const PAGE_SIZE = 100;
         const DELAY_MS = 10_000;
 
-        let totalCreated = 0;
-        let totalUpdated = 0;
-        let totalSkipped = 0;
-        let page = 1;
+        let totalCreated = accCreated;
+        let totalUpdated = accUpdated;
+        let totalSkipped = accSkipped;
+        let page = startPage;
         let cancelled = false;
+        const startedAt = Date.now();
+        // Seed the resume row so a reload or session expiry mid-page still
+        // restores the right context (page number + accumulated counters).
+        saveSyncState({
+            running: true, nextPage: page, categoryIds, forceOverwrite,
+            totalCreated, totalUpdated, totalSkipped, startedAt,
+        });
 
         logger.debug(
             "%c[CJ Sync] Iniciando sincronización de productos (páginas de %d)…",
@@ -525,6 +623,15 @@ class NexaProductAdminRepository {
                     "color: #16a34a",
                 );
 
+                // Emit live progress so the admin toast updates after every page.
+                onProgress?.({
+                    page,
+                    created: totalCreated,
+                    updated: totalUpdated,
+                    skipped: totalSkipped,
+                    hasMore: result.hasMore,
+                });
+
                 if (!result.hasMore) {
                     logger.debug(
                         "%c[CJ Sync] ✓ Sincronización finalizada. " +
@@ -534,6 +641,14 @@ class NexaProductAdminRepository {
                     );
                     break;
                 }
+
+                // Persist progress after every successful page so a reload,
+                // JWT refresh or accidental navigation can resume from the
+                // next page without repeating work.
+                saveSyncState({
+                    running: true, nextPage: page + 1, categoryIds, forceOverwrite,
+                    totalCreated, totalUpdated, totalSkipped, startedAt,
+                });
 
                 // Wait 10 seconds before next page — also abortable
                 logger.debug(
@@ -550,6 +665,17 @@ class NexaProductAdminRepository {
             if (err instanceof DOMException && err.name === "AbortError") {
                 cancelled = true;
             } else {
+                // Checkpoint only on real failures. When the failure is a 401 we
+                // treat it as "pending re-auth" and keep running=true so the
+                // auto-resume on /admin/products picks up without the admin
+                // having to click Sync again — the OAuth callback restores valid
+                // tokens mid-session. Explicit user cancel skips this and clears
+                // below, so the next visit starts clean.
+                const isAuthBounce = err instanceof ApiError && err.statusCode === 401;
+                saveSyncState({
+                    running: isAuthBounce, nextPage: page, categoryIds, forceOverwrite,
+                    totalCreated, totalUpdated, totalSkipped, startedAt,
+                });
                 console.error(
                     `%c[CJ Sync] ✗ Error en página ${page}:`,
                     "color: #dc2626; font-weight: bold",
@@ -568,11 +694,15 @@ class NexaProductAdminRepository {
 
         if (cancelled) {
             logger.debug(
-                "%c[CJ Sync] ⏹ Detenida. " +
+                "%c[CJ Sync] ⏹ Detenida por el usuario. " +
                 `Parcial: ${totalCreated} creados, ${totalUpdated} actualizados, ${totalSkipped} sin cambios ` +
-                `(${totalCreated + totalUpdated} procesados hasta página ${page})`,
+                `(${totalCreated + totalUpdated} procesados hasta página ${page}). ` +
+                `Estado de reanudación limpiado.`,
                 "color: #f59e0b; font-weight: bold",
             );
+            clearSyncState();
+        } else {
+            clearSyncState();
         }
 
         return { created: totalCreated, updated: totalUpdated, skipped: totalSkipped, total: totalCreated + totalUpdated };
@@ -709,9 +839,13 @@ class NexaProductAdminRepository {
             if (err instanceof DOMException && err.name === "AbortError") {
                 cancelled = true;
             } else {
-                // Save state so user can resume from the failed offset
+                // A 401 is the auth-expiry bounce, not a real failure; keep
+                // running=true so the admin panel auto-resumes after the
+                // OAuth round-trip restores valid tokens. Any other error is
+                // a genuine stop and still surfaces the "press ▶" toast.
+                const isAuthBounce = err instanceof ApiError && err.statusCode === 401;
                 saveDiscoverState({
-                    running: false, offset, totalCategories,
+                    running: isAuthBounce, offset, totalCategories,
                     created: totalCreated, updated: totalUpdated,
                     startedAt: Date.now(),
                 });
@@ -732,16 +866,12 @@ class NexaProductAdminRepository {
         }
 
         if (cancelled) {
-            // Save interrupted state so user can resume after refresh
-            saveDiscoverState({
-                running: false, offset: offset + 1, totalCategories,
-                created: totalCreated, updated: totalUpdated,
-                startedAt: Date.now(),
-            });
+            clearDiscoverState();
             logger.debug(
-                "%c[CJ Discover] ⏹ Detenido. " +
+                "%c[CJ Discover] ⏹ Detenido por el usuario. " +
                 `Parcial: ${totalCreated} nuevos, ${totalUpdated} actualizados ` +
-                `(hasta categoría ${offset + 1}/${totalCategories})`,
+                `(hasta categoría ${offset + 1}/${totalCategories}). ` +
+                `Estado de reanudación limpiado.`,
                 "color: #f59e0b; font-weight: bold",
             );
         }

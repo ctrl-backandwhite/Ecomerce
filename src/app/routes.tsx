@@ -20,6 +20,7 @@ const Home = lazyPage(() => import("./pages/Home"), "Home");
 const ProductDetail = lazyPage(() => import("./pages/ProductDetail"), "ProductDetail");
 const Cart = lazyPage(() => import("./pages/Cart"), "Cart");
 const Checkout = lazyPage(() => import("./pages/checkout/Checkout"), "Checkout");
+const PayPalReturn = lazyPage(() => import("./pages/checkout/PayPalReturn"), "PayPalReturn");
 const UserProfile = lazyPage(() => import("./pages/UserProfile"), "UserProfile");
 const GiftCardPurchase = lazyPage(() => import("./pages/GiftCardPurchase"), "GiftCardPurchase");
 const AboutPage = lazyPage(() => import("./pages/AboutPage"), "AboutPage");
@@ -106,6 +107,7 @@ export const router = createBrowserRouter([
             Component: Layout,
             children: [
               { path: "checkout", Component: Checkout },
+              { path: "checkout/paypal-return", Component: PayPalReturn },
             ],
           },
           {

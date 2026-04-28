@@ -1,21 +1,23 @@
 import { useState } from "react";
 import { X, Mail, CheckCircle2, Gift } from "lucide-react";
 import { useNewsletter } from "../context/NewsletterContext";
+import { useLanguage } from "../context/LanguageContext";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 
 export function NewsletterPopup() {
   const { showPopup, dismiss, subscribe } = useNewsletter();
+  const { t } = useLanguage();
   const [email, setEmail] = useState("");
   const [done,  setDone]  = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.includes("@")) { toast.error("Introduce un email válido"); return; }
+    if (!email.includes("@")) { toast.error(t("newsletterPopup.invalidEmail")); return; }
     subscribe(email);
     setDone(true);
     setTimeout(() => dismiss(), 2500);
-    toast.success("¡Suscripción confirmada! Revisa tu email.");
+    toast.success(t("newsletterPopup.success"));
   };
 
   return (
@@ -48,8 +50,8 @@ export function NewsletterPopup() {
                 <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-3">
                   <Gift className="w-6 h-6 text-white" strokeWidth={1.5} />
                 </div>
-                <p className="text-white text-lg tracking-tight">-10% en tu primera compra</p>
-                <p className="text-gray-400 text-xs mt-1.5">Suscríbete y recibe el cupón al instante</p>
+                <p className="text-white text-lg tracking-tight">{t("newsletterPopup.title")}</p>
+                <p className="text-gray-400 text-xs mt-1.5">{t("newsletterPopup.subtitle")}</p>
               </div>
 
               {/* Body */}
@@ -57,8 +59,8 @@ export function NewsletterPopup() {
                 {done ? (
                   <div className="text-center py-4">
                     <CheckCircle2 className="w-8 h-8 text-green-500 mx-auto mb-2" strokeWidth={1.5} />
-                    <p className="text-sm text-gray-900 mb-1">¡Gracias por suscribirte!</p>
-                    <p className="text-xs text-gray-400">Revisa tu email — el cupón está en camino.</p>
+                    <p className="text-sm text-gray-900 mb-1">{t("newsletterPopup.done.title")}</p>
+                    <p className="text-xs text-gray-400">{t("newsletterPopup.done.subtitle")}</p>
                   </div>
                 ) : (
                   <>
@@ -69,16 +71,16 @@ export function NewsletterPopup() {
                           type="email"
                           value={email}
                           onChange={e => setEmail(e.target.value)}
-                          placeholder="tu@email.com"
+                          placeholder={t("newsletterPopup.placeholder")}
                           className="w-full h-9 pl-9 pr-3 text-xs text-gray-900 border border-gray-200 rounded-xl focus:outline-none focus:border-gray-400 placeholder-gray-300"
                         />
                       </div>
                       <button type="submit" className="w-full h-9 text-xs text-gray-700 bg-gray-200 rounded-xl hover:bg-gray-300 transition-colors">
-                        Obtener mi cupón -10%
+                        {t("newsletterPopup.submit")}
                       </button>
                     </form>
                     <p className="text-[10px] text-gray-400 text-center mt-3">
-                      Sin spam. Te puedes dar de baja en cualquier momento.
+                      {t("newsletterPopup.disclaimer")}
                     </p>
                   </>
                 )}
@@ -87,7 +89,7 @@ export function NewsletterPopup() {
               {/* Skip */}
               <div className="pb-5 text-center">
                 <button onClick={dismiss} className="text-xs text-gray-400 hover:text-gray-600 underline transition-colors">
-                  No gracias, prefiero pagar precio completo
+                  {t("newsletterPopup.skip")}
                 </button>
               </div>
             </div>

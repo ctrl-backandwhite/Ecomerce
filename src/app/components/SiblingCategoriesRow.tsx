@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { ChevronRight } from "lucide-react";
 import { useNexaCategories } from "../hooks/useNexaCategories";
 import { useCategoryTopProducts } from "../hooks/useCategoryTopProducts";
+import { useLanguage } from "../context/LanguageContext";
 import { urls } from "../lib/urls";
 import type { NexaCategory } from "../repositories/NexaCategoryRepository";
 
@@ -23,6 +24,7 @@ export function SiblingCategoriesRow({
   currentSubcategoryId,
 }: SiblingCategoriesRowProps) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const { categories } = useNexaCategories();
 
   // Locate the parent whose subtree contains the active (sub)category and
@@ -60,14 +62,14 @@ export function SiblingCategoriesRow({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
         <div className="flex items-baseline justify-between mb-3">
           <h2 className="text-sm text-gray-900 tracking-tight">
-            Explora {parent.name}
+            {t("category.exploreParent").replace("{name}", parent.name)}
           </h2>
           <button
             type="button"
             onClick={() => navigate(urls.category(parent.name))}
             className="text-xs text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-0.5"
           >
-            Ver todo
+            {t("category.viewAll")}
             <ChevronRight className="w-3 h-3" strokeWidth={1.5} />
           </button>
         </div>

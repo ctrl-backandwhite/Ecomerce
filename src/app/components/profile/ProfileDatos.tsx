@@ -5,15 +5,16 @@ import { profileRepository, type ProfilePayload, type SyncIdentityPayload } from
 import { loyaltyRepository, type LoyaltyTier } from "../../repositories/LoyaltyRepository";
 import { Save, Pencil } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "../../context/LanguageContext";
 
 import { logger } from "../../lib/logger";
 
-const docTypes = [
-  { value: "DNI", label: "DNI", placeholder: "Ej. 12345678A" },
-  { value: "PASSPORT", label: "PASAPORTE", placeholder: "Ej. USA12345678" },
-  { value: "NIE", label: "NIE", placeholder: "Ej. X1234567A" },
-  { value: "CIF", label: "CIF", placeholder: "Ej. B12345678" },
-  { value: "OTHER", label: "OTRO", placeholder: "Número de documento" },
+const DOC_TYPE_DEFS = [
+  { value: "DNI", labelKey: "profile.datos.docid.type.dni", placeholderKey: "profile.datos.docid.placeholder.dni" },
+  { value: "PASSPORT", labelKey: "profile.datos.docid.type.passport", placeholderKey: "profile.datos.docid.placeholder.passport" },
+  { value: "NIE", labelKey: "profile.datos.docid.type.nie", placeholderKey: "profile.datos.docid.placeholder.nie" },
+  { value: "CIF", labelKey: "profile.datos.docid.type.cif", placeholderKey: "profile.datos.docid.placeholder.cif" },
+  { value: "OTHER", labelKey: "profile.datos.docid.type.other", placeholderKey: "profile.datos.docid.number.placeholder" },
 ];
 
 /** Fallback tiers — used while API tiers are loading. */
@@ -45,6 +46,8 @@ function getNextTier(currentTier: LoyaltyTier, tiers: LoyaltyTier[]): LoyaltyTie
 export function ProfileDatos() {
   const { user, updateProfile } = useUser();
   const { user: authUser } = useAuth();
+  const { t, locale } = useLanguage();
+  const docTypes = DOC_TYPE_DEFS.map((d) => ({ ...d, label: t(d.labelKey), placeholder: t(d.placeholderKey) }));
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [tiers, setTiers] = useState<LoyaltyTier[]>(FALLBACK_TIERS);
@@ -130,9 +133,9 @@ export function ProfileDatos() {
         documentNumber: updated.documentNumber ?? "",
       }));
       setEditing(false);
-      toast.success("Perfil actualizado correctamente");
+      toast.success(t("profile.toast.datos.success"));
     } catch {
-      toast.error("Error al guardar el perfil");
+      toast.error(t("profile.toast.datos.error"));
     } finally {
       setSaving(false);
     }
@@ -181,7 +184,7 @@ export function ProfileDatos() {
         <p className="text-xs text-gray-900 py-1.5 px-3 bg-gray-50 rounded-lg border border-gray-100">
           {name === "birthDate"
             ? (value
-              ? new Date(value + "T00:00:00").toLocaleDateString("es-CL", {
+              ? new Date(value + "T00:00:00").toLocaleDateString(locale, {
                 day: "numeric", month: "long", year: "numeric",
               })
               : "—")
@@ -203,18 +206,18 @@ export function ProfileDatos() {
         return (
           <div className="bg-gray-700 rounded-xl p-5 text-white">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs tracking-widest text-gray-400 uppercase">Puntos</span>
-              <span className="text-xs text-gray-400">NX036 Rewards</span>
+              <span className="text-xs tracking-widest text-gray-400 uppercase">{t("profile.datos.rewards.label")}</span>
+              <span className="text-xs text-gray-400">{t("profile.datos.rewards.title")}</span>
             </div>
             <p className="text-3xl text-white mb-1">{user.loyaltyPoints.toLocaleString()}</p>
-            <p className="text-xs text-gray-400">puntos disponibles</p>
+            <p className="text-xs text-gray-400">{t("profile.datos.rewards.available")}</p>
             <div className="mt-4 pt-4 border-t border-gray-600">
               <div className="flex justify-between text-xs text-gray-400 mb-1.5">
-                <span>Nivel {tier?.name ?? "Bronze"}</span>
+                <span>{t("profile.datos.rewards.tier")} {tier?.name ?? "Bronze"}</span>
                 {nextTier ? (
                   <span>{nextMinPoints!.toLocaleString()} pts → {nextTier.name}</span>
                 ) : (
-                  <span>Nivel máximo</span>
+                  <span>{t("profile.datos.rewards.maxlevel")}</span>
                 )}
               </div>
               <div className="w-full h-1.5 bg-gray-600 rounded-full overflow-hidden">
@@ -233,8 +236,8 @@ export function ProfileDatos() {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100 flex-shrink-0">
           <div>
-            <h2 className="text-base text-gray-900">Información Personal</h2>
-            <p className="text-xs text-gray-400 mt-0.5">Gestiona tus datos de perfil</p>
+            <h2 className="text-base text-gray-900">{t("profile.datos.personal.title")}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{t("profile.datos.personal.subtitle")}</p>
           </div>
           {!editing ? (
             <button
@@ -242,7 +245,7 @@ export function ProfileDatos() {
               className="inline-flex items-center gap-2 text-sm text-gray-700 border border-gray-200 rounded-lg px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all"
             >
               <Pencil className="w-4 h-4" strokeWidth={1.5} />
-              Editar
+              {t("profile.datos.personal.button.edit")}
             </button>
           ) : (
             <div className="flex items-center gap-2">
@@ -250,7 +253,7 @@ export function ProfileDatos() {
                 onClick={handleCancel}
                 className="text-sm text-gray-500 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors"
               >
-                Cancelar
+                {t("profile.datos.personal.button.cancel")}
               </button>
               <button
                 onClick={handleSave}
@@ -258,7 +261,7 @@ export function ProfileDatos() {
                 className="inline-flex items-center gap-2 text-sm text-gray-700 bg-gray-200 rounded-lg px-4 py-2 hover:bg-gray-300 transition-colors disabled:opacity-50"
               >
                 <Save className="w-4 h-4" strokeWidth={1.5} />
-                {saving ? "Guardando…" : "Guardar"}
+                {saving ? t("profile.datos.personal.button.saving") : t("profile.datos.personal.button.save")}
               </button>
             </div>
           )}
@@ -268,10 +271,10 @@ export function ProfileDatos() {
         <div className="px-6 py-4 flex-1 overflow-y-auto">
           {/* ── Documento de identidad ─────────────────── */}
           <div className="mb-4">
-            <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">Documento de identidad</p>
+            <p className="text-xs text-gray-400 mb-3 tracking-wide uppercase">{t("profile.datos.docid.label")}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-gray-400 mb-1 tracking-wide">Tipo de documento</label>
+                <label className="block text-xs text-gray-400 mb-1 tracking-wide">{t("profile.datos.docid.type.label")}</label>
                 {editing ? (
                   <select
                     name="documentType"
@@ -279,7 +282,7 @@ export function ProfileDatos() {
                     onChange={handleChange}
                     className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-gray-400 bg-white transition-colors"
                   >
-                    <option value="">Seleccionar…</option>
+                    <option value="">{t("profile.datos.docid.type.select")}</option>
                     {docTypes.map((dt) => (
                       <option key={dt.value} value={dt.value}>{dt.label}</option>
                     ))}
@@ -291,14 +294,14 @@ export function ProfileDatos() {
                 )}
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1 tracking-wide">Número de documento</label>
+                <label className="block text-xs text-gray-400 mb-1 tracking-wide">{t("profile.datos.docid.number.label")}</label>
                 {editing ? (
                   <input
                     type="text"
                     name="documentNumber"
                     value={form.documentNumber}
                     onChange={handleChange}
-                    placeholder={docTypes.find((d) => d.value === form.documentType)?.placeholder ?? "Número de documento"}
+                    placeholder={docTypes.find((d) => d.value === form.documentType)?.placeholder ?? t("profile.datos.docid.number.placeholder")}
                     className="w-full text-xs text-gray-900 border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-gray-400 bg-white transition-colors"
                   />
                 ) : (
@@ -311,12 +314,12 @@ export function ProfileDatos() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Field label="Nombre" name="firstName" value={form.firstName} readOnly />
-            <Field label="Apellido" name="lastName" value={form.lastName} readOnly />
-            <Field label="Nombre de usuario" name="username" value={form.username} readOnly />
-            <Field label="Correo electrónico" name="email" type="email" value={form.email} readOnly />
-            <Field label="Teléfono" name="phone" value={form.phone} />
-            <Field label="Fecha de nacimiento" name="birthDate" type="date" value={form.birthDate} />
+            <Field label={t("profile.datos.field.firstName")} name="firstName" value={form.firstName} readOnly />
+            <Field label={t("profile.datos.field.lastName")} name="lastName" value={form.lastName} readOnly />
+            <Field label={t("profile.datos.field.username")} name="username" value={form.username} readOnly />
+            <Field label={t("profile.datos.field.email")} name="email" type="email" value={form.email} readOnly />
+            <Field label={t("profile.datos.field.phone")} name="phone" value={form.phone} />
+            <Field label={t("profile.datos.field.birthdate")} name="birthDate" type="date" value={form.birthDate} />
           </div>
         </div>
       </div>
@@ -324,16 +327,16 @@ export function ProfileDatos() {
       {/* ── Card: Información de cuenta ─────────────────────── */}
       <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100">
-          <h2 className="text-base text-gray-900">Información de cuenta</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Datos internos de tu cuenta NX036</p>
+          <h2 className="text-base text-gray-900">{t("profile.datos.account.title")}</h2>
+          <p className="text-xs text-gray-400 mt-0.5">{t("profile.datos.account.subtitle")}</p>
         </div>
         <div className="px-6 py-5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { label: "ID de cliente", value: authUser?.id !== undefined ? String(authUser.id) : user.id },
-              { label: "Estado", value: "Activo" },
-              { label: "Nivel de membresía", value: getMembershipTier(user.loyaltyPoints, tiers)?.name ?? "Bronze" },
-              { label: "Tipo de cuenta", value: user.isSeller ? "Vendedor" : "Comprador" },
+              { label: t("profile.datos.account.field.id"), value: authUser?.id !== undefined ? String(authUser.id) : user.id },
+              { label: t("profile.datos.account.field.status"), value: t("profile.datos.account.field.status.value") },
+              { label: t("profile.datos.account.field.tier"), value: getMembershipTier(user.loyaltyPoints, tiers)?.name ?? "Bronze" },
+              { label: t("profile.datos.account.field.type"), value: user.isSeller ? t("profile.datos.account.field.type.seller") : t("profile.datos.account.field.type.buyer") },
             ].map(({ label, value }) => (
               <div key={label} className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                 <p className="text-xs text-gray-400 mb-1.5">{label}</p>

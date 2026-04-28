@@ -174,8 +174,8 @@ export function InvoiceDocument({
                   </div>
                   <span className="text-xl text-gray-900 tracking-widest">NX036</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">info@nx036.com · +1 234 567 890</p>
-                <p className="text-xs text-gray-400">Calle Principal 123 · New York, NY 10001 · US</p>
+                <p className="text-xs text-gray-400 mt-1">info@nx036.com · +1 (212) 555-0199</p>
+                <p className="text-xs text-gray-400">500 5th Avenue · New York, NY 10110 · US</p>
               </div>
 
               {/* Invoice meta */}

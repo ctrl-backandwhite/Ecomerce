@@ -28,8 +28,16 @@ export interface GiftCard {
     message: string | null;
     status: "PENDING" | "ACTIVE" | "USED" | "EXPIRED" | "VOID";
     sendDate: string | null;
+    /** Precise delivery instant. ISO-8601; drives the scheduler. */
+    sendAt: string | null;
     expiryDate: string | null;
     activatedAt: string | null;
+    /**
+     * False while a card is scheduled and waiting for its sendDate. Flips to
+     * true once the scheduler publishes the purchase event and the recipient
+     * email + fiscal invoice have gone out.
+     */
+    emailSent: boolean;
     createdAt: string;
     updatedAt: string;
 }

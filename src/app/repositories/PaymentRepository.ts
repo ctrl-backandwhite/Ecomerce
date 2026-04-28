@@ -154,6 +154,36 @@ class PaymentRepository {
             return handleRes<Payment>(res);
         } catch (err) { wrapErr(err, "No se pudo verificar el pago cripto"); }
     }
+
+    /** PayPal two-step flow — step 1. Creates the PayPal order on the backend
+     *  and returns the approveUrl. The frontend redirects the buyer to that
+     *  URL; after approval PayPal redirects back to /checkout/paypal-return. */
+    async initiatePayPal(data: ProcessPaymentPayload): Promise<{
+        paymentId: string; paypalOrderId: string; approveUrl: string;
+    }> {
+        try {
+            const res = await authFetch(`${BASE_URL}/paypal/orders`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data),
+            });
+            return handleRes<{ paymentId: string; paypalOrderId: string; approveUrl: string }>(res);
+        } catch (err) { wrapErr(err, "No se pudo iniciar el pago con PayPal"); }
+    }
+
+    /** PayPal two-step flow — step 2. Captures an already-approved order. */
+    async capturePayPal(paypalOrderId: string): Promise<Payment> {
+        try {
+            const res = await authFetch(`${BASE_URL}/paypal/orders/${paypalOrderId}/capture`, {
+                method: "POST",
+            });
+            const payment = await handleRes<Payment>(res);
+            if (payment?.status === "FAILED") {
+                throw new Error("PayPal rechazó el pago");
+            }
+            return payment;
+        } catch (err) { wrapErr(err, "No se pudo capturar el pago con PayPal"); }
+    }
 }
 
 export const paymentRepository = new PaymentRepository();

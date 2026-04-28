@@ -11,7 +11,7 @@ import {
   ShoppingBag, RotateCcw, ArrowUpRight, ArrowDownRight,
   CheckCircle2, Truck, XCircle, CreditCard,
   BarChart2, Tag, Gift, Headphones,
-  RefreshCw,
+  RefreshCw, FileText,
 } from "lucide-react";
 import { Link } from "react-router";
 import { orderRepository, type AdminOrder, type OrderStats } from "../../repositories/OrderRepository";
@@ -29,6 +29,7 @@ import { logger } from "../../lib/logger";
    STATUS META
 ═══════════════════════════════════════════════════════════════ */
 const STATUS_META: Record<string, { labelKey: string; color: string; dot: string; icon: React.ElementType }> = {
+  DRAFT: { labelKey: "order.status.draft", color: "bg-gray-50 text-gray-600", dot: "bg-gray-400", icon: FileText },
   PENDING: { labelKey: "order.status.pending", color: "bg-amber-50 text-amber-700", dot: "bg-amber-400", icon: Clock },
   CONFIRMED: { labelKey: "order.status.confirmed", color: "bg-cyan-50 text-cyan-700", dot: "bg-cyan-400", icon: CheckCircle2 },
   PROCESSING: { labelKey: "order.status.processing", color: "bg-blue-50 text-blue-700", dot: "bg-blue-400", icon: RefreshCw },
@@ -128,7 +129,7 @@ export function Dashboard() {
     try {
       const [orderStats, ordersPage, customersPage, revenue, status] = await Promise.all([
         orderRepository.getStats(),
-        orderRepository.findAll({ size: 6, sortBy: "date", ascending: false }),
+        orderRepository.findAll({ size: 6, sortBy: "createdAt", ascending: false }),
         customerRepository.findAll({ size: 1 }),
         reportsRepository.findRevenueByDay().catch(() => [] as RevenueByDay[]),
         reportsRepository.findStatusDistribution().catch(() => [] as StatusCount[]),

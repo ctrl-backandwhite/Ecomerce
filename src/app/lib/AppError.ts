@@ -39,10 +39,13 @@ export class AuthError extends AppError {
 /** The API returned a non-2xx status with an error body. */
 export class ApiError extends AppError {
   readonly statusCode: number;
+  /** Backend-specific error code (e.g. "PA009"), when present in the body. */
+  readonly backendCode?: string;
 
-  constructor(statusCode: number, message: string, cause?: Error) {
+  constructor(statusCode: number, message: string, cause?: Error, backendCode?: string) {
     super("API_ERROR", message, cause);
     this.statusCode = statusCode;
+    this.backendCode = backendCode;
   }
 }
 

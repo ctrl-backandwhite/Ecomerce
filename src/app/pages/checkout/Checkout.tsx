@@ -77,7 +77,9 @@ function CheckoutInner() {
     const shipping = convertFromUsd(shippingUsd);
     // Tax: prefer backend value, otherwise fall back to the server-side default
     // (10 % of subtotal) so the UI matches what the order service will charge.
-    const tax = state.taxCalc?.taxAmount ?? +(subtotal * 0.10).toFixed(2);
+    // Treat 0 (no tax rules configured) as "missing" and apply the fallback.
+    const backendTax = state.taxCalc?.taxAmount ?? 0;
+    const tax = backendTax > 0 ? backendTax : +(subtotal * 0.10).toFixed(2);
 
     /* Coupon: PERCENTAGE discount was computed against the display-currency subtotal,
        FIXED discount is a raw USD amount that needs conversion. */
@@ -136,7 +138,10 @@ function CheckoutInner() {
             : state.payMethod === "card"
                 ? !!(state.stripeElementsComplete.number && state.stripeElementsComplete.expiry && state.stripeElementsComplete.cvc && state.payment.cardName)
                 : state.payMethod === "paypal"
-                    ? !!state.paypalEmail
+                    // PayPal email is optional — the buyer logs in at
+                    // sandbox.paypal.com during approve. The input only
+                    // matters when the user ticks "save for future".
+                    ? true
                     : true;
 
     /* ── Delivery / Payment summary helpers ── */

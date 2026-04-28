@@ -9,7 +9,7 @@ import {
   adminGiftCardRepository as giftCardRepository,
 } from "../../repositories/AdminGiftCardRepository";
 
-type GCStatus = "pending" | "active" | "used" | "expired" | "void";
+type GCStatus = "pending" | "scheduled" | "active" | "used" | "expired" | "void";
 
 interface GiftCard {
   id: string;
@@ -19,6 +19,7 @@ interface GiftCard {
   status: GCStatus;
   createdAt: string;
   expiresAt: string;
+  sendDate?: string;
   buyer?: string;
   recipient?: string;
   note?: string;
@@ -26,6 +27,7 @@ interface GiftCard {
 
 const STATUS_META: Record<GCStatus, { label: string; bg: string; text: string; dot: string }> = {
   pending: { label: "Pendiente", bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-400" },
+  scheduled: { label: "Programada", bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-400" },
   active: { label: "Activa", bg: "bg-green-50", text: "text-green-700", dot: "bg-green-400" },
   used: { label: "Usada", bg: "bg-gray-100", text: "text-gray-500", dot: "bg-gray-300" },
   expired: { label: "Expirada", bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-400" },
@@ -35,13 +37,26 @@ const STATUS_META: Record<GCStatus, { label: string; bg: string; text: string; d
 // Removed: data is now loaded from the API.
 
 function mapApiToUi(c: ApiGiftCard): GiftCard {
+  // A gift card is "scheduled" while the recipient email has not gone out yet
+  // AND a future sendDate was set. `emailSent=false` without a sendDate means
+  // the Kafka publish failed transiently — still surface as pending, not
+  // scheduled.
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const sendDate = c.sendDate ? new Date(c.sendDate) : null;
+  const scheduled = c.emailSent === false && sendDate != null && sendDate >= today;
+
   let status: GCStatus;
-  switch (c.status) {
-    case "PENDING": status = "pending"; break;
-    case "VOID": status = "void"; break;
-    case "EXPIRED": status = "expired"; break;
-    case "USED": status = "used"; break;
-    default: status = "active";
+  if (scheduled) {
+    status = "scheduled";
+  } else {
+    switch (c.status) {
+      case "PENDING": status = "pending"; break;
+      case "VOID": status = "void"; break;
+      case "EXPIRED": status = "expired"; break;
+      case "USED": status = "used"; break;
+      default: status = "active";
+    }
   }
   return {
     id: c.id,
@@ -51,6 +66,7 @@ function mapApiToUi(c: ApiGiftCard): GiftCard {
     status,
     createdAt: c.createdAt ? new Date(c.createdAt).toLocaleDateString("es-ES") : "",
     expiresAt: c.expiryDate ? new Date(c.expiryDate).toLocaleDateString("es-ES") : "",
+    sendDate: c.sendDate ? new Date(c.sendDate).toLocaleDateString("es-ES") : undefined,
     recipient: c.recipientEmail ?? c.recipientName ?? undefined,
     note: c.message ?? undefined,
   };
@@ -66,6 +82,7 @@ export function AdminGiftCards() {
   const [form, setForm] = useState({ amount: 50, recipient: "", note: "" });
   const [detail, setDetail] = useState<{ card: GiftCard; txs: GiftCardTransaction[] } | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | GCStatus>("all");
 
   const loadCards = useCallback(async () => {
     try {
@@ -163,9 +180,38 @@ export function AdminGiftCards() {
         ))}
       </div>
 
+      {/* Filter pills */}
+      <div className="flex flex-wrap items-center gap-2">
+        {([
+          { key: "all", label: "Todas" },
+          { key: "scheduled", label: "Programadas" },
+          { key: "active", label: "Activas" },
+          { key: "pending", label: "Pendientes" },
+          { key: "used", label: "Usadas" },
+          { key: "expired", label: "Expiradas" },
+          { key: "void", label: "Anuladas" },
+        ] as { key: "all" | GCStatus; label: string }[]).map(f => {
+          const count = f.key === "all" ? cards.length : cards.filter(c => c.status === f.key).length;
+          const active = statusFilter === f.key;
+          return (
+            <button
+              key={f.key}
+              onClick={() => setStatusFilter(f.key)}
+              className={`inline-flex items-center gap-2 text-xs px-3 py-1.5 rounded-full border transition-all ${active
+                ? "border-gray-800 bg-gray-800 text-white"
+                : "border-gray-200 bg-white text-gray-600 hover:border-gray-400"
+                }`}
+            >
+              {f.label}
+              <span className={`text-[10px] ${active ? "text-white/60" : "text-gray-400"}`}>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Table */}
       <div className="bg-white border border-gray-100 rounded-xl overflow-hidden">
-        <div className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_1fr_1fr_0.8fr_80px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
+        <div className="grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_1fr_1fr_0.9fr_0.8fr_80px] gap-3 px-4 py-2.5 border-b border-gray-100 bg-gray-50/60">
           {[
             { label: "Código", cls: "text-left" },
             { label: "Destinatario", cls: "text-left" },
@@ -173,6 +219,7 @@ export function AdminGiftCards() {
             { label: "Saldo", cls: "text-right" },
             { label: "Creada", cls: "text-center" },
             { label: "Vence", cls: "text-center" },
+            { label: "Envío", cls: "text-center" },
             { label: "Estado", cls: "text-left" },
             { label: "", cls: "text-right" },
           ].map(h => (
@@ -180,12 +227,12 @@ export function AdminGiftCards() {
           ))}
         </div>
 
-        {cards.map((c, i) => {
+        {cards.filter(c => statusFilter === "all" || c.status === statusFilter).map((c, i) => {
           const sm = STATUS_META[c.status];
           return (
             <div
               key={c.id}
-              className={`grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_1fr_1fr_0.8fr_80px] gap-3 px-4 py-3 items-center ${i !== cards.length - 1 ? "border-b border-gray-50" : ""}`}
+              className={`grid grid-cols-[1.5fr_1.5fr_0.8fr_0.8fr_1fr_1fr_0.9fr_0.8fr_80px] gap-3 px-4 py-3 items-center ${i !== cards.length - 1 ? "border-b border-gray-50" : ""}`}
             >
               {/* Código */}
               <div className="flex items-center gap-1.5 min-w-0">
@@ -204,6 +251,10 @@ export function AdminGiftCards() {
               <p className="text-xs text-gray-400 text-center">{c.createdAt}</p>
               {/* Vence */}
               <p className="text-xs text-gray-400 text-center">{c.expiresAt}</p>
+              {/* Envío */}
+              <p className={`text-xs text-center ${c.status === "scheduled" ? "text-indigo-600 font-medium" : "text-gray-400"}`}>
+                {c.sendDate ?? (c.status === "scheduled" ? "Programada" : "Inmediato")}
+              </p>
               {/* Estado */}
               <div className="flex items-center">
                 <span className={`inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>

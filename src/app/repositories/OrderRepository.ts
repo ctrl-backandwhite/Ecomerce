@@ -86,6 +86,8 @@ export interface CreateOrderPayload {
     loyaltyDiscount?: number;
     currencyCode?: string;
     notes?: string;
+    /** BCP-47 language tag of the storefront UI (es / en / pt). The order service stores it on the order so invoice emails and PDFs are localized. */
+    customerLocale?: string;
 }
 
 export interface OrderQuery {
