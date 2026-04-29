@@ -16,11 +16,12 @@ import { warrantyRepository, type Warranty } from "../repositories/WarrantyRepos
 import DOMPurify from "dompurify";
 import {
   Star, ShoppingCart, Heart, Truck, Shield,
-  ArrowLeft, Plus, Minus, ChevronRight, Package,
+  Plus, Minus, ChevronRight, Package,
   RefreshCw, Award, Check, ThumbsUp, ChevronDown,
   MessageSquare, Pencil, Eye, Loader2, X, Grid,
 } from "lucide-react";
 import { ProductCard } from "../components/ProductCard";
+import { ContinueShoppingLink } from "../components/ContinueShoppingLink";
 import { toast } from "sonner";
 import type { Product } from "../types/product";
 
@@ -968,13 +969,7 @@ export function ProductDetail() {
           <span className="text-gray-700 truncate max-w-[260px]">{product.name}</span>
         </nav>
 
-        <button
-          onClick={goBack}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 mb-4 transition-colors"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
-          Volver
-        </button>
+        <ContinueShoppingLink variant="ghost" className="text-xs mb-4" />
 
         {/* ───────── Amazon-style 3-col layout ───────── */}
         <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,4fr)_minmax(280px,3fr)] gap-6 mb-10">
@@ -1358,8 +1353,9 @@ export function ProductDetail() {
                   {t("pd.buyNowBtn")}
                 </button>
 
-                {/* Wishlist & compare row */}
-                <div className="flex items-center justify-center gap-4 text-xs">
+                {/* Continue shopping (button) + wishlist (under it) */}
+                <ContinueShoppingLink variant="secondary" className="w-full mb-2" />
+                <div className="flex items-center justify-center text-xs">
                   <button
                     onClick={() => {
                       if (!isAuthenticated) { toast.error(t("pd.fav.loginRequired")); return; }

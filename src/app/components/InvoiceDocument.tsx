@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useMemo } from "react";
 import { Printer, Download, X, CheckCircle2, Clock, AlertTriangle, Ban } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useCurrency } from "../context/CurrencyContext";
@@ -19,6 +19,11 @@ export interface InvoiceData {
   date: string;
   dueDate?: string;
   status: InvoiceStatus;
+  /** ISO currency code the invoice amounts are denominated in. The
+   *  document formats every figure in this currency regardless of what
+   *  the user has selected globally now — an invoice is a record of the
+   *  transaction at the moment it happened. */
+  currencyCode?: string;
   customer: {
     name: string;
     email: string;
@@ -104,7 +109,31 @@ export function InvoiceDocument({
   mode?: "page" | "modal";
 }) {
   const printRef = useRef<HTMLDivElement>(null);
-  const { formatPrice } = useCurrency();
+  const { formatPrice: formatPriceGlobal, currency: globalCurrency } = useCurrency();
+  // Lock the invoice to its own currency so amounts stay coherent even if
+  // the buyer switches the global currency selector after purchasing.
+  // Falls back to the global formatter when the currency code is missing
+  // (legacy invoices before we persisted the field).
+  const formatPrice = useMemo(() => {
+    const code = data.currencyCode?.toUpperCase();
+    if (!code || code === globalCurrency?.currencyCode) return formatPriceGlobal;
+    const ZERO_DECIMAL = new Set(["CLP", "COP", "JPY", "KRW", "VND", "PYG", "HUF", "ISK", "TWD"]);
+    const isZeroDecimal = ZERO_DECIMAL.has(code);
+    return (amount: number): string => {
+      try {
+        return new Intl.NumberFormat(undefined, {
+          style: "currency",
+          currency: code,
+          minimumFractionDigits: isZeroDecimal ? 0 : 2,
+          maximumFractionDigits: isZeroDecimal ? 0 : 2,
+        }).format(isZeroDecimal ? Math.round(amount) : amount);
+      } catch {
+        return isZeroDecimal
+          ? `${code} ${Math.round(amount).toLocaleString()}`
+          : `${code} ${amount.toFixed(2)}`;
+      }
+    };
+  }, [data.currencyCode, globalCurrency?.currencyCode, formatPriceGlobal]);
   const sm = STATUS_META[data.status];
   const StatusIcon = sm.icon;
   const qrValue = buildQRValue(data);

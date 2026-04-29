@@ -8,6 +8,7 @@ import {
 } from "react";
 import { useAuth } from "./AuthContext";
 import { profileRepository } from "../repositories/ProfileRepository";
+import { orderRepository } from "../repositories/OrderRepository";
 import type {
   Address as ApiAddress,
   AddressPayload,
@@ -270,13 +271,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const loadUserData = useCallback(async () => {
     setLoading(true);
     try {
-      const [profileRes, addressesRes, paymentsRes, favoritesRes, notifsRes] =
+      const [profileRes, addressesRes, paymentsRes, favoritesRes, notifsRes, ordersRes] =
         await Promise.allSettled([
           profileRepository.getMyProfile(),
           profileRepository.getAddresses(),
           profileRepository.getPaymentMethods(),
           profileRepository.getFavorites(),
           profileRepository.getNotificationPrefs(),
+          // size=1 is enough — we only need totalElements for the badge.
+          orderRepository.getMyOrders(0, 1),
         ]);
 
       setUser((prev) => {
@@ -318,6 +321,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
             promotions: n.emailPromos ?? false,
             orderUpdates: n.smsPromos ?? false,
           };
+        }
+
+        if (ordersRes.status === "fulfilled") {
+          next.totalOrders = ordersRes.value.totalElements ?? 0;
         }
 
         return next;

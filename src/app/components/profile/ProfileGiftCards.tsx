@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link } from "react-router";
 import {
-  Gift, Plus, Copy, ArrowRight, Clock,
+  Gift, Plus, ArrowRight, Clock,
   Mail, Send, Eye, EyeOff, AlertTriangle, Sparkles,
   Tag, X, ChevronRight, Loader,
 } from "lucide-react";
@@ -21,6 +21,7 @@ import {
 import { ApiError } from "../../lib/AppError";
 import { useCurrency } from "../../context/CurrencyContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { CopyButton } from "../CopyButton";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getDesign(id: string) {
@@ -197,7 +198,7 @@ function ActivateModal({ onClose, onActivate }: {
 }
 
 // ── Received card component ──────────────────────────────────────────────────
-function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code: string) => void }) {
+function ReceivedCard({ card }: { card: ReceivedGiftCard }) {
   const { t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const { formatPrice } = useCurrency();
@@ -257,23 +258,21 @@ function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code:
 
       {/* Code row */}
       <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-t border-gray-100">
-        <span className="text-[11px] font-mono text-gray-500 tracking-widest">{card.code}</span>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onCopy(card.code)}
-            className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700 rounded transition-colors"
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-mono text-gray-500 tracking-widest">{card.code}</span>
+          <CopyButton
+            value={card.code}
             title={t("profile.giftcards.copy.title")}
-          >
-            <Copy className="w-3 h-3" />
-          </button>
-          <button
-            onClick={() => setExpanded(e => !e)}
-            className="text-[10px] text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-0.5 ml-1"
-          >
-            {expanded ? t("profile.giftcards.received.less") : t("profile.giftcards.received.details")}
-            <ChevronRight className={`w-2.5 h-2.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
-          </button>
+            successMessage={t("profile.giftcards.toast.copied")}
+          />
         </div>
+        <button
+          onClick={() => setExpanded(e => !e)}
+          className="text-[10px] text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-0.5"
+        >
+          {expanded ? t("profile.giftcards.received.less") : t("profile.giftcards.received.details")}
+          <ChevronRight className={`w-2.5 h-2.5 transition-transform ${expanded ? "rotate-90" : ""}`} />
+        </button>
       </div>
 
       {/* Expanded details */}
@@ -310,7 +309,7 @@ function ReceivedCard({ card, onCopy }: { card: ReceivedGiftCard; onCopy: (code:
 }
 
 // ── Sent card component ───────────────────────────────────────────────────────
-function SentCard({ card, onCopy }: { card: SentGiftCard; onCopy: (code: string) => void }) {
+function SentCard({ card }: { card: SentGiftCard }) {
   const { t } = useLanguage();
   const st = STATUS_SENT[card.status];
   const { formatPrice } = useCurrency();
@@ -352,13 +351,14 @@ function SentCard({ card, onCopy }: { card: SentGiftCard; onCopy: (code: string)
         </div>
       </div>
       <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-t border-gray-100">
-        <span className="text-[11px] font-mono text-gray-400 tracking-widest">{card.code}</span>
-        <button
-          onClick={() => onCopy(card.code)}
-          className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700 rounded transition-colors"
-        >
-          <Copy className="w-3 h-3" />
-        </button>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-mono text-gray-400 tracking-widest">{card.code}</span>
+          <CopyButton
+            value={card.code}
+            title={t("profile.giftcards.copy.title")}
+            successMessage={t("profile.giftcards.toast.copied")}
+          />
+        </div>
       </div>
     </div>
   );
@@ -372,7 +372,6 @@ export function ProfileGiftCards() {
   const [loading, setLoading] = useState(true);
   const [showActivate, setShowActivate] = useState(false);
   const [activeTab, setActiveTab] = useState<"received" | "sent">("received");
-  const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const { formatPrice } = useCurrency();
 
   useEffect(() => {
@@ -399,13 +398,6 @@ export function ProfileGiftCards() {
 
   const STATUS_ORDER: Record<GCStatus, number> = { active: 0, pending: 1, used: 2, expired: 3 };
   const sortedReceived = [...receivedCards].sort((a, b) => (STATUS_ORDER[a.status] ?? 9) - (STATUS_ORDER[b.status] ?? 9));
-
-  function handleCopy(code: string) {
-    navigator.clipboard.writeText(code).catch(() => { });
-    setCopiedCode(code);
-    setTimeout(() => setCopiedCode(null), 1500);
-    toast.success(t("profile.giftcards.toast.copied"));
-  }
 
   async function handleActivate(code: string) {
     const clean = code.replace(/\s/g, "").toUpperCase();
@@ -521,7 +513,7 @@ export function ProfileGiftCards() {
                 </div>
               ) : (
                 sortedReceived.map(c => (
-                  <ReceivedCard key={c.id} card={c} onCopy={handleCopy} />
+                  <ReceivedCard key={c.id} card={c} />
                 ))
               )}
             </div>
@@ -540,7 +532,7 @@ export function ProfileGiftCards() {
                 </div>
               ) : (
                 sentCards.map(c => (
-                  <SentCard key={c.id} card={c} onCopy={handleCopy} />
+                  <SentCard key={c.id} card={c} />
                 ))
               )}
             </div>

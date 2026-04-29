@@ -45,6 +45,8 @@ export interface Invoice {
     giftCardAmount: number;
     loyaltyDiscount: number;
     paymentMethod: string;
+    /** Currency the invoice was issued in (matches the order's currency). */
+    currencyCode?: string;
     notes: string | null;
     createdAt: string;
     updatedAt: string | null;

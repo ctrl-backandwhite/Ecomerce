@@ -87,6 +87,8 @@ const translations: Record<Locale, Record<string, string>> = {
         "banner.worldwide": "Envíos en casi todo el mundo",
         "banner.encrypted": "Pago cifrado SSL",
         "banner.qualityGuarantee": "Calidad garantizada",
+        // ── Acciones comunes ──
+        "common.continueShopping": "Seguir comprando",
         // ── Gift card ──
         "gift.title": "Tarjetas de regalo NX036",
         "gift.subtitle": "El regalo perfecto — envíalo directo al email de quien quieras",
@@ -1345,6 +1347,8 @@ const translations: Record<Locale, Record<string, string>> = {
         "banner.worldwide": "Shipping to almost the entire world",
         "banner.encrypted": "SSL encrypted checkout",
         "banner.qualityGuarantee": "Quality guaranteed",
+        // ── Common actions ──
+        "common.continueShopping": "Continue shopping",
         // ── Gift card ──
         "gift.title": "NX036 Gift Cards",
         "gift.subtitle": "The perfect gift — send it directly to anyone's email",
@@ -2603,6 +2607,8 @@ const translations: Record<Locale, Record<string, string>> = {
         "banner.worldwide": "Enviamos para quase todo o mundo",
         "banner.encrypted": "Pagamento criptografado SSL",
         "banner.qualityGuarantee": "Qualidade garantida",
+        // ── Ações comuns ──
+        "common.continueShopping": "Continuar comprando",
         // ── Gift card ──
         "gift.title": "Cartões presente NX036",
         "gift.subtitle": "O presente perfeito — envie direto para o email de quem quiser",

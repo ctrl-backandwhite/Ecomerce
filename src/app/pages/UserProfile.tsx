@@ -14,10 +14,11 @@ import { ProfileGiftCards } from "../components/profile/ProfileGiftCards";
 import { ProfileFacturas } from "../components/profile/ProfileFacturas";
 import {
   User, ShoppingBag, Heart, MapPin, Shield, LogOut,
-  ChevronRight, LayoutDashboard, Store, CreditCard, Gift, ArrowLeft, Camera,
+  ChevronRight, LayoutDashboard, Store, CreditCard, Gift, Camera,
   FileText,
 } from "lucide-react";
 import { useSearchParams, Link } from "react-router";
+import { ContinueShoppingLink } from "../components/ContinueShoppingLink";
 import { AvatarPicker } from "../components/profile/AvatarPicker";
 import { profileRepository } from "../repositories/ProfileRepository";
 import { resolveAvatar } from "../lib/avatars";
@@ -78,13 +79,7 @@ export function UserProfile() {
             <ChevronRight className="w-3 h-3" />
             <span className="text-gray-900">{t("profile.breadcrumb.myaccount")}</span>
           </div>
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            {t("profile.breadcrumb.backtoshop")}
-          </Link>
+          <ContinueShoppingLink variant="ghost" className="text-xs" />
         </div>
       </div>
 

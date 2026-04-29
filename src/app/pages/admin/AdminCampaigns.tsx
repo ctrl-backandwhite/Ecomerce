@@ -102,11 +102,19 @@ const UI_TO_API_TYPE: Record<CampaignType, ApiCampaignType> = {
 };
 
 function mapApiToUi(c: ApiCampaign): Campaign {
-  const now = new Date().toISOString();
+  // Compare numerically (ms since epoch) instead of as strings — date formats
+  // returned by the backend can vary (with/without timezone suffix, with or
+  // without milliseconds, plain "yyyy-MM-dd" when the field was last edited
+  // by the form), and string comparison silently misclassifies an in-window
+  // campaign as "scheduled" when one side has the T separator and the other
+  // doesn't. Date.parse handles all the ISO-ish shapes uniformly.
+  const nowMs = Date.now();
+  const startMs = Date.parse(c.startDate);
+  const endMs = Date.parse(c.endDate);
   let status: CampaignStatus = "paused";
   if (c.active) {
-    status = c.startDate <= now && now <= c.endDate ? "active" : "scheduled";
-  } else if (c.endDate < now) {
+    status = startMs <= nowMs && nowMs <= endMs ? "active" : "scheduled";
+  } else if (endMs < nowMs) {
     status = "ended";
   }
   const type: CampaignType = API_TO_UI_TYPE[c.type] ?? "percentage";

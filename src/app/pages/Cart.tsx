@@ -9,7 +9,7 @@ import { shippingRepository } from "../repositories/ShippingRepository";
 import { resolveCountryCode } from "../utils/resolveCountryCode";
 import { Button } from "../components/ui/button";
 import { Link, useNavigate } from "react-router";
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, Heart } from "lucide-react";
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, Heart } from "lucide-react";
 import { Badge } from "../components/ui/badge";
 
 export function Cart() {
@@ -290,9 +290,10 @@ export function Cart() {
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
 
-              <Link to="/">
+              <Link to="/store">
                 <Button variant="outline" size="lg" className="w-full">
-                  {t("cart.continue")}
+                  <ArrowLeft className="mr-2 w-5 h-5" />
+                  {t("common.continueShopping")}
                 </Button>
               </Link>
 

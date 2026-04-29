@@ -1,8 +1,9 @@
 import { useCompare } from "../context/CompareContext";
-import { Star, X, ShoppingCart, ArrowLeft } from "lucide-react";
+import { Star, X, ShoppingCart } from "lucide-react";
 import { Link } from "react-router";
 import { useCart } from "../context/CartContext";
 import { useCurrency } from "../context/CurrencyContext";
+import { ContinueShoppingLink } from "../components/ContinueShoppingLink";
 import { toast } from "sonner";
 
 const SPEC_ROWS_BASE = [
@@ -59,9 +60,7 @@ export function ComparePage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <Link to="/" className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 transition-colors mb-2">
-              <ArrowLeft className="w-3 h-3" /> Seguir comprando
-            </Link>
+            <ContinueShoppingLink variant="ghost" className="text-xs mb-2" />
             <h1 className="text-xl text-gray-900 tracking-tight">Comparar productos</h1>
           </div>
           <button onClick={clear} className="text-xs text-gray-400 hover:text-red-500 border border-gray-200 rounded-lg h-7 px-3 hover:border-red-200 transition-colors">

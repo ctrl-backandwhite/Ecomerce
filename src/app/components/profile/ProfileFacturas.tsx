@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useCurrency } from "../../context/CurrencyContext";
 import { useLanguage } from "../../context/LanguageContext";
 import { extractAmount } from "../../utils/extractAmount";
+import { CopyButton } from "../CopyButton";
 
 /* ── Status helpers ────────────────────────────────────────── */
 const STATUS_META: Record<InvoiceStatus, { labelKey: string; bg: string; text: string; dot: string; icon: typeof CheckCircle2 }> = {
@@ -66,6 +67,7 @@ function toDocData(inv: Invoice) {
         giftCardAmount: inv.giftCardAmount ?? 0,
         loyaltyDiscount: inv.loyaltyDiscount ?? 0,
         paymentMethod: inv.paymentMethod,
+        currencyCode: inv.currencyCode,
         notes: inv.notes ?? undefined,
     };
 }
@@ -234,6 +236,7 @@ export function ProfileFacturas() {
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-0.5">
                                     <p className="text-xs text-gray-900 font-mono truncate">{inv.invoiceNumber}</p>
+                                    <CopyButton value={inv.invoiceNumber} title={t("profile.facturas.copyId") || "Copiar nº de factura"} />
                                     <span className={`inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full ${sm.bg} ${sm.text}`}>
                                         <SmIcon className="w-2.5 h-2.5" />
                                         {t(sm.labelKey)}

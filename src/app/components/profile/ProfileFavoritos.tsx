@@ -35,6 +35,27 @@ function pPrice(p: NexaProduct): number {
   return parseFloat(first) || 0;
 }
 
+/**
+ * CJ Dropshipping descriptions ship as raw HTML — paragraphs, breaks,
+ * inline <img> tags with measurement charts and supplier-side notes.
+ * Inside the favourites modal we only want a short readable summary, so
+ * parse the HTML, drop tags entirely, normalize whitespace and truncate.
+ */
+const PREVIEW_MAX_CHARS = 320;
+function stripHtmlForPreview(html: string): string {
+  if (!html) return "";
+  let text: string;
+  try {
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    text = doc.body.textContent ?? "";
+  } catch {
+    text = html.replace(/<[^>]*>/g, " ");
+  }
+  const collapsed = text.replace(/\s+/g, " ").trim();
+  if (collapsed.length <= PREVIEW_MAX_CHARS) return collapsed;
+  return collapsed.slice(0, PREVIEW_MAX_CHARS).trimEnd() + "…";
+}
+
 /* ── Product detail modal ─────────────────────────────────── */
 function ProductModal({
   product,
@@ -88,12 +109,18 @@ function ProductModal({
               <span className="text-2xl text-gray-900">{formatPrice(price)}</span>
             </div>
 
-            {/* Description */}
-            {product.description && (
-              <p className="text-xs text-gray-500 leading-relaxed mb-5 flex-1">
-                {product.description}
-              </p>
-            )}
+            {/* Description — CJ ships raw HTML (with <img>/<b>/<br/> tags
+                and inline measurement images). Extract text content only,
+                normalize whitespace and truncate so the modal stays a quick
+                preview, not a full product page. */}
+            {(() => {
+              const cleaned = stripHtmlForPreview(product.description ?? "");
+              return cleaned ? (
+                <p className="text-xs text-gray-500 leading-relaxed mb-5 flex-1">
+                  {cleaned}
+                </p>
+              ) : null;
+            })()}
 
             {/* Stock */}
             <div className="flex items-center gap-2 mb-5">

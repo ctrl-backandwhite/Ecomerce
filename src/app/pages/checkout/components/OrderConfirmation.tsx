@@ -1,6 +1,7 @@
 import { CheckCircle2 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { InvoiceDocument } from "../../../components/InvoiceDocument";
+import { ContinueShoppingLink } from "../../../components/ContinueShoppingLink";
 import { useUser } from "../../../context/UserContext";
 import type { CheckoutState } from "../types";
 import { storeLocations, pickupPoints } from "../types";
@@ -96,6 +97,7 @@ export function OrderConfirmation({ state }: OrderConfirmationProps) {
             giftCardAmount: backendInvoice.giftCardAmount ?? 0,
             loyaltyDiscount: backendInvoice.loyaltyDiscount ?? 0,
             paymentMethod: backendInvoice.paymentMethod,
+            currencyCode: backendInvoice.currencyCode ?? createdOrder?.currencyCode,
         }
         : {
             invoiceNumber: `FAC-${orderId}`,
@@ -121,6 +123,7 @@ export function OrderConfirmation({ state }: OrderConfirmationProps) {
             tax,
             total,
             paymentMethod: paymentSummaryLabel() || undefined,
+            currencyCode: createdOrder?.currencyCode,
         };
 
     return (
@@ -144,12 +147,7 @@ export function OrderConfirmation({ state }: OrderConfirmationProps) {
                         >
                             Mis pedidos
                         </button>
-                        <button
-                            onClick={() => navigate("/")}
-                            className="h-8 px-4 text-xs text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors"
-                        >
-                            Seguir comprando
-                        </button>
+                        <ContinueShoppingLink variant="secondary" className="h-8 px-4 text-xs rounded-lg" />
                     </div>
                 </div>
             </div>

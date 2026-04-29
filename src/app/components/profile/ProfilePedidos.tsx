@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "../../context/LanguageContext";
+import { CopyButton } from "../CopyButton";
 
 /* ── Local types (mapped from API) ────────────────────────── */
 
@@ -473,7 +474,10 @@ function OrderModal({
               <Truck className="w-4 h-4 text-gray-600" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-sm text-gray-900">{order.id}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm text-gray-900">{order.id}</p>
+                <CopyButton value={order.id} title={t("profile.pedidos.copyId") || "Copiar nº de pedido"} />
+              </div>
               <p className="text-xs text-gray-400">{orderDate}</p>
             </div>
           </div>
@@ -826,6 +830,7 @@ export function ProfilePedidos() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
                       <span className="text-sm text-gray-900">{order.id}</span>
+                      <CopyButton value={order.id} title={t("profile.pedidos.copyId") || "Copiar nº de pedido"} />
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${cfg.bg} ${cfg.color}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
                         {t(cfg.labelKey)}
