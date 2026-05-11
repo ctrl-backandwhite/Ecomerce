@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useUser, Address } from "../../context/UserContext";
 import { useLanguage } from "../../context/LanguageContext";
+import { useTimezone } from "../../context/TimezoneContext";
 import {
   MapPin, Plus, Pencil, Trash2, Check, Home, Briefcase,
   Truck, Store, Package2, ChevronRight, Clock, Phone,
@@ -207,9 +208,16 @@ function AddressForm({
   onCancel: () => void;
 }) {
   const { t } = useLanguage();
+  // Active countries from CMS (currency rates with active=true). Same source
+  // the admin and the storefront currency picker use, so the address country
+  // selector only offers destinations the merchant has actually enabled.
+  const { countries } = useTimezone();
   const [form, setForm] = useState<FormState>(initial);
   const [storeSearch, setStoreSearch] = useState("");
   const [expandedOperator, setExpandedOperator] = useState<string | null>("chilexpress");
+
+  // Sort countries alphabetically by display name for the dropdown.
+  const countryOptions = [...countries].sort((a, b) => a.country.localeCompare(b.country));
 
   const change = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -322,7 +330,6 @@ function AddressForm({
               { label: "City", name: "city", col: "col-span-1", placeholder: "New York" },
               { label: "State / County", name: "state", col: "col-span-1", placeholder: "NY" },
               { label: "ZIP / Postcode", name: "zip", col: "col-span-1", placeholder: "10001" },
-              { label: "Country", name: "country", col: "col-span-1", placeholder: "United States" },
             ].map(({ label, name, col, placeholder }) => (
               <div key={name} className={col}>
                 <label className="block text-xs text-gray-400 mb-1.5">{label}</label>
@@ -335,6 +342,23 @@ function AddressForm({
                 />
               </div>
             ))}
+            {/* Country is constrained to the active currencies/zones — only
+                destinations the merchant supports show up, which keeps
+                shipping rules and tax lookups in sync. */}
+            <div className="col-span-1">
+              <label className="block text-xs text-gray-400 mb-1.5">Country</label>
+              <select
+                name="country"
+                value={String(form.country ?? "")}
+                onChange={change}
+                className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400 bg-white"
+              >
+                <option value="">Selecciona un país…</option>
+                {countryOptions.map(c => (
+                  <option key={c.code} value={c.country}>{c.flag} {c.country}</option>
+                ))}
+              </select>
+            </div>
           </div>
         )}
 

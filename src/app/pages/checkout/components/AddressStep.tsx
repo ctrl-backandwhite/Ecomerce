@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import {
     ChevronRight, Check, Plus, Truck, Store, Package2, MapPin,
     User, AlertCircle, Clock, Navigation, Building2,
@@ -10,6 +11,7 @@ import type { UserProfile } from "../../../context/UserContext";
 import type { ShippingOption } from "../../../repositories/ShippingRepository";
 import { useCurrency } from "../../../context/CurrencyContext";
 import { useLanguage } from "../../../context/LanguageContext";
+import { useTimezone } from "../../../context/TimezoneContext";
 
 interface AddressStepProps {
     state: CheckoutState;
@@ -32,7 +34,51 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
     const { t } = useLanguage();
     const navigate = useNavigate();
     const { formatPrice, formatFromUsd } = useCurrency();
+    // Active destinations driven by the CMS currency table — same source the
+    // admin's shipping zones use, so the manual checkout address can only
+    // pick countries the merchant actually supports.
+    const { countries, selectedCountry } = useTimezone();
+    const countryOptions = [...countries].sort((a, b) => a.country.localeCompare(b.country));
     const { step, selectedAddrId, newMode, manualAddr, selectedStoreId, selectedPickupId } = state;
+
+    /**
+     * Filter saved addresses to those that match the country/currency the
+     * user has selected. Mexican shopper viewing the cart in MXN should only
+     * see Mexican delivery addresses — picking a Spanish address would force
+     * a different shipping rule + currency conversion that conflicts with
+     * the rest of the checkout state. The match is loose: ISO code, English
+     * display name, or Spanish display name all count, so legacy addresses
+     * stored as "México", "Mexico" or "MX" all resolve correctly.
+     */
+    const visibleAddresses = (() => {
+        if (!selectedCountry) return user.addresses;
+        const acceptable = new Set<string>();
+        acceptable.add(selectedCountry.code.toLowerCase());
+        acceptable.add(selectedCountry.country.toLowerCase());
+        const fromList = countries.find(c => c.code === selectedCountry.code);
+        if (fromList) acceptable.add(fromList.country.toLowerCase());
+        return user.addresses.filter(a => {
+            if (!a.country) return false;
+            return acceptable.has(a.country.trim().toLowerCase());
+        });
+    })();
+
+    // If the country changed and the address that was previously selected
+    // is no longer visible, clear the selection so the order summary stops
+    // showing a stale "ENTREGA EN" of the wrong country and the user has
+    // to actively pick (or create) one that matches.
+    useEffect(() => {
+        if (!selectedAddrId || selectedAddrId === "new") return;
+        const stillVisible = visibleAddresses.some(a => a.id === selectedAddrId);
+        if (!stillVisible) {
+            const fallback = visibleAddresses.find(a => a.isDefault) ?? visibleAddresses[0];
+            dispatch({
+                type: "PATCH",
+                payload: { selectedAddrId: fallback ? fallback.id : null },
+            });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedCountry?.code]);
 
     return (
         <Section>
@@ -54,11 +100,16 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                 <div className="px-6 pb-6 border-t border-gray-50">
                     <div className="pt-5 space-y-3">
 
-                        {/* ── Saved addresses ── */}
-                        {user.addresses.length > 0 && (
+                        {/* ── Saved addresses (filtered by selected country) ── */}
+                        {visibleAddresses.length > 0 && (
                             <>
-                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">{t("checkout.address.saved") || "Mis direcciones guardadas"}</p>
-                                {user.addresses.map((addr) => {
+                                <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+                                    {t("checkout.address.saved") || "Mis direcciones guardadas"}
+                                    <span className="ml-2 text-gray-300 normal-case tracking-normal">
+                                        · {selectedCountry?.flag} {selectedCountry?.country}
+                                    </span>
+                                </p>
+                                {visibleAddresses.map((addr) => {
                                     const dt = deliveryMeta[addr.deliveryType ?? "home"];
                                     const isSelected = selectedAddrId === addr.id;
                                     return (
@@ -111,6 +162,16 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                                     );
                                 })}
                             </>
+                        )}
+
+                        {/* Friendly hint when the customer has addresses on file but none match
+                            the currently selected country — they need to add a new one or change
+                            country to see saved options. */}
+                        {visibleAddresses.length === 0 && user.addresses.length > 0 && (
+                            <div className="rounded-xl border border-dashed border-amber-200 bg-amber-50/50 px-4 py-3 text-xs text-amber-700">
+                                No tienes direcciones guardadas para {selectedCountry?.flag} {selectedCountry?.country}.
+                                Crea una nueva abajo o cambia el país en el selector superior para usar otra dirección.
+                            </div>
                         )}
 
                         {/* ── Other delivery options ── */}
@@ -214,12 +275,16 @@ export function AddressStep({ state, dispatch, user, step2Valid, deliverySummary
                                                 </div>
                                                 <div>
                                                     <label className="block text-xs text-gray-400 mb-1.5">Country</label>
-                                                    <input
+                                                    <select
                                                         value={manualAddr.country}
                                                         onChange={(e) => dispatch({ type: "SET_MANUAL_ADDR", payload: { country: e.target.value } })}
-                                                        className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 bg-white placeholder-gray-300"
-                                                        placeholder="United States"
-                                                    />
+                                                        className="w-full text-sm text-gray-900 border border-gray-200 rounded-lg px-3 py-2.5 focus:outline-none focus:border-gray-400 bg-white"
+                                                    >
+                                                        <option value="">Selecciona un país…</option>
+                                                        {countryOptions.map(c => (
+                                                            <option key={c.code} value={c.country}>{c.flag} {c.country}</option>
+                                                        ))}
+                                                    </select>
                                                 </div>
                                             </div>
                                             <div className="flex items-start gap-2 pt-1">

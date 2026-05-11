@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Plus, Pencil, Trash2, Truck, Globe, MapPin, Check,
-  X, AlertTriangle, Package, Clock, DollarSign,
+  X, AlertTriangle, Package, Clock, DollarSign, Copy,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "../../context/LanguageContext";
@@ -27,6 +27,7 @@ interface Carrier {
   baseCost: number;
   active: boolean;
   _ruleId?: string;    // ID of the associated default shipping rule
+  _existingCode?: string; // Backend code preserved across edits to avoid UNIQUE conflicts
 }
 
 interface ShippingRule {
@@ -36,6 +37,10 @@ interface ShippingRule {
   weightFrom: number;
   weightTo: number;
   price: number;
+  /** Free shipping kicks in once order subtotal hits this USD amount. */
+  freeAbove: number | null;
+  /** Weight cap (kg) the order must stay under for the freeAbove promo to apply. */
+  freeAboveMaxWeight: number | null;
   active: boolean;
 }
 
@@ -50,24 +55,49 @@ interface ZoneOption { code: string; name: string; }
 // Removed: data is now loaded from the API.
 
 function mapCarrierToUi(c: ApiCarrier): Carrier {
+  // Avatar initials default to first two letters of the carrier name when
+  // the code is a long auto-generated slug (the new behaviour). Falls back
+  // to the legacy short codes (ST, SO, …) when those are still in the DB.
+  const initials = c.code.length <= 3
+    ? c.code.toUpperCase()
+    : c.name.replace(/[^A-Za-zÁ-ú]/g, "").slice(0, 2).toUpperCase() || "??";
   return {
     id: c.id,
     name: c.name,
-    logo: c.code.slice(0, 2).toUpperCase(),
+    logo: initials,
     trackingUrl: c.logoUrl ?? "",
     zones: "",
     minDays: 1,
     maxDays: 5,
-    freeAbove: null,
+    freeAbove: 120,
     baseCost: 0,
     active: c.active,
   };
 }
 
-function carrierToPayload(c: Carrier): CarrierPayload {
+/**
+ * Derive a stable, URL-safe carrier code from its display name. The DB
+ * has a UNIQUE constraint on `code`, so using the avatar initials (e.g.
+ * "ST") as the code causes collisions whenever two carriers share the
+ * same first letters. The slugified name is unique enough in practice
+ * and frees the avatar field to be a pure visual cue.
+ */
+function slugifyCode(name: string): string {
+  return name
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")  // strip accents
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 50) || "CARRIER";
+}
+
+function carrierToPayload(c: Carrier & { _existingCode?: string }): CarrierPayload {
   return {
     name: c.name,
-    code: c.logo,
+    // Preserve the existing code on edit (avoid UNIQUE conflicts when the
+    // name only changes capitalisation). Generate a fresh slug for new
+    // carriers based on the human name.
+    code: c._existingCode ?? slugifyCode(c.name),
     logoUrl: c.trackingUrl || undefined,
     active: c.active,
   };
@@ -81,15 +111,29 @@ function mapRuleToUi(r: ApiShippingRule): ShippingRule {
     weightFrom: r.weightMin ?? 0,
     weightTo: r.weightMax ?? 30,
     price: r.rate,
+    freeAbove: r.freeAbove ?? null,
+    freeAboveMaxWeight: r.freeAboveMaxWeight ?? null,
     active: r.active ?? true,
   };
 }
 
-function ruleToPayload(r: ShippingRule): ShippingRulePayload {
+function ruleToPayload(r: ShippingRule, carriers: Carrier[]): ShippingRulePayload {
+  // r.carrier is the carrier *name* in the UI shape; look up its real id.
+  const carrierId = carriers.find(c => c.name === r.carrier)?.id ?? "";
+  // Auto-default the free-shipping weight cap to 15 kg when the admin sets a
+  // freeAbove threshold but leaves the cap empty — matches the business rule
+  // ("free shipping ≥ $120 and ≤ 15 kg") so admins don't have to remember it.
+  const cap = r.freeAbove != null && r.freeAbove > 0
+    ? (r.freeAboveMaxWeight ?? 15)
+    : (r.freeAboveMaxWeight ?? undefined);
   return {
-    carrierId: "",
+    carrierId,
     rate: r.price,
     zone: r.zone,
+    weightMin: r.weightFrom,
+    weightMax: r.weightTo,
+    freeAbove: r.freeAbove ?? undefined,
+    freeAboveMaxWeight: cap ?? undefined,
     active: r.active,
   };
 }
@@ -97,11 +141,12 @@ function ruleToPayload(r: ShippingRule): ShippingRulePayload {
 // ── Empty form states ────────────────────────────────────────
 const emptyCarrier: Omit<Carrier, "id"> = {
   name: "", logo: "", trackingUrl: "", zones: "",
-  minDays: 1, maxDays: 3, freeAbove: null, baseCost: 0, active: true,
+  minDays: 1, maxDays: 3, freeAbove: 120, baseCost: 0, active: true,
 };
 
 const emptyRule: Omit<ShippingRule, "id"> = {
-  zone: "", carrier: "", weightFrom: 0, weightTo: 30, price: 0, active: true,
+  zone: "", carrier: "", weightFrom: 0, weightTo: 30, price: 0,
+  freeAbove: 120, freeAboveMaxWeight: 15, active: true,
 };
 
 // ── Shared input style ───────────────────────────────────────
@@ -114,16 +159,41 @@ const lbl = "block text-[11px] text-gray-500 mb-1";
 interface CarrierModalProps {
   initial: Omit<Carrier, "id"> & { id?: string };
   zones: ZoneOption[];
+  /** All rules across carriers — used to auto-fill the form when the user
+   *  switches the zone dropdown so each zone keeps its own rate/freeAbove. */
+  rules: ApiShippingRule[];
   onSave: (data: Omit<Carrier, "id"> & { id?: string }) => void;
   onClose: () => void;
 }
 
-function CarrierModal({ initial, zones, onSave, onClose }: CarrierModalProps) {
+function CarrierModal({ initial, zones, rules, onSave, onClose }: CarrierModalProps) {
   const [form, setForm] = useState({ ...initial });
   const isEdit = Boolean(initial.id);
 
   const set = (field: keyof typeof form, value: any) =>
     setForm(prev => ({ ...prev, [field]: value }));
+
+  /**
+   * When the user changes the country in the dropdown, suggest the rate /
+   * freeAbove / days that another carrier already uses for that country —
+   * this is the "configured zone price" the admin set elsewhere. Doesn't
+   * touch _ruleId because the model is 1 carrier = 1 rule, so saving will
+   * update *this* carrier's single rule with the new zone.
+   */
+  const onZoneChange = (newZone: string) => {
+    setForm(prev => {
+      const template = rules.find(
+        r => r.zone === newZone && r.active && r.carrierId !== prev.id,
+      );
+      return {
+        ...prev,
+        zones: newZone,
+        baseCost: template ? template.rate : prev.baseCost,
+        freeAbove: template ? template.freeAbove : prev.freeAbove,
+        maxDays: template?.estimatedDays ?? prev.maxDays,
+      };
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,7 +296,7 @@ function CarrierModal({ initial, zones, onSave, onClose }: CarrierModalProps) {
               <select
                 className={inp}
                 value={form.zones}
-                onChange={e => set("zones", e.target.value)}
+                onChange={e => onZoneChange(e.target.value)}
               >
                 <option value="">Selecciona un país…</option>
                 {zones.map(z => <option key={z.code} value={z.code}>{z.name}</option>)}
@@ -440,6 +510,32 @@ function RuleModal({ initial, carriers, zones, onSave, onClose }: RuleModalProps
               />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3 pt-2 border-t border-gray-100">
+            <div>
+              <label className={lbl}>Envío gratis a partir de ($)</label>
+              <input
+                type="number" min={0} step={0.01}
+                className={inp}
+                placeholder="120"
+                value={form.freeAbove ?? ""}
+                onChange={e => set("freeAbove", e.target.value === "" ? null : parseFloat(e.target.value))}
+              />
+            </div>
+            <div>
+              <label className={lbl}>Peso máx. para envío gratis (kg)</label>
+              <input
+                type="number" min={0} step={0.1}
+                className={inp}
+                placeholder="15"
+                value={form.freeAboveMaxWeight ?? ""}
+                onChange={e => set("freeAboveMaxWeight", e.target.value === "" ? null : parseFloat(e.target.value))}
+              />
+            </div>
+          </div>
+          <p className="text-[10px] text-gray-400 -mt-1">
+            Si dejas vacío "envío gratis a partir de", la promo no aplica. El peso máx. defaultea a 15 kg cuando hay umbral configurado.
+          </p>
         </form>
 
         <div className="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-gray-100 bg-gray-50/50">
@@ -484,8 +580,16 @@ export function AdminShipping() {
   const { formatPrice } = useCurrency();
   const [carriers, setCarriers] = useState<Carrier[]>([]);
   const [rules, setRules] = useState<ShippingRule[]>([]);
+  /** Raw backend ShippingRule[] kept alongside the UI-mapped `rules` so the
+   *  carrier modal and the zones tab can match by (carrierId, zone) without
+   *  remapping. */
+  const [apiRules, setApiRules] = useState<ApiShippingRule[]>([]);
   const [zones, setZones] = useState<ZoneOption[]>(ZONES_FALLBACK);
   const [tab, setTab] = useState<"carriers" | "rules" | "zones">("carriers");
+  /** Zonas tab: search + status filter. */
+  const [zoneSearch, setZoneSearch] = useState("");
+  const [zoneStatus, setZoneStatus] = useState<"all" | "configured" | "empty">("all");
+  const [zoneEditTarget, setZoneEditTarget] = useState<ZoneOption | null>(null);
 
   const loadAll = useCallback(async () => {
     try {
@@ -502,6 +606,7 @@ export function AdminShipping() {
         .sort((a, b) => a.name.localeCompare(b.name));
       if (zoneList.length > 0) setZones(zoneList);
 
+      setApiRules(rawRules);
       setRules(rawRules.map(mapRuleToUi));
       setCarriers(apiCarriers.map(c => {
         const rule = rawRules.find(r => r.carrierId === c.id && r.active)
@@ -513,6 +618,7 @@ export function AdminShipping() {
           maxDays: rule?.estimatedDays ?? 5,
           zones: rule?.zone ?? "",
           _ruleId: rule?.id,
+          _existingCode: c.code, // preserve so updates don't trigger UNIQUE conflicts
         };
       }));
     } catch {
@@ -534,8 +640,8 @@ export function AdminShipping() {
     data: (Omit<ShippingRule, "id"> & { id?: string }) | null;
   }>({ open: false, data: null });
 
-  // Delete state
-  const [deleteTarget, setDeleteTarget] = useState<{ type: "carrier" | "rule"; id: string; name: string } | null>(null);
+  // Delete state — "zone" deletes all rules within that zone in bulk
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "carrier" | "rule" | "zone"; id: string; name: string } | null>(null);
 
   /* ── Carrier CRUD ───────────────────────────────────── */
   const openNewCarrier = () => setCarrierModal({ open: true, data: { ...emptyCarrier } });
@@ -550,7 +656,11 @@ export function AdminShipping() {
         savedCarrier = await shippingRepository.createCarrier(carrierToPayload(data as Carrier));
       }
 
-      // Persist baseCost / freeAbove in the carrier's default shipping rule
+      // Model: 1 carrier = 1 rule. Update the carrier's single rule
+      // (zone, rate, freeAbove) via _ruleId. If somehow no rule exists,
+      // create one. Don't look up by (carrierId, zone) because the user
+      // may be *changing* the zone in this same save — looking up the
+      // new zone would create a duplicate and orphan the old rule.
       const rulePayload: ShippingRulePayload = {
         carrierId: savedCarrier.id,
         rate: data.baseCost,
@@ -577,6 +687,55 @@ export function AdminShipping() {
   const confirmDeleteCarrier = (c: Carrier) =>
     setDeleteTarget({ type: "carrier", id: c.id, name: c.name });
 
+  /**
+   * Duplicate a carrier and every shipping_rule attached to it. The clone
+   * gets a name suffixed with "(copia)" and a fresh slugified code so the
+   * UNIQUE constraint on shipping_carriers.code holds. All rules are copied
+   * verbatim (rate, freeAbove, weight cap, zone, days) so the operator can
+   * tweak the new carrier without rebuilding 8 rules from scratch.
+   */
+  const cloneCarrier = async (c: Carrier) => {
+    try {
+      // Build a unique name + code by suffixing copies until they're free.
+      const usedCodes = new Set(carriers.map(x => x._existingCode).filter(Boolean) as string[]);
+      const usedNames = new Set(carriers.map(x => x.name));
+      let nameTry = `${c.name} (copia)`;
+      let codeTry = slugifyCode(nameTry);
+      let n = 2;
+      while (usedNames.has(nameTry) || usedCodes.has(codeTry)) {
+        nameTry = `${c.name} (copia ${n})`;
+        codeTry = slugifyCode(nameTry);
+        n++;
+      }
+      const created = await shippingRepository.createCarrier({
+        name: nameTry,
+        code: codeTry,
+        logoUrl: c.trackingUrl || undefined,
+        active: c.active,
+      });
+      const sourceRules = apiRules.filter(r => r.carrierId === c.id);
+      await Promise.all(sourceRules.map(r =>
+        shippingRepository.createRule({
+          carrierId: created.id,
+          zone: r.zone ?? "Global",
+          weightMin: r.weightMin ?? undefined,
+          weightMax: r.weightMax ?? undefined,
+          priceMin: r.priceMin ?? undefined,
+          priceMax: r.priceMax ?? undefined,
+          rate: r.rate,
+          freeAbove: r.freeAbove ?? undefined,
+          freeAboveMaxWeight: r.freeAboveMaxWeight ?? undefined,
+          estimatedDays: r.estimatedDays,
+          active: r.active,
+        }),
+      ));
+      toast.success(`Transportista clonado como "${nameTry}" con ${sourceRules.length} regla${sourceRules.length !== 1 ? "s" : ""}`);
+      await loadAll();
+    } catch {
+      toast.error("Error al clonar transportista");
+    }
+  };
+
   const toggleActive = async (id: string) => {
     const carrier = carriers.find(c => c.id === id);
     if (!carrier) return;
@@ -595,11 +754,26 @@ export function AdminShipping() {
 
   const saveRule = async (data: Omit<ShippingRule, "id"> & { id?: string }) => {
     try {
+      // The rule modal exposes freeAbove + freeAboveMaxWeight directly now.
+      // Still preserve estimatedDays + priceMin/Max from the backend record
+      // because those fields aren't in the modal yet — keeps the rule's
+      // delivery-time and price-bracket intact on save.
+      const existing = data.id ? apiRules.find(r => r.id === data.id) : undefined;
+      const payload = {
+        ...ruleToPayload(data as ShippingRule, carriers),
+        estimatedDays: existing?.estimatedDays,
+        priceMin: existing?.priceMin ?? undefined,
+        priceMax: existing?.priceMax ?? undefined,
+      };
+      if (!payload.carrierId) {
+        toast.error("Selecciona un transportista válido");
+        return;
+      }
       if (data.id) {
-        await shippingRepository.updateRule(data.id, ruleToPayload(data as ShippingRule));
+        await shippingRepository.updateRule(data.id, payload);
         toast.success("Regla actualizada");
       } else {
-        await shippingRepository.createRule(ruleToPayload(data as ShippingRule));
+        await shippingRepository.createRule(payload);
         toast.success("Regla creada");
       }
       setRuleModal({ open: false, data: null });
@@ -619,14 +793,49 @@ export function AdminShipping() {
       if (deleteTarget.type === "carrier") {
         await shippingRepository.deleteCarrier(deleteTarget.id);
         toast.success("Transportista eliminado");
-      } else {
+      } else if (deleteTarget.type === "rule") {
         await shippingRepository.deleteRule(deleteTarget.id);
         toast.success("Regla eliminada");
+      } else {
+        // Zone: delete every rule with that zone code
+        const targets = apiRules.filter(r => r.zone === deleteTarget.id);
+        await Promise.all(targets.map(r => shippingRepository.deleteRule(r.id)));
+        toast.success(`${targets.length} regla${targets.length !== 1 ? "s" : ""} eliminada${targets.length !== 1 ? "s" : ""} en ${deleteTarget.name}`);
       }
       setDeleteTarget(null);
       await loadAll();
     } catch {
       toast.error("Error al eliminar");
+    }
+  };
+
+  /* ── Bulk update zone (rate / freeAbove across all rules in that zone) ── */
+  const saveZoneEdit = async (zone: ZoneOption, rate: number, freeAbove: number | null) => {
+    const targets = apiRules.filter(r => r.zone === zone.code);
+    if (targets.length === 0) {
+      toast.error("Esta zona no tiene reglas");
+      return;
+    }
+    try {
+      await Promise.all(targets.map(r =>
+        shippingRepository.updateRule(r.id, {
+          carrierId: r.carrierId,
+          zone: r.zone ?? zone.code,
+          weightMin: r.weightMin ?? undefined,
+          weightMax: r.weightMax ?? undefined,
+          priceMin: r.priceMin ?? undefined,
+          priceMax: r.priceMax ?? undefined,
+          rate,
+          freeAbove: freeAbove ?? undefined,
+          estimatedDays: r.estimatedDays,
+          active: r.active,
+        }),
+      ));
+      toast.success(`Tarifa actualizada en ${targets.length} regla${targets.length !== 1 ? "s" : ""} de ${zone.name}`);
+      setZoneEditTarget(null);
+      await loadAll();
+    } catch {
+      toast.error("Error al actualizar la zona");
     }
   };
 
@@ -665,7 +874,7 @@ export function AdminShipping() {
         {[
           { label: "Transportistas", value: carriers.length, icon: Truck },
           { label: "Activos", value: carriers.filter(c => c.active).length, icon: Check },
-          { label: "Países cubiertos", value: zones.length, icon: Globe },
+          { label: "Países cubiertos", value: new Set(rules.map(r => r.zone)).size, icon: Globe },
           { label: "Reglas de tarifa", value: rules.length, icon: MapPin },
         ].map(s => (
           <div key={s.label} className="bg-white border border-gray-100 rounded-xl px-4 py-3 flex items-center gap-3">
@@ -735,10 +944,51 @@ export function AdminShipping() {
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 lg:block">{zones.find(z => z.code === c.zones)?.name || c.zones}</p>
+              {(() => {
+                // Aggregate every zone the carrier has rules for, not just
+                // the first match — admins need to see total coverage, not
+                // a single sample country.
+                const carrierZones = Array.from(new Set(
+                  apiRules.filter(r => r.carrierId === c.id && r.zone).map(r => r.zone as string),
+                )).sort();
+                if (carrierZones.length === 0) {
+                  return <p className="text-xs text-gray-400 lg:block italic">Sin zonas</p>;
+                }
+                if (carrierZones.length === 1) {
+                  return <p className="text-xs text-gray-500 lg:block">{zones.find(z => z.code === carrierZones[0])?.name || carrierZones[0]}</p>;
+                }
+                const preview = carrierZones.slice(0, 2).map(code => zones.find(z => z.code === code)?.name || code).join(", ");
+                return (
+                  <p
+                    className="text-xs text-gray-500 lg:block truncate"
+                    title={carrierZones.map(code => zones.find(z => z.code === code)?.name || code).join(", ")}
+                  >
+                    {preview} <span className="text-gray-400">+{carrierZones.length - 2} más</span>
+                  </p>
+                );
+              })()}
               <p className="text-xs text-gray-500 text-center">{c.minDays}–{c.maxDays} días</p>
-              <p className="text-xs text-gray-500 text-right tabular-nums">{c.freeAbove != null ? formatPrice(c.freeAbove) : "—"}</p>
-              <p className="text-xs text-gray-900 text-right tabular-nums">{formatPrice(c.baseCost)}</p>
+              {(() => {
+                // Aggregate freeAbove + rate across all rules for this carrier.
+                // Show a single value when uniform, a range otherwise.
+                const carrierRules = apiRules.filter(r => r.carrierId === c.id);
+                const freeAboves = Array.from(new Set(carrierRules.map(r => r.freeAbove).filter((v): v is number => v != null && v > 0)));
+                const rates = Array.from(new Set(carrierRules.map(r => r.rate))).sort((a, b) => a - b);
+                const freeLabel = freeAboves.length === 0
+                  ? "—"
+                  : freeAboves.length === 1
+                    ? formatPrice(freeAboves[0])
+                    : `${formatPrice(Math.min(...freeAboves))}–${formatPrice(Math.max(...freeAboves))}`;
+                const rateLabel = rates.length === 0
+                  ? formatPrice(0)
+                  : rates.length === 1
+                    ? formatPrice(rates[0])
+                    : `${formatPrice(rates[0])}–${formatPrice(rates[rates.length - 1])}`;
+                return <>
+                  <p className="text-xs text-gray-500 text-right tabular-nums">{freeLabel}</p>
+                  <p className="text-xs text-gray-900 text-right tabular-nums">{rateLabel}</p>
+                </>;
+              })()}
 
               {/* Status toggle */}
               <button
@@ -757,6 +1007,13 @@ export function AdminShipping() {
                   title="Editar"
                 >
                   <Pencil className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => cloneCarrier(c)}
+                  className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                  title="Clonar transportista (incluye reglas)"
+                >
+                  <Copy className="w-3 h-3" />
                 </button>
                 <button
                   onClick={() => confirmDeleteCarrier(c)}
@@ -847,25 +1104,120 @@ export function AdminShipping() {
 
       {/* ── Zones tab ── */}
       {tab === "zones" && (
-        <div className="bg-white border border-gray-100 rounded-xl p-6">
+        <div className="bg-white border border-gray-100 rounded-xl p-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-3 mb-4">
+            <input
+              className={`${inp} sm:max-w-xs`}
+              placeholder="Buscar país…"
+              value={zoneSearch}
+              onChange={e => setZoneSearch(e.target.value)}
+            />
+            <select
+              className={`${inp} sm:max-w-[200px]`}
+              value={zoneStatus}
+              onChange={e => setZoneStatus(e.target.value as typeof zoneStatus)}
+            >
+              <option value="all">Todas las zonas</option>
+              <option value="configured">Configuradas</option>
+              <option value="empty">Sin reglas</option>
+            </select>
+            <p className="text-[11px] text-gray-400 self-center ml-auto">
+              {zones.length} zonas · {rules.length} reglas activas
+            </p>
+          </div>
+
+          {/* Cards */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {zones.map(zone => {
-              const count = rules.filter(r => r.zone === zone.code).length;
-              return (
-                <div key={zone.code} className="border border-gray-100 rounded-xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Globe className="w-4 h-4 text-gray-400" strokeWidth={1.5} />
-                    <div>
-                      <p className="text-xs text-gray-900">{zone.name}</p>
-                      <p className="text-[10px] text-gray-400">{count} regla{count !== 1 ? "s" : ""}</p>
+            {zones
+              .filter(z => {
+                const count = rules.filter(r => r.zone === z.code).length;
+                if (zoneStatus === "configured" && count === 0) return false;
+                if (zoneStatus === "empty" && count > 0) return false;
+                if (zoneSearch && !z.name.toLowerCase().includes(zoneSearch.toLowerCase())
+                  && !z.code.toLowerCase().includes(zoneSearch.toLowerCase())) return false;
+                return true;
+              })
+              .map(zone => {
+                const zoneRules = apiRules.filter(r => r.zone === zone.code);
+                const count = zoneRules.length;
+                const minRate = count > 0 ? Math.min(...zoneRules.map(r => r.rate)) : null;
+                const freeAbove = zoneRules.find(r => r.freeAbove != null)?.freeAbove ?? null;
+                return (
+                  <div key={zone.code} className="border border-gray-100 rounded-xl p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <Globe className="w-4 h-4 text-gray-400 flex-shrink-0" strokeWidth={1.5} />
+                        <div className="min-w-0">
+                          <p className="text-xs text-gray-900 truncate">{zone.name}</p>
+                          <p className="text-[10px] text-gray-400">{zone.code} · {count} regla{count !== 1 ? "s" : ""}</p>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full flex-shrink-0 ${count > 0 ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-400"}`}>
+                        {count > 0 ? "Configurada" : "Sin reglas"}
+                      </span>
+                    </div>
+
+                    {count > 0 && (
+                      <div className="mb-3 grid grid-cols-2 gap-2 text-[10px] text-gray-500">
+                        <div>
+                          <p className="text-gray-400">Desde</p>
+                          <p className="text-gray-900 tabular-nums">{minRate != null ? formatPrice(minRate) : "—"}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-400">Gratis +</p>
+                          <p className="text-gray-900 tabular-nums">{freeAbove != null ? formatPrice(freeAbove) : "—"}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-1.5">
+                      {count === 0 ? (
+                        <button
+                          onClick={() => setRuleModal({ open: true, data: { ...emptyRule, zone: zone.code } })}
+                          className="flex-1 text-[10px] py-1.5 px-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                        >
+                          Crear regla
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setZoneEditTarget(zone)}
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                          >
+                            Editar tarifa
+                          </button>
+                          <button
+                            onClick={() => setTab("rules")}
+                            className="flex-1 text-[10px] py-1.5 px-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors"
+                          >
+                            Ver reglas
+                          </button>
+                          <button
+                            onClick={() => setDeleteTarget({ type: "zone", id: zone.code, name: zone.name })}
+                            className="text-[10px] py-1.5 px-2 rounded-lg border border-gray-200 text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                            title="Eliminar todas las reglas de esta zona"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${count > 0 ? "bg-green-50 text-green-700" : "bg-gray-100 text-gray-400"}`}>
-                    {count > 0 ? "Configurada" : "Sin reglas"}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })}
+            {zones.filter(z => {
+              const count = rules.filter(r => r.zone === z.code).length;
+              if (zoneStatus === "configured" && count === 0) return false;
+              if (zoneStatus === "empty" && count > 0) return false;
+              if (zoneSearch && !z.name.toLowerCase().includes(zoneSearch.toLowerCase())
+                && !z.code.toLowerCase().includes(zoneSearch.toLowerCase())) return false;
+              return true;
+            }).length === 0 && (
+              <p className="col-span-full text-center text-xs text-gray-400 py-8">
+                Sin resultados con esos filtros.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -875,6 +1227,7 @@ export function AdminShipping() {
         <CarrierModal
           initial={carrierModal.data}
           zones={zones}
+          rules={apiRules}
           onSave={saveCarrier}
           onClose={() => setCarrierModal({ open: false, data: null })}
         />
@@ -897,6 +1250,86 @@ export function AdminShipping() {
           onClose={() => setDeleteTarget(null)}
         />
       )}
+
+      {zoneEditTarget && (
+        <ZoneEditModal
+          zone={zoneEditTarget}
+          rules={apiRules.filter(r => r.zone === zoneEditTarget.code)}
+          onSave={(rate, freeAbove) => saveZoneEdit(zoneEditTarget, rate, freeAbove)}
+          onClose={() => setZoneEditTarget(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Zone bulk-edit modal
+// ─────────────────────────────────────────────────────────────
+interface ZoneEditModalProps {
+  zone: ZoneOption;
+  rules: ApiShippingRule[];
+  onSave: (rate: number, freeAbove: number | null) => void;
+  onClose: () => void;
+}
+
+function ZoneEditModal({ zone, rules, onSave, onClose }: ZoneEditModalProps) {
+  const initialRate = rules.length > 0 ? rules[0].rate : 0;
+  const initialFree = rules.find(r => r.freeAbove != null)?.freeAbove ?? 120;
+  const [rate, setRate] = useState<number>(initialRate);
+  const [freeAbove, setFreeAbove] = useState<number | null>(initialFree);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rate < 0) { toast.error("La tarifa no puede ser negativa"); return; }
+    onSave(rate, freeAbove);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gray-500 flex items-center justify-center">
+              <Globe className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
+            </div>
+            <h2 className="text-sm text-gray-900">Editar tarifa: {zone.name}</h2>
+          </div>
+          <button onClick={onClose} className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+          <p className="text-[11px] text-gray-400">
+            Aplica la nueva tarifa y umbral de envío gratis a las {rules.length} regla{rules.length !== 1 ? "s" : ""} activas en {zone.name}.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={lbl}>Tarifa base * (USD)</label>
+              <input
+                type="number" min={0} step="0.01"
+                className={inp}
+                value={rate}
+                onChange={e => setRate(parseFloat(e.target.value) || 0)}
+              />
+            </div>
+            <div>
+              <label className={lbl}>Envío gratis a partir de (USD)</label>
+              <input
+                type="number" min={0} step="0.01"
+                className={inp}
+                placeholder="120"
+                value={freeAbove ?? ""}
+                onChange={e => setFreeAbove(e.target.value === "" ? null : parseFloat(e.target.value))}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <button type="button" onClick={onClose} className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancelar</button>
+            <button type="submit" className="px-3 py-1.5 text-xs bg-gray-900 text-white hover:bg-gray-700 rounded-lg transition-colors">Guardar cambios</button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

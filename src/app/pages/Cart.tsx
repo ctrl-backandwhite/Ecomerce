@@ -204,8 +204,9 @@ export function Cart() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
+                          disabled={item.quantity <= 1}
                           onClick={() =>
-                            updateQuantity(item.id, item.quantity - 1)
+                            updateQuantity(item.id, Math.max(1, item.quantity - 1))
                           }
                         >
                           <Minus className="w-4 h-4" />
@@ -217,10 +218,13 @@ export function Cart() {
                           variant="outline"
                           size="icon"
                           className="h-8 w-8"
+                          disabled={item.stock !== undefined && item.quantity >= item.stock}
                           onClick={() =>
                             updateQuantity(
                               item.id,
-                              item.quantity + 1
+                              item.stock !== undefined
+                                ? Math.min(item.stock, item.quantity + 1)
+                                : item.quantity + 1
                             )
                           }
                         >

@@ -81,6 +81,11 @@ export function useFlashDeals(): UseFlashDealsResult {
     const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(!hasCached);
     const fetchedRef = useRef(false);
+    // Tracks the currency/locale the current rawProducts state was fetched for.
+    // Prevents the persist effect from writing the module cache with stale
+    // pre-conversion data right after a currency switch but before the new
+    // fetch completes — which would otherwise lock the UI on stale prices.
+    const dataKeyRef = useRef<string | null>(null);
 
     // Reset fetchedRef when currency or locale changes so we re-fetch
     const prevCurrencyRef = useRef(currencyCode);
@@ -89,6 +94,7 @@ export function useFlashDeals(): UseFlashDealsResult {
         prevCurrencyRef.current = currencyCode;
         prevLocaleRef.current = apiLocale;
         fetchedRef.current = false;
+        dataKeyRef.current = null;
         _cachedDeals = null;
     }
 
@@ -115,6 +121,7 @@ export function useFlashDeals(): UseFlashDealsResult {
                 setCampaigns(
                     campaignsRes.filter((c) => DISCOUNT_TYPES.has(c.type) && c.active),
                 );
+                dataKeyRef.current = `${currencyCode}|${apiLocale}`;
 
                 try {
                     const cats = await nexaCategoryRepository.findAll(apiLocale);
@@ -238,12 +245,17 @@ export function useFlashDeals(): UseFlashDealsResult {
         return dates[0] ?? null;
     }, [campaigns, hasCached]);
 
-    /* ── Persist to module cache ── */
+    /* ── Persist to module cache ──
+     * Guarded by dataKeyRef so we never store rawProducts that were fetched
+     * for a previous currency/locale under the new key — that would lock the
+     * UI on stale pre-conversion prices after a currency switch.
+     */
     useEffect(() => {
-        if (!loading && allDeals.length > 0) {
+        const expectedKey = `${currencyCode}|${apiLocale}`;
+        if (!loading && allDeals.length > 0 && dataKeyRef.current === expectedKey) {
             _cachedDeals = { deals, allDeals, endDate, ts: Date.now(), currencyCode };
         }
-    }, [loading, deals, allDeals, endDate, currencyCode]);
+    }, [loading, deals, allDeals, endDate, currencyCode, apiLocale]);
 
     return { deals, allDeals, loading, endDate };
 }

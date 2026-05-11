@@ -61,6 +61,8 @@ export interface ShippingRule {
     priceMax: number | null;
     rate: number;
     freeAbove: number | null;
+    /** Weight cap (kg) for the freeAbove promo to apply. Null = no weight cap. */
+    freeAboveMaxWeight: number | null;
     estimatedDays: number;
     active: boolean;
     carrierName: string;
@@ -77,6 +79,7 @@ export interface ShippingRulePayload {
     priceMax?: number;
     rate: number;
     freeAbove?: number;
+    freeAboveMaxWeight?: number;
     estimatedDays?: number;
     active?: boolean;
 }
